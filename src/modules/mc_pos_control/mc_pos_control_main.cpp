@@ -819,7 +819,7 @@ MulticopterPositionControl::task_main()
 
 					/* calculate velocity controller gain multiplier to convert desired acceleration to thrust
 					 * to dynamically adjust gain depending on vehicle mass (estimated via hovering thrust) */
-					float gain_mult = fminf(fmaxf(-thrust_int(2), 0.3f), 0.7f) / CONSTANTS_ONE_G;
+					float gain_mult = fminf(fmaxf(-thrust_int(2), 0.1f), 0.8f) / CONSTANTS_ONE_G;
 
 					/* thrust vector in NED frame */
 					math::Vector<3> thrust_sp = (vel_err.emult(_params.vel_p) + vel_err_d.emult(_params.vel_d) + thrust_int) * gain_mult;
