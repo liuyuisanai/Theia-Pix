@@ -154,6 +154,10 @@ MavlinkReceiver::handle_message(mavlink_message_t *msg)
 		handle_message_manual_control(msg);
 		break;
 
+	case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
+		handle_message_global_position_int(msg);
+		break;
+
 	case MAVLINK_MSG_ID_HEARTBEAT:
 		handle_message_heartbeat(msg);
 		break;
@@ -468,6 +472,35 @@ MavlinkReceiver::handle_message_manual_control(mavlink_message_t *msg)
 
 	} else {
 		orb_publish(ORB_ID(manual_control_setpoint), _manual_pub, &manual);
+	}
+}
+
+void
+MavlinkReceiver::handle_message_global_position_int(mavlink_message_t *msg)
+{
+	mavlink_global_position_int_t pos;
+	mavlink_msg_global_position_int_decode(msg, &pos);
+
+	struct target_global_position_s target_pos;
+	memset(&target_pos, 0, sizeof(target_pos));
+
+	target_pos.timestamp = hrt_absolute_time();
+	target_pos.sysid = msg->sysid;
+	target_pos.valid = true;
+	target_pos.remote_timestamp = pos.time_boot_ms * 1000;
+	target_pos.lat = pos.lat / 1e7d;
+	target_pos.lon = pos.lon / 1e7d;
+	target_pos.alt = pos.alt;
+	target_pos.vel_n = pos.vx;
+	target_pos.vel_e = pos.vy;
+	target_pos.vel_d = pos.vz;
+	target_pos.yaw = _wrap_pi(pos.hdg / 100.0f * M_DEG_TO_RAD_F);
+
+	if (_target_pos_pub < 0) {
+		_target_pos_pub = orb_advertise(ORB_ID(target_global_position), &target_pos);
+
+	} else {
+		orb_publish(ORB_ID(target_global_position), _target_pos_pub, &target_pos);
 	}
 }
 

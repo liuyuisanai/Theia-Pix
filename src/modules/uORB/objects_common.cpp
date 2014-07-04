@@ -208,3 +208,6 @@ ORB_DEFINE(tecs_status, struct tecs_status_s);
 
 #include "topics/wind_estimate.h"
 ORB_DEFINE(wind_estimate, struct wind_estimate_s);
+
+#include "topics/target_global_position.h"
+ORB_DEFINE(target_global_position, struct target_global_position_s);

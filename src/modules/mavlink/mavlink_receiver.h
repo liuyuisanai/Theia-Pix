@@ -48,6 +48,7 @@
 #include <uORB/topics/vehicle_gps_position.h>
 #include <uORB/topics/vehicle_global_position.h>
 #include <uORB/topics/vehicle_local_position.h>
+#include <uORB/topics/target_global_position.h>
 #include <uORB/topics/home_position.h>
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/offboard_control_setpoint.h>
@@ -112,6 +113,7 @@ private:
 	void handle_message_quad_swarm_roll_pitch_yaw_thrust(mavlink_message_t *msg);
 	void handle_message_radio_status(mavlink_message_t *msg);
 	void handle_message_manual_control(mavlink_message_t *msg);
+	void handle_message_global_position_int(mavlink_message_t *msg);
 	void handle_message_heartbeat(mavlink_message_t *msg);
 	void handle_message_request_data_stream(mavlink_message_t *msg);
 	void handle_message_hil_sensor(mavlink_message_t *msg);
@@ -140,6 +142,7 @@ private:
 	orb_advert_t _telemetry_status_pub;
 	orb_advert_t _rc_pub;
 	orb_advert_t _manual_pub;
+	orb_advert_t _target_pos_pub;
 	hrt_abstime _telemetry_heartbeat_time;
 	bool _radio_status_available;
 	int _hil_frames;
