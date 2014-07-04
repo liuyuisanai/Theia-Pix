@@ -72,6 +72,7 @@
 #include <uORB/topics/vehicle_local_position.h>
 #include <uORB/topics/vehicle_local_position_setpoint.h>
 #include <uORB/topics/vehicle_global_position.h>
+#include <uORB/topics/target_global_position.h>
 #include <uORB/topics/position_setpoint_triplet.h>
 #include <uORB/topics/vehicle_gps_position.h>
 #include <uORB/topics/satellite_info.h>
@@ -949,6 +950,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 		struct servorail_status_s servorail_status;
 		struct satellite_info_s sat_info;
 		struct wind_estimate_s wind_estimate;
+		struct target_global_position_s target_pos;
 	} buf;
 
 	memset(&buf, 0, sizeof(buf));
@@ -990,6 +992,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 			struct log_GS1B_s log_GS1B;
 			struct log_TECS_s log_TECS;
 			struct log_WIND_s log_WIND;
+			struct log_TPOS_s log_TPOS;
 		} body;
 	} log_msg = {
 		LOG_PACKET_HEADER_INIT(0)
@@ -1026,6 +1029,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 		int system_power_sub;
 		int servorail_status_sub;
 		int wind_sub;
+		int target_pos_sub;
 	} subs;
 
 	subs.cmd_sub = orb_subscribe(ORB_ID(vehicle_command));
@@ -1058,6 +1062,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 	subs.wind_sub = orb_subscribe(ORB_ID(wind_estimate));
 	/* we need to rate-limit wind, as we do not need the full update rate */
 	orb_set_interval(subs.wind_sub, 90);
+	subs.target_pos_sub = orb_subscribe(ORB_ID(target_global_position));
 
 	thread_running = true;
 
@@ -1548,6 +1553,20 @@ int sdlog2_thread_main(int argc, char *argv[])
 			log_msg.body.log_WIND.cov_x = buf.wind_estimate.covariance_north;
 			log_msg.body.log_WIND.cov_y = buf.wind_estimate.covariance_east;
 			LOGBUFFER_WRITE_AND_COUNT(WIND);
+		}
+
+		/* --- TARGET GLOBAL POSITION --- */
+		if (copy_if_updated(ORB_ID(target_global_position), subs.target_pos_sub, &buf.target_pos)) {
+			log_msg.msg_type = LOG_TPOS_MSG;
+			log_msg.body.log_TPOS.sysid = buf.target_pos.sysid;
+			log_msg.body.log_TPOS.time = buf.target_pos.remote_timestamp;
+			log_msg.body.log_TPOS.lat = buf.target_pos.lat * 1e7d;
+			log_msg.body.log_TPOS.lon = buf.target_pos.lon * 1e7d;
+			log_msg.body.log_TPOS.alt = buf.target_pos.alt;
+			log_msg.body.log_TPOS.vel_n = buf.target_pos.vel_n;
+			log_msg.body.log_TPOS.vel_e = buf.target_pos.vel_e;
+			log_msg.body.log_TPOS.vel_d = buf.target_pos.vel_d;
+			LOGBUFFER_WRITE_AND_COUNT(TPOS);
 		}
 
 		/* signal the other thread new data, but not yet unlock */
