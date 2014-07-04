@@ -105,6 +105,7 @@ MavlinkReceiver::MavlinkReceiver(Mavlink *parent) :
 	_telemetry_status_pub(-1),
 	_rc_pub(-1),
 	_manual_pub(-1),
+	_target_pos_pub(-1),
 	_telemetry_heartbeat_time(0),
 	_radio_status_available(false),
 	_hil_frames(0),
