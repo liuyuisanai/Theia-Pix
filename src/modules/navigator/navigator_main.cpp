@@ -346,6 +346,7 @@ Navigator::task_main()
 			case NAVIGATION_STATE_ACRO:
 			case NAVIGATION_STATE_ALTCTL:
 			case NAVIGATION_STATE_POSCTL:
+			case NAVIGATION_STATE_FOLLOW:
 				_navigation_mode = nullptr;
 				_can_loiter_at_sp = false;
 				break;

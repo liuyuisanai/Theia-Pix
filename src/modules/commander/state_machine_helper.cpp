@@ -271,6 +271,14 @@ main_state_transition(struct vehicle_status_s *status, main_state_t new_main_sta
 		}
 		break;
 
+	case MAIN_STATE_FOLLOW:
+		/* need at minimum local position estimate */
+		if (status->condition_target_position_valid &&
+				(status->condition_local_position_valid || status->condition_global_position_valid)) {
+			ret = TRANSITION_CHANGED;
+		}
+		break;
+
 	case MAIN_STATE_AUTO_MISSION:
 	case MAIN_STATE_AUTO_LOITER:
 		/* need global position estimate */
@@ -431,6 +439,7 @@ bool set_nav_state(struct vehicle_status_s *status, const bool data_link_loss_en
 	case MAIN_STATE_MANUAL:
 	case MAIN_STATE_ALTCTL:
 	case MAIN_STATE_POSCTL:
+	case MAIN_STATE_FOLLOW:
 		/* require RC for all manual modes */
 		if (status->rc_signal_lost && armed) {
 			status->failsafe = true;
@@ -461,6 +470,10 @@ bool set_nav_state(struct vehicle_status_s *status, const bool data_link_loss_en
 
 			case MAIN_STATE_POSCTL:
 				status->nav_state = NAVIGATION_STATE_POSCTL;
+				break;
+
+			case MAIN_STATE_FOLLOW:
+				status->nav_state = NAVIGATION_STATE_FOLLOW;
 				break;
 
 			default:

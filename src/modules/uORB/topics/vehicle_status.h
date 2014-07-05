@@ -70,6 +70,7 @@ typedef enum {
 	MAIN_STATE_AUTO_LOITER,
 	MAIN_STATE_AUTO_RTL,
 	MAIN_STATE_ACRO,
+	MAIN_STATE_FOLLOW,
 	MAIN_STATE_MAX,
 } main_state_t;
 
@@ -106,6 +107,7 @@ typedef enum {
 	NAVIGATION_STATE_LAND,			/**< Land mode */
 	NAVIGATION_STATE_DESCEND,			/**< Descend mode (no position control) */
 	NAVIGATION_STATE_TERMINATION,		/**< Termination mode */
+	NAVIGATION_STATE_FOLLOW,		/**< Manual-controlled follow mode */
 	NAVIGATION_STATE_MAX,
 } navigation_state_t;
 
@@ -189,6 +191,7 @@ struct vehicle_status_s {
 	bool condition_home_position_valid;		/**< indicates a valid home position (a valid home position is not always a valid launch) */
 	bool condition_local_position_valid;
 	bool condition_local_altitude_valid;
+	bool condition_target_position_valid;	/**< indicates a valid target position */
 	bool condition_airspeed_valid;			/**< set to true by the commander app if there is a valid airspeed measurement available */
 	bool condition_landed;					/**< true if vehicle is landed, always true if disarmed */
 	bool condition_power_input_valid;		/**< set if input power is valid */
