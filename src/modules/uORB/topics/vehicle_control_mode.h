@@ -81,6 +81,8 @@ struct vehicle_control_mode_s {
 	bool flag_control_altitude_enabled;		/**< true if altitude is controlled */
 	bool flag_control_climb_rate_enabled;	/**< true if climb rate is controlled */
 	bool flag_control_termination_enabled;	/**< true if flighttermination is enabled */
+	bool flag_control_follow_target;		/**< true if vehicle must follow target */
+	bool flag_control_point_to_target;		/**< true if camera should be pointed to the target */
 };
 
 /**
