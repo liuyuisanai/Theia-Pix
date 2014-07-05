@@ -441,6 +441,10 @@ bool handle_command(struct vehicle_status_s *status, const struct safety_s *safe
 				} else if (custom_main_mode == PX4_CUSTOM_MAIN_MODE_ACRO) {
 					/* ACRO */
 					main_ret = main_state_transition(status, MAIN_STATE_ACRO);
+
+				} else if (custom_main_mode == PX4_CUSTOM_MAIN_MODE_FOLLOW) {
+					/* FOLLOW */
+					main_ret = main_state_transition(status, MAIN_STATE_FOLLOW);
 				}
 
 			} else {
