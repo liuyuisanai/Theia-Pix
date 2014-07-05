@@ -38,6 +38,16 @@ public:
 	void set_min_latency(const uint64_t latency) { _latency_min = latency; }
 
 	/**
+	 * Get maximal allowed latency, us
+	 */
+	uint64_t get_max_latency() const { return _latency_max; }
+
+	/**
+	 * Set maximal allowed latency, us
+	 */
+	void set_max_latency(const uint64_t latency) { _latency_max = latency; }
+
+	/**
 	 * Update last known position
 	 */
 	void update(uint64_t time_local, uint64_t time_remote,
@@ -60,6 +70,7 @@ private:
 	uint64_t	_time_last;		///< last known position time, us
 	int64_t	_time_offset;		///< average time offset (time_local - time_remote), us
 	uint64_t	_latency_min;		///< minimal, known a priori latency, us
+	uint64_t	_latency_max;		///< maximal allowed latency, us
 	float	_avg_n;				///< averaging number, samples
 	double	_lat;				///< last known latitude, deg WSG84
 	double	_lon;				///< last known longitude, deg WSG84

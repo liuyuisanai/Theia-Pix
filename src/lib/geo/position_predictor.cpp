@@ -15,6 +15,7 @@ GlobalPositionPredictor::GlobalPositionPredictor() :
 	_time_last(0),
 	_time_offset(0),
 	_latency_min(0),
+	_latency_max(1000000),
 	_avg_n(100),
 	_lat(0.0),
 	_lon(0.0),
@@ -29,14 +30,29 @@ GlobalPositionPredictor::update(uint64_t time_local, uint64_t time_remote,
 	int64_t offset = time_local - time_remote;
 	int64_t latency = offset - _time_offset;
 
-	if (latency < _latency_min) {
-		_time_offset += (offset - _latency_min - _time_offset) * fminf(1.0f, 10.0f / _avg_n);
+	if (_time_last == 0 || latency < _latency_min || latency > _latency_max) {
+		/* time offset initialization
+		 * or latency is less than possible
+		 * or latency if bigger than allowed,
+		 * correct time offset immediately
+		 */
+		_time_offset = offset - _latency_min;
 
 	} else {
-		_time_offset += (offset - _latency_min - _time_offset) / _avg_n;
+		/* time offset correction */
+		if (latency < _latency_min) {
+			_time_offset = offset - _latency_min;
+
+		} else {
+			/* latency is bigger than possible, correct time offset slowly */
+			_time_offset += (offset - _latency_min - _time_offset) / _avg_n;
+		}
 	}
 
 	_time_last = time_remote + _time_offset;
+	_lat = lat;
+	_lon = lon;
+	_alt = alt;
 	memcpy(_vel, vel, sizeof(_vel));
 }
 
