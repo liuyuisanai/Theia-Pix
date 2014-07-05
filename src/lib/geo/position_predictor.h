@@ -10,12 +10,13 @@
 #include <stdint.h>
 #include "visibility.h"
 
-class __EXPORT GlobalPositionPredictor {
+
+class BasePredictor {
 public:
 	/**
 	 * Constructor
 	 */
-	GlobalPositionPredictor();
+	BasePredictor();
 
 	/**
 	 * Get latency averaging number, samples
@@ -48,6 +49,40 @@ public:
 	void set_max_latency(const uint64_t latency) { _latency_max = latency; }
 
 	/**
+	 * Get time when last update was received, us
+	 */
+	uint64_t get_time_recv_last() const { return _time_recv_last; };
+
+	/**
+	 * Get estimated time when last update was sent (in local clock reference), us
+	 */
+	uint64_t get_time_sent_last() const { return _time_sent_last; };
+
+protected:
+	/**
+	 * Update last known position
+	 */
+	void update_latency(uint64_t time_local, uint64_t time_remote);
+
+	uint64_t	_time_recv_last;			///< last time when last update was received, us
+	uint64_t	_time_sent_last;			///< estimated time when last update was sent (in local clock reference), us
+
+private:
+	int64_t		_time_offset;		///< average time offset (time_local - time_remote), us
+	uint64_t	_latency_min;		///< minimal, known a priori latency, us
+	uint64_t	_latency_max;		///< maximal allowed latency, us
+	float		_avg_n;				///< averaging number, samples
+};
+
+
+class __EXPORT GlobalPositionPredictor : public BasePredictor {
+public:
+	/**
+	 * Constructor
+	 */
+	GlobalPositionPredictor();
+
+	/**
 	 * Update last known position
 	 */
 	void update(uint64_t time_local, uint64_t time_remote,
@@ -61,19 +96,35 @@ public:
 	 */
 	uint64_t predict_position(uint64_t time_local, double *lat, double *lon, float *alt) const;
 
-	/**
-	 * Get last known position time
-	 */
-	uint64_t get_time_last() const { return _time_last; };
-
 private:
-	uint64_t	_time_last;		///< last known position time, us
-	int64_t	_time_offset;		///< average time offset (time_local - time_remote), us
-	uint64_t	_latency_min;		///< minimal, known a priori latency, us
-	uint64_t	_latency_max;		///< maximal allowed latency, us
-	float	_avg_n;				///< averaging number, samples
 	double	_lat;				///< last known latitude, deg WSG84
 	double	_lon;				///< last known longitude, deg WSG84
 	float	_alt;				///< last known altitude, m AMSL
+	float	_vel[3];			///< last known velocity, m/s NED
+};
+
+
+class __EXPORT LocalPositionPredictor : public BasePredictor {
+public:
+	/**
+	 * Constructor
+	 */
+	LocalPositionPredictor();
+
+	/**
+	 * Update last known position
+	 */
+	void update(uint64_t time_local, uint64_t time_remote,
+			const float pos[3], const float vel[3]);
+
+	/**
+	 * Predict position at specified time
+	 *
+	 * @return time delta since last known data, us
+	 */
+	uint64_t predict_position(uint64_t time_local, float pos[3]) const;
+
+private:
+	float	_pos[3];			///< last known position, m AMSL
 	float	_vel[3];			///< last known velocity, m/s NED
 };
