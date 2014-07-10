@@ -49,6 +49,8 @@
  * @{
  */
 
+#define TARGET_POSITION_TIMEOUT		(3 * 1000 * 1000)		/**< consider the target position invalid after 3s */
+
 /**
 * Target global position in WGS84.
 */

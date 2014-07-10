@@ -68,6 +68,7 @@
 #include <uORB/topics/home_position.h>
 #include <uORB/topics/vehicle_global_position.h>
 #include <uORB/topics/vehicle_local_position.h>
+#include <uORB/topics/target_global_position.h>
 #include <uORB/topics/position_setpoint_triplet.h>
 #include <uORB/topics/vehicle_gps_position.h>
 #include <uORB/topics/vehicle_command.h>
@@ -857,6 +858,11 @@ int commander_thread_main(int argc, char *argv[])
 	struct vehicle_local_position_s local_position;
 	memset(&local_position, 0, sizeof(local_position));
 
+	/* Subscribe to target position data */
+	int target_position_sub = orb_subscribe(ORB_ID(target_global_position));
+	struct target_global_position_s target_position;
+	memset(&target_position, 0, sizeof(target_position));
+
 	/*
 	 * The home position is set based on GPS only, to prevent a dependency between
 	 * position estimator and commander. RAW GPS is more than good enough for a
@@ -1183,6 +1189,16 @@ int commander_thread_main(int argc, char *argv[])
 				}
 			}
 		}
+
+		/* update target position estimate */
+		orb_check(target_position_sub, &updated);
+
+		if (updated) {
+			/* target position changed */
+			orb_copy(ORB_ID(target_global_position), target_position_sub, &target_position);
+		}
+
+		check_valid(target_position.timestamp, TARGET_POSITION_TIMEOUT, true, &(status.condition_target_position_valid), &status_changed);
 
 		/* update battery status */
 		orb_check(battery_sub, &updated);

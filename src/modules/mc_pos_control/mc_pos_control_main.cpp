@@ -804,8 +804,8 @@ MulticopterPositionControl::task_main()
 			}
 
 			/* init target altitude offset */
-			if (_target_pos.valid && _target_pos.timestamp < hrt_absolute_time() + 1000000 &&
-					_local_pos.timestamp < hrt_absolute_time() + 100000 && _local_pos.ref_timestamp > 0) {
+			if (_target_pos.timestamp < hrt_absolute_time() + TARGET_POSITION_TIMEOUT &&
+					_local_pos.timestamp < hrt_absolute_time() + TARGET_POSITION_TIMEOUT && _local_pos.ref_timestamp > 0) {
 				_target_alt_offs = _alt_start - _target_pos.alt + _params.follow_talt_offs;
 
 			} else {
