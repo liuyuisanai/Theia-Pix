@@ -70,6 +70,7 @@ typedef enum {
 	MAIN_STATE_AUTO_LOITER,
 	MAIN_STATE_AUTO_RTL,
 	MAIN_STATE_ACRO,
+	MAIN_STATE_OFFBOARD,
 	MAIN_STATE_FOLLOW,
 	MAIN_STATE_MAX,
 } main_state_t;
@@ -107,6 +108,7 @@ typedef enum {
 	NAVIGATION_STATE_LAND,			/**< Land mode */
 	NAVIGATION_STATE_DESCEND,			/**< Descend mode (no position control) */
 	NAVIGATION_STATE_TERMINATION,		/**< Termination mode */
+	NAVIGATION_STATE_OFFBOARD,
 	NAVIGATION_STATE_FOLLOW,		/**< Manual-controlled follow mode */
 	NAVIGATION_STATE_MAX,
 } navigation_state_t;

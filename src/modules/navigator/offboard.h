@@ -1,4 +1,4 @@
-/****************************************************************************
+/***************************************************************************
  *
  *   Copyright (c) 2014 PX4 Development Team. All rights reserved.
  *
@@ -30,51 +30,43 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-
 /**
- * @file mission_params.c
+ * @file offboard.h
  *
- * Parameters for mission.
+ * Helper class for offboard commands
  *
- * @author Julian Oes <joes@student.ethz.ch>
+ * @author Julian Oes <julian@oes.ch>
  */
 
-#include <nuttx/config.h>
+#ifndef NAVIGATOR_OFFBOARD_H
+#define NAVIGATOR_OFFBOARD_H
 
-#include <systemlib/param/param.h>
+#include <controllib/blocks.hpp>
+#include <controllib/block/BlockParam.hpp>
 
-/*
- * Mission parameters, accessible via MAVLink
- */
+#include <uORB/uORB.h>
+#include <uORB/topics/offboard_control_setpoint.h>
 
-/**
- * Take-off altitude
- *
- * Even if first waypoint has altitude less then MIS_TAKEOFF_ALT above home position, system will climb to
- * MIS_TAKEOFF_ALT on takeoff, then go to waypoint.
- *
- * @unit meters
- * @group Mission
- */
-PARAM_DEFINE_FLOAT(MIS_TAKEOFF_ALT, 10.0f);
+#include "navigator_mode.h"
 
-/**
- * Enable onboard mission
- *
- * @min 0
- * @max 1
- * @group Mission
- */
-PARAM_DEFINE_INT32(MIS_ONBOARD_EN, 0);
+class Navigator;
 
-/**
- * Maximal horizontal distance from home to first waypoint
- *
- * Failsafe check to prevent running mission stored from previous flight on new place.
- * Value < 0 means that check disabled.
- *
- * @min -1
- * @max 200
- * @group Mission
- */
-PARAM_DEFINE_FLOAT(MIS_DIST_1WP, 50);
+class Offboard : public NavigatorMode
+{
+public:
+	Offboard(Navigator *navigator, const char *name);
+
+	~Offboard();
+
+	virtual void on_inactive();
+
+	virtual void on_activation();
+
+	virtual void on_active();
+private:
+	void update_offboard_control_setpoint();
+
+	struct offboard_control_setpoint_s _offboard_control_sp;
+};
+
+#endif

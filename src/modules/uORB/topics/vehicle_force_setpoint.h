@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (c) 2014 PX4 Development Team. All rights reserved.
+ *   Copyright (C) 2014 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -32,49 +32,34 @@
  ****************************************************************************/
 
 /**
- * @file mission_params.c
- *
- * Parameters for mission.
- *
- * @author Julian Oes <joes@student.ethz.ch>
+ * @file vehicle_force_setpoint.h
+ * @author Thomas Gubler <thomasgubler@gmail.com>
+ * Definition of force (NED) setpoint uORB topic. Typically this can be used
+ * by a position control app together with an attitude control app.
  */
 
-#include <nuttx/config.h>
+#ifndef TOPIC_VEHICLE_FORCE_SETPOINT_H_
+#define TOPIC_VEHICLE_FORCE_SETPOINT_H_
 
-#include <systemlib/param/param.h>
-
-/*
- * Mission parameters, accessible via MAVLink
- */
+#include "../uORB.h"
 
 /**
- * Take-off altitude
- *
- * Even if first waypoint has altitude less then MIS_TAKEOFF_ALT above home position, system will climb to
- * MIS_TAKEOFF_ALT on takeoff, then go to waypoint.
- *
- * @unit meters
- * @group Mission
+ * @addtogroup topics
+ * @{
  */
-PARAM_DEFINE_FLOAT(MIS_TAKEOFF_ALT, 10.0f);
+
+struct vehicle_force_setpoint_s {
+	float x;		/**< in N NED			  		*/
+	float y;		/**< in N NED			  		*/
+	float z;		/**< in N NED			  		*/
+	float yaw;		/**< right-hand rotation around downward axis (rad, equivalent to Tait-Bryan yaw) */
+}; /**< Desired force in NED frame */
 
 /**
- * Enable onboard mission
- *
- * @min 0
- * @max 1
- * @group Mission
+ * @}
  */
-PARAM_DEFINE_INT32(MIS_ONBOARD_EN, 0);
 
-/**
- * Maximal horizontal distance from home to first waypoint
- *
- * Failsafe check to prevent running mission stored from previous flight on new place.
- * Value < 0 means that check disabled.
- *
- * @min -1
- * @max 200
- * @group Mission
- */
-PARAM_DEFINE_FLOAT(MIS_DIST_1WP, 50);
+/* register this as object request broker structure */
+ORB_DECLARE(vehicle_force_setpoint);
+
+#endif
