@@ -468,12 +468,12 @@ MavlinkReceiver::handle_message_global_position_int(mavlink_message_t *msg)
 	target_pos.timestamp = hrt_absolute_time();
 	target_pos.sysid = msg->sysid;
 	target_pos.remote_timestamp = ((uint64_t) pos.time_boot_ms) * 1000;
-	target_pos.lat = pos.lat / 1e7d;
-	target_pos.lon = pos.lon / 1e7d;
-	target_pos.alt = pos.alt;
-	target_pos.vel_n = pos.vx;
-	target_pos.vel_e = pos.vy;
-	target_pos.vel_d = pos.vz;
+	target_pos.lat = pos.lat * 1.0e-7d;
+	target_pos.lon = pos.lon * 1.0e-7d;
+	target_pos.alt = pos.alt * 1.0e-3f;
+	target_pos.vel_n = pos.vx * 1.0e-2f;
+	target_pos.vel_e = pos.vy * 1.0e-2f;
+	target_pos.vel_d = pos.vz * 1.0e-2f;
 	target_pos.yaw = _wrap_pi(pos.hdg / 100.0f * M_DEG_TO_RAD_F);
 
 	if (_target_pos_pub < 0) {
