@@ -611,7 +611,8 @@ MulticopterPositionControl::reset_follow_offset()
 
 		_follow_offset = pos - _tpos;
 
-		mavlink_log_info(_mavlink_fd, "[mpc] reset follow offs: %.2f, %.2f, %.2f", _follow_offset(0), _follow_offset(1), _follow_offset(2));
+		mavlink_log_info(_mavlink_fd, "[mpc] reset follow offs: %.2f, %.2f, %.2f",
+				(double)_follow_offset(0), (double)_follow_offset(1), (double)_follow_offset(2));
 	}
 }
 
@@ -750,6 +751,8 @@ MulticopterPositionControl::task_main()
 	hrt_abstime t_prev = 0;
 
 	const float alt_ctl_dz = 0.2f;
+
+	float yaw_sp_move_rate;
 
 	math::Vector<3> thrust_int;
 	thrust_int.zero();
@@ -976,8 +979,8 @@ MulticopterPositionControl::task_main()
 						/* reset position setpoint to current position if needed */
 						reset_pos_sp();
 						/* move position setpoint with roll/pitch stick */
-						sp_move_rate(0) = _pos_sp_triplet.current.vx;
-						sp_move_rate(1) = _pos_sp_triplet.current.vy;
+						_sp_move_rate(0) = _pos_sp_triplet.current.vx;
+						_sp_move_rate(1) = _pos_sp_triplet.current.vy;
 						yaw_sp_move_rate = _pos_sp_triplet.current.yawspeed;
 						_att_sp.yaw_body = _att.yaw + yaw_sp_move_rate * dt;
 					}
@@ -987,23 +990,23 @@ MulticopterPositionControl::task_main()
 						reset_alt_sp();
 
 						/* move altitude setpoint with throttle stick */
-						sp_move_rate(2) = -scale_control(_pos_sp_triplet.current.vz - 0.5f, 0.5f, alt_ctl_dz);;
+						_sp_move_rate(2) = -scale_control(_pos_sp_triplet.current.vz - 0.5f, 0.5f, alt_ctl_dz);;
 					}
 
 					/* limit setpoint move rate */
-					float sp_move_norm = sp_move_rate.length();
+					float sp_move_norm = _sp_move_rate.length();
 
 					if (sp_move_norm > 1.0f) {
-						sp_move_rate /= sp_move_norm;
+						_sp_move_rate /= sp_move_norm;
 					}
 
 					/* scale to max speed and rotate around yaw */
 					math::Matrix<3, 3> R_yaw_sp;
 					R_yaw_sp.from_euler(0.0f, 0.0f, _att_sp.yaw_body);
-					sp_move_rate = R_yaw_sp * sp_move_rate.emult(_params.vel_max);
+					_sp_move_rate = R_yaw_sp * _sp_move_rate.emult(_params.vel_max);
 
 					/* move position setpoint */
-					_pos_sp += sp_move_rate * dt;
+					_pos_sp += _sp_move_rate * dt;
 
 					/* check if position setpoint is too far from actual position */
 					math::Vector<3> pos_sp_offs;
