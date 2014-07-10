@@ -56,7 +56,6 @@ struct target_global_position_s {
 	uint64_t timestamp;	/**< time of this estimate, in microseconds since system start */
 	uint8_t sysid;		/**< sysid of target */
 	uint64_t remote_timestamp; 	/**< remote system timestamp in microseconds							   */
-	bool valid;			/**< true if position satisfies validity criteria of estimator */
 
 	double lat;			/**< Latitude in degrees							 	   */
 	double lon;			/**< Longitude in degrees							 	   */
