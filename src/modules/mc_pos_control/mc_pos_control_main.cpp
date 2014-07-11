@@ -829,7 +829,8 @@ MulticopterPositionControl::task_main()
 		/* check if target position updated */
 		if (_target_pos.timestamp != _tpos_predictor.get_time_recv_last()) {
 			/* project target position to local frame */
-			map_projection_project(&_ref_pos, _target_pos.lat, _target_pos.lon, &_tpos.data[0], &_tpos.data[1]);
+			math::Vector<3> tpos;
+			map_projection_project(&_ref_pos, _target_pos.lat, _target_pos.lon, &tpos.data[0], &tpos.data[1]);
 
 			math::Vector<3> tvel_current;
 			tvel_current(0) = _target_pos.vel_n;
@@ -837,12 +838,12 @@ MulticopterPositionControl::task_main()
 
 			if (_params.follow_use_alt) {
 				/* use real target altitude */
-				_tpos(2) = -(_target_pos.alt + _target_alt_offs - _ref_alt);
+				tpos(2) = -(_target_pos.alt + _target_alt_offs - _ref_alt);
 				tvel_current(2) = _target_pos.vel_d;
 
 			} else {
 				/* assume that target is always on start altitude */
-				_tpos(2) = -(_alt_start - _ref_alt + _params.follow_talt_offs);
+				tpos(2) = -(_alt_start - _ref_alt + _params.follow_talt_offs);
 				tvel_current(2) = 0.0f;
 			}
 
@@ -861,7 +862,7 @@ MulticopterPositionControl::task_main()
 			}
 
 			/* update target position predictor */
-			_tpos_predictor.update(_target_pos.timestamp, _target_pos.remote_timestamp, _tpos.data, _tvel.data);
+			_tpos_predictor.update(_target_pos.timestamp, _target_pos.remote_timestamp, tpos.data, _tvel.data);
 		}
 
 		/* target position prediction */
