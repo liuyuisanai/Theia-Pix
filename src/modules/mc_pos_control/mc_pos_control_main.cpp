@@ -72,6 +72,7 @@
 #include <systemlib/err.h>
 #include <systemlib/systemlib.h>
 #include <mathlib/mathlib.h>
+#include <mathlib/math/filter/LowPassFilter.hpp>
 #include <lib/geo/geo.h>
 #include <lib/geo/position_predictor.h>
 #include <mavlink/mavlink_log.h>
@@ -212,6 +213,8 @@ private:
 
 	math::Vector<3> _tpos;
 	math::Vector<3> _tvel;
+
+	math::LowPassFilter<math::Vector<3>> _tvel_lpf;
 
 	math::Vector<3> _sp_move_rate;
 	math::Vector<3> _att_rates_ff;
@@ -438,6 +441,7 @@ MulticopterPositionControl::parameters_update(bool force)
 		param_get(_params_handles.follow_yaw_off_max, &_params.follow_yaw_off_max);
 		_params.follow_yaw_off_max = math::radians(_params.follow_yaw_off_max);
 		param_get(_params_handles.follow_lpf, &_params.follow_lpf);
+		_tvel_lpf.set_cutoff_frequency(_params.follow_lpf);
 		param_get(_params_handles.cam_pitch_max, &_params.cam_pitch_max);
 		_params.cam_pitch_max = math::radians(_params.cam_pitch_max);
 
@@ -848,10 +852,7 @@ MulticopterPositionControl::task_main()
 			}
 
 			/* low pass filter for target velocity */
-			if (_params.follow_lpf > 0.0f) {
-				float dt_tpos = (_target_pos.timestamp - _tpos_predictor.get_time_recv_last()) * 1.0e-6f;
-				tvel_current += (tvel_current - _tvel) * fminf(dt_tpos / _params.follow_lpf, 1.0f);
-			}
+			tvel_current = _tvel_lpf.apply(_target_pos.timestamp, tvel_current);
 
 			/* NaN protection */
 			if (isfinite(tvel_current(0)) && isfinite(tvel_current(1)) && isfinite(tvel_current(2))) {
