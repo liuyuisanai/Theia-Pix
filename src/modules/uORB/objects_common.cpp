@@ -230,3 +230,21 @@ ORB_DEFINE(wind_estimate, struct wind_estimate_s);
 
 #include "topics/target_global_position.h"
 ORB_DEFINE(target_global_position, struct target_global_position_s);
+
+#include "topics/trainer_global_position.h"
+ORB_DEFINE(trainer_global_position, struct trainer_global_position_s);
+
+#include "topics/airdog_status.h"
+ORB_DEFINE(airdog_status, struct airdog_status_s);
+
+#include "topics/airdog_path_log.h"
+ORB_DEFINE(airdog_path_log, struct airdog_path_log_s);
+
+#include "topics/set_drone_parameter.h"
+ORB_DEFINE(set_drone_parameter, struct set_drone_param_s);
+
+#include "topics/get_drone_parameter.h"
+ORB_DEFINE(get_drone_parameter, struct get_drone_param_s);
+
+#include "topics/pass_drone_parameter.h"
+ORB_DEFINE(pass_drone_parameter, struct pass_drone_param_s);
