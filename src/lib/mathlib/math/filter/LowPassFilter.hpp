@@ -35,7 +35,7 @@ public:
     	if (_rc > 0.0f) {
     		float dt = (t - _time_last) * 1.0e-6f;
     		float a = dt / (_rc + dt);
-    		_value += value * a + _value * (1.0f - a);
+    		_value = value * a + _value * (1.0f - a);
     	}
     	_time_last = t;
     	return _value;
