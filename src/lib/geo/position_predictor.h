@@ -51,12 +51,17 @@ public:
 	/**
 	 * Get time when last update was received, us
 	 */
-	uint64_t get_time_recv_last() const { return _time_recv_last; };
+	uint64_t get_time_recv_last() const { return _time_recv_last; }
 
 	/**
 	 * Get estimated time when last update was sent (in local clock reference), us
 	 */
-	uint64_t get_time_sent_last() const { return _time_sent_last; };
+	uint64_t get_time_sent_last() const { return _time_sent_last; }
+
+	/**
+	 * Get current estimated latency, us
+	 */
+	uint64_t get_latency() const { return _time_recv_last - _time_sent_last; }
 
 protected:
 	/**
