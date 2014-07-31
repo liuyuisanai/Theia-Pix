@@ -255,6 +255,11 @@ private:
 	void		reset_alt_sp();
 
 	/**
+	 * Update target position and velocity (prediction and filtering)
+	 */
+	void		update_target_pos();
+
+	/**
 	 * Reset follow offset to current offset.
 	 */
 	void		reset_follow_offset();
@@ -636,6 +641,53 @@ MulticopterPositionControl::reset_alt_sp()
 }
 
 void
+MulticopterPositionControl::update_target_pos()
+{
+	if (_ref_timestamp != 0) {
+		/* check if target position updated */
+		if (_target_pos.timestamp != _tpos_predictor.get_time_recv_last()) {
+			/* project target position to local frame */
+			math::Vector<3> tpos;
+			map_projection_project(&_ref_pos, _target_pos.lat, _target_pos.lon, &tpos.data[0], &tpos.data[1]);
+
+			math::Vector<3> tvel_current;
+			tvel_current(0) = _target_pos.vel_n;
+			tvel_current(1) = _target_pos.vel_e;
+
+			if (_params.follow_use_alt) {
+				/* use real target altitude */
+				tpos(2) = -(_target_pos.alt + _target_alt_offs - _ref_alt);
+				tvel_current(2) = _target_pos.vel_d;
+
+			} else {
+				/* assume that target is always on start altitude */
+				tpos(2) = -(_alt_start - _ref_alt + _params.follow_talt_offs);
+				tvel_current(2) = 0.0f;
+			}
+
+			/* low pass filter for target velocity */
+			tvel_current = _tvel_lpf.apply(_target_pos.timestamp, tvel_current);
+
+			/* NaN protection */
+			if (isfinite(tvel_current(0)) && isfinite(tvel_current(1)) && isfinite(tvel_current(2))) {
+				_tvel = tvel_current;
+
+			} else if (!(isfinite(_tvel(0)) && isfinite(_tvel(1)) && isfinite(_tvel(2)))) {
+				_tvel.zero();
+			}
+
+			/* update target position predictor */
+			_tpos_predictor.update(_target_pos.timestamp, _target_pos.remote_timestamp, tpos.data, _tvel.data);
+		}
+
+		/* target position prediction */
+		if (_tpos_predictor.get_time_recv_last() != 0 && hrt_absolute_time() < _tpos_predictor.get_time_recv_last() + 1000000) {
+			_tpos_predictor.predict_position(_local_pos.timestamp, _tpos.data);
+		}
+	}
+}
+
+void
 MulticopterPositionControl::control_sp_follow(float dt)
 {
 	/* follow target, change offset from target instead of moving setpoint directly */
@@ -834,46 +886,7 @@ MulticopterPositionControl::task_main()
 		_vel(1) = _local_pos.vy;
 		_vel(2) = _local_pos.vz;
 
-		/* check if target position updated */
-		if (_target_pos.timestamp != _tpos_predictor.get_time_recv_last()) {
-			/* project target position to local frame */
-			math::Vector<3> tpos;
-			map_projection_project(&_ref_pos, _target_pos.lat, _target_pos.lon, &tpos.data[0], &tpos.data[1]);
-
-			math::Vector<3> tvel_current;
-			tvel_current(0) = _target_pos.vel_n;
-			tvel_current(1) = _target_pos.vel_e;
-
-			if (_params.follow_use_alt) {
-				/* use real target altitude */
-				tpos(2) = -(_target_pos.alt + _target_alt_offs - _ref_alt);
-				tvel_current(2) = _target_pos.vel_d;
-
-			} else {
-				/* assume that target is always on start altitude */
-				tpos(2) = -(_alt_start - _ref_alt + _params.follow_talt_offs);
-				tvel_current(2) = 0.0f;
-			}
-
-			/* low pass filter for target velocity */
-			tvel_current = _tvel_lpf.apply(_target_pos.timestamp, tvel_current);
-
-			/* NaN protection */
-			if (isfinite(tvel_current(0)) && isfinite(tvel_current(1)) && isfinite(tvel_current(2))) {
-				_tvel = tvel_current;
-
-			} else if (!(isfinite(_tvel(0)) && isfinite(_tvel(1)) && isfinite(_tvel(2)))) {
-				_tvel.zero();
-			}
-
-			/* update target position predictor */
-			_tpos_predictor.update(_target_pos.timestamp, _target_pos.remote_timestamp, tpos.data, _tvel.data);
-		}
-
-		/* target position prediction */
-		if (_tpos_predictor.get_time_recv_last() != 0 && hrt_absolute_time() - _tpos_predictor.get_time_recv_last() < 1000000) {
-			_tpos_predictor.predict_position(_local_pos.timestamp, _tpos.data);
-		}
+		update_target_pos();
 
 		_vel_ff.zero();
 		_sp_move_rate.zero();
