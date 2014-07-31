@@ -368,7 +368,7 @@ MulticopterPositionControl::MulticopterPositionControl() :
 	_follow_offset.zero();
 	_follow_offset(2) = -20.0f;
 
-	/* set min latency to 20ms and max to 2s */
+	/* set min latency to 20ms and max to 1s */
 	_tpos_predictor.set_min_latency(20000);
 	_tpos_predictor.set_max_latency(1000000);
 
