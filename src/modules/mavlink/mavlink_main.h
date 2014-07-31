@@ -51,6 +51,7 @@
 #include <uORB/uORB.h>
 #include <uORB/topics/mission.h>
 #include <uORB/topics/mission_result.h>
+#include <uORB/topics/telemetry_status.h>
 
 #include "mavlink_bridge_header.h"
 #include "mavlink_orb_subscription.h"
@@ -96,6 +97,8 @@ public:
 	static Mavlink		*get_instance_for_device(const char *device_name);
 
 	static int		destroy_all_instances();
+
+	static int		get_status_all_instances();
 
 	static bool		instance_exists(const char *device_name, Mavlink *self);
 
@@ -157,9 +160,9 @@ public:
 	 */
 	int			set_hil_enabled(bool hil_enabled);
 
-	void	send_message(const mavlink_message_t *msg);
+	void			send_message(const mavlink_message_t *msg);
 
-	void	handle_message(const mavlink_message_t *msg);
+	void			handle_message(const mavlink_message_t *msg);
 
 	MavlinkOrbSubscription *add_orb_subscription(const orb_id_t topic);
 
@@ -174,17 +177,43 @@ public:
 
 	mavlink_channel_t	get_channel();
 
-	void configure_stream_threadsafe(const char *stream_name, float rate);
+	void			configure_stream_threadsafe(const char *stream_name, float rate);
 
 	bool			_task_should_exit;	/**< if true, mavlink task should exit */
 
 	int			get_mavlink_fd() { return _mavlink_fd; }
 
-	int send_statustext(const char *string);
-	int send_statustext(enum MAV_SEVERITY severity, const char *string);
-	MavlinkStream * get_streams() const { return _streams; }
+	/**
+	 * Send a status text with loglevel INFO
+	 *
+	 * @param string the message to send (will be capped by mavlink max string length)
+	 */
+	int			send_statustext_info(const char *string);
 
-	float get_rate_mult();
+	/**
+	 * Send a status text with loglevel CRITICAL
+	 *
+	 * @param string the message to send (will be capped by mavlink max string length)
+	 */
+	int			send_statustext_critical(const char *string);
+
+	/**
+	 * Send a status text with loglevel EMERGENCY
+	 *
+	 * @param string the message to send (will be capped by mavlink max string length)
+	 */
+	int			send_statustext_emergency(const char *string);
+
+	/**
+	 * Send a status text with loglevel
+	 *
+	 * @param string the message to send (will be capped by mavlink max string length)
+	 * @param severity the log level, one of 
+	 */
+	int			send_statustext(unsigned severity, const char *string);
+	MavlinkStream *		get_streams() const { return _streams; }
+
+	float			get_rate_mult();
 
 	/* Functions for waiting to start transmission until message received. */
 	void			set_has_received_messages(bool received_messages) { _received_messages = received_messages; }
@@ -195,13 +224,33 @@ public:
 
 	bool			message_buffer_write(const void *ptr, int size);
     
-    void lockMessageBufferMutex(void) { pthread_mutex_lock(&_message_buffer_mutex); }
-    void unlockMessageBufferMutex(void) { pthread_mutex_unlock(&_message_buffer_mutex); }
+	void			lockMessageBufferMutex(void) { pthread_mutex_lock(&_message_buffer_mutex); }
+	void			unlockMessageBufferMutex(void) { pthread_mutex_unlock(&_message_buffer_mutex); }
 
 	/**
 	 * Count a transmision error
 	 */
-	void count_txerr();
+	void			count_txerr();
+
+	/**
+	 * Count transmitted bytes
+	 */
+	void			count_txbytes(unsigned n) { _bytes_tx += n; };
+
+	/**
+	 * Count bytes not transmitted because of errors
+	 */
+	void			count_txerrbytes(unsigned n) { _bytes_txerr += n; };
+
+	/**
+	 * Count received bytes
+	 */
+	void			count_rxbytes(unsigned n) { _bytes_rx += n; };
+
+	/**
+	 * Get the receive status of this MAVLink link
+	 */
+	struct telemetry_status_s&	get_rx_status() { return _rstatus; }
 
 protected:
 	Mavlink			*next;
@@ -224,13 +273,13 @@ private:
 	MavlinkOrbSubscription	*_subscriptions;
 	MavlinkStream		*_streams;
 
-	MavlinkMissionManager *_mission_manager;
+	MavlinkMissionManager	*_mission_manager;
 
-	orb_advert_t	_mission_pub;
+	orb_advert_t		_mission_pub;
 	int			_mission_result_sub;
-	MAVLINK_MODE _mode;
+	MAVLINK_MODE 		_mode;
 
-	mavlink_channel_t _channel;
+	mavlink_channel_t	_channel;
 
 	struct mavlink_logbuffer _logbuffer;
 	unsigned int		_total_counter;
@@ -258,6 +307,16 @@ private:
 	float			_subscribe_to_stream_rate;
 
 	bool			_flow_control_enabled;
+
+	unsigned		_bytes_tx;
+	unsigned		_bytes_txerr;
+	unsigned		_bytes_rx;
+	uint64_t		_bytes_timestamp;
+	float		_rate_tx;
+	float		_rate_txerr;
+	float		_rate_rx;
+
+	struct telemetry_status_s	_rstatus;			///< receive status
 
 	struct mavlink_message_buffer {
 		int write_ptr;
@@ -346,4 +405,8 @@ private:
 	 * Main mavlink task.
 	 */
 	int		task_main(int argc, char *argv[]);
+
+	/* do not allow copying this class */
+	Mavlink(const Mavlink&);
+	Mavlink operator=(const Mavlink&);
 };

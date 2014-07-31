@@ -177,6 +177,8 @@ void get_mavlink_mode_state(struct vehicle_status_s *status, struct position_set
 			break;
 
 		case NAVIGATION_STATE_LAND:
+			/* fallthrough */
+		case NAVIGATION_STATE_DESCEND:
 			*mavlink_base_mode |= MAV_MODE_FLAG_AUTO_ENABLED
 			                      | MAV_MODE_FLAG_STABILIZE_ENABLED
 					      | MAV_MODE_FLAG_GUIDED_ENABLED;
@@ -195,6 +197,17 @@ void get_mavlink_mode_state(struct vehicle_status_s *status, struct position_set
 		case NAVIGATION_STATE_TERMINATION:
 			*mavlink_base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
 			custom_mode.main_mode = PX4_CUSTOM_MAIN_MODE_MANUAL;
+			break;
+
+		case NAVIGATION_STATE_OFFBOARD:
+			*mavlink_base_mode |= MAV_MODE_FLAG_AUTO_ENABLED
+			                      | MAV_MODE_FLAG_STABILIZE_ENABLED
+					      | MAV_MODE_FLAG_GUIDED_ENABLED;
+			custom_mode.main_mode = PX4_CUSTOM_MAIN_MODE_OFFBOARD;
+			break;
+
+		case NAVIGATION_STATE_MAX:
+			/* this is an unused case, ignore */
 			break;
 
 	}
@@ -252,7 +265,16 @@ private:
 	MavlinkOrbSubscription *status_sub;
 	MavlinkOrbSubscription *pos_sp_triplet_sub;
 
+	/* do not allow top copying this class */
+	MavlinkStreamHeartbeat(MavlinkStreamHeartbeat &);
+	MavlinkStreamHeartbeat& operator = (const MavlinkStreamHeartbeat &);
+
 protected:
+	explicit MavlinkStreamHeartbeat() : MavlinkStream(),
+		status_sub(nullptr),
+		pos_sp_triplet_sub(nullptr)
+	{}
+
 	void subscribe(Mavlink *mavlink)
 	{
 		status_sub = mavlink->add_orb_subscription(ORB_ID(vehicle_status));
@@ -316,7 +338,15 @@ public:
 private:
 	MavlinkOrbSubscription *status_sub;
 
+	/* do not allow top copying this class */
+	MavlinkStreamSysStatus(MavlinkStreamSysStatus &);
+	MavlinkStreamSysStatus& operator = (const MavlinkStreamSysStatus &);
+
 protected:
+	explicit MavlinkStreamSysStatus() : MavlinkStream(),
+		status_sub(nullptr)
+	{}
+
 	void subscribe(Mavlink *mavlink)
 	{
 		status_sub = mavlink->add_orb_subscription(ORB_ID(vehicle_status));
@@ -378,8 +408,13 @@ private:
 	uint64_t mag_timestamp;
 	uint64_t baro_timestamp;
 
+	/* do not allow top copying this class */
+	MavlinkStreamHighresIMU(MavlinkStreamHighresIMU &);
+	MavlinkStreamHighresIMU& operator = (const MavlinkStreamHighresIMU &);
+
 protected:
 	explicit MavlinkStreamHighresIMU() : MavlinkStream(),
+		sensor_sub(nullptr),
 		sensor_time(0),
 		accel_timestamp(0),
 		gyro_timestamp(0),
@@ -463,8 +498,14 @@ private:
 	MavlinkOrbSubscription *att_sub;
 	uint64_t att_time;
 
+	/* do not allow top copying this class */
+	MavlinkStreamAttitude(MavlinkStreamAttitude &);
+	MavlinkStreamAttitude& operator = (const MavlinkStreamAttitude &);
+
+
 protected:
 	explicit MavlinkStreamAttitude() : MavlinkStream(),
+		att_sub(nullptr),
 		att_time(0)
 	{}
 
@@ -514,8 +555,13 @@ private:
 	MavlinkOrbSubscription *att_sub;
 	uint64_t att_time;
 
+	/* do not allow top copying this class */
+	MavlinkStreamAttitudeQuaternion(MavlinkStreamAttitudeQuaternion &);
+	MavlinkStreamAttitudeQuaternion& operator = (const MavlinkStreamAttitudeQuaternion &);
+
 protected:
 	explicit MavlinkStreamAttitudeQuaternion() : MavlinkStream(),
+		att_sub(nullptr),
 		att_time(0)
 	{}
 
@@ -583,12 +629,21 @@ private:
 	MavlinkOrbSubscription *airspeed_sub;
 	uint64_t airspeed_time;
 
+	/* do not allow top copying this class */
+	MavlinkStreamVFRHUD(MavlinkStreamVFRHUD &);
+	MavlinkStreamVFRHUD& operator = (const MavlinkStreamVFRHUD &);
+
 protected:
 	explicit MavlinkStreamVFRHUD() : MavlinkStream(),
+		att_sub(nullptr),
 		att_time(0),
+		pos_sub(nullptr),
 		pos_time(0),
+		armed_sub(nullptr),
 		armed_time(0),
+		act_sub(nullptr),
 		act_time(0),
+		airspeed_sub(nullptr),
 		airspeed_time(0)
 	{}
 
@@ -659,8 +714,13 @@ private:
 	MavlinkOrbSubscription *gps_sub;
 	uint64_t gps_time;
 
+	/* do not allow top copying this class */
+	MavlinkStreamGPSRawInt(MavlinkStreamGPSRawInt &);
+	MavlinkStreamGPSRawInt& operator = (const MavlinkStreamGPSRawInt &);
+
 protected:
 	explicit MavlinkStreamGPSRawInt() : MavlinkStream(),
+		gps_sub(nullptr),
 		gps_time(0)
 	{}
 
@@ -720,9 +780,15 @@ private:
 	MavlinkOrbSubscription *home_sub;
 	uint64_t home_time;
 
+	/* do not allow top copying this class */
+	MavlinkStreamGlobalPositionInt(MavlinkStreamGlobalPositionInt &);
+	MavlinkStreamGlobalPositionInt& operator = (const MavlinkStreamGlobalPositionInt &);
+
 protected:
 	explicit MavlinkStreamGlobalPositionInt() : MavlinkStream(),
+		pos_sub(nullptr),
 		pos_time(0),
+		home_sub(nullptr),
 		home_time(0)
 	{}
 
@@ -783,8 +849,13 @@ private:
 	MavlinkOrbSubscription *pos_sub;
 	uint64_t pos_time;
 
+	/* do not allow top copying this class */
+	MavlinkStreamLocalPositionNED(MavlinkStreamLocalPositionNED &);
+	MavlinkStreamLocalPositionNED& operator = (const MavlinkStreamLocalPositionNED &);
+
 protected:
 	explicit MavlinkStreamLocalPositionNED() : MavlinkStream(),
+		pos_sub(nullptr),
 		pos_time(0)
 	{}
 
@@ -839,8 +910,13 @@ private:
 	MavlinkOrbSubscription *pos_sub;
 	uint64_t pos_time;
 
+	/* do not allow top copying this class */
+	MavlinkStreamViconPositionEstimate(MavlinkStreamViconPositionEstimate &);
+	MavlinkStreamViconPositionEstimate& operator = (const MavlinkStreamViconPositionEstimate &);
+
 protected:
 	explicit MavlinkStreamViconPositionEstimate() : MavlinkStream(),
+		pos_sub(nullptr),
 		pos_time(0)
 	{}
 
@@ -893,7 +969,15 @@ public:
 private:
 	MavlinkOrbSubscription *home_sub;
 
+	/* do not allow top copying this class */
+	MavlinkStreamGPSGlobalOrigin(MavlinkStreamGPSGlobalOrigin &);
+	MavlinkStreamGPSGlobalOrigin& operator = (const MavlinkStreamGPSGlobalOrigin &);
+
 protected:
+	explicit MavlinkStreamGPSGlobalOrigin() : MavlinkStream(),
+		home_sub(nullptr)
+	{}
+
 	void subscribe(Mavlink *mavlink)
 	{
 		home_sub = mavlink->add_orb_subscription(ORB_ID(home_position));
@@ -956,8 +1040,13 @@ private:
 	MavlinkOrbSubscription *act_sub;
 	uint64_t act_time;
 
+	/* do not allow top copying this class */
+	MavlinkStreamServoOutputRaw(MavlinkStreamServoOutputRaw &);
+	MavlinkStreamServoOutputRaw& operator = (const MavlinkStreamServoOutputRaw &);
+
 protected:
 	explicit MavlinkStreamServoOutputRaw() : MavlinkStream(),
+		act_sub(nullptr),
 		act_time(0)
 	{}
 
@@ -1027,10 +1116,17 @@ private:
 	MavlinkOrbSubscription *act_sub;
 	uint64_t act_time;
 
+	/* do not allow top copying this class */
+	MavlinkStreamHILControls(MavlinkStreamHILControls &);
+	MavlinkStreamHILControls& operator = (const MavlinkStreamHILControls &);
+
 protected:
 	explicit MavlinkStreamHILControls() : MavlinkStream(),
+		status_sub(nullptr),
 		status_time(0),
+		pos_sp_triplet_sub(nullptr),
 		pos_sp_triplet_time(0),
+		act_sub(nullptr),
 		act_time(0)
 	{}
 
@@ -1153,7 +1249,15 @@ public:
 private:
 	MavlinkOrbSubscription *pos_sp_triplet_sub;
 
+	/* do not allow top copying this class */
+	MavlinkStreamGlobalPositionSetpointInt(MavlinkStreamGlobalPositionSetpointInt &);
+	MavlinkStreamGlobalPositionSetpointInt& operator = (const MavlinkStreamGlobalPositionSetpointInt &);
+
 protected:
+	explicit MavlinkStreamGlobalPositionSetpointInt() : MavlinkStream(),
+		pos_sp_triplet_sub(nullptr)
+	{}
+
 	void subscribe(Mavlink *mavlink)
 	{
 		pos_sp_triplet_sub = mavlink->add_orb_subscription(ORB_ID(position_setpoint_triplet));
@@ -1202,8 +1306,13 @@ private:
 	MavlinkOrbSubscription *pos_sp_sub;
 	uint64_t pos_sp_time;
 
+	/* do not allow top copying this class */
+	MavlinkStreamLocalPositionSetpoint(MavlinkStreamLocalPositionSetpoint &);
+	MavlinkStreamLocalPositionSetpoint& operator = (const MavlinkStreamLocalPositionSetpoint &);
+
 protected:
 	explicit MavlinkStreamLocalPositionSetpoint() : MavlinkStream(),
+		pos_sp_sub(nullptr),
 		pos_sp_time(0)
 	{}
 
@@ -1255,8 +1364,13 @@ private:
 	MavlinkOrbSubscription *att_sp_sub;
 	uint64_t att_sp_time;
 
+	/* do not allow top copying this class */
+	MavlinkStreamRollPitchYawThrustSetpoint(MavlinkStreamRollPitchYawThrustSetpoint &);
+	MavlinkStreamRollPitchYawThrustSetpoint& operator = (const MavlinkStreamRollPitchYawThrustSetpoint &);
+
 protected:
 	explicit MavlinkStreamRollPitchYawThrustSetpoint() : MavlinkStream(),
+		att_sp_sub(nullptr),
 		att_sp_time(0)
 	{}
 
@@ -1308,8 +1422,13 @@ private:
 	MavlinkOrbSubscription *att_rates_sp_sub;
 	uint64_t att_rates_sp_time;
 
+	/* do not allow top copying this class */
+	MavlinkStreamRollPitchYawRatesThrustSetpoint(MavlinkStreamRollPitchYawRatesThrustSetpoint &);
+	MavlinkStreamRollPitchYawRatesThrustSetpoint& operator = (const MavlinkStreamRollPitchYawRatesThrustSetpoint &);
+
 protected:
 	explicit MavlinkStreamRollPitchYawRatesThrustSetpoint() : MavlinkStream(),
+		att_rates_sp_sub(nullptr),
 		att_rates_sp_time(0)
 	{}
 
@@ -1361,8 +1480,13 @@ private:
 	MavlinkOrbSubscription *rc_sub;
 	uint64_t rc_time;
 
+	/* do not allow top copying this class */
+	MavlinkStreamRCChannelsRaw(MavlinkStreamRCChannelsRaw &);
+	MavlinkStreamRCChannelsRaw& operator = (const MavlinkStreamRCChannelsRaw &);
+
 protected:
 	explicit MavlinkStreamRCChannelsRaw() : MavlinkStream(),
+		rc_sub(nullptr),
 		rc_time(0)
 	{}
 
@@ -1450,8 +1574,13 @@ private:
 	MavlinkOrbSubscription *manual_sub;
 	uint64_t manual_time;
 
+	/* do not allow top copying this class */
+	MavlinkStreamManualControl(MavlinkStreamManualControl &);
+	MavlinkStreamManualControl& operator = (const MavlinkStreamManualControl &);
+
 protected:
 	explicit MavlinkStreamManualControl() : MavlinkStream(),
+		manual_sub(nullptr),
 		manual_time(0)
 	{}
 
@@ -1504,8 +1633,13 @@ private:
 	MavlinkOrbSubscription *flow_sub;
 	uint64_t flow_time;
 
+	/* do not allow top copying this class */
+	MavlinkStreamOpticalFlow(MavlinkStreamOpticalFlow &);
+	MavlinkStreamOpticalFlow& operator = (const MavlinkStreamOpticalFlow &);
+
 protected:
 	explicit MavlinkStreamOpticalFlow() : MavlinkStream(),
+		flow_sub(nullptr),
 		flow_time(0)
 	{}
 
@@ -1557,8 +1691,13 @@ private:
 	MavlinkOrbSubscription *att_ctrl_sub;
 	uint64_t att_ctrl_time;
 
+	/* do not allow top copying this class */
+	MavlinkStreamAttitudeControls(MavlinkStreamAttitudeControls &);
+	MavlinkStreamAttitudeControls& operator = (const MavlinkStreamAttitudeControls &);
+
 protected:
 	explicit MavlinkStreamAttitudeControls() : MavlinkStream(),
+		att_ctrl_sub(nullptr),
 		att_ctrl_time(0)
 	{}
 
@@ -1620,8 +1759,13 @@ private:
 	MavlinkOrbSubscription *debug_sub;
 	uint64_t debug_time;
 
+	/* do not allow top copying this class */
+	MavlinkStreamNamedValueFloat(MavlinkStreamNamedValueFloat &);
+	MavlinkStreamNamedValueFloat& operator = (const MavlinkStreamNamedValueFloat &);
+
 protected:
 	explicit MavlinkStreamNamedValueFloat() : MavlinkStream(),
+		debug_sub(nullptr),
 		debug_time(0)
 	{}
 
@@ -1672,7 +1816,15 @@ public:
 private:
 	MavlinkOrbSubscription *status_sub;
 
+	/* do not allow top copying this class */
+	MavlinkStreamCameraCapture(MavlinkStreamCameraCapture &);
+	MavlinkStreamCameraCapture& operator = (const MavlinkStreamCameraCapture &);
+
 protected:
+	explicit MavlinkStreamCameraCapture() : MavlinkStream(),
+		status_sub(nullptr)
+	{}
+
 	void subscribe(Mavlink *mavlink)
 	{
 		status_sub = mavlink->add_orb_subscription(ORB_ID(vehicle_status));
@@ -1723,8 +1875,13 @@ private:
 	MavlinkOrbSubscription *range_sub;
 	uint64_t range_time;
 
+	/* do not allow top copying this class */
+	MavlinkStreamDistanceSensor(MavlinkStreamDistanceSensor &);
+	MavlinkStreamDistanceSensor& operator = (const MavlinkStreamDistanceSensor &);
+
 protected:
 	explicit MavlinkStreamDistanceSensor() : MavlinkStream(),
+		range_sub(nullptr),
 		range_time(0)
 	{}
 

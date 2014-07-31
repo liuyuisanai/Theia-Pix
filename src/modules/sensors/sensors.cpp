@@ -133,7 +133,7 @@
 #endif
 
 #define BATT_V_LOWPASS 0.001f
-#define BATT_V_IGNORE_THRESHOLD 3.5f
+#define BATT_V_IGNORE_THRESHOLD 4.8f
 
 /**
  * HACK - true temperature is much less than indicated temperature in baro,
@@ -199,9 +199,15 @@ private:
 	bool		_hil_enabled;			/**< if true, HIL is active */
 	bool		_publishing;			/**< if true, we are publishing sensor data */
 
-	int		_gyro_sub;			/**< raw gyro data subscription */
-	int		_accel_sub;			/**< raw accel data subscription */
-	int		_mag_sub;			/**< raw mag data subscription */
+	int		_gyro_sub;			/**< raw gyro0 data subscription */
+	int		_accel_sub;			/**< raw accel0 data subscription */
+	int		_mag_sub;			/**< raw mag0 data subscription */
+	int		_gyro1_sub;			/**< raw gyro1 data subscription */
+	int		_accel1_sub;			/**< raw accel1 data subscription */
+	int		_mag1_sub;			/**< raw mag1 data subscription */
+	int		_gyro2_sub;			/**< raw gyro2 data subscription */
+	int		_accel2_sub;			/**< raw accel2 data subscription */
+	int		_mag2_sub;			/**< raw mag2 data subscription */
 	int 		_rc_sub;			/**< raw rc channels data subscription */
 	int		_baro_sub;			/**< raw baro data subscription */
 	int		_airspeed_sub;			/**< airspeed subscription */
@@ -248,7 +254,7 @@ private:
 		float accel_offset[3];
 		float accel_scale[3];
 		float diff_pres_offset_pa;
-		float diff_pres_analog_enabled;
+		float diff_pres_analog_scale;
 
 		int board_rotation;
 		int external_mag_rotation;
@@ -314,7 +320,7 @@ private:
 		param_t mag_offset[3];
 		param_t mag_scale[3];
 		param_t diff_pres_offset_pa;
-		param_t diff_pres_analog_enabled;
+		param_t diff_pres_analog_scale;
 
 		param_t rc_map_roll;
 		param_t rc_map_pitch;
@@ -483,6 +489,12 @@ Sensors::Sensors() :
 	_gyro_sub(-1),
 	_accel_sub(-1),
 	_mag_sub(-1),
+	_gyro1_sub(-1),
+	_accel1_sub(-1),
+	_mag1_sub(-1),
+	_gyro2_sub(-1),
+	_accel2_sub(-1),
+	_mag2_sub(-1),
 	_rc_sub(-1),
 	_baro_sub(-1),
 	_vcontrol_mode_sub(-1),
@@ -506,6 +518,7 @@ Sensors::Sensors() :
 	_battery_current_timestamp(0)
 {
 	memset(&_rc, 0, sizeof(_rc));
+	memset(&_diff_pres, 0, sizeof(_diff_pres));
 
 	/* basic r/c parameters */
 	for (unsigned i = 0; i < _rc_max_chan_count; i++) {
@@ -597,7 +610,7 @@ Sensors::Sensors() :
 
 	/* Differential pressure offset */
 	_parameter_handles.diff_pres_offset_pa = param_find("SENS_DPRES_OFF");
-	_parameter_handles.diff_pres_analog_enabled = param_find("SENS_DPRES_ANA");
+	_parameter_handles.diff_pres_analog_scale = param_find("SENS_DPRES_ANSC");
 
 	_parameter_handles.battery_voltage_scaling = param_find("BAT_V_SCALING");
 	_parameter_handles.battery_current_scaling = param_find("BAT_C_SCALING");
@@ -813,7 +826,7 @@ Sensors::parameters_update()
 
 	/* Airspeed offset */
 	param_get(_parameter_handles.diff_pres_offset_pa, &(_parameters.diff_pres_offset_pa));
-	param_get(_parameter_handles.diff_pres_analog_enabled, &(_parameters.diff_pres_analog_enabled));
+	param_get(_parameter_handles.diff_pres_analog_scale, &(_parameters.diff_pres_analog_scale));
 
 	/* scaling of ADC ticks to battery voltage */
 	if (param_get(_parameter_handles.battery_voltage_scaling, &(_parameters.battery_voltage_scaling)) != OK) {
@@ -1018,7 +1031,7 @@ Sensors::accel_poll(struct sensor_combined_s &raw)
 	if (accel_updated) {
 		struct accel_report	accel_report;
 
-		orb_copy(ORB_ID(sensor_accel), _accel_sub, &accel_report);
+		orb_copy(ORB_ID(sensor_accel0), _accel_sub, &accel_report);
 
 		math::Vector<3> vect(accel_report.x, accel_report.y, accel_report.z);
 		vect = _board_rotation * vect;
@@ -1033,6 +1046,48 @@ Sensors::accel_poll(struct sensor_combined_s &raw)
 
 		raw.accelerometer_timestamp = accel_report.timestamp;
 	}
+
+	orb_check(_accel1_sub, &accel_updated);
+
+	if (accel_updated) {
+		struct accel_report	accel_report;
+
+		orb_copy(ORB_ID(sensor_accel1), _accel_sub, &accel_report);
+
+		math::Vector<3> vect(accel_report.x, accel_report.y, accel_report.z);
+		vect = _board_rotation * vect;
+
+		raw.accelerometer1_m_s2[0] = vect(0);
+		raw.accelerometer1_m_s2[1] = vect(1);
+		raw.accelerometer1_m_s2[2] = vect(2);
+
+		raw.accelerometer1_raw[0] = accel_report.x_raw;
+		raw.accelerometer1_raw[1] = accel_report.y_raw;
+		raw.accelerometer1_raw[2] = accel_report.z_raw;
+
+		raw.accelerometer1_timestamp = accel_report.timestamp;
+	}
+
+	orb_check(_accel2_sub, &accel_updated);
+
+	if (accel_updated) {
+		struct accel_report	accel_report;
+
+		orb_copy(ORB_ID(sensor_accel2), _accel_sub, &accel_report);
+
+		math::Vector<3> vect(accel_report.x, accel_report.y, accel_report.z);
+		vect = _board_rotation * vect;
+
+		raw.accelerometer2_m_s2[0] = vect(0);
+		raw.accelerometer2_m_s2[1] = vect(1);
+		raw.accelerometer2_m_s2[2] = vect(2);
+
+		raw.accelerometer2_raw[0] = accel_report.x_raw;
+		raw.accelerometer2_raw[1] = accel_report.y_raw;
+		raw.accelerometer2_raw[2] = accel_report.z_raw;
+
+		raw.accelerometer2_timestamp = accel_report.timestamp;
+	}
 }
 
 void
@@ -1044,7 +1099,7 @@ Sensors::gyro_poll(struct sensor_combined_s &raw)
 	if (gyro_updated) {
 		struct gyro_report	gyro_report;
 
-		orb_copy(ORB_ID(sensor_gyro), _gyro_sub, &gyro_report);
+		orb_copy(ORB_ID(sensor_gyro0), _gyro_sub, &gyro_report);
 
 		math::Vector<3> vect(gyro_report.x, gyro_report.y, gyro_report.z);
 		vect = _board_rotation * vect;
@@ -1059,6 +1114,48 @@ Sensors::gyro_poll(struct sensor_combined_s &raw)
 
 		raw.timestamp = gyro_report.timestamp;
 	}
+
+	orb_check(_gyro1_sub, &gyro_updated);
+
+	if (gyro_updated) {
+		struct gyro_report	gyro_report;
+
+		orb_copy(ORB_ID(sensor_gyro1), _gyro1_sub, &gyro_report);
+
+		math::Vector<3> vect(gyro_report.x, gyro_report.y, gyro_report.z);
+		vect = _board_rotation * vect;
+
+		raw.gyro1_rad_s[0] = vect(0);
+		raw.gyro1_rad_s[1] = vect(1);
+		raw.gyro1_rad_s[2] = vect(2);
+
+		raw.gyro1_raw[0] = gyro_report.x_raw;
+		raw.gyro1_raw[1] = gyro_report.y_raw;
+		raw.gyro1_raw[2] = gyro_report.z_raw;
+
+		raw.gyro1_timestamp = gyro_report.timestamp;
+	}
+
+	orb_check(_gyro2_sub, &gyro_updated);
+
+	if (gyro_updated) {
+		struct gyro_report	gyro_report;
+
+		orb_copy(ORB_ID(sensor_gyro2), _gyro_sub, &gyro_report);
+
+		math::Vector<3> vect(gyro_report.x, gyro_report.y, gyro_report.z);
+		vect = _board_rotation * vect;
+
+		raw.gyro2_rad_s[0] = vect(0);
+		raw.gyro2_rad_s[1] = vect(1);
+		raw.gyro2_rad_s[2] = vect(2);
+
+		raw.gyro2_raw[0] = gyro_report.x_raw;
+		raw.gyro2_raw[1] = gyro_report.y_raw;
+		raw.gyro2_raw[2] = gyro_report.z_raw;
+
+		raw.gyro2_timestamp = gyro_report.timestamp;
+	}
 }
 
 void
@@ -1070,9 +1167,11 @@ Sensors::mag_poll(struct sensor_combined_s &raw)
 	if (mag_updated) {
 		struct mag_report	mag_report;
 
-		orb_copy(ORB_ID(sensor_mag), _mag_sub, &mag_report);
+		orb_copy(ORB_ID(sensor_mag0), _mag_sub, &mag_report);
 
 		math::Vector<3> vect(mag_report.x, mag_report.y, mag_report.z);
+
+		// XXX we need device-id based handling here
 
 		if (_mag_is_external) {
 			vect = _external_mag_rotation * vect;
@@ -1101,7 +1200,7 @@ Sensors::baro_poll(struct sensor_combined_s &raw)
 
 	if (baro_updated) {
 
-		orb_copy(ORB_ID(sensor_baro), _baro_sub, &_barometer);
+		orb_copy(ORB_ID(sensor_baro0), _baro_sub, &_barometer);
 
 		raw.baro_pres_mbar = _barometer.pressure; // Pressure in mbar
 		raw.baro_alt_meter = _barometer.altitude; // Altitude in meters
@@ -1338,22 +1437,23 @@ Sensors::adc_poll(struct sensor_combined_s &raw)
 				} else if (ADC_AIRSPEED_VOLTAGE_CHANNEL == buf_adc[i].am_channel) {
 
 					/* calculate airspeed, raw is the difference from */
-					float voltage = (float)(buf_adc[i].am_data) * 3.3f / 4096.0f * 2.0f;  //V_ref/4096 * (voltage divider factor)
+					float voltage = (float)(buf_adc[i].am_data) * 3.3f / 4096.0f * 2.0f;  // V_ref/4096 * (voltage divider factor)
 
 					/**
 					 * The voltage divider pulls the signal down, only act on
 					 * a valid voltage from a connected sensor. Also assume a non-
 					 * zero offset from the sensor if its connected.
 					 */
-					if (voltage > 0.4f && (_parameters.diff_pres_analog_enabled > 0)) {
+					if (voltage > 0.4f && (_parameters.diff_pres_analog_scale > 0.0f)) {
 
-						float diff_pres_pa = voltage * 1000.0f - _parameters.diff_pres_offset_pa; //for MPXV7002DP sensor
+						float diff_pres_pa_raw = voltage * _parameters.diff_pres_analog_scale - _parameters.diff_pres_offset_pa;
+						float diff_pres_pa = (diff_pres_pa_raw > 0.0f) ? diff_pres_pa_raw : 0.0f;
 
 						_diff_pres.timestamp = t;
 						_diff_pres.differential_pressure_pa = diff_pres_pa;
-						_diff_pres.differential_pressure_filtered_pa = diff_pres_pa;
+						_diff_pres.differential_pressure_raw_pa = diff_pres_pa_raw;
+						_diff_pres.differential_pressure_filtered_pa = (_diff_pres.differential_pressure_filtered_pa * 0.9f) + (diff_pres_pa * 0.1f);
 						_diff_pres.temperature = -1000.0f;
-						_diff_pres.voltage = voltage;
 
 						/* announce the airspeed if needed, just publish else */
 						if (_diff_pres_pub > 0) {
@@ -1632,11 +1732,17 @@ Sensors::task_main()
 	/*
 	 * do subscriptions
 	 */
-	_gyro_sub = orb_subscribe(ORB_ID(sensor_gyro));
-	_accel_sub = orb_subscribe(ORB_ID(sensor_accel));
-	_mag_sub = orb_subscribe(ORB_ID(sensor_mag));
+	_gyro_sub = orb_subscribe(ORB_ID(sensor_gyro0));
+	_accel_sub = orb_subscribe(ORB_ID(sensor_accel0));
+	_mag_sub = orb_subscribe(ORB_ID(sensor_mag0));
+	_gyro1_sub = orb_subscribe(ORB_ID(sensor_gyro1));
+	_accel1_sub = orb_subscribe(ORB_ID(sensor_accel1));
+	_mag1_sub = orb_subscribe(ORB_ID(sensor_mag1));
+	_gyro2_sub = orb_subscribe(ORB_ID(sensor_gyro2));
+	_accel2_sub = orb_subscribe(ORB_ID(sensor_accel2));
+	_mag2_sub = orb_subscribe(ORB_ID(sensor_mag2));
 	_rc_sub = orb_subscribe(ORB_ID(input_rc));
-	_baro_sub = orb_subscribe(ORB_ID(sensor_baro));
+	_baro_sub = orb_subscribe(ORB_ID(sensor_baro0));
 	_diff_pres_sub = orb_subscribe(ORB_ID(differential_pressure));
 	_vcontrol_mode_sub = orb_subscribe(ORB_ID(vehicle_control_mode));
 	_params_sub = orb_subscribe(ORB_ID(parameter_update));
