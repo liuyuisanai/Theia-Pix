@@ -672,8 +672,12 @@ MulticopterPositionControl::update_target_pos()
 			if (isfinite(tvel_current(0)) && isfinite(tvel_current(1)) && isfinite(tvel_current(2))) {
 				_tvel = tvel_current;
 
-			} else if (!(isfinite(_tvel(0)) && isfinite(_tvel(1)) && isfinite(_tvel(2)))) {
-				_tvel.zero();
+			} else {
+				/* NaN on output, use previous value if possible and reset LPF */
+				if (!(isfinite(_tvel(0)) && isfinite(_tvel(1)) && isfinite(_tvel(2)))) {
+					_tvel.zero();
+				}
+				_tvel_lpf.reset(_tvel);
 			}
 
 			/* update target position predictor */
