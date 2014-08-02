@@ -26,7 +26,22 @@ public:
 	/**
 	 * Change filter parameters
 	 */
-	void set_cutoff_frequency(float cutoff_freq) { _rc = (cutoff_freq > 0.0f) ? (1.0f / M_TWOPI_F / cutoff_freq) : 0.0f; }
+	void set_cutoff_frequency(float cutoff_freq) {
+		if (cutoff_freq <= 0.0f)
+			_rc = 0.0f;
+		else
+			_rc = 1.0f / M_TWOPI_F / cutoff_freq;
+	}
+
+	/**
+	 * Return the cutoff frequency
+	 */
+	float get_cutoff_freq(void) const {
+		if (_rc > 0.0f)
+			return 1.0f / M_TWOPI_F / _rc;
+		else
+			return 0.0f;
+	}
 
 	/**
 	 * Add a new value to the filter
@@ -44,11 +59,6 @@ public:
 		_time_last = t;
 		return _value;
 	}
-
-	/**
-	 * Return the cutoff frequency
-	 */
-	float get_cutoff_freq(void) const { return (_rc > 0.0f) ? (1.0f / M_TWOPI_F / _rc) : 0.0f; }
 
 	/**
 	 * Reset the filter state to this value
