@@ -203,6 +203,9 @@ pwm_main(int argc, char *argv[])
 	if (fd < 0)
 		err(1, "can't open %s", dev);
 
+	/* REMOVE safety switch requirement */
+	ret = ioctl(fd, PWM_SERVO_SET_FORCE_SAFETY_OFF, set_mask);
+
 	/* get the number of servo channels */
 	unsigned servo_count;
 	ret = ioctl(fd, PWM_SERVO_GET_COUNT, (unsigned long)&servo_count);
