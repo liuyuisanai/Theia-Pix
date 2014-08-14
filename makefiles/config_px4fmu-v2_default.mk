@@ -156,6 +156,7 @@ MODULES		+= lib/launchdetection
 
 # Hardware test
 #MODULES			+= examples/hwtest
+MODULES				+= modules/serial_echo
 
 #
 # Transitional support - add commands from the NuttX export archive.
