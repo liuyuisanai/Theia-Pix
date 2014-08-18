@@ -36,35 +36,64 @@
 
 #include <fcntl.h>
 #include <poll.h>
-#include <unistd.h>
+#include <stdlib.h>
 
 #include <cstdio>
-#include <cstdlib>
 #include <cstring>
+
+extern "C" __EXPORT int
+main(int argc, char const * const * const argv);
+
+namespace serial_echo {
+
+#include "unique_file.hpp"
+
+#ifdef FORCE_SERIAL_TERMIOS_RAW
+# include "serial_config.hpp"
+#endif
 
 
 using namespace std;
 
 
-extern "C" __EXPORT int
-main(int argc, char ** const argv);
+int
+open_serial_default(const char name[]) {
+	int fd = open(name, O_RDWR | O_NONBLOCK | O_NOCTTY);
+	if (fd == -1) {
+		perror("open");
+		exit(1);
+	}
 
+#ifdef FORCE_SERIAL_TERMIOS_RAW
+	if (not (serial_set_raw(fd) and serial_set_speed(fd, B57600))) {
+		fprintf(stderr, "failed setting raw mode and speed\n");
+		exit(1);
+	}
+#endif
+
+	return fd;
+}
 
 void
 echo_forever(int dev) {
 	struct pollfd poll_dev;
 	poll_dev.fd = dev;
 
-	char buf[32];
+	static char buf[128];
 	ssize_t n = 0;
 	ssize_t sr, sw;
+
+	fprintf(stderr, ".");
+	fflush(stderr);
 	while (true) {
 		poll_dev.events = POLLIN;
 		if (n > 0) poll_dev.events |= POLLOUT;
 
-		while (poll(&poll_dev, 1, 10000/*ms*/) != 1)
-			/* wait forever */ ;
-		
+		while (poll(&poll_dev, 1, 10000/*ms*/) != 1) {
+			fprintf(stderr, ".");
+			fflush(stderr);
+		}
+
 		sr = 0;
 		sw = 0;
 
@@ -76,19 +105,18 @@ echo_forever(int dev) {
 		if (n > 0) {
 			sw = write(dev, buf, n);
 			if (sw > 0)
-       				if (sw == n) n = 0;
-				else {
+				if (sw == n) { n = 0; }
+				else
+				{
 					n -= sw;
 					memcpy(buf, buf + sw, n);
 				}
 		}
 
-		if (n > 0 or sr > 0 or sw > 0)
-			fprintf(stderr, "n %d sr %d sw %d\n", n, sr, sw);
+		//if (n > 0 or sr > 0 or sw > 0)
+		//	fprintf(stderr, "n %d sr %d sw %d\n", n, sr, sw);
 	}
-
 }
-
 
 void
 usage(const char * name)
@@ -100,16 +128,23 @@ usage(const char * name)
 	exit(1);
 }
 
+} // end of namespace serial_echo
+
 int
-main(int argc, char ** const argv)
+main(int argc, char const * const * const argv)
 {
+	using namespace serial_echo;
+
 	if (argc != 2) usage(argv[0]);
 
-	int dev = open(argv[1], O_RDWR | O_NONBLOCK | O_NOCTTY );
-	if (dev < 0) {
-		perror("open");
-		usage(argv[0]);
-	}
+	fprintf(stderr, "open(\"%s\")\n", argv[1]); fflush(stderr);
+	unique_file dev = open_serial_default(argv[1]);
+	fprintf(stderr, "open -> %d\n", dev.get()); fflush(stderr);
 
-	echo_forever(dev);
+	fprintf(stderr, "starting forever loop... bye\n"); fflush(stderr);
+	echo_forever(dev.get());
+
+	fprintf(stderr, "quit unexpectedly\n");
+
+	return 0;
 }

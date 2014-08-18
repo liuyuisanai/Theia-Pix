@@ -35,8 +35,8 @@
 # Basic example application
 #
 
-MODULE_COMMAND		= serial_echo
-
-CXXFLAGS		+= -std=c++11 -Dmain=$(MODULE_COMMAND)_main
+MODULE_COMMAND		= bt_cfg
 
 SRCS			= main.cpp
+
+CXXFLAGS		+= -std=c++11 -Dmain=${MODULE_COMMAND}_main
