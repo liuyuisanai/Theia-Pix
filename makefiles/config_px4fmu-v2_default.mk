@@ -73,6 +73,7 @@ MODULES		+= systemcmds/mtd
 MODULES		+= systemcmds/dumpfile
 MODULES		+= systemcmds/ver
 MODULES		+= systemcmds/writefile
+MODULES		+= modules/airdog/calibrator
 
 #
 # General system control
