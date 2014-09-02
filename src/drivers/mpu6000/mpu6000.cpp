@@ -568,6 +568,8 @@ out:
 
 void MPU6000::reset()
 {
+	stop(); // make sure we are inactive before resetting the chip to prevent bad polls
+
 	// if the mpu6000 is initialised after the l3gd20 and lsm303d
 	// then if we don't do an irqsave/irqrestore here the mpu6000
 	// frequenctly comes up in a bad state where all transfers
@@ -654,6 +656,8 @@ void MPU6000::reset()
 	// Oscillator set
 	// write_reg(MPUREG_PWR_MGMT_1,MPU_CLK_SEL_PLLGYROZ);
 	usleep(1000);
+
+	if (_call_interval != 0) start(); // restart the polling if not in manual mode
 
 }
 
