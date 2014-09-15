@@ -342,7 +342,6 @@ param_get(param_t param, void *val)
 	param_lock();
 
 	const void *v = param_get_value_ptr(param);
-
 	if (val != NULL) {
 		memcpy(val, v, param_size(param));
 		result = 0;
@@ -372,7 +371,6 @@ param_set_internal(param_t param, const void *val, bool mark_saved)
 	if (handle_in_range(param)) {
 
 		struct param_wbuf_s *s = param_find_changed(param);
-
 		if (s == NULL) {
 
 			/* construct a new parameter */
