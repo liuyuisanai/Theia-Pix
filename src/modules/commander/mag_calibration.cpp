@@ -253,30 +253,9 @@ int do_mag_calibration(int mavlink_fd)
 
 		if (res == OK) {
 			/* set parameters */
-			if (param_set(param_find("SENS_MAG_XOFF"), &(mscale.x_offset))) {
+			if (param_set(param_find("SENS_MAG_SCALE"), &mscale)) {
 				res = ERROR;
 			}
-
-			if (param_set(param_find("SENS_MAG_YOFF"), &(mscale.y_offset))) {
-				res = ERROR;
-			}
-
-			if (param_set(param_find("SENS_MAG_ZOFF"), &(mscale.z_offset))) {
-				res = ERROR;
-			}
-
-			if (param_set(param_find("SENS_MAG_XSCALE"), &(mscale.x_scale))) {
-				res = ERROR;
-			}
-
-			if (param_set(param_find("SENS_MAG_YSCALE"), &(mscale.y_scale))) {
-				res = ERROR;
-			}
-
-			if (param_set(param_find("SENS_MAG_ZSCALE"), &(mscale.z_scale))) {
-				res = ERROR;
-			}
-
 			if (res != OK) {
 				mavlink_log_critical(mavlink_fd, CAL_FAILED_SET_PARAMS_MSG);
 			}
