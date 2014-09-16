@@ -12,9 +12,9 @@
 namespace calibration {
 
 // polls the sensor and calculates the average offset. Returns true on success, false on failure
-bool sample_offsets (gyro_scale &calibration_scale, const unsigned int sample_count, const unsigned int max_error_count, const unsigned int timeout);
+bool sample_offsets (gyro_scale &calibration_scale, const unsigned int sample_count, const unsigned int max_error_count, const int timeout);
 
-CALIBRATION_RESULT do_gyro_calibration(const unsigned int sample_count, const unsigned int max_error_count, const unsigned int timeout) {
+CALIBRATION_RESULT do_gyro_calibration(const unsigned int sample_count, const unsigned int max_error_count, const int timeout) {
 
 	gyro_scale calibration_scale = {
 		0.0f,
@@ -62,7 +62,7 @@ CALIBRATION_RESULT do_gyro_calibration(const unsigned int sample_count, const un
 	return CALIBRATION_RESULT::SUCCESS;
 }
 
-bool sample_offsets (gyro_scale &calibration_scale, unsigned int sample_count, unsigned int max_error_count, unsigned int timeout)
+bool sample_offsets (gyro_scale &calibration_scale, const unsigned int sample_count, const unsigned int max_error_count, const int timeout)
 {
 	// set up the poller
 	int gyro_topic = orb_subscribe(ORB_ID(sensor_gyro0));
