@@ -55,6 +55,11 @@
 #include "systemlib/param/param.h"
 #include "systemlib/err.h"
 
+// Structure to print.
+#include "drivers/drv_accel.h"
+#include "drivers/drv_gyro.h"
+#include "drivers/drv_mag.h"
+
 __EXPORT int param_main(int argc, char *argv[]);
 
 static void	do_save(const char* param_file_name);
@@ -282,7 +287,39 @@ do_show_print(void *arg, param_t param)
 		break;
 
 	case PARAM_TYPE_STRUCT ... PARAM_TYPE_STRUCT_MAX:
-		printf("<struct type %d size %u>\n", 0 + param_type(param), param_size(param));
+		if (strcmp(p_name,"SENS_MAG_SCALE") == 0) { // Ifs could be merged if not for different structure types.
+			struct mag_scale param_val;
+			if (param_get(param, &param_val)) {
+				break; // to error
+			}
+			printf("Offsets X: % 9.6f, Y: % 9.6f, Z: % 9.6f.\n\t\t"
+				"Scales:  X: % 9.6f, Y: % 9.6f, Z: % 9.6f.\n",
+				(double) param_val.x_offset, (double) param_val.y_offset, (double) param_val.z_offset,
+				(double) param_val.x_scale, (double) param_val.y_scale, (double) param_val.z_scale);
+		}
+		else if (strcmp(p_name,"SENS_GYRO_SCALE") == 0) {
+			struct gyro_scale param_val;
+			if (param_get(param, &param_val)) {
+				break; // to error
+			}
+			printf("Offsets X: % 9.6f, Y: % 9.6f, Z: % 9.6f.\n\t\t"
+				"Scales:  X: % 9.6f, Y: % 9.6f, Z: % 9.6f.\n",
+				(double) param_val.x_offset, (double) param_val.y_offset, (double) param_val.z_offset,
+				(double) param_val.x_scale, (double) param_val.y_scale, (double) param_val.z_scale);
+		}
+		else if (strcmp(p_name,"SENS_ACC_SCALE") == 0) {
+			struct accel_scale param_val;
+			if (param_get(param, &param_val)) {
+				break; // to error
+			}
+			printf("Offsets X: % 9.6f, Y: % 9.6f, Z: % 9.6f.\n\t\t"
+				"Scales:  X: % 9.6f, Y: % 9.6f, Z: % 9.6f.\n",
+				(double) param_val.x_offset, (double) param_val.y_offset, (double) param_val.z_offset,
+				(double) param_val.x_scale, (double) param_val.y_scale, (double) param_val.z_scale);
+		}
+		else {
+			printf("<struct type %d size %u>\n", 0 + param_type(param), param_size(param));
+		}
 		return;
 
 	default:
