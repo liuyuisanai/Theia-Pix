@@ -71,6 +71,7 @@ static void	do_set(const char* name, const char* val, bool fail_on_not_found);
 static void	do_compare(const char* name, char* vals[], unsigned comparisons);
 static void	do_reset(void);
 static void	do_reset_nostart(void);
+static void do_load_text(const char* text_file_name);
 
 int
 param_main(int argc, char *argv[])
@@ -153,9 +154,17 @@ param_main(int argc, char *argv[])
 		if (!strcmp(argv[1], "reset_nostart")) {
 			do_reset_nostart();
 		}
+		if(!strcmp(argv[1], "text_load")) {
+			if (argc >= 3) {
+				do_load_text(argv[2]);
+			}
+			else {
+				errx(1, "not enough arguments.\nFilename expected.");
+			}
+		}
 	}
 	
-	errx(1, "expected a command, try 'load', 'import', 'show', 'set', 'compare', 'select' or 'save'");
+	errx(1, "expected a command, try 'load', 'import', 'show', 'set', 'compare', 'select', 'save' or 'text_load'");
 }
 
 static void
@@ -491,4 +500,41 @@ do_reset_nostart(void)
 	} else {
 		exit(0);
 	}
+}
+
+static void
+do_load_text(const char* text_file_name)
+{
+	FILE* fin = fopen(text_file_name, "r");
+	char ftmp[100];
+	char name[100];
+	float valF;
+	int valI;
+	param_t pp;
+
+	if (fin == NULL) {
+		errx(1, "input file not found!");
+	}
+	while (!feof(fin)) {
+		fgets(ftmp, 100, fin); // Can produce unexpected results on longer strings.
+		sscanf(ftmp, "%s", name); // Somebody kill me. %40s format reads whitespace and newlines. 0_0
+		pp = param_find(name);
+		if (pp == PARAM_INVALID) {
+			warnx("parameter not found: '%s'", name);
+		}
+		else if (param_type(pp) == PARAM_TYPE_INT32) {
+			sscanf(ftmp, "%*s %d", &valI);
+			param_set(pp, &valI);
+		}
+		else if (param_type(pp) == PARAM_TYPE_FLOAT) {
+			sscanf(ftmp, "%*s %f", &valF);
+			param_set(pp, &valF);
+		}
+		else {
+			warnx("Unknown parameter type %d for parameter %s.", param_type(pp), name);
+		}
+	}
+	fclose(fin);
+
+	exit(0);
 }
