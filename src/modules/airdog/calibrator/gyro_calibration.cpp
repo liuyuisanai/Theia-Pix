@@ -1,4 +1,4 @@
-#include "gyro_calibration.hpp"
+#include <nuttx/config.h>
 
 #include <drivers/drv_gyro.h> // report structure and ioctl commands
 #include <errno.h> // errno to check for poll errors
@@ -8,6 +8,8 @@
 #include <stdio.h> // close
 #include <systemlib/param/param.h>
 #include <uORB/uORB.h>
+
+#include "gyro_calibration.hpp"
 
 namespace calibration {
 
@@ -112,4 +114,4 @@ bool sample_offsets (gyro_scale &calibration_scale, const unsigned int sample_co
 	return false;
 }
 
-} // End namespace
+} // End calibration namespace

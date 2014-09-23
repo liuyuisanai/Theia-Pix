@@ -1,3 +1,5 @@
+#include <nuttx/config.h>
+
 #include <drivers/drv_gyro.h> // ioctl commands
 #include <drivers/drv_mag.h>
 #include <fcntl.h> // open
@@ -6,6 +8,7 @@
 #include <string.h>
 
 #include "calibration_commons.hpp"
+#include "accel_calibration.hpp"
 #include "gyro_calibration.hpp"
 #include "mag_calibration.hpp"
 
@@ -20,8 +23,11 @@
 #define MSG_CALIBRATION_RESULTS	"Result offsets: X: % 9.6f, Y: % 9.6f, Z: % 9.6f.\nResult scales:  X: % 9.6f, Y: % 9.6f, Z: % 9.6f.\n"
 #define MSG_CALIBRATION_GYRO_WRONG_PARAM "0 or 3 parameters required.\nValid ranges for samples 1-1000000, for errors 0-5000, for timeout 2-10000.\n"
 #define MSG_CALIBRATION_MAG_WRONG_PARAM "0 or 4 parameters required.\nValid ranges for samples 100-total_time/5, for errors 0-sample_count,\nfor time 1-1000000, for gap 1-100.\n"
+#define MSG_CALIBRATION_ACCEL_WRONG_PARAM "No parameters supported.\n"
 #define MSG_CALIBRATION_START_PARAM	"Starting %s calibration with parameters:\nsamples = %d, max errors = %d, timeout = %d.\n"
 #define MSG_CALIBRATION_MAG_ROTATE "Sampling magnetometer offsets. Do a full rotation around each axis.\n"
+#define MSG_CALIBRATION_AXIS_DONE "Successfully sampled the axis.\n"
+#define MSG_CALIBRATION_AXES_LEFT "Rotate to one of the remaining axes: "
 
 using namespace calibration;
 
@@ -38,9 +44,19 @@ extern "C" __EXPORT int calibrator_main(int argc, char ** argv)
 		"Failed to get sane data from sensor.\n", // code = 4 = SENSOR_DATA_FAIL
 		"Failed to save parameters to EEPROM.\n", // code = 5 = PARAMETER_DEFAULT_FAIL
 		"Failed to set scaling parameters.\n", // code = 6 = PARAMETER_SET_FAIL
-		"Failed to read sensor scale.\n" // code = 7 = SCALE_READ_FAIL
+		"Failed to read sensor scale.\n", // code = 7 = SCALE_READ_FAIL
+		"Axis has been sampled already.\n" // code = 8 = AXIS_DONE_FAIL
 	};
 	const size_t errors_size = sizeof(errors) / sizeof(*errors);
+
+	const char* axis_labels[] = {
+		"+x",
+		"-x",
+		"+y",
+		"-y",
+		"+z",
+		"-z"
+	};
 
 	if (argc < 2 || argc > 6) {
 		fprintf(stderr, MSG_CALIBRATION_USAGE, argv[0]);
@@ -50,8 +66,40 @@ extern "C" __EXPORT int calibrator_main(int argc, char ** argv)
 
 	// TODO! consider possibility of merging the if-s.
 	if (strcmp(sensname, "accel") == 0) {
-		fprintf(stderr, MSG_CALIBRATION_NOT_IMPLEMENTED);
-		return 1;
+		if (argc != 2) {
+			fprintf(stderr, MSG_CALIBRATION_ACCEL_WRONG_PARAM);
+			return 1;
+		}
+		printf(MSG_CALIBRATION_START, sensname);
+		fflush(stdout); // ensure print finishes before calibration pauses the screen
+		AccelCalibrator calib;
+		res = calib.init();
+		if (res == CALIBRATION_RESULT::SUCCESS) {
+			while (calib.sampling_needed) {
+				printf(MSG_CALIBRATION_AXES_LEFT);
+				for (int i = 0; i < 6; ++i) {
+					if (!calib.calibrated_axes[i]) {
+						fputs(axis_labels[i], stdout);
+						fputs(" ", stdout);
+					}
+				}
+				fputs("\n", stdout);
+				fflush(stdout); // ensure puts finished before calibration pauses the screen
+				res = calib.sample_axis();
+				if (res == CALIBRATION_RESULT::SUCCESS) {
+					printf(MSG_CALIBRATION_AXIS_DONE);
+				}
+				else if (res == CALIBRATION_RESULT::AXIS_DONE_FAIL) {
+					printf(errors[8]);
+				}
+				else {
+					break;
+				}
+			}
+			if (res == CALIBRATION_RESULT::SUCCESS) {
+				res = calib.calculate_and_save();
+			}
+		}
 	}
 	else if (strcmp(sensname,"gyro") == 0) {
 		if (argc == 2) {
@@ -91,7 +139,7 @@ extern "C" __EXPORT int calibrator_main(int argc, char ** argv)
 		long max_error_count;
 		long total_time;
 		long poll_timeout_gap;
-		if (argc == 6) { // TODO: Interval check
+		if (argc == 6) {
 			sample_count = strtol(argv[2], nullptr, 0);
 			max_error_count = strtol(argv[3], nullptr, 0);
 			total_time = strtol(argv[4], nullptr, 0);

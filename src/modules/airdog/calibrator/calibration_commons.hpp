@@ -13,8 +13,9 @@ enum class CALIBRATION_RESULT : uint8_t {
 	SENSOR_DATA_FAIL = 4, // failed to get sane data from sensor
 	PARAMETER_DEFAULT_FAIL = 5, // failed to save parameters to EEPROM
 	PARAMETER_SET_FAIL = 6, // failed to set scale parameters
-	SCALE_READ_FAIL = 7 // failed to read scale values
+	SCALE_READ_FAIL = 7, // failed to read scale values
+	AXIS_DONE_FAIL = 8 // axis has been sampled before
 };
 
-} // End namespace
+} // End calibration namespace
 

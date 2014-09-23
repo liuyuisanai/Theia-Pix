@@ -1,4 +1,4 @@
-#include "mag_calibration.hpp"
+#include <nuttx/config.h>
 
 #include <drivers/drv_mag.h>
 #include <errno.h>
@@ -9,6 +9,8 @@
 #include <stdio.h>
 #include <systemlib/param/param.h>
 #include <uORB/uORB.h>
+
+#include "mag_calibration.hpp"
 
 namespace calibration {
 
@@ -86,7 +88,7 @@ CALIBRATION_RESULT do_mag_offset_calibration(unsigned int sample_count, unsigned
 
 	// Get calibration values
 	fd = open(MAG_DEVICE_PATH, O_RDONLY);
-	if (ioctl(fd, MAGIOCGSCALE, (long unsigned int) &calibration_scale) != OK) {
+	if (ioctl(fd, MAGIOCGSCALE, (long unsigned int) &calibration_scale) != 0) {
 		cleanup(fd, true);
 		return(CALIBRATION_RESULT::SCALE_READ_FAIL);
 	}
@@ -328,4 +330,4 @@ bool sphere_fit_least_squares(sample_stat_s res_stats, float &sphere_x, float &s
 	return true;
 }
 
-} // End namespace
+} // End calibration namespace

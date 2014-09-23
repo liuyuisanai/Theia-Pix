@@ -25,4 +25,4 @@ CALIBRATION_RESULT do_mag_builtin_calibration();
 CALIBRATION_RESULT do_mag_offset_calibration(unsigned int sample_count=6000, unsigned int max_error_count=200, unsigned int total_time=60000, int poll_timeout_gap=5);
 
 
-} // End namespace
+} // End calibration namespace
