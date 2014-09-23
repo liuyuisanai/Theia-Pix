@@ -16,6 +16,7 @@ ROMFS_ROOT	 = $(PX4_BASE)/ROMFS/px4fmu_common
 # Board support modules
 #
 MODULES		+= drivers/boards/AirLeash
+MODULES		+= drivers/boards/AirLeash/kbd
 MODULES		+= drivers/device
 MODULES		+= drivers/gps
 MODULES		+= drivers/l3gd20
@@ -28,6 +29,7 @@ MODULES		+= drivers/stm32/adc
 MODULES		+= drivers/stm32/tone_alarm
 MODULES		+= modules/airdog/trajectory_calculator
 MODULES		+= modules/gpio_tool
+MODULES		+= modules/kbd_test
 MODULES		+= modules/sensors
 MODULES		+= modules/sensors_probe
 MODULES		+= modules/sensors_switch

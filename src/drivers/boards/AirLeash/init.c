@@ -51,6 +51,7 @@
 #include <stdio.h>
 #include <debug.h>
 #include <errno.h>
+#include <math.h>
 
 #include <nuttx/arch.h>
 #include <nuttx/spi.h>
@@ -71,6 +72,8 @@
 
 #include <systemlib/cpuload.h>
 #include <systemlib/perf_counter.h>
+
+#include "kbd/driver.h"
 
 /****************************************************************************
  * Pre-Processor Definitions
@@ -112,6 +115,8 @@ stm32_boardinitialize(void)
 
 	/* configure LEDs */
 	up_ledinit();
+
+	airleash_kbd_gpioconfig();
 }
 
 /****************************************************************************
@@ -208,6 +213,8 @@ __EXPORT int nsh_archinitialize(void)
 	SPI_SELECT(spi2, SPIDEV_FLASH, false);
 
 	message("[boot] Initialized SPI port 2 (RAMTRON FRAM)\n");
+
+	airleash_kbd_start();
 
 	return OK;
 }
