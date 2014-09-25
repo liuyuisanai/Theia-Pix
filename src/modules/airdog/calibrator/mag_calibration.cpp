@@ -302,9 +302,6 @@ bool sphere_fit_least_squares(sample_stat_s res_stats, float &sphere_x, float &s
 		dB = (nB - B);
 		dC = (nC - C);
 
-		// TODO Debug output:
-		printf("n: %3d, da: % 9.6f, db: % 9.6f, dc: % 9.6f\n", n, (double) dA, (double) dB, (double) dC);
-
 		if ((dA * dA + dB * dB + dC * dC) <= delta) { break; }
 
 		//Compute next iteration's values
