@@ -11,7 +11,7 @@ namespace calibration {
  * timeout - timeout for each poll request in ms. Worst case process will hang for timeout*(max_error_count + 1) ms. So be considerate. Default: 1000.
  * For return values - see calibration::CALIBRATION_RESULT enum.
  */
-CALIBRATION_RESULT do_gyro_calibration(const unsigned int sample_count=5000, const unsigned int max_error_count=1000, const int timeout=1000);
+CALIBRATION_RESULT do_gyro_calibration(const unsigned int sample_count, const unsigned int max_error_count, const int timeout);
 
 } // End calibration namespace
 

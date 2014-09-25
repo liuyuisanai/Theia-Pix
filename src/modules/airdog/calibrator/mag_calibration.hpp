@@ -22,7 +22,7 @@ CALIBRATION_RESULT do_mag_builtin_calibration();
  * poll_timeout_gap - gap in ms between orb publishing interval and timeout on poll requests
  * See CALIBRATION_RESULT enum for possible return values
  */
-CALIBRATION_RESULT do_mag_offset_calibration(unsigned int sample_count=6000, unsigned int max_error_count=200, unsigned int total_time=60000, int poll_timeout_gap=5);
+CALIBRATION_RESULT do_mag_offset_calibration(unsigned int sample_count, unsigned int max_error_count, unsigned int total_time, int poll_timeout_gap);
 
 
 } // End calibration namespace
