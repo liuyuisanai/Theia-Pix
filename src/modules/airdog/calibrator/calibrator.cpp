@@ -1,5 +1,6 @@
 #include <nuttx/config.h>
 
+#include <drivers/drv_accel.h>
 #include <drivers/drv_gyro.h> // ioctl commands
 #include <drivers/drv_mag.h>
 #include <drivers/drv_tone_alarm.h>
@@ -28,11 +29,22 @@ enum class TONES : uint8_t {
 	STOP // stops the current tune
 };
 
+enum class SENSOR_TYPE : uint8_t {
+	GYRO = 0,
+	MAG,
+	ACCEL
+};
+
 // Common procedure for sensor calibration that waits for the user to get ready
 inline void prepare(const char* sensor_type, const int beeper_fd);
 // Translates TONES enum to specific tone_alarm tunes
 inline void beep(const int beeper_fd, TONES tone);
+// Print final calibration results
 inline void print_results (CALIBRATION_RESULT res, const char* sensor_type, const int beeper_fd);
+// Print calibration scales and offsets currently set
+inline void print_scales(SENSOR_TYPE sensor);
+// Helper function for print_scales
+template <class scale_T> void print_scales_helper(const char* device_path, int command);
 
 bool calibrate_gyroscope(const unsigned int sample_count,
 						const unsigned int max_error_count,
@@ -49,7 +61,13 @@ bool calibrate_gyroscope(const unsigned int sample_count,
 	res = do_gyro_calibration(sample_count, max_error_count, timeout);
 	print_results(res, "Gyro", beeper_fd);
 	close(beeper_fd);
-	return (res == CALIBRATION_RESULT::SUCCESS);
+	if (res == CALIBRATION_RESULT::SUCCESS) {
+		print_scales(SENSOR_TYPE::GYRO);
+		return true;
+	}
+	else {
+		return false;
+	}
 }
 
 bool calibrate_magnetometer(unsigned int sample_count,
@@ -77,7 +95,13 @@ bool calibrate_magnetometer(unsigned int sample_count,
 	}
 	print_results(res, "Mag", beeper_fd);
 	close(beeper_fd);
-	return (res == CALIBRATION_RESULT::SUCCESS);
+	if (res == CALIBRATION_RESULT::SUCCESS) {
+		print_scales(SENSOR_TYPE::MAG);
+		return true;
+	}
+	else {
+		return false;
+	}
 }
 
 inline void prepare(const char* sensor_type, const int beeper_fd) {
@@ -141,9 +165,34 @@ inline void print_results(CALIBRATION_RESULT res, const char* sensor_type, const
 		}
 	}
 	else {
-		printf("%s calibration finished successfuly.\n", sensor_type);
+		printf("%s calibration finished successfully.\n", sensor_type);
 		beep(beeper_fd, TONES::FINISHED);
 	}
+}
+
+inline void print_scales(SENSOR_TYPE sensor) {
+	switch (sensor) {
+	case SENSOR_TYPE::GYRO:
+		print_scales_helper <gyro_scale> (GYRO_DEVICE_PATH, GYROIOCGSCALE);
+		break;
+	case SENSOR_TYPE::MAG:
+		print_scales_helper <mag_scale> (MAG_DEVICE_PATH, MAGIOCGSCALE);
+		break;
+	case SENSOR_TYPE::ACCEL:
+		print_scales_helper <accel_scale> (ACCEL_DEVICE_PATH, ACCELIOCGSCALE);
+		break;
+	}
+}
+
+template <class scale_T> void print_scales_helper(const char* device_path, int command) {
+	scale_T scale;
+	int dev_fd = open(device_path, O_RDONLY);
+	if (ioctl(dev_fd, command, (unsigned long) &scale) == 0) {
+		printf("Result offsets: X: % 9.6f, Y: % 9.6f, Z: % 9.6f.\nResult scales:  X: % 9.6f, Y: % 9.6f, Z: % 9.6f.\n",
+				(double) scale.x_offset, (double) scale.y_offset, (double) scale.z_offset,
+				(double) scale.x_scale, (double) scale.y_scale, (double) scale.z_scale);
+	}
+
 }
 } // End calibration namespace
 
@@ -254,15 +303,6 @@ extern "C" __EXPORT int calibrator_main(int argc, char ** argv)
 			fprintf(stderr, MSG_CALIBRATION_GYRO_WRONG_PARAM);
 			return 1;
 		}
-//		if (res == CALIBRATION_RESULT::SUCCESS) {
-//			int fd = open(GYRO_DEVICE_PATH, O_RDONLY);
-//			gyro_scale scales;
-//			if (ioctl(fd, GYROIOCGSCALE, (unsigned long) &scales) == 0) {
-//				printf(MSG_CALIBRATION_RESULTS, (double) scales.x_offset, (double) scales.y_offset, (double) scales.z_offset,
-//						(double) scales.x_scale, (double) scales.y_scale, (double) scales.z_scale);
-//			}
-//			close (fd);
-//		}
 	}
 	else if (strcmp(sensname,"mag") == 0) {
 		long sample_count;
@@ -290,16 +330,6 @@ extern "C" __EXPORT int calibrator_main(int argc, char ** argv)
 			fprintf(stderr, MSG_CALIBRATION_MAG_WRONG_PARAM);
 			return 1;
 		}
-//		if (res == CALIBRATION_RESULT::SUCCESS) {
-//			int fd = open(MAG_DEVICE_PATH, O_RDONLY);
-//			mag_scale scales;
-//			if (ioctl(fd, MAGIOCGSCALE, (unsigned long) &scales) == 0) {
-//				printf(MSG_CALIBRATION_RESULTS, (double) scales.x_offset, (double) scales.y_offset, (double) scales.z_offset,
-//						(double) scales.x_scale, (double) scales.y_scale, (double) scales.z_scale);
-//			}
-//			close (fd);
-//		}
-
 	}
 	else if (strcmp(sensname,"baro") == 0) {
 		fprintf(stderr, MSG_CALIBRATION_NOT_IMPLEMENTED);
