@@ -21,8 +21,8 @@ namespace calibration {
 AccelCalibrator::AccelCalibrator() :
 		dev_fd{0},
 		inprogress{false},
-		sensor_topic {0},		
-		accel_measure{},		
+		sensor_topic {0},
+		accel_measure{},
 		sampling_needed {true},
 		calibrated_axes{} {
 }
@@ -64,7 +64,7 @@ CALIBRATION_RESULT AccelCalibrator::sample_axis() {
 	if (!inprogress) {
 		return CALIBRATION_RESULT::FAIL;
 	}
-	
+
 	current_axis = detect_orientation();
 	if (current_axis < 0) {
 		// TODO! Consider different error here
@@ -143,9 +143,9 @@ int AccelCalibrator::detect_orientation() {
 	unsigned int max_error_count = 1000;
 
 	hrt_abstime prev_time = 0;
-	hrt_abstime curr_time;
+	hrt_abstime curr_time = 0;
 	hrt_abstime still_start = 0;
-	hrt_abstime still_end;
+	hrt_abstime still_end = 1;
 	// 2 secs keeping still is ok
 	hrt_abstime still_period = 2 * 1000 * 1000;
 
@@ -234,6 +234,9 @@ int AccelCalibrator::detect_orientation() {
             }
 		}
 		else {
+			// Prevent successes after a moment of stillnes and some timeouts
+			stopped = false;
+			moved = true;
 			if (++error_count > max_error_count) {
 				return -1;
 			}
@@ -279,7 +282,7 @@ CALIBRATION_RESULT AccelCalibrator::read_samples(float measurements[3]) {
 	int timeout = 500;
 	int error_count = 0, success_count = 0;
 	int res;
-	sensor_combined_s report;	
+	sensor_combined_s report;
 
 	while (success_count < sample_count && error_count <= max_error_count) {
 		res = poll(&poll_data, 1, timeout);
