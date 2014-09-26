@@ -22,7 +22,9 @@ AccelCalibrator::AccelCalibrator() :
 		dev_fd{0},
 		inprogress{false},
 		sensor_topic {0},
+		poll_data {},
 		accel_measure{},
+		current_axis {-1},
 		sampling_needed {true},
 		calibrated_axes{} {
 }
@@ -56,9 +58,6 @@ CALIBRATION_RESULT AccelCalibrator::init() {
 }
 
 CALIBRATION_RESULT AccelCalibrator::sample_axis() {
-	int current_axis;
-	CALIBRATION_RESULT res;
-	bool tmp;
 
 	// Do not allow running before init was run
 	if (!inprogress) {
@@ -75,21 +74,7 @@ CALIBRATION_RESULT AccelCalibrator::sample_axis() {
 		return CALIBRATION_RESULT::AXIS_DONE_FAIL;
 	}
 
-	// Unsampled axis detected. Perform sampling
-	res = read_samples(accel_measure[current_axis]);
-	// Check if we still need to sample anything
-	if (res == CALIBRATION_RESULT::SUCCESS) {
-		calibrated_axes[current_axis] = true;
-		tmp = false;
-		for (int i = 0; i < 6; ++i) {
-			if (!calibrated_axes[i]) {
-				tmp = true;
-				break;
-			}
-		}
-		sampling_needed = tmp;
-	}
-	return(res);
+	return CALIBRATION_RESULT::SUCCESS;
 }
 
 CALIBRATION_RESULT AccelCalibrator::calculate_and_save() {
@@ -276,7 +261,7 @@ int AccelCalibrator::detect_g(float accelarations[3]) {
 	return res;
 }
 
-CALIBRATION_RESULT AccelCalibrator::read_samples(float measurements[3]) {
+CALIBRATION_RESULT AccelCalibrator::read_samples() {
 	int sample_count = 2500;
 	int max_error_count = 250;
 	int timeout = 500;
@@ -284,14 +269,19 @@ CALIBRATION_RESULT AccelCalibrator::read_samples(float measurements[3]) {
 	int res;
 	sensor_combined_s report;
 
+	if (current_axis < 0 || current_axis > 5) {
+		// No orientation has been detected
+		return CALIBRATION_RESULT::FAIL;
+	}
+
 	while (success_count < sample_count && error_count <= max_error_count) {
 		res = poll(&poll_data, 1, timeout);
 		if (res == 1) {
 			if (orb_copy(ORB_ID(sensor_combined), sensor_topic, &report) == 0) {
 				++success_count;
-				measurements[0] += report.accelerometer_m_s2[0];
-				measurements[1] += report.accelerometer_m_s2[1];
-				measurements[2] += report.accelerometer_m_s2[2];
+				accel_measure[current_axis][0] += report.accelerometer_m_s2[0];
+				accel_measure[current_axis][1] += report.accelerometer_m_s2[1];
+				accel_measure[current_axis][2] += report.accelerometer_m_s2[2];
 			}
 			else {
 				++error_count;
@@ -303,21 +293,35 @@ CALIBRATION_RESULT AccelCalibrator::read_samples(float measurements[3]) {
 		}
 	}
 	if (error_count > max_error_count) {
+		current_axis = -1;
 		return CALIBRATION_RESULT::SENSOR_DATA_FAIL;
 	}
 
 	for (int i = 0; i < 3; ++i) {
-		measurements[i] /= success_count;
+		accel_measure[current_axis][i] /= success_count;
 	}
+
+	calibrated_axes[current_axis] = true;
+	current_axis = -1;
+	bool tmp = false;
+	for (int i = 0; i < 6; ++i) {
+		if (!calibrated_axes[i]) {
+			tmp = true;
+			break;
+		}
+	}
+	sampling_needed = tmp;
 	return CALIBRATION_RESULT::SUCCESS;
 }
 
 /* Calibration calculations:
  * We assume that measured values are g-accelerations and zeros but with an offset and with a transformation: rotation (user doesn't hold the drone perfectly) and scaling.
  * Sensor scales as follows: (measurement - offset) * scaling. Thus we need to adjust our equation to match this logic.
- * Therefore we get: TransformM * (MeasurementsM - offsets) = [g, 0, 0]
- * 														 	[-g, 0, 0]
- * 														 	[0, g, 0], etc.
+ * Therefore we get:
+ * [g, 0, 0]
+ * [-g, 0, 0] = TransformM * (MeasurementsM - offsets)
+ * [0, g, 0]
+ * ...
  * MeasurementsM is 6x3 matrix.
  * But TransformM needs to be 3x3 only, so we use every other reference measurement - only with positive g-s.
  * So, first we calculate offsets as measurement on the respective axis averaged of two samples: for g and -g scenario.

@@ -4,7 +4,7 @@
 #pragma once
 
 namespace calibration {
-/* Starts gyroscope calibration
+/* Starts gyroscope calibration procedure.
  * sample_count - number of samples to average when calibrating offsets. Default: 5000. Make it positive or I will shoot you.
  * max_error_count - number of errors tolerated. Polling will return error if error count gets lager than this parameter. Default: 1000.
  * timeout - timeout for each poll request in ms. Worst case process will hang for timeout*(max_error_count + 1) ms. So be considerate. Default: 1000.
@@ -26,4 +26,10 @@ bool calibrate_magnetometer(unsigned int sample_count=6000,
 							unsigned int max_error_count=200,
 							unsigned int total_time=60000,
 							int poll_timeout_gap=5);
+
+/* Starts accelerometer calibration procedure.
+ * Requires the user to rotate the object orthogonal to the gravitational field.
+ * @return true if calibration was successful, false otherwise
+ */
+bool calibrate_accelerometer();
 } // End calibration namespace

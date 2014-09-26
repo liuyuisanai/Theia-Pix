@@ -29,6 +29,7 @@ enum class TONES : uint8_t {
 	STOP // stops the current tune
 };
 
+// TODO! Consider using this class for prepare and print_results functions too
 enum class SENSOR_TYPE : uint8_t {
 	GYRO = 0,
 	MAG,
@@ -97,6 +98,75 @@ bool calibrate_magnetometer(unsigned int sample_count,
 	close(beeper_fd);
 	if (res == CALIBRATION_RESULT::SUCCESS) {
 		print_scales(SENSOR_TYPE::MAG);
+		return true;
+	}
+	else {
+		return false;
+	}
+}
+
+bool calibrate_accelerometer() {
+	CALIBRATION_RESULT res;
+	const char* axis_labels[] = {
+		"+x",
+		"-x",
+		"+y",
+		"-y",
+		"+z",
+		"-z"
+	};
+	int beeper_fd = open(TONEALARM_DEVICE_PATH, O_RDONLY);
+	if (beeper_fd < 0) { // This is rather critical
+		warnx("Accel calibration could not find beeper device. Aborting.");
+		return (false);
+	}
+	prepare("Accel", beeper_fd);
+
+	AccelCalibrator calib;
+	res = calib.init();
+	if (res == CALIBRATION_RESULT::SUCCESS) {
+		while (calib.sampling_needed) {
+			printf("Rotate to one of the remaining axes: ");
+			for (int i = 0; i < 6; ++i) {
+				if (!calib.calibrated_axes[i]) {
+					fputs(axis_labels[i], stdout);
+					fputs(" ", stdout);
+				}
+			}
+			fputs("\n", stdout);
+			fflush(stdout); // ensure puts finished before calibration pauses the screen
+			beep(beeper_fd, TONES::WAITING_FOR_USER);
+			res = calib.sample_axis();
+			if (res == CALIBRATION_RESULT::SUCCESS) {
+				beep(beeper_fd, TONES::STOP);
+				res = calib.read_samples();
+				if (res == CALIBRATION_RESULT::SUCCESS) {
+					printf("Successfully sampled the axis.\n");
+				}
+				else {
+					break;
+				}
+			}
+			else if (res == CALIBRATION_RESULT::AXIS_DONE_FAIL) {
+				beep(beeper_fd, TONES::STOP);
+				sleep(1); // ensures the tunes don't blend too much
+				beep(beeper_fd, TONES::NEGATIVE);
+				printf("Axis has been sampled already.\n");
+				sleep(2); // gives time for negative tune to finish
+			}
+			else {
+				break;
+			}
+		}
+		if (res == CALIBRATION_RESULT::SUCCESS) {
+			res = calib.calculate_and_save();
+		}
+	}
+
+	print_results(res, "Accel", beeper_fd);
+	close(beeper_fd);
+	if (res == CALIBRATION_RESULT::SUCCESS) {
+		print_scales(SENSOR_TYPE::ACCEL);
 		return true;
 	}
 	else {
@@ -197,49 +267,19 @@ template <class scale_T> void print_scales_helper(const char* device_path, int c
 } // End calibration namespace
 
 // Execution messages
-#define MSG_CALIBRATION_START "Starting %s calibration. Hold the system still.\n"
-#define MSG_CALIBRATION_FINISH "Calibration finished with status: %d.\n"
 #define MSG_CALIBRATION_USAGE "Usage: %s module_name\nmodule_name is one of accel, gyro, mag, baro, airspeed, rc, all\n" \
 			"Advanced mode - gyro supports 3 parameters: sample count, max error count\n" \
 			"and timeout in ms (defaults: 5000, 1000, 1000)\n"
 #define MSG_CALIBRATION_NOT_IMPLEMENTED "Not supported yet. Sorry.\n"
 #define MSG_CALIBRATION_WRONG_MODULE "Unknown module name \"%s\". Try accel, gyro, mag, baro, airspeed, rc, all\n"
-#define MSG_CALIBRATION_RESULTS	"Result offsets: X: % 9.6f, Y: % 9.6f, Z: % 9.6f.\nResult scales:  X: % 9.6f, Y: % 9.6f, Z: % 9.6f.\n"
 #define MSG_CALIBRATION_GYRO_WRONG_PARAM "0 or 3 parameters required.\nValid ranges for samples 1-1000000, for errors 0-5000, for timeout 2-10000.\n"
 #define MSG_CALIBRATION_MAG_WRONG_PARAM "0 or 4 parameters required.\nValid ranges for samples 100-total_time/5, for errors 0-sample_count,\nfor time 1-1000000, for gap 1-100.\n"
 #define MSG_CALIBRATION_ACCEL_WRONG_PARAM "No parameters supported.\n"
-#define MSG_CALIBRATION_START_PARAM	"Starting %s calibration with parameters:\nsamples = %d, max errors = %d, timeout = %d.\n"
-#define MSG_CALIBRATION_MAG_ROTATE "Sampling magnetometer offsets. Do a full rotation around each axis.\n"
-#define MSG_CALIBRATION_AXIS_DONE "Successfully sampled the axis.\n"
-#define MSG_CALIBRATION_AXES_LEFT "Rotate to one of the remaining axes: "
 
 extern "C" __EXPORT int calibrator_main(int argc, char ** argv)
 {
 	using namespace calibration;
 	char* sensname;
-	CALIBRATION_RESULT res = CALIBRATION_RESULT::FAIL;
-
-	const char* errors[] = { // allows to index by (error code)
-		"No errors reported.\n", // code = 0 = SUCCESS
-		"Calibration failed.\n", // code = 1 = FAIL
-		"Failed to reset sensor scale.\n", // code = 2 = SCALE_RESET_FAIL
-		"Failed to apply sensor scale.\n", // code = 3 = SCALE_APPLY_FAIL
-		"Failed to get sane data from sensor.\n", // code = 4 = SENSOR_DATA_FAIL
-		"Failed to save parameters to EEPROM.\n", // code = 5 = PARAMETER_DEFAULT_FAIL
-		"Failed to set scaling parameters.\n", // code = 6 = PARAMETER_SET_FAIL
-		"Failed to read sensor scale.\n", // code = 7 = SCALE_READ_FAIL
-		"Axis has been sampled already.\n" // code = 8 = AXIS_DONE_FAIL
-	};
-	const size_t errors_size = sizeof(errors) / sizeof(*errors);
-
-	const char* axis_labels[] = {
-		"+x",
-		"-x",
-		"+y",
-		"-y",
-		"+z",
-		"-z"
-	};
 
 	if (argc < 2 || argc > 6) {
 		fprintf(stderr, MSG_CALIBRATION_USAGE, argv[0]);
@@ -247,42 +287,12 @@ extern "C" __EXPORT int calibrator_main(int argc, char ** argv)
 	}
 	sensname = argv[1];
 
-	// TODO! consider possibility of merging the if-s.
 	if (strcmp(sensname, "accel") == 0) {
 		if (argc != 2) {
 			fprintf(stderr, MSG_CALIBRATION_ACCEL_WRONG_PARAM);
 			return 1;
 		}
-		printf(MSG_CALIBRATION_START, sensname);
-		fflush(stdout); // ensure print finishes before calibration pauses the screen
-		AccelCalibrator calib;
-		res = calib.init();
-		if (res == CALIBRATION_RESULT::SUCCESS) {
-			while (calib.sampling_needed) {
-				printf(MSG_CALIBRATION_AXES_LEFT);
-				for (int i = 0; i < 6; ++i) {
-					if (!calib.calibrated_axes[i]) {
-						fputs(axis_labels[i], stdout);
-						fputs(" ", stdout);
-					}
-				}
-				fputs("\n", stdout);
-				fflush(stdout); // ensure puts finished before calibration pauses the screen
-				res = calib.sample_axis();
-				if (res == CALIBRATION_RESULT::SUCCESS) {
-					printf(MSG_CALIBRATION_AXIS_DONE);
-				}
-				else if (res == CALIBRATION_RESULT::AXIS_DONE_FAIL) {
-					printf(errors[8]);
-				}
-				else {
-					break;
-				}
-			}
-			if (res == CALIBRATION_RESULT::SUCCESS) {
-				res = calib.calculate_and_save();
-			}
-		}
+		return ((int) !calibrate_accelerometer());
 	}
 	else if (strcmp(sensname,"gyro") == 0) {
 		if (argc == 2) {
@@ -297,7 +307,7 @@ extern "C" __EXPORT int calibrator_main(int argc, char ** argv)
 				fprintf(stderr, MSG_CALIBRATION_GYRO_WRONG_PARAM);
 				return 1;
 			}
-			return ((int) calibrate_gyroscope((unsigned int) samples, (unsigned int) max_errors, (int) timeout));
+			return ((int) !calibrate_gyroscope((unsigned int) samples, (unsigned int) max_errors, (int) timeout));
 		}
 		else {
 			fprintf(stderr, MSG_CALIBRATION_GYRO_WRONG_PARAM);
@@ -321,10 +331,10 @@ extern "C" __EXPORT int calibrator_main(int argc, char ** argv)
 				fprintf(stderr, MSG_CALIBRATION_MAG_WRONG_PARAM);
 				return 1;
 			}
-			return((int) calibrate_magnetometer(sample_count, max_error_count, total_time, poll_timeout_gap));
+			return((int) !calibrate_magnetometer(sample_count, max_error_count, total_time, poll_timeout_gap));
 		}
 		else if (argc == 2) {
-			return((int) calibrate_magnetometer());
+			return((int) !calibrate_magnetometer());
 		}
 		else {
 			fprintf(stderr, MSG_CALIBRATION_MAG_WRONG_PARAM);
@@ -352,11 +362,5 @@ extern "C" __EXPORT int calibrator_main(int argc, char ** argv)
 		return 1;
 	}
 
-	printf(MSG_CALIBRATION_FINISH, res);
-	if (res != CALIBRATION_RESULT::SUCCESS && (int)res < errors_size)
-	{
-		printf(errors[(int)res]); // converts CALIBRATION_RESULT to errors index
-		return 1;
-	}
 	return 0;
 }
