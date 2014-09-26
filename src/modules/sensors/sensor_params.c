@@ -97,6 +97,17 @@ PARAM_DEFINE_FLOAT(SENS_SON_MIN, 2.0f);
 PARAM_DEFINE_FLOAT(SENS_SON_SMOT, 0.5f);
 
 /**
+ * TEMPORARY!!!
+ * Should calibration through mavlink use original or modified calibration routines.
+ * Original calibration used on 0.
+ * Modified calibration on nonzero values.
+ * @min 0
+ * @max 1
+ * @group Sensor Calibration
+ */
+PARAM_DEFINE_INT32(ARD_MOD_CALIB, 0);
+
+/**
  * Gyroscope scale structure
  *
  * @min all scales -1.5, x and y offsets -10.0, z offset -5.0

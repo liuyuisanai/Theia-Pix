@@ -100,6 +100,7 @@
 #include <geo/geo.h>
 #include <systemlib/state_table.h>
 #include <dataman/dataman.h>
+#include <airdog/calibrator/calibrator.hpp>
 
 #include "px4_custom_mode.h"
 #include "commander_helper.h"
@@ -2951,6 +2952,8 @@ void *commander_low_prio_loop(void *arg)
 	fds[0].fd = cmd_sub;
 	fds[0].events = POLLIN;
 
+	int modified_calibration;
+
 	while (!thread_should_exit) {
 
         bool status_updated = false;
@@ -3036,12 +3039,34 @@ void *commander_low_prio_loop(void *arg)
 				if ((int)(cmd.param1) == 1) {
 					/* gyro calibration */
 					answer_command(cmd, VEHICLE_CMD_RESULT_ACCEPTED);
-					calib_ret = do_gyro_calibration(mavlink_fd);
+					param_get(param_find("ARD_MOD_CALIB"), &modified_calibration);
+					if (modified_calibration) {
+						if (calibration::calibrate_gyroscope()) {
+							calib_ret = OK;
+						}
+						else {
+							calib_ret = ERROR;
+						}
+					}
+					else {
+						calib_ret = do_gyro_calibration(mavlink_fd);
+					}
 
 				} else if ((int)(cmd.param2) == 1) {
 					/* magnetometer calibration */
 					answer_command(cmd, VEHICLE_CMD_RESULT_ACCEPTED);
-					calib_ret = do_mag_calibration(mavlink_fd);
+					param_get(param_find("ARD_MOD_CALIB"), &modified_calibration);
+					if (modified_calibration) {
+						if (calibration::calibrate_magnetometer()) {
+							calib_ret = OK;
+						}
+						else {
+							calib_ret = ERROR;
+						}
+					}
+					else {
+						calib_ret = do_mag_calibration(mavlink_fd);
+					}
 
 				} else if ((int)(cmd.param3) == 1) {
 					/* zero-altitude pressure calibration */
@@ -3063,7 +3088,19 @@ void *commander_low_prio_loop(void *arg)
 				} else if ((int)(cmd.param5) == 1) {
 					/* accelerometer calibration */
 					answer_command(cmd, VEHICLE_CMD_RESULT_ACCEPTED);
-					calib_ret = do_accel_calibration(mavlink_fd);
+					param_get(param_find("ARD_MOD_CALIB"), &modified_calibration);
+					if (modified_calibration) {
+						if (calibration::calibrate_accelerometer()) {
+							calib_ret = OK;
+						}
+						else {
+							calib_ret = ERROR;
+						}
+					}
+					else {
+						calib_ret = do_accel_calibration(mavlink_fd);
+					}
+
 
 				} else if ((int)(cmd.param6) == 1) {
 					/* airspeed calibration */

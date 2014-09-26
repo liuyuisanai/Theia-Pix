@@ -47,7 +47,7 @@ inline void print_scales(SENSOR_TYPE sensor);
 // Helper function for print_scales
 template <class scale_T> void print_scales_helper(const char* device_path, int command);
 
-bool calibrate_gyroscope(const unsigned int sample_count,
+__EXPORT bool calibrate_gyroscope(const unsigned int sample_count,
 						const unsigned int max_error_count,
 						const int timeout) {
 	CALIBRATION_RESULT res;
@@ -71,7 +71,7 @@ bool calibrate_gyroscope(const unsigned int sample_count,
 	}
 }
 
-bool calibrate_magnetometer(unsigned int sample_count,
+__EXPORT bool calibrate_magnetometer(unsigned int sample_count,
 							unsigned int max_error_count,
 							unsigned int total_time,
 							int poll_timeout_gap) {
@@ -105,7 +105,7 @@ bool calibrate_magnetometer(unsigned int sample_count,
 	}
 }
 
-bool calibrate_accelerometer() {
+__EXPORT bool calibrate_accelerometer() {
 	CALIBRATION_RESULT res;
 	const char* axis_labels[] = {
 		"+x",
@@ -183,6 +183,7 @@ inline void prepare(const char* sensor_type, const int beeper_fd) {
 	sleep(1); // give some time for the tune to play
 }
 
+// TODO we can get rid of this function when tones are finalized.
 inline void beep(const int beeper_fd, TONES tone) {
 	int mapped_tone;
 	// TODO! Temporary mappings. Should change!

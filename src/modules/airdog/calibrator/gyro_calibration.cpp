@@ -12,7 +12,7 @@
 #include "gyro_calibration.hpp"
 
 namespace calibration {
-
+// TODO! Implement scale reset in case of an error
 // polls the sensor and calculates the average offset. Returns true on success, false on failure
 bool sample_offsets (gyro_scale &calibration_scale, const unsigned int sample_count, const unsigned int max_error_count, const int timeout);
 
@@ -29,7 +29,6 @@ CALIBRATION_RESULT do_gyro_calibration(const unsigned int sample_count, const un
 
 	// reset all offsets to zero and all scales to one
 	// Beware! This only works because sensors.cpp doesn't check if parameters are different from driver settings.
-	// TODO! consider to check if we can get at least one sample before resetting the calibration
 	int fd = open(GYRO_DEVICE_PATH, O_RDONLY);
 	if (ioctl(fd, GYROIOCSSCALE, (long unsigned int)&calibration_scale) != 0) {
 		close(fd);
@@ -43,7 +42,6 @@ CALIBRATION_RESULT do_gyro_calibration(const unsigned int sample_count, const un
 	}
 
 	// set offset and scale parameters. Scale parameters reset to 1, but that's the number we pass to the sensor driver.
-	// TODO! migrate to single structure. Currently only calibration and drivers use these and both convert to struct.
 	if (param_set(param_find("SENS_GYRO_SCALE"), &calibration_scale)) {
 		close(fd);
 		return CALIBRATION_RESULT::PARAMETER_SET_FAIL;
@@ -104,7 +102,6 @@ bool sample_offsets (gyro_scale &calibration_scale, const unsigned int sample_co
 	calibration_scale.x_offset /= sample_count;
 	calibration_scale.y_offset /= sample_count;
 	calibration_scale.z_offset /= sample_count;
-
 	// everything went fine
 	if (error_count <= max_error_count && isfinite(calibration_scale.x_offset)
 			&& isfinite(calibration_scale.y_offset) && isfinite(calibration_scale.z_offset) ) {

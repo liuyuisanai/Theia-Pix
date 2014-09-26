@@ -10,7 +10,7 @@ namespace calibration {
  * timeout - timeout for each poll request in ms. Worst case process will hang for timeout*(max_error_count + 1) ms. So be considerate. Default: 1000.
  * @return true if calibration was successful, false otherwise
  */
-bool calibrate_gyroscope(const unsigned int sample_count=5000,
+__EXPORT bool calibrate_gyroscope(const unsigned int sample_count=5000,
 						const unsigned int max_error_count=1000,
 						const int timeout=1000);
 
@@ -22,7 +22,7 @@ bool calibrate_gyroscope(const unsigned int sample_count=5000,
  * poll_timeout_gap - gap in ms between orb publishing interval and timeout on poll requests. Default 5
  * @return true if calibration was successful, false otherwise
  */
-bool calibrate_magnetometer(unsigned int sample_count=6000,
+__EXPORT bool calibrate_magnetometer(unsigned int sample_count=6000,
 							unsigned int max_error_count=200,
 							unsigned int total_time=60000,
 							int poll_timeout_gap=5);
@@ -31,5 +31,5 @@ bool calibrate_magnetometer(unsigned int sample_count=6000,
  * Requires the user to rotate the object orthogonal to the gravitational field.
  * @return true if calibration was successful, false otherwise
  */
-bool calibrate_accelerometer();
+__EXPORT bool calibrate_accelerometer();
 } // End calibration namespace
