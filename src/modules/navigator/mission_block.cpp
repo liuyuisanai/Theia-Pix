@@ -85,6 +85,10 @@ MissionBlock::is_mission_item_reached()
 		return false;
 	}
 
+	if (!_mission_item.autocontinue) {
+		return false;
+	}
+
 	hrt_abstime now = hrt_absolute_time();
 
 	if (!_waypoint_position_reached) {
