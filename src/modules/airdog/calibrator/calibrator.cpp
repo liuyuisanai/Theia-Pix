@@ -177,34 +177,34 @@ __EXPORT bool calibrate_accelerometer() {
 inline void prepare(const char* sensor_type, const int beeper_fd) {
 	beep(beeper_fd, TONES::PREPARE);
 	printf("%s calibration: preparing... waiting for user.\n", sensor_type);
-	sleep(2);
+	sleep(3);
 	beep(beeper_fd, TONES::START);
 	printf("Starting %s calibration.\n", sensor_type);
 	sleep(1); // give some time for the tune to play
 }
 
 // TODO we can get rid of this function when tones are finalized.
+// Alternatively this function can be used to pass feedback to Mavlink
 inline void beep(const int beeper_fd, TONES tone) {
 	int mapped_tone;
-	// TODO! Temporary mappings. Should change!
 	switch (tone) {
 	case TONES::PREPARE:
 		mapped_tone = TONE_NOTIFY_NEUTRAL_TUNE;
 		break;
 	case TONES::START:
-		mapped_tone = TONE_PARACHUTE_RELEASE_TUNE;
+		mapped_tone = TONE_PROCESS_START;
 		break;
 	case TONES::NEGATIVE:
-		mapped_tone = TONE_NOTIFY_NEGATIVE_TUNE;
+		mapped_tone = TONE_WRONG_INPUT;
 		break;
 	case TONES::WAITING_FOR_USER: // should be continuous - tune string starts with MB
-		mapped_tone = TONE_BATTERY_WARNING_SLOW_TUNE;
+		mapped_tone = TONE_WAITING_INPUT;
 		break;
 	case TONES::FINISHED:
 		mapped_tone = TONE_NOTIFY_POSITIVE_TUNE;
 		break;
 	case TONES::ERROR:
-		mapped_tone = TONE_EKF_WARNING_TUNE;
+		mapped_tone = TONE_GENERAL_ERROR;
 		break;
 	case TONES::STOP: // used to stop the "WAITING_FOR_USER" tune
 		mapped_tone = TONE_STOP_TUNE;
