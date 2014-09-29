@@ -6,6 +6,7 @@
 #include <drivers/drv_tone_alarm.h>
 #include <systemlib/err.h>
 #include <fcntl.h> // open
+#include <mavlink/mavlink_log.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -41,13 +42,13 @@ inline void prepare(const char* sensor_type, const int beeper_fd);
 // Translates TONES enum to specific tone_alarm tunes
 inline void beep(const int beeper_fd, TONES tone);
 // Print final calibration results
-inline void print_results (CALIBRATION_RESULT res, const char* sensor_type, const int beeper_fd);
+inline void print_results (CALIBRATION_RESULT res, const char* sensor_type, const int beeper_fd, int mavlink_fd);
 // Print calibration scales and offsets currently set
-inline void print_scales(SENSOR_TYPE sensor);
+inline void print_scales(SENSOR_TYPE sensor, int mavlink_fd);
 // Helper function for print_scales
-template <class scale_T> void print_scales_helper(const char* device_path, int command);
+template <class scale_T> void print_scales_helper(const char* device_path, int command, int mavlink_fd);
 
-__EXPORT bool calibrate_gyroscope(const unsigned int sample_count,
+__EXPORT bool calibrate_gyroscope(int mavlink_fd, const unsigned int sample_count,
 						const unsigned int max_error_count,
 						const int timeout) {
 	CALIBRATION_RESULT res;
@@ -60,10 +61,10 @@ __EXPORT bool calibrate_gyroscope(const unsigned int sample_count,
 	printf("Parameters: samples=%d, error count=%d, timeout=%d\n", sample_count, max_error_count, timeout);
 	fflush(stdout);
 	res = do_gyro_calibration(sample_count, max_error_count, timeout);
-	print_results(res, "Gyro", beeper_fd);
+	print_results(res, "Gyro", beeper_fd, mavlink_fd);
 	close(beeper_fd);
 	if (res == CALIBRATION_RESULT::SUCCESS) {
-		print_scales(SENSOR_TYPE::GYRO);
+		print_scales(SENSOR_TYPE::GYRO, mavlink_fd);
 		return true;
 	}
 	else {
@@ -71,7 +72,7 @@ __EXPORT bool calibrate_gyroscope(const unsigned int sample_count,
 	}
 }
 
-__EXPORT bool calibrate_magnetometer(unsigned int sample_count,
+__EXPORT bool calibrate_magnetometer(int mavlink_fd, unsigned int sample_count,
 							unsigned int max_error_count,
 							unsigned int total_time,
 							int poll_timeout_gap) {
@@ -94,10 +95,10 @@ __EXPORT bool calibrate_magnetometer(unsigned int sample_count,
 		fflush(stdout); // ensure print finishes before calibration pauses the screen
 		res = do_mag_offset_calibration(sample_count, max_error_count, total_time, poll_timeout_gap);
 	}
-	print_results(res, "Mag", beeper_fd);
+	print_results(res, "Mag", beeper_fd, mavlink_fd);
 	close(beeper_fd);
 	if (res == CALIBRATION_RESULT::SUCCESS) {
-		print_scales(SENSOR_TYPE::MAG);
+		print_scales(SENSOR_TYPE::MAG, mavlink_fd);
 		return true;
 	}
 	else {
@@ -105,7 +106,7 @@ __EXPORT bool calibrate_magnetometer(unsigned int sample_count,
 	}
 }
 
-__EXPORT bool calibrate_accelerometer() {
+__EXPORT bool calibrate_accelerometer(int mavlink_fd) {
 	CALIBRATION_RESULT res;
 	const char* axis_labels[] = {
 		"+x",
@@ -163,10 +164,10 @@ __EXPORT bool calibrate_accelerometer() {
 		}
 	}
 
-	print_results(res, "Accel", beeper_fd);
+	print_results(res, "Accel", beeper_fd, mavlink_fd);
 	close(beeper_fd);
 	if (res == CALIBRATION_RESULT::SUCCESS) {
-		print_scales(SENSOR_TYPE::ACCEL);
+		print_scales(SENSOR_TYPE::ACCEL, mavlink_fd);
 		return true;
 	}
 	else {
@@ -214,7 +215,7 @@ inline void beep(const int beeper_fd, TONES tone) {
 	ioctl(beeper_fd, TONE_SET_ALARM, mapped_tone);
 }
 
-inline void print_results(CALIBRATION_RESULT res, const char* sensor_type, const int beeper_fd) {
+inline void print_results(CALIBRATION_RESULT res, const char* sensor_type, const int beeper_fd, int mavlink_fd) {
 	const char* errors[] = { // allows to index by (error code)
 		"No errors reported.\n", // code = 0 = SUCCESS
 		"Calibration failed.\n", // code = 1 = FAIL
@@ -233,35 +234,49 @@ inline void print_results(CALIBRATION_RESULT res, const char* sensor_type, const
 		beep(beeper_fd, TONES::ERROR);
 		if ((int)res < errors_size) {
 			printf(errors[(int)res]); // converts CALIBRATION_RESULT to errors index
+			if (mavlink_fd != 0) {
+				mavlink_log_critical(mavlink_fd, errors[(int) res]);
+			}
 		}
 	}
 	else {
 		printf("%s calibration finished successfully.\n", sensor_type);
+		if (mavlink_fd != 0) {
+			mavlink_log_info(mavlink_fd, "%s calibration finished successfully.\n", sensor_type);
+		}
 		beep(beeper_fd, TONES::FINISHED);
 	}
 }
 
-inline void print_scales(SENSOR_TYPE sensor) {
+inline void print_scales(SENSOR_TYPE sensor, int mavlink_fd) {
 	switch (sensor) {
 	case SENSOR_TYPE::GYRO:
-		print_scales_helper <gyro_scale> (GYRO_DEVICE_PATH, GYROIOCGSCALE);
+		print_scales_helper <gyro_scale> (GYRO_DEVICE_PATH, GYROIOCGSCALE, mavlink_fd);
 		break;
 	case SENSOR_TYPE::MAG:
-		print_scales_helper <mag_scale> (MAG_DEVICE_PATH, MAGIOCGSCALE);
+		print_scales_helper <mag_scale> (MAG_DEVICE_PATH, MAGIOCGSCALE, mavlink_fd);
 		break;
 	case SENSOR_TYPE::ACCEL:
-		print_scales_helper <accel_scale> (ACCEL_DEVICE_PATH, ACCELIOCGSCALE);
+		print_scales_helper <accel_scale> (ACCEL_DEVICE_PATH, ACCELIOCGSCALE, mavlink_fd);
 		break;
 	}
 }
 
-template <class scale_T> void print_scales_helper(const char* device_path, int command) {
+template <class scale_T> void print_scales_helper(const char* device_path, int command, int mavlink_fd) {
 	scale_T scale;
 	int dev_fd = open(device_path, O_RDONLY);
 	if (ioctl(dev_fd, command, (unsigned long) &scale) == 0) {
 		printf("Result offsets: X: % 9.6f, Y: % 9.6f, Z: % 9.6f.\nResult scales:  X: % 9.6f, Y: % 9.6f, Z: % 9.6f.\n",
 				(double) scale.x_offset, (double) scale.y_offset, (double) scale.z_offset,
 				(double) scale.x_scale, (double) scale.y_scale, (double) scale.z_scale);
+		if (mavlink_fd != 0) {
+			mavlink_log_info(mavlink_fd, "Result offsets:\n");
+			mavlink_log_info(mavlink_fd, "X: % 9.6f, Y: % 9.6f, Z: % 9.6f.\n",
+				(double) scale.x_offset, (double) scale.y_offset, (double) scale.z_offset);
+			mavlink_log_info(mavlink_fd, "Result scales:\n");
+			mavlink_log_info(mavlink_fd, "X: % 9.6f, Y: % 9.6f, Z: % 9.6f.\n",
+				(double) scale.x_scale, (double) scale.y_scale, (double) scale.z_scale);
+		}
 	}
 
 }
@@ -308,7 +323,7 @@ extern "C" __EXPORT int calibrator_main(int argc, char ** argv)
 				fprintf(stderr, MSG_CALIBRATION_GYRO_WRONG_PARAM);
 				return 1;
 			}
-			return ((int) !calibrate_gyroscope((unsigned int) samples, (unsigned int) max_errors, (int) timeout));
+			return ((int) !calibrate_gyroscope(0, (unsigned int) samples, (unsigned int) max_errors, (int) timeout));
 		}
 		else {
 			fprintf(stderr, MSG_CALIBRATION_GYRO_WRONG_PARAM);
@@ -332,7 +347,7 @@ extern "C" __EXPORT int calibrator_main(int argc, char ** argv)
 				fprintf(stderr, MSG_CALIBRATION_MAG_WRONG_PARAM);
 				return 1;
 			}
-			return((int) !calibrate_magnetometer(sample_count, max_error_count, total_time, poll_timeout_gap));
+			return((int) !calibrate_magnetometer(0, (unsigned int) sample_count, (unsigned int) max_error_count, (unsigned int) total_time, (int) poll_timeout_gap));
 		}
 		else if (argc == 2) {
 			return((int) !calibrate_magnetometer());
