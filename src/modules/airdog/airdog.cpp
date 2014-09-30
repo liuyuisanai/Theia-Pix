@@ -436,7 +436,6 @@ bool cAirdog::button_clicked_i2c(uint8_t button, bool long_press)
                 send_command(REMOTE_CMD_COME_TO_ME);
                 set_current_button_state(BUTTON_STATE_DEFAULT);
             }
-
 			break;
 		case 5:
 			// CENTER DOWN
