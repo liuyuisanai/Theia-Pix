@@ -1017,7 +1017,9 @@ int HMC5883::calibrate(struct file *filp, unsigned enable)
 	struct mag_report report;
 	ssize_t sz;
 	int ret = 1;
-	uint8_t good_count = 0;
+	unsigned good_count = 0;
+	unsigned i;
+	float avgmag[3] = {0};
 
 	// XXX do something smarter here
 	int fd = (int)enable;
@@ -1049,8 +1051,6 @@ int HMC5883::calibrate(struct file *filp, unsigned enable)
 	 * LSM/Ga, giving 1.16 and 1.08 */
 	float expected_cal[3] = { 1.16f, 1.08f, 1.08f };
 
-	warnx("starting mag scale calibration");
-
 	/* start the sensor polling at 50 Hz */
 	if (OK != ioctl(filp, SENSORIOCSPOLLRATE, 50)) {
 		warn("failed to set 2Hz poll rate");
@@ -1067,19 +1067,19 @@ int HMC5883::calibrate(struct file *filp, unsigned enable)
 	}
 
 	if (OK != ioctl(filp, MAGIOCEXSTRAP, 1)) {
-		warnx("failed to enable sensor calibration mode");
+		warnx("failed calibration mode");
 		ret = 1;
 		goto out;
 	}
 
 	if (OK != ioctl(filp, MAGIOCGSCALE, (long unsigned int)&mscale_previous)) {
-		warn("WARNING: failed to get scale / offsets for mag");
+		warn("failed scale / offsets for mag");
 		ret = 1;
 		goto out;
 	}
 
 	if (OK != ioctl(filp, MAGIOCSSCALE, (long unsigned int)&mscale_null)) {
-		warn("WARNING: failed to set null scale / offsets for mag");
+		warn("failed to set null scale / offsets for mag");
 		ret = 1;
 		goto out;
 	}
@@ -1094,7 +1094,7 @@ int HMC5883::calibrate(struct file *filp, unsigned enable)
 		ret = ::poll(&fds, 1, 2000);
 
 		if (ret != 1) {
-			warn("timed out waiting for sensor data");
+			warn("timed out");
 			goto out;
 		}
 
@@ -1109,7 +1109,7 @@ int HMC5883::calibrate(struct file *filp, unsigned enable)
 	}
 
 	/* read the sensor up to 50x, stopping when we have 10 good values */
-	for (uint8_t i = 0; i < 50 && good_count < 10; i++) {
+	for (i = 0; i < 100 && good_count < 10; i++) {
 		struct pollfd fds;
 
 		/* wait for data to be ready */
@@ -1118,7 +1118,7 @@ int HMC5883::calibrate(struct file *filp, unsigned enable)
 		ret = ::poll(&fds, 1, 2000);
 
 		if (ret != 1) {
-			warn("timed out waiting for sensor data");
+			warn("timed out");
 			goto out;
 		}
 
@@ -1126,7 +1126,7 @@ int HMC5883::calibrate(struct file *filp, unsigned enable)
 		sz = ::read(fd, &report, sizeof(report));
 
 		if (sz != sizeof(report)) {
-			warn("periodic read failed");
+			warn("read failed");
 			ret = -EIO;
 			goto out;
 		}
@@ -1134,22 +1134,33 @@ int HMC5883::calibrate(struct file *filp, unsigned enable)
 				fabsf(expected_cal[1] / report.y), 
 				fabsf(expected_cal[2] / report.z)};
 
-		if (cal[0] > 0.7f && cal[0] < 1.35f &&
-		    cal[1] > 0.7f && cal[1] < 1.35f &&
-		    cal[2] > 0.7f && cal[2] < 1.35f) {
+		if (cal[0] > 0.6f && cal[0] < 1.55f &&
+		    cal[1] > 0.6f && cal[1] < 1.55f &&
+		    cal[2] > 0.6f && cal[2] < 1.55f) {
 			good_count++;
 			sum_excited[0] += cal[0];
 			sum_excited[1] += cal[1];
 			sum_excited[2] += cal[2];
 		}
 
+		avgmag[0] += report.x;
+		avgmag[1] += report.y;
+		avgmag[2] += report.z;
+
 		//warnx("periodic read %u", i);
 		//warnx("measurement: %.6f  %.6f  %.6f", (double)report.x, (double)report.y, (double)report.z);
 		//warnx("cal: %.6f  %.6f  %.6f", (double)cal[0], (double)cal[1], (double)cal[2]);
 	}
 
+	avgmag[0] /= i;
+	avgmag[1] /= i;
+	avgmag[2] /= i;
+
+	/* provide feedback on achieved values */
+	warnx("mag avg: %8.4f %8.4f %8.4f", (double)avgmag[0], (double)avgmag[1], (double)avgmag[2]);
+
 	if (good_count < 5) {
-		warn("failed calibration");
+		warn("failed val count");
 		ret = -EIO;
 		goto out;
 	}
@@ -1194,9 +1205,9 @@ out:
 
 	if (ret == OK) {
 		if (!check_scale()) {
-			warnx("mag scale calibration successfully finished.");
+			warnx("mag scale calibration: success");
 		} else {
-			warnx("mag scale calibration finished with invalid results.");
+			warnx("mag scale calibration: invalid results");
 			ret = ERROR;
 		}
 
