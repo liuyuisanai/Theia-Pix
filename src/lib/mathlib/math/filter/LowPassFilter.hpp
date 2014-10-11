@@ -48,12 +48,11 @@ public:
 	 *
 	 * @return retrieve the filtered result
 	 */
-	const &T apply(uint64_t t, const T &next_value)
-	{
+	const T &apply(uint64_t t, const T &next_value) {
 		if (_rc > 0.0f) {
 			float dt = (t - _time_last) * 1.0e-6f;
 			float a = dt / (_rc + dt);
-			_value * = 1.0f - a;
+			_value *= (1.0f - a);
 			_value += next_value * a;
 		}
 
