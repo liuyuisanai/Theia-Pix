@@ -220,7 +220,6 @@ private:
 
 	math::LowPassFilter<math::Vector<3>> _tvel_lpf;
 
-	math::Vector<3> _sp_move_rate;
 	math::Vector<3> _att_rates_ff;
 
 	math::Vector<3> _follow_offset;		/**< offset from target for FOLLOW mode, vector in NED frame */
@@ -259,7 +258,6 @@ private:
 	void		reset_alt_sp();
 
 	/**
-	 * Update target position and velocity (prediction and filtering)
 	 * Check if position setpoint is too far from current position and adjust it if needed.
 	 */
 	void		limit_pos_sp_offset();
@@ -283,9 +281,13 @@ private:
 	void		control_auto(float dt);
 
 	/**
-	 * Select between barometric and global (AMSL) altitudes
+	 * Update target position and velocity (prediction and filtering)
 	 */
 	void		update_target_pos();
+
+	/**
+	 * Select between barometric and global (AMSL) altitudes
+	 */
 	void		select_alt(bool global);
 
 	/**
@@ -296,7 +298,7 @@ private:
 	/**
 	 * Control setpoint if "follow target" mode
 	 */
-	void		control_sp_follow(float dt);
+	void		control_follow(float dt);
 
 	/**
 	 * Control camera and copter yaw depending on mode
@@ -356,8 +358,7 @@ MulticopterPositionControl::MulticopterPositionControl() :
 
 	_reset_pos_sp(true),
 	_reset_alt_sp(true),
-	_mode_auto(false)
-	_reset_alt_sp(true),
+	_mode_auto(false),
 	_reset_follow_offset(true)
 {
 	memset(&_att, 0, sizeof(_att));
@@ -1033,7 +1034,7 @@ MulticopterPositionControl::update_target_pos()
 }
 
 void
-MulticopterPositionControl::control_sp_follow(float dt)
+MulticopterPositionControl::control_follow(float dt)
 {
 	/* follow target, change offset from target instead of moving setpoint directly */
 	reset_follow_offset();
@@ -1042,6 +1043,20 @@ MulticopterPositionControl::control_sp_follow(float dt)
 	math::Vector<3> follow_offset_new(_follow_offset);
 
 	/* move follow offset using polar coordinates */
+	_sp_move_rate(0) = _manual.x;
+	_sp_move_rate(1) = _manual.y;
+	_sp_move_rate(2) = -scale_control(_manual.z - 0.5f, 0.5f, alt_ctl_dz);
+
+	/* limit setpoint move rate */
+	float sp_move_norm = _sp_move_rate.length();
+
+	if (sp_move_norm > 1.0f) {
+		_sp_move_rate /= sp_move_norm;
+	}
+
+	/* _sp_move_rate scaled to 0..1, scale it to max speed */
+	_sp_move_rate = _sp_move_rate.emult(_params.vel_max);
+
 	math::Vector<2> follow_offset_xy(_follow_offset(0), _follow_offset(1));
 	math::Vector<2> sp_move_rate_xy(_sp_move_rate(0), _sp_move_rate(1));
 	float follow_offset_xy_len = follow_offset_xy.length();
@@ -1091,6 +1106,10 @@ MulticopterPositionControl::control_sp_follow(float dt)
 
 	/* feed forward target velocity */
 	_vel_ff += _tvel * _params.follow_vel_ff;
+
+	if (_control_mode.flag_control_point_to_target) {
+		point_to_target();
+	}
 }
 
 void
@@ -1231,13 +1250,21 @@ MulticopterPositionControl::task_main()
 			_vel(1) = _local_pos.vy;
 			_vel(2) = _local_pos.vz;
 
+			update_target_pos();
+
 			_vel_ff.zero();
 			_sp_move_rate.zero();
 
 			/* select control source */
 			if (_control_mode.flag_control_manual_enabled) {
-				/* manual control */
-				control_manual(dt);
+				if (_control_mode.flag_control_follow_target) {
+					/* follow */
+					control_follow(dt);
+
+				} else {
+					/* manual control */
+					control_manual(dt);
+				}
 				_mode_auto = false;
 
 			} else if (_control_mode.flag_control_offboard_enabled) {
