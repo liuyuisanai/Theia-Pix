@@ -1107,6 +1107,12 @@ MulticopterPositionControl::control_follow(float dt)
 	/* feed forward target velocity */
 	_vel_ff += _tvel * _params.follow_vel_ff;
 
+	/* update position setpoint and feed-forward velocity if not repeating target altitude */
+	if (!_params.follow_rpt_alt) {
+		_pos_sp(2) = -(_alt_start - _ref_alt + _params.follow_talt_offs) + _follow_offset(2);
+		_vel_ff(2) -= _tvel(2) * _params.follow_vel_ff;
+	}
+
 	if (_control_mode.flag_control_point_to_target) {
 		point_to_target();
 	}
@@ -1237,6 +1243,9 @@ MulticopterPositionControl::task_main()
 
 		update_ref();
 
+		/* manual camera pitch control, overridden later if needed */
+		_cam_control.control[1] = _manual.aux2;
+
 		if (_control_mode.flag_control_altitude_enabled ||
 		    _control_mode.flag_control_position_enabled ||
 		    _control_mode.flag_control_climb_rate_enabled ||
@@ -1254,6 +1263,7 @@ MulticopterPositionControl::task_main()
 
 			_vel_ff.zero();
 			_sp_move_rate.zero();
+			_att_rates_ff.zero();
 
 			/* select control source */
 			if (_control_mode.flag_control_manual_enabled) {
@@ -1275,6 +1285,11 @@ MulticopterPositionControl::task_main()
 			} else {
 				/* AUTO */
 				control_auto(dt);
+			}
+
+			/* reset follow offset after non-follow modes */
+			if (!(_control_mode.flag_control_manual_enabled && _control_mode.flag_control_follow_target)) {
+				_reset_follow_offset = true;
 			}
 
 			/* fill local position setpoint */
@@ -1625,9 +1640,6 @@ MulticopterPositionControl::task_main()
 			_reset_follow_offset = true;
 			reset_int_z = true;
 			reset_int_xy = true;
-
-			/* manual camera pitch control */
-			_cam_control.control[1] = _manual.aux2;
 		}
 
 		/* reset altitude controller integral (hovering throttle) to manual throttle after manual throttle control */
