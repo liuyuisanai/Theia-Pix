@@ -1,0 +1,12 @@
+{
+    "description": "Firmware for the AirLeash board",
+    "magic": "AIRLEASH",
+    "board_id": 9,
+    "summary": "AirLeash",
+
+    "board_revision": 0,
+    "build_time": 0,
+    "version": "",
+    "image_size": 0,
+    "git_identity": ""
+}
