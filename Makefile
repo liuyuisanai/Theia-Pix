@@ -243,7 +243,7 @@ testbuild:
 .PHONY:	clean
 clean:
 	$(Q) $(RMDIR) $(BUILD_DIR)*.build
-	$(Q) $(REMOVE) $(IMAGE_DIR)*.px4
+	$(Q) $(REMOVE) $(IMAGE_DIR)*.px4 $(IMAGE_DIR)*.bin
 
 .PHONY:	distclean
 distclean: clean
