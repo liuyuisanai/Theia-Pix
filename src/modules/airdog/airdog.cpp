@@ -411,14 +411,15 @@ bool cAirdog::button_clicked_i2c(uint8_t button, bool long_press)
 			// CENTER button
 			//
 			if (long_press) {
-				// if (!log_running) {
-				// 	send_record_path_cmd(true);
-				// 	log_running = true;
-				// 	pi2c_disp_ctrl->set_symbols(SYMBOL_L, SYMBOL_0, SYMBOL_EMPTY);
-				// } else {
-				// 	send_record_path_cmd(false);
-				// 	log_running = false;
-				// }
+//				 if (!log_running) {
+//				 	send_record_path_cmd(true);
+//				 	log_running = true;
+//				 	pi2c_disp_ctrl->set_symbols(SYMBOL_L, SYMBOL_0, SYMBOL_EMPTY);
+//				 } else {
+//				 	send_record_path_cmd(false);
+//				 	log_running = false;
+//				 	pi2c_disp_ctrl->set_symbols(SYMBOL_MINUS, SYMBOL_L, SYMBOL_0);
+//				 }
 			} else if (vehicle_status.system_id == trainer_remote_id) { //TODO get trainer remote id from drone
 				// send_set_state(NAV_STATE_COME_HERE, MOVE_TRAINER);
 			} else {
@@ -477,6 +478,15 @@ bool cAirdog::button_clicked_i2c(uint8_t button, bool long_press)
 		}
 		case 14:
 			// CENTER LEFT + CENTER
+			if (!log_running) {
+				send_record_path_cmd(true);
+				log_running = true;
+				pi2c_disp_ctrl->set_symbols(SYMBOL_L, SYMBOL_0, SYMBOL_EMPTY);
+			 } else {
+				send_record_path_cmd(false);
+				log_running = false;
+				pi2c_disp_ctrl->set_symbols(SYMBOL_MINUS, SYMBOL_L, SYMBOL_0);
+			 }
 			break;
 
 
