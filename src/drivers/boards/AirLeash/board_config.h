@@ -121,16 +121,7 @@ __BEGIN_DECLS
 #define PX4_SPIDEV_EXT_GYRO		PX4_SPIDEV_EXT3
 
 /* I2C busses */
-#define PX4_I2C_BUS_EXPANSION	1
-#define PX4_I2C_BUS_ONBOARD	2
-#define PX4_I2C_BUS_LED		PX4_I2C_BUS_ONBOARD
-
-/* Devices on the onboard bus.
- *
- * Note that these are unshifted addresses.
- */
-#define PX4_I2C_OBDEV_LED	0x55
-#define PX4_I2C_OBDEV_HMC5883	0x1e
+#define PX4_I2C_BUS_ONBOARD	1
 
 /* User GPIOs */
 
