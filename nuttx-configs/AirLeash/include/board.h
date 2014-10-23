@@ -228,17 +228,6 @@
 #define DMAMAP_USART6_RX DMAMAP_USART6_RX_2
 
 /*
- * CAN
- *
- * CAN1 is routed to the onboard transceiver.
- * CAN2 is routed to the expansion connector.
- */
-#define GPIO_CAN1_RX	GPIO_CAN1_RX_3
-#define GPIO_CAN1_TX	GPIO_CAN1_TX_3
-#define GPIO_CAN2_RX	GPIO_CAN2_RX_1
-#define GPIO_CAN2_TX	GPIO_CAN2_TX_2
-
-/*
  * I2C
  *
  * The optional _GPIO configurations allow the I2C driver to manually
