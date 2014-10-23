@@ -152,8 +152,10 @@ ADC::ADC(uint32_t channels) :
 {
 	_debug_enabled = true;
 
+#ifndef CONFIG_ARCH_BOARD_AIRLEASH
 	/* always enable the temperature sensor */
 	channels |= 1 << 16;
+#endif
 
 	/* allocate the sample array */
 	for (unsigned i = 0; i < 32; i++) {
@@ -200,6 +202,9 @@ ADC::init()
 	/* XXX for F2/4, might want to select 12-bit mode? */
 	rCR1 = 0;
 
+#ifdef CONFIG_ARCH_BOARD_AIRLEASH
+	rCR2 = 0;
+#else // CONFIG_ARCH_BOARD_AIRLEASH
 	/* enable the temperature sensor / Vrefint channel if supported*/
 	rCR2 =
 #ifdef ADC_CR2_TSVREFE
@@ -212,6 +217,7 @@ ADC::init()
 	/* enable temperature sensor in CCR */
 	rCCR = ADC_CCR_TSVREFE;
 #endif
+#endif // CONFIG_ARCH_BOARD_AIRLEASH
 
 	/* configure for a single-channel sequence */
 	rSQR1 = 0;
@@ -324,17 +330,17 @@ ADC::update_system_power(void)
 	// publish these to the same topic
 	system_power.usb_connected = stm32_gpioread(GPIO_OTGFS_VBUS);
 
-#ifdef CONFIG_ARCH_BOARD_AIRDOG_FMU
+#if CONFIG_ARCH_BOARD_AIRDOG_FMU
 	// Brick valid signal is unstable on the new boards
 	system_power.brick_valid   = true;
-#else
+	system_power.servo_valid   = true;
+#elif CONFIG_ARCH_BOARD_PX4FMU_V2
 	// note that the valid pins are active low
 	system_power.brick_valid   = !stm32_gpioread(GPIO_VDD_BRICK_VALID);
-#endif
-#ifdef CONFIG_ARCH_BOARD_PX4FMU_V2
 	system_power.servo_valid   = !stm32_gpioread(GPIO_VDD_SERVO_VALID);
 #else
-	system_power.servo_valid   = true;
+	system_power.brick_valid   = false;
+	system_power.servo_valid   = false;
 #endif
 
 #ifdef CONFIG_ARCH_BOARD_PX4FMU_V2
@@ -445,6 +451,10 @@ adc_main(int argc, char *argv[])
 				| (1 << ADC_BATTERY_CURRENT_CHANNEL)
 				| (1 << ADC_SENSORS_VOLTAGE_CHANNEL)
 				| (1 << ADC_IO_CHIP_VOLTAGE_CHANNEL)
+		);
+#elif defined CONFIG_ARCH_BOARD_AIRLEASH
+		g_adc = new ADC ( (1 << ADC_BATTERY_VOLTAGE_CHANNEL)
+				| (1 << ADC_SENSORS_VOLTAGE_CHANNEL)
 		);
 #else
 # error Unsupported board.

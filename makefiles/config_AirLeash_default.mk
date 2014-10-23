@@ -24,6 +24,7 @@ MODULES		+= drivers/lsm303d
 MODULES		+= drivers/mpu6000
 MODULES		+= drivers/ms5611
 MODULES		+= drivers/stm32
+MODULES		+= drivers/stm32/adc
 MODULES		+= drivers/stm32/tone_alarm
 MODULES		+= modules/airdog/trajectory_calculator
 MODULES		+= modules/gpio_tool
@@ -48,7 +49,6 @@ MODULES		+= modules/spi_exchange
 #MODULES		+= drivers/px4io
 #MODULES		+= drivers/rgbled
 #MODULES		+= drivers/sf0x
-#MODULES		+= drivers/stm32/adc
 
 # Needs to be burned to the ground and re-written; for now,
 # just don't build it.

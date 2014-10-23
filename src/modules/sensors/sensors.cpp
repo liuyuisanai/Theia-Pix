@@ -41,6 +41,9 @@
  */
 
 #include <nuttx/config.h>
+#ifdef CONFIG_ARCH_BOARD_AIRLEASH
+# include <board_config.h>
+#endif
 
 #include <fcntl.h>
 #include <poll.h>
@@ -134,10 +137,17 @@
 #define ADC_AIRSPEED_VOLTAGE_CHANNEL	-1
 #endif
 
+
 #ifdef CONFIG_ARCH_BOARD_AIRDOG_FMU
 # include <board_config.h>
 #undef ADC_VOLTAGE_SCALE
 #define ADC_VOLTAGE_SCALE ((float)(ADC_SYSPOWER_VOLTAGE_SCALE))
+#endif
+
+#ifdef CONFIG_ARCH_BOARD_AIRLEASH
+// Look in board_config.h
+#undef ADC_VOLTAGE_SCALE
+#define ADC_VOLTAGE_SCALE ((float)(3.0 / 4096))
 #endif
 
 #define BATT_V_LOWPASS 0.001f
@@ -915,7 +925,7 @@ Sensors::accel_init()
 		/* set the driver to poll at 1000Hz */
 		ioctl(fd, SENSORIOCSPOLLRATE, 1000);
 
-#elif CONFIG_ARCH_BOARD_PX4FMU_V2 || CONFIG_ARCH_BOARD_AEROCORE || CONFIG_ARCH_BOARD_AIRDOG_FMU
+#elif CONFIG_ARCH_BOARD_PX4FMU_V2 || CONFIG_ARCH_BOARD_AEROCORE || CONFIG_ARCH_BOARD_AIRDOG_FMU || CONFIG_ARCH_BOARD_AIRLEASH
 
 		/* set the accel internal sampling rate up to at leat 800Hz */
 		ioctl(fd, ACCELIOCSSAMPLERATE, 800);
@@ -1444,7 +1454,9 @@ Sensors::adc_poll(struct sensor_combined_s &raw)
 						_battery_status.voltage_filtered_v = -1.0f;
 					}
 
-				} else if (ADC_BATTERY_CURRENT_CHANNEL == buf_adc[i].am_channel) {
+				}
+#ifdef ADC_BATTERY_CURRENT_CHANNEL
+				else if (ADC_BATTERY_CURRENT_CHANNEL == buf_adc[i].am_channel) {
 					/* handle current only if voltage is valid */
 					if (_battery_status.voltage_v > 0.0f) {
 						float current = (buf_adc[i].am_data * _parameters.battery_current_scaling);
@@ -1468,6 +1480,7 @@ Sensors::adc_poll(struct sensor_combined_s &raw)
 
 					_battery_current_timestamp = t;
 				}
+#endif // ADC_BATTERY_CURRENT_CHANNEL
 #ifdef ADC_AIRSPEED_VOLTAGE_CHANNEL
 				else if (ADC_AIRSPEED_VOLTAGE_CHANNEL == buf_adc[i].am_channel) {
 
