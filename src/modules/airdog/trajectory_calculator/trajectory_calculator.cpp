@@ -124,23 +124,27 @@ int calculate(int argc, char *argv[]) {
 			// Filters and modifies local position while he's at it
 			trajectory_data.point_type = analyzer.analyze(local_position);
 
-			map_projection_reproject(&ref_point, local_position.x, local_position.y, &est_lat, &est_lon);
+			// TODO! Raw fix to avoid publishing a still point on top of a valid point, thus Mavlink will get only still points
+			// if (trajectory_data.point_type != 0) {
+				map_projection_reproject(&ref_point, local_position.x, local_position.y, &est_lat, &est_lon);
 
-			trajectory_data.alt = local_position.ref_alt - local_position.z;
-			trajectory_data.lat = est_lat;
-			trajectory_data.lon = est_lon;
-			trajectory_data.vel_d = local_position.vz;
-			trajectory_data.vel_e = local_position.vy;
-			trajectory_data.vel_n = local_position.vx;
-			trajectory_data.relative_alt = home.alt - trajectory_data.alt;
-			trajectory_data.timestamp = local_position.timestamp;
-			trajectory_data.heading = _wrap_2pi(local_position.yaw);
+				trajectory_data.alt = local_position.ref_alt - local_position.z;
+				trajectory_data.lat = est_lat;
+				trajectory_data.lon = est_lon;
+				trajectory_data.vel_d = local_position.vz;
+				trajectory_data.vel_e = local_position.vy;
+				trajectory_data.vel_n = local_position.vx;
+				trajectory_data.relative_alt = home.alt - trajectory_data.alt;
+				trajectory_data.timestamp = local_position.timestamp;
+				trajectory_data.heading = _wrap_2pi(local_position.yaw);
 
-			if (trajectory_pub < 0) {
-				trajectory_pub = orb_advertise(ORB_ID(trajectory), &trajectory_data);
-			} else {
-				orb_publish(ORB_ID(trajectory), trajectory_pub, &trajectory_data);
-			}
+				// TODO! Limit publishing frequency to Mavlink stream frequency
+				if (trajectory_pub < 0) {
+					trajectory_pub = orb_advertise(ORB_ID(trajectory), &trajectory_data);
+				} else {
+					orb_publish(ORB_ID(trajectory), trajectory_pub, &trajectory_data);
+				}
+			// }
 		}
 		else {
 			warnx("Poll error!");
@@ -235,7 +239,7 @@ extern "C" __EXPORT int trajectory_calculator_main(int argc, char *argv[]) {
 			warnx("Not running.");
 		}
 		else {
-			warnx("Started.");
+			warnx("Running.");
 		}
 	}
 	else {

@@ -110,6 +110,7 @@ Navigator::Navigator() :
 	_param_update_sub(-1),
 	_vcommand_sub(-1),
 	_target_pos_sub(-1),
+	_target_trajectory_sub(-1),
 	_pos_sp_triplet_pub(-1),
 	_mission_result_pub(-1),
 	_att_sp_pub(-1),
@@ -125,6 +126,7 @@ Navigator::Navigator() :
 	_pos_sp_triplet{},
 	_mission_result{},
 	_att_sp{},
+	_target_trajectory{},
 	_mission_item_valid(false),
 	_loop_perf(perf_alloc(PC_ELAPSED, "navigator")),
 	_geofence{},
@@ -139,6 +141,7 @@ Navigator::Navigator() :
 	_engineFailure(this, "EF"),
 	_gpsFailure(this, "GPSF"),
 	_abs_follow(this, "FOL"),
+	_path_follow(this, "PAT"),
 	_can_loiter_at_sp(false),
 	_pos_sp_triplet_updated(false),
 	_commander_request_updated(false),
@@ -156,6 +159,7 @@ Navigator::Navigator() :
 	_navigation_mode_array[5] = &_gpsFailure;
 	_navigation_mode_array[6] = &_rcLoss;
 	_navigation_mode_array[7] = &_abs_follow;
+	_navigation_mode_array[8] = &_path_follow;
 
 	updateParams();
 }
@@ -248,6 +252,13 @@ Navigator::target_position_update()
 }
 
 void
+Navigator::target_trajectory_update()
+{
+	orb_copy(ORB_ID(external_trajectory), _target_trajectory_sub, &_target_trajectory);
+	warnx("Trajectory updated! Time: %d", _target_trajectory.timestamp);
+}
+
+void
 Navigator::task_main_trampoline(int argc, char *argv[])
 {
 	navigator::g_navigator->task_main();
@@ -292,6 +303,7 @@ Navigator::task_main()
 	_param_update_sub = orb_subscribe(ORB_ID(parameter_update));
 	_vcommand_sub = orb_subscribe(ORB_ID(vehicle_command));
 	_target_pos_sub = orb_subscribe(ORB_ID(target_global_position));
+	_target_trajectory_sub = orb_subscribe(ORB_ID(external_trajectory));
 
 	/* copy all topics first time */
 	vehicle_status_update();
@@ -303,6 +315,16 @@ Navigator::task_main()
 	navigation_capabilities_update();
 	params_update();
 	target_position_update();
+	target_trajectory_update();
+
+	/* Init the path_follow mode to allocate trajectory buffer */
+	if (_path_follow.init()) {
+		warnx("Successfully inited follow path mode");
+	}
+	else {
+		// TODO! Consider exiting at this point or deny mode switch
+		warnx("Failed to init follow path mode");
+	}
 
 	/* rate limit position updates to 50 Hz */
 	orb_set_interval(_global_pos_sub, 20);
@@ -311,7 +333,7 @@ Navigator::task_main()
 	const hrt_abstime mavlink_open_interval = 500000;
 
 	/* wakeup source(s) */
-	struct pollfd fds[9];
+	struct pollfd fds[10];
 
 	/* Setup of loop */
 	fds[0].fd = _global_pos_sub;
@@ -332,6 +354,8 @@ Navigator::task_main()
 	fds[7].events = POLLIN;
 	fds[8].fd = _target_pos_sub;
 	fds[8].events = POLLIN;
+	fds[9].fd = _target_trajectory_sub;
+	fds[9].events = POLLIN;
 
 	while (!_task_should_exit) {
 
@@ -354,6 +378,11 @@ Navigator::task_main()
 			/* try to reopen the mavlink log device with specified interval */
 			mavlink_open_time = hrt_abstime() + mavlink_open_interval;
 			_mavlink_fd = open(MAVLINK_LOG_DEVICE, 0);
+		}
+
+		/* target trajectory updated */
+		if (fds[9].revents & POLLIN) {
+			target_trajectory_update();
 		}
 
 		/* target position updated */

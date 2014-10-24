@@ -57,6 +57,7 @@
 #include <uORB/topics/vehicle_attitude_setpoint.h>
 #include <uORB/topics/target_global_position.h>
 #include <uORB/topics/commander_request.h>
+#include <uORB/topics/external_trajectory.h>
 
 #include <commander/px4_custom_mode.h>
 
@@ -70,12 +71,13 @@
 #include "rcloss.h"
 #include "geofence.h"
 #include "abs_follow.h"
+#include "path_follow.hpp"
 
 /**
  * Number of navigation modes that need on_active/on_inactive calls
- * Currently: mission, loiter, rtl, offboard, abs_follow
+ * Currently: mission, loiter, rtl, offboard, abs_follow, path_follow
  */
-#define NAVIGATOR_MODE_ARRAY_SIZE 8
+#define NAVIGATOR_MODE_ARRAY_SIZE 9
 
 class Navigator : public control::SuperBlock
 {
@@ -145,6 +147,7 @@ public:
 
 	struct commander_request_s*	get_commander_request() { return &_commander_request;};
 	struct target_global_position_s*    get_target_position() {return &_target_pos; }
+	struct external_trajectory_s*		get_target_trajectory() {return &_target_trajectory;}
 	int		get_onboard_mission_sub() { return _onboard_mission_sub; }
 	int		get_offboard_mission_sub() { return _offboard_mission_sub; }
 	int		get_vehicle_command_sub() { return _vcommand_sub; }
@@ -173,6 +176,7 @@ private:
 	int		_param_update_sub;		/**< param update subscription */
 	int 	_vcommand_sub;			/**< vehicle control subscription */
 	int 	_target_pos_sub; 		/**< target position subscription */
+	int		_target_trajectory_sub;	/**< target trajectory subscription */
 
 
 	orb_advert_t	_pos_sp_triplet_pub;		/**< publish position setpoint triplet */
@@ -195,6 +199,7 @@ private:
 	mission_result_s				_mission_result;
 	vehicle_attitude_setpoint_s					_att_sp;
 	target_global_position_s 			_target_pos;		/**< global target position */
+	external_trajectory_s				_target_trajectory; /**< target trajectory */
 	commander_request_s					_commander_request;
 
 	bool 		_mission_item_valid;		/**< flags if the current mission item is valid */
@@ -217,6 +222,7 @@ private:
 							  (FW only!) */
 	GpsFailure	_gpsFailure;			/**< class that handles the OBC gpsfailure loss mode */
 	AbsFollow 	_abs_follow;			/**< class that handles AFollow */
+	PathFollow	_path_follow;		/**< class that handles Follow Path*/
 
 	NavigatorMode *_navigation_mode_array[NAVIGATOR_MODE_ARRAY_SIZE];	/**< array of navigation modes */
 
@@ -272,6 +278,11 @@ private:
 	 * Retrieve target global position
 	 */
 	void		target_position_update();
+
+	/**
+	 * Retrieve target trajectory
+	 */
+	void 		target_trajectory_update();
 
 	/**
 	 * Shim for calling task_main from task_create.

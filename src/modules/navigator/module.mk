@@ -59,7 +59,8 @@ SRCS		= navigator_main.cpp \
 		  gpsfailure.cpp \
 		  gpsfailure_params.c \
 		  abs_follow.cpp \
-		  abs_follow_params.c 
+		  abs_follow_params.c \
+		  path_follow.cpp
 
 INCLUDE_DIRS	 += $(MAVLINK_SRC)/include/mavlink
 
