@@ -35,6 +35,7 @@ private:
 
 	// Updates saved trajectory and trajectory distance with a new point
 	void update_trajectory();
+	void update_setpoint(const buffer_point_s &desired_point);
 	// Calculates desired speed in m/s based on current distance and target's speed
 	float calculate_desired_speed(float distance, float target_speed);
 	float calculate_current_distance();

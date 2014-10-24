@@ -16,54 +16,62 @@ PathFollow::PathFollow(Navigator *navigator, const char *name):
 		_last_trajectory_time(0),
 		_saved_trajectory(),
 		_trajectory_distance(0),
-		_has_valid_setpoint(false)
-{
+		_has_valid_setpoint(false) {
 
 }
-PathFollow::~PathFollow()
-{
+PathFollow::~PathFollow() {
 
 }
-bool PathFollow::init()
-{
+bool PathFollow::init() {
 	// TODO! Parameters
 	return (_saved_trajectory.init(500));
 }
-void PathFollow::on_inactive()
-{
+void PathFollow::on_inactive() {
 	// TODO! Consider if we want to continue collecting trajectory data while inactive
 	// update_trajectory();
 }
-void PathFollow::on_activation()
-{
+void PathFollow::on_activation() {
 	_has_valid_setpoint = false;
+	// TODO! Consider if we really want to reset the trajectory state
+	_saved_trajectory.do_empty();
 	update_trajectory();
 	global_pos = _navigator->get_global_position();
 	pos_sp_triplet = _navigator->get_position_setpoint_triplet();
 	pos_sp_triplet->next.valid = false;
 	// Reset position setpoint to shoot and loiter until we get an acceptable trajectory point
+	pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
 	pos_sp_triplet->current.lat = global_pos->lat;
 	pos_sp_triplet->current.lon = global_pos->lon;
 	pos_sp_triplet->current.alt = global_pos->alt;
 	point_camera_to_target(&(pos_sp_triplet->current));
 	_navigator->set_position_setpoint_triplet_updated();
 }
-void PathFollow::on_active()
-{
+void PathFollow::on_active() {
 	update_trajectory();
+	pos_sp_triplet = _navigator->get_position_setpoint_triplet();
 	if (!_has_valid_setpoint) {
-		if (!_saved_trajectory.is_empty()) {
-			_saved_trajectory.pop(_actual_point);
+		_has_valid_setpoint = _saved_trajectory.pop(_actual_point);
+		if (_has_valid_setpoint) {
+			update_setpoint(_actual_point);
+		}
+	}
+	else {
+		// TODO! Update the check for moving points and check for Follow Path compatibility
+		if (check_current_pos_sp_reached()) {
+			_trajectory_distance -= get_distance_to_next_waypoint(pos_sp_triplet->current.lat,
+					pos_sp_triplet->current.lon, _actual_point.lat, _actual_point.lon);
+			_has_valid_setpoint = _saved_trajectory.pop(_actual_point);
+			if (_has_valid_setpoint) {
+				update_setpoint(_actual_point);
+			}
 		}
 	}
 }
-void PathFollow::execute_vehicle_command()
-{
+void PathFollow::execute_vehicle_command() {
 
 }
 
-void PathFollow::update_trajectory()
-{
+void PathFollow::update_trajectory() {
 	struct external_trajectory_s *target_trajectory = _navigator->get_target_trajectory();
 	// Assuming timestamp won't be 0 on first call
 	if (_last_trajectory_time != target_trajectory->timestamp && target_trajectory->point_type != 0) {
@@ -82,6 +90,21 @@ void PathFollow::update_trajectory()
 			mavlink_log_info(_mavlink_fd, "Trajectory overflow!");
 		}
 	}
+}
+
+// TODO! Add velocity
+void PathFollow::update_setpoint(const buffer_point_s &desired_point) {
+	// TODO! Parameters
+	float offset = 5;
+	pos_sp_triplet = _navigator->get_position_setpoint_triplet();
+	// TODO! Is it needed?
+	pos_sp_triplet->previous = pos_sp_triplet->current;
+	pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
+	pos_sp_triplet->current.lat = desired_point.lat;
+	pos_sp_triplet->current.lon = desired_point.lon;
+	pos_sp_triplet->current.alt = desired_point.alt + offset;
+	point_camera_to_target(&(pos_sp_triplet->current));
+	_navigator->set_position_setpoint_triplet_updated();
 }
 
 float PathFollow::calculate_desired_speed(float distance, float target_speed) {
