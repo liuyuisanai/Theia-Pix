@@ -55,7 +55,14 @@ public:
 	bool sendCustomParam(const char *name, enum param_type type, float new_value, bool upload);
 
 	//Menu controls
-	inline bool allParamsAreLoaded(void) { return loaded_count == PARAM_COUNT; }
+	inline bool allParamsAreLoaded(void) { 
+        
+        FILE * fh = fopen("/fs/microsd/log/m256", "a");
+        fprintf(fh, "Loaded count is %d, needed count is %d", loaded_count, PARAM_COUNT);
+        fclose(fh);
+
+        return loaded_count == PARAM_COUNT;
+    }
 	inline int getParamCount(void) { return PARAM_COUNT; }
 
 	void incParam(int param_id);

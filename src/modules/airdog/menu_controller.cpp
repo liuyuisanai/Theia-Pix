@@ -61,6 +61,11 @@ void MENU_CONTROLLER::handleClickedButton(uint8_t button/*, bool long_press*/) {
 
 void MENU_CONTROLLER::open(void) {
 	if(!m_paramHandler->allParamsAreLoaded()) {
+
+        FILE * fh = fopen("/fs/microsd/log/m256", "a");
+        fprintf(fh, "Params not loaded!\n");
+        fclose(fh);
+
 		m_pi2c_disp_ctrl->set_symbols(SYMBOL_DOT, SYMBOL_DOT, SYMBOL_DOT);
 		return;
 	}

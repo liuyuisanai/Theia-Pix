@@ -70,6 +70,12 @@
  */
 #define LONG_PRESS_TIME 1500000
 
+/*
+ * Type: hrt_abstime
+ * Measured in microseconds
+ */
+#define PRESSED_BUTTON_RESEND_CYCLE 500000
+
 #define BUTTON_HANDLED true
 #define BUTTON_IGNORED false
 
@@ -112,6 +118,7 @@ private:
 	struct button_s {
 		bool pressed;
 		hrt_abstime time_pressed;
+		hrt_abstime last_command_sent;
 	};
 
 	void check(button_set bs, struct button_s *buttons, int count);

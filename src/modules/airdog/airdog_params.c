@@ -62,3 +62,9 @@ PARAM_DEFINE_INT32(AIRD_CHECK_MAG, 0);
 
 /*Enable automatic magnetic declination setting from coordinates*/
 PARAM_DEFINE_INT32(AIRD_AUTO_MAG, 1);
+
+/*Trajectory calculator low pass filter cutoff frequency (Hz) */
+PARAM_DEFINE_FLOAT(AIRD_TRAJ_CUT, 0.2f);
+
+/*Trajectory calculator stillness radius (meters) */
+PARAM_DEFINE_FLOAT(AIRD_TRAJ_RAD, 5);

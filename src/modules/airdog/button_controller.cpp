@@ -1,4 +1,5 @@
 #include "button_controller.h"
+#include <stdio.h>
 
 cButtonController::cButtonController(void)
 {
@@ -31,45 +32,104 @@ void cButtonController::check(enum button_set bs, struct button_s *buttons, int 
 	cb_clicked = (bc_callback_clicked_t)callbacks[bs][BCBT_CLICKED];
 	cb_pressed = (bc_callback_pressed_t)callbacks[bs][BCBT_PRESSED];
 
-	for(int i = 0; i < count; i++) {
+	bool center_button_pressed = buttons[4].pressed;
+	hrt_abstime center_button_time_pressed = buttons[4].time_pressed;
+
+	for (int i = 0;i < count; i++){
+
 		now_pressed = !(mask[bs] & (1 << i));
-		if(!buttons[i].pressed) {
-			if(!now_pressed) {
-				continue;
-			}
-			if(ignore_mask[bs] & (1 << i)) {
-				//If now_pressed == true because of ignore_mask,
-				//unset ignore_mask (it's no more actual)
-				ignore_mask[bs] &= ~(1 << i);
-				continue;
+
+		// In last iteration wasn't pressed. Now it's pressed.
+		if (now_pressed && !buttons[i].pressed) {
+			buttons[i].time_pressed = now;
+			buttons[i].last_command_sent = 0;
+			buttons[i].pressed = true;
+		}
+
+		// Pressed buttons have to be handled first for menu to work.
+		if(cb_pressed && (*cb_pressed)(callback_args[bs][BCBT_CLICKED], i, now - buttons[i].time_pressed)) {
+			continue;
+		}
+
+		// In last iteration button was pressed. Now it's now.
+		if (!now_pressed && buttons[i].pressed) {
+
+
+			// Added this to not break long_press functionality for play button.
+			// Everywhere else long_press is not used any more.
+			/*
+			if (cb_clicked && i == 2)
+				(*cb_clicked)(callback_args[bs][BCBT_CLICKED], i, (now - buttons[i].time_pressed) > LONG_PRESS_TIME);
+			 */
+			buttons[i].pressed = false;
+		}
+
+
+		// Center button won't work alone, only in combination of others.
+		if (i!=4 && buttons[i].pressed)
+		{
+			// If center button is held down, all other buttons will have different functionality.
+			if (center_button_pressed && center_button_time_pressed < buttons[i].time_pressed) {
+
+				// In combination with center button, we don't need
+				// pressed button resend functionality
+
+				int new_button_number = 0;
+
+				switch (i) {
+					// DOWN + CENTER
+					case 1:
+						new_button_number = 9;
+						break;
+					// UP + CENTER
+					case 3:
+						new_button_number = 10;
+						break;
+					// CENTER DOWN + CENTER
+					case 5:
+						new_button_number = 11;
+						break;
+					// CENTER RIGHT + CENTER
+					case 6:
+						new_button_number = 12;
+						break;
+					// CENTER UP + CENTER
+					case 7:
+						new_button_number = 13;
+						break;
+					// CENTER LEFT + CENTER
+					case 8:
+						new_button_number = 14;
+						break;
+				}
+
+				if (new_button_number && buttons[i].last_command_sent == 0) {
+					(*cb_clicked)(callback_args[bs][BCBT_CLICKED], new_button_number, false);
+					buttons[i].last_command_sent = now;
+				}
+
+			// Handle buttons when center button is not pressed.
 			} else {
-				buttons[i].time_pressed = now;
-				buttons[i].pressed = true;
+
+				// Handle button press the first time
+				if (buttons[i].last_command_sent == 0) {
+					(*cb_clicked)(callback_args[bs][BCBT_CLICKED], i, false);
+					buttons[i].last_command_sent = now;
+				}
+
+				// Pressed button resend cycle
+				// Resend will work with:
+				// DOWN, UP, CENTER DONW, CENTER RIGHT, CENTER UP, CENTER LEFT
+				if ( i == 1 || i == 3 || i == 5 || i == 6 || i == 7 || i == 8) {
+
+					if ( now - buttons[i].last_command_sent > PRESSED_BUTTON_RESEND_CYCLE) {
+						(*cb_clicked)(callback_args[bs][BCBT_CLICKED], i, false);
+						buttons[i].last_command_sent = now;
+					}
+				}
 			}
 		}
 
-		if(now_pressed) {
-			if(cb_pressed && (*cb_pressed)(callback_args[bs][BCBT_PRESSED], i, now - buttons[i].time_pressed)) {
-				//If pressed callback is available and it is handled
-				//do nothing
-				continue;
-			} else if(cb_clicked && now - buttons[i].time_pressed > LONG_PRESS_TIME) {
-				//If clicked callback is available and it is longpress,
-				//try to handle longpress now, not waiting for clicked event
-				if((*cb_clicked)(callback_args[bs][BCBT_CLICKED], i, true)) {
-					//If clicked callback is handled, setup ignore mask,
-					//so we wouldn't call clicked callback multiple times
-					buttons[i].pressed = false;
-					ignore_mask[bs] |= (1 << i);
-					mask[bs] &= ~(1 << i);
-				}
-			}
-		} else {
-			if(cb_clicked) {
-				(*cb_clicked)(callback_args[bs][BCBT_PRESSED], i, (now - buttons[i].time_pressed) > LONG_PRESS_TIME);
-			}
-			buttons[i].pressed = false;
-		}
 	}
 }
 

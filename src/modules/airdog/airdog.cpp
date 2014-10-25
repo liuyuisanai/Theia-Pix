@@ -154,28 +154,29 @@ void cAirdog::cycle()
 		armed = airdog_status.base_mode & MAV_MODE_FLAG_SAFETY_ARMED;
 		display_drone_state();
 
-		handle_takeoff();
+		// handle_takeoff();
 
-		if (airdog_status.battery_remaining < bat_warning_level && battery_warning_count < 3 && airdog_status.battery_remaining!= 0)
-		{
-			mavlink_log_info(mavlink_fd, "remaining %d", airdog_status.battery_remaining);
-			battery_warning_count++;
-			ioctl(buzzer, TONE_SET_ALARM, TONE_NOTIFY_NEGATIVE_TUNE);
-			pi2c_ctrl->start_blinking_led(I2C_LED_RED, BLINKING_RATE_SLOW);
-
-		} else if (airdog_status.battery_remaining < bat_critical_level && airdog_status.battery_remaining!= 0)
-		{
-			if (!rtl_triggered_from_battery && airdog_status.sub_mode != PX4_CUSTOM_SUB_MODE_AUTO_RTL && airdog_status.sub_mode != PX4_CUSTOM_SUB_MODE_AUTO_LAND)
+		if(!hil) {
+			if (airdog_status.battery_remaining < bat_warning_level && battery_warning_count < 3 && airdog_status.battery_remaining!= 0)
 			{
-				rtl_triggered_from_battery = true;
-				// send_set_state(NAV_STATE_RTL, MOVE_NONE);
-				pi2c_ctrl->start_blinking_led(I2C_LED_RED, BLINKING_RATE_FAST);
-			}
-		} else if (airdog_status.battery_remaining > bat_warning_level)
-		{
-			pi2c_ctrl->stop_blinking_led(I2C_LED_RED, true);
-		}
+				mavlink_log_info(mavlink_fd, "remaining %d", airdog_status.battery_remaining);
+				battery_warning_count++;
+				ioctl(buzzer, TONE_SET_ALARM, TONE_NOTIFY_NEGATIVE_TUNE);
+				pi2c_ctrl->start_blinking_led(I2C_LED_RED, BLINKING_RATE_SLOW);
 
+			} else if (airdog_status.battery_remaining < bat_critical_level && airdog_status.battery_remaining!= 0)
+			{
+				if (!rtl_triggered_from_battery && airdog_status.sub_mode != PX4_CUSTOM_SUB_MODE_AUTO_RTL && airdog_status.sub_mode != PX4_CUSTOM_SUB_MODE_AUTO_LAND)
+				{
+					rtl_triggered_from_battery = true;
+					// send_set_state(NAV_STATE_RTL, MOVE_NONE);
+					pi2c_ctrl->start_blinking_led(I2C_LED_RED, BLINKING_RATE_FAST);
+				}
+			} else if (airdog_status.battery_remaining > bat_warning_level)
+			{
+				pi2c_ctrl->stop_blinking_led(I2C_LED_RED, true);
+			}
+		}
 
 		if (airdog_status.timestamp > 0)
 		{
@@ -220,6 +221,50 @@ void cAirdog::send_set_mode(uint8_t base_mode, enum PX4_CUSTOM_MAIN_MODE custom_
 	cmd.source_system = vehicle_status.system_id;
 	cmd.source_component = vehicle_status.component_id;
 	// TODO add parameters AD_VEH_SYSID, AD_VEH_COMP to set target id
+	cmd.target_system = 1;
+	cmd.target_component = 50;
+
+	if (cmd_pub < 0) {
+		cmd_pub = orb_advertise(ORB_ID(vehicle_command), &cmd);
+	} else {
+		orb_publish(ORB_ID(vehicle_command), cmd_pub, &cmd);
+	}
+}
+
+void cAirdog::send_set_auto_mode(uint8_t base_mode, enum PX4_CUSTOM_SUB_MODE_AUTO custom_sub_mode_auto)
+{
+	struct vehicle_command_s cmd;
+	memset(&cmd, 0, sizeof(cmd));
+
+	/* fill command */
+	cmd.command = VEHICLE_CMD_DO_SET_MODE;
+	cmd.confirmation = false;
+	cmd.param1 = base_mode;
+	cmd.param2 = custom_sub_mode_auto;
+	cmd.source_system = vehicle_status.system_id;
+	cmd.source_component = vehicle_status.component_id;
+	// TODO add parameters AD_VEH_SYSID, AD_VEH_COMP to set target id
+	cmd.target_system = 1;
+	cmd.target_component = 50;
+
+	if (cmd_pub < 0) {
+		cmd_pub = orb_advertise(ORB_ID(vehicle_command), &cmd);
+	} else {
+		orb_publish(ORB_ID(vehicle_command), cmd_pub, &cmd);
+	}
+}
+
+void cAirdog::send_command(enum REMOTE_CMD command)
+{
+	struct vehicle_command_s cmd;
+	memset(&cmd, 0, sizeof(cmd));
+
+	/* fill command */
+	cmd.param1 = command;
+	cmd.command = VEHICLE_CMD_NAV_REMOTE_CMD;
+	cmd.confirmation = false;
+	cmd.source_system = vehicle_status.system_id;
+	cmd.source_component = vehicle_status.component_id;
 	cmd.target_system = 1;
 	cmd.target_component = 50;
 
@@ -323,74 +368,57 @@ bool cAirdog::button_clicked_i2c(uint8_t button, bool long_press)
 			break;
 		case 1:
 			// DOWN button
-			if (long_press) {
-				// send_set_state(NAV_STATE_RTL, MOVE_NONE);
-			} else {
-				// send_set_move(MOVE_DOWN);
-			}
+			send_command(REMOTE_CMD_DOWN);
 			break;
 		case 2:
 			// PLAY button
 
-			if (pitch_down)
-			{
-				pparam_handler->sendCustomParam("AIRD_PITCH_DOWN", PTYPE_INT, 0, true);
-				pitch_down = false;
-			}
 			if (!armed & drone_active)
 			{
-				if (long_press)
+				uint8_t base_mode = MAV_MODE_FLAG_SAFETY_ARMED | MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
+				if (hil)
 				{
-					uint8_t base_mode = MAV_MODE_FLAG_SAFETY_ARMED | MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
-					if (hil)
-					{
-						base_mode |= MAV_MODE_FLAG_HIL_ENABLED;
-					}
-					send_set_mode(base_mode, PX4_CUSTOM_MAIN_MODE_AUTO);
-					//while (airdog_status.main_mode != PX4_CUSTOM_MAIN_MODE_AUTO) {
-					//	System.Threading.Thread.Sleep(250); // pause for 1/4 second;
-					//};
-					takeoff_requested = true;
+					base_mode |= MAV_MODE_FLAG_HIL_ENABLED;
 				}
+				send_set_mode(base_mode, PX4_CUSTOM_MAIN_MODE_AUTO);
 			} else {
-				if (long_press)
-				{
-					if (pparam_handler->get(PARAM_NAV_LAND_HOME) > 0) {
-						// send_set_state(NAV_STATE_RTL, MOVE_NONE);
-					} else {
-						// send_set_state(NAV_STATE_LAND, MOVE_NONE);
-					}
-					//send_set_mode(MAV_MODE_FLAG_CUSTOM_MODE_ENABLED, PX4_CUSTOM_MAIN_MODE_AUTO);
-				} else {
-					if (airdog_status.sub_mode == PX4_CUSTOM_SUB_MODE_AUTO_LOITER)
-					{
-						// send_set_state(NAV_STATE_AFOLLOW, MOVE_NONE);
-					} else {
-						// send_set_state(NAV_STATE_LOITER, MOVE_NONE);
-					}
-				}
+				send_command(REMOTE_CMD_PLAY_PAUSE);
 			}
+			// } else {
+			// 	if (long_press)
+			// 	{
+			// 		if (pparam_handler->get(PARAM_NAV_LAND_HOME) > 0) {
+			// 			// send_set_state(NAV_STATE_RTL, MOVE_NONE);
+			// 		} else {
+			// 			// send_set_state(NAV_STATE_LAND, MOVE_NONE);
+			// 		}
+			// 		//send_set_mode(MAV_MODE_FLAG_CUSTOM_MODE_ENABLED, PX4_CUSTOM_MAIN_MODE_AUTO);
+			// 	} else {
+			// 		if (airdog_status.sub_mode == PX4_CUSTOM_SUB_MODE_AUTO_LOITER)
+			// 		{
+			// 			// send_set_state(NAV_STATE_AFOLLOW, MOVE_NONE);
+			// 		} else {
+			// 			// send_set_state(NAV_STATE_LOITER, MOVE_NONE);
+			// 		}
+			// 	}
+			// }
 			break;
 		case 3:
 			// UP button
-			if (long_press) {
-				set_land_mode();
-			} else {
-				// send_set_move(MOVE_UP);
-			}
+			send_command(REMOTE_CMD_UP);
 			break;
 		case 4:
 			// CENTER button
 			//
 			if (long_press) {
-				if (!log_running) {
-					send_record_path_cmd(true);
-					log_running = true;
-					pi2c_disp_ctrl->set_symbols(SYMBOL_L, SYMBOL_0, SYMBOL_EMPTY);
-				} else {
-					send_record_path_cmd(false);
-					log_running = false;
-				}
+				// if (!log_running) {
+				// 	send_record_path_cmd(true);
+				// 	log_running = true;
+				// 	pi2c_disp_ctrl->set_symbols(SYMBOL_L, SYMBOL_0, SYMBOL_EMPTY);
+				// } else {
+				// 	send_record_path_cmd(false);
+				// 	log_running = false;
+				// }
 			} else if (vehicle_status.system_id == trainer_remote_id) { //TODO get trainer remote id from drone
 				// send_set_state(NAV_STATE_COME_HERE, MOVE_TRAINER);
 			} else {
@@ -399,37 +427,59 @@ bool cAirdog::button_clicked_i2c(uint8_t button, bool long_press)
 			break;
 		case 5:
 			// CENTER DOWN
-
-			if (long_press)
-			{
-				pparam_handler->sendCustomParam("AIRD_PITCH_DOWN", PTYPE_INT, 1, false);
-				pitch_down = true;
-			} else {
-				// send_set_move(MOVE_CLOSER);
-			}
+			send_command(REMOTE_CMD_CLOSER);
 			break;
 		case 6:
 			// CENTER RIGHT
-			// send_set_move(MOVE_RIGHT);
+			send_command(REMOTE_CMD_RIGHT);
 			break;
 		case 7:
 			// CENTER UP
-			if (long_press) {
-				if (vehicle_status.system_id == trainer_remote_id) {
-					// send_set_state(NAV_STATE_COME_HERE, MOVE_TARGET);
-				}
-			} else {
-				// send_set_move(MOVE_FARTHER);
-			}
+			send_command(REMOTE_CMD_FURTHER);
 			break;
 		case 8:
 			// CENTER LEFT
-			if (long_press) {
-				display_discharged_mah();
-			} else {
-				// send_set_move(MOVE_LEFT);
-			}
+			send_command(REMOTE_CMD_LEFT);
 			break;
+		case 9:
+			// DOWN + CENTER
+			send_command(REMOTE_CMD_LAND_DISARM);
+			break;
+		case 10:
+			// UP + CENTER
+			send_command(REMOTE_CMD_TAKEOFF);
+			break;
+		case 11:
+			// CENTER DOWN + CENTER
+			// pparam_handler->sendCustomParam("AIRD_PITCH_DOWN", PTYPE_INT, 1, false);
+			// pitch_down = true;
+
+			send_command(REMOTE_CMD_LOOK_DOWN);
+			break;
+		case 12:
+		{
+			// CENTER RIGHT + CENTER
+			uint8_t base_mode = MAV_MODE_FLAG_SAFETY_ARMED | MAV_MODE_FLAG_AUTO_ENABLED;
+			if (hil)
+			{
+				base_mode |= MAV_MODE_FLAG_HIL_ENABLED;
+			}
+
+			send_set_auto_mode(base_mode, PX4_CUSTOM_SUB_MODE_AUTO_RTL);
+
+			break;
+		}
+		case 13:
+		{
+			// CENTER UP + CENTER
+			send_command(REMOTE_CMD_COME_TO_ME);
+			break;
+		}
+		case 14:
+			// CENTER LEFT + CENTER
+			break;
+
+
 	}
 
 	return BUTTON_HANDLED;
@@ -465,20 +515,20 @@ void cAirdog::display_drone_state() {
 
 void cAirdog::handle_takeoff()
 {
-	bool ready_for_takeoff = armed && airdog_status.sub_mode == PX4_CUSTOM_SUB_MODE_AUTO_READY;
-	uint64_t now = hrt_absolute_time();
-	if (takeoff_request_time > 0 && (now - takeoff_request_time) / (1000 * 1000) > 1 && ready_for_takeoff) {
-		rtl_triggered_from_battery = false;
-		// send_set_state(NAV_STATE_TAKEOFF, MOVE_NONE);
-		takeoff_request_time = now;
-	} else if (takeoff_requested && ready_for_takeoff) {
-		rtl_triggered_from_battery = false;
-		// send_set_state(NAV_STATE_TAKEOFF, MOVE_NONE);
-		takeoff_requested = false;
-		takeoff_request_time = now;
-	} else if (takeoff_request_time > 0 && airdog_status.sub_mode == PX4_CUSTOM_SUB_MODE_AUTO_TAKEOFF) {
-		takeoff_request_time = 0;
-	}
+	// bool ready_for_takeoff = armed && airdog_status.sub_mode == PX4_CUSTOM_SUB_MODE_AUTO_READY;
+	// uint64_t now = hrt_absolute_time();
+	// if (takeoff_request_time > 0 && (now - takeoff_request_time) / (1000 * 1000) > 1 && ready_for_takeoff) {
+	// 	rtl_triggered_from_battery = false;
+	// 	// send_set_state(NAV_STATE_TAKEOFF, MOVE_NONE);
+	// 	takeoff_request_time = now;
+	// } else if (takeoff_requested && ready_for_takeoff) {
+	// 	rtl_triggered_from_battery = false;
+	// 	// send_set_state(NAV_STATE_TAKEOFF, MOVE_NONE);
+	// 	takeoff_requested = false;
+	// 	takeoff_request_time = now;
+	// } else if (takeoff_request_time > 0 && airdog_status.sub_mode == PX4_CUSTOM_SUB_MODE_AUTO_TAKEOFF) {
+	// 	takeoff_request_time = 0;
+	// }
 }
 
 void cAirdog::display_discharged_mah() {

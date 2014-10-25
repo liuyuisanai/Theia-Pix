@@ -58,20 +58,38 @@ void cParamHandler::setupSave(orb_advert_t *orb_cmd, int32_t system_id, int32_t 
 }
 
 void cParamHandler::loadCycle(void) {
+
 	if(is_requested) {
 		int res;
 		bool updated;
-
+        
 		res = orb_check(passed_param_sub, &updated);
 		if(res == -1) {
 			//orb_check failed
+            //
+
+            FILE * fh = fopen("/fs/microsd/log/m256", "a");
+            fprintf(fh, "Orb check failed\n");
+            fclose(fh);
+
 		} else if(updated) {
+           
 			ad_param_t *pparam;
 			struct pass_drone_param_s param;
 			orb_copy(ORB_ID(pass_drone_parameter), passed_param_sub, &param);
 			pparam = &paramTable[loaded_count];
 
+
+            FILE * fh = fopen("/fs/microsd/log/m256", "a");
+            fprintf(fh, "Orb check ok\n");
+            fclose(fh);
+
 			if(!strncmp(param.param_id, pparam->name, sizeof(param.param_id))) {
+
+                FILE * fh = fopen("/fs/microsd/log/m256", "a");
+                fprintf(fh, "Compare ok \n");
+                fclose(fh);
+
 				pparam->type = (enum param_type)param.param_type;
 				switch(pparam->type) {
 					case PTYPE_INT:
@@ -90,6 +108,11 @@ void cParamHandler::loadCycle(void) {
 
 			is_requested = false;
 		} else if((hrt_absolute_time() - request_time) / 10000.0f > load_update_timeout) {
+
+            FILE * fh = fopen("/fs/microsd/log/m256", "a");
+            fprintf(fh, "Load update fail\n");
+            fclose(fh);
+
 			load_update_fail_count++;
 			if(load_update_fail_count >= max_load_update_fail_count) {
 				//TODO: Do something?
