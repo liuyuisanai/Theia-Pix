@@ -171,3 +171,31 @@ PARAM_DEFINE_FLOAT(COM_EF_TIME, 10.0f);
  * @max 35
  */
 PARAM_DEFINE_FLOAT(COM_RC_LOSS_T, 0.5);
+
+/**
+ * Battery voltage when warning actions should be made.
+ *
+ * @group Battery Calibration
+ * @min 0
+ * @max 1
+ */
+PARAM_DEFINE_FLOAT(BAT_WARN_LVL, 0.18f);
+
+/**
+ * Voltage when battery level is considered critical.
+ *
+ * @group Battery Calibration
+ * @min 0
+ * @max 1
+ */
+PARAM_DEFINE_FLOAT(BAT_CRIT_LVL, 0.09f);
+
+/**
+* Voltage when battery level is considered flat.
+ *
+ * @group Battery Calibration
+ * @min 0
+ * @max 1
+ */
+PARAM_DEFINE_FLOAT(BAT_FLAT_LVL, 0.02f);
+

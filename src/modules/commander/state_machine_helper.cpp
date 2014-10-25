@@ -138,6 +138,7 @@ arming_state_transition(struct vehicle_status_s *status,		///< current vehicle s
 		/* enforce lockdown in HIL */
 		if (status->hil_state == HIL_STATE_ON) {
 			armed->lockdown = true;
+			armed->lockdown = false; // TODO remove line
 
 		} else {
 			armed->lockdown = false;
@@ -310,6 +311,13 @@ main_state_transition(struct vehicle_status_s *status, main_state_t new_main_sta
 		}
 		break;
 
+	case MAIN_STATE_AUTO_ABS_FOLLOW:
+		/* need global position estimate */
+		if (status->condition_global_position_valid && status->condition_target_position_valid) {
+			ret = TRANSITION_CHANGED;
+		}
+		break;
+
 	case MAIN_STATE_OFFBOARD:
 
 		/* need offboard signal */
@@ -323,6 +331,7 @@ main_state_transition(struct vehicle_status_s *status, main_state_t new_main_sta
 	default:
 		break;
 	}
+
 	if (ret == TRANSITION_CHANGED) {
 		if (status->main_state != new_main_state) {
 			status->main_state = new_main_state;
@@ -452,7 +461,8 @@ transition_result_t hil_state_transition(hil_state_t new_state, int status_pub, 
  * Check failsafe and main status and set navigation status for navigator accordingly
  */
 bool set_nav_state(struct vehicle_status_s *status, const bool data_link_loss_enabled, const bool mission_finished,
-		const bool stay_in_failsafe)
+		const bool stay_in_failsafe, const int mavlink_fd)
+
 {
 	navigation_state_t nav_state_old = status->nav_state;
 
@@ -586,18 +596,18 @@ bool set_nav_state(struct vehicle_status_s *status, const bool data_link_loss_en
 			}
 
 		/* go into failsafe if RC is lost and datalink loss is not set up */
-		} else if (status->rc_signal_lost && !data_link_loss_enabled) {
-			status->failsafe = true;
+		// } else if (status->rc_signal_lost && !data_link_loss_enabled) {
+		// 	status->failsafe = true;
 
-			if (status->condition_global_position_valid && status->condition_home_position_valid) {
-				status->nav_state = NAVIGATION_STATE_AUTO_RTGS;
-			} else if (status->condition_local_position_valid) {
-				status->nav_state = NAVIGATION_STATE_LAND;
-			} else if (status->condition_local_altitude_valid) {
-				status->nav_state = NAVIGATION_STATE_DESCEND;
-			} else {
-				status->nav_state = NAVIGATION_STATE_TERMINATION;
-			}
+		// 	if (status->condition_global_position_valid && status->condition_home_position_valid) {
+		// 		status->nav_state = NAVIGATION_STATE_AUTO_RTGS;
+		// 	} else if (status->condition_local_position_valid) {
+		// 		status->nav_state = NAVIGATION_STATE_LAND;
+		// 	} else if (status->condition_local_altitude_valid) {
+		// 		status->nav_state = NAVIGATION_STATE_DESCEND;
+		// 	} else {
+		// 		status->nav_state = NAVIGATION_STATE_TERMINATION;
+		// 	}
 
 		/* don't bother if RC is lost if datalink is connected */
 		} else if (status->rc_signal_lost) {
@@ -628,6 +638,16 @@ bool set_nav_state(struct vehicle_status_s *status, const bool data_link_loss_en
 			}
 		} else {
 			status->nav_state = NAVIGATION_STATE_AUTO_RTL;
+		}
+		break;
+		
+	case MAIN_STATE_AUTO_ABS_FOLLOW:
+		/* require target position*/
+		if ((!status->condition_target_position_valid)) {
+
+			status->nav_state = NAVIGATION_STATE_AUTO_LOITER;
+		} else {
+			status->nav_state = NAVIGATION_STATE_AUTO_ABS_FOLLOW;
 		}
 		break;
 

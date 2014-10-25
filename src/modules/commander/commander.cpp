@@ -83,6 +83,8 @@
 #include <uORB/topics/mission.h>
 #include <uORB/topics/mission_result.h>
 #include <uORB/topics/telemetry_status.h>
+ #include <uORB/topics/commander_request.h>
+
 
 #include <drivers/drv_led.h>
 #include <drivers/drv_hrt.h>
@@ -172,6 +174,8 @@ static struct actuator_armed_s armed;
 static struct safety_s safety;
 static struct vehicle_control_mode_s control_mode;
 static struct offboard_control_setpoint_s sp_offboard;
+
+int mode_switch_state = -1;
 
 /* tasks waiting for low prio thread */
 typedef enum {
@@ -424,6 +428,11 @@ bool handle_command(struct vehicle_status_s *status_local, const struct safety_s
 			uint8_t base_mode = (uint8_t)cmd->param1;
 			uint8_t custom_main_mode = (uint8_t)cmd->param2;
 
+			int bm = base_mode;
+			int cm = custom_main_mode;
+
+			mavlink_log_info(mavlink_fd,"Command base: %d, custom mode: %d vb", bm, cm);
+
 			transition_result_t arming_ret = TRANSITION_NOT_CHANGED;
 
 			transition_result_t main_ret = TRANSITION_NOT_CHANGED;
@@ -450,8 +459,8 @@ bool handle_command(struct vehicle_status_s *status_local, const struct safety_s
 					main_ret = main_state_transition(status_local, MAIN_STATE_POSCTL);
 
 				} else if (custom_main_mode == PX4_CUSTOM_MAIN_MODE_AUTO) {
-					/* AUTO */
-					main_ret = main_state_transition(status_local, MAIN_STATE_AUTO_MISSION);
+					//* AUTO */
+					main_ret = main_state_transition(status_local, MAIN_STATE_AUTO_LOITER);
 
 				} else if (custom_main_mode == PX4_CUSTOM_MAIN_MODE_ACRO) {
 					/* ACRO */
@@ -470,7 +479,7 @@ bool handle_command(struct vehicle_status_s *status_local, const struct safety_s
 				/* use base mode */
 				if (base_mode & MAV_MODE_FLAG_AUTO_ENABLED) {
 					/* AUTO */
-					main_ret = main_state_transition(status_local, MAIN_STATE_AUTO_MISSION);
+					//main_ret = main_state_transition(status_local, MAIN_STATE_AUTO_MISSION);
 
 				} else if (base_mode & MAV_MODE_FLAG_MANUAL_INPUT_ENABLED) {
 					if (base_mode & MAV_MODE_FLAG_GUIDED_ENABLED) {
@@ -589,6 +598,27 @@ bool handle_command(struct vehicle_status_s *status_local, const struct safety_s
 				warnx("rc loss mode commanded");
 			}
 			cmd_result = VEHICLE_CMD_RESULT_ACCEPTED;
+		}
+		break;
+
+	/* Airleash commands */
+	case VEHICLE_CMD_NAV_REMOTE_CMD: {
+			transition_result_t main_ret = TRANSITION_NOT_CHANGED;
+
+			/*
+			if (cmd->param1 == REMOTE_CMD_PLAY_PAUSE) {
+				if(status_local->main_state == MAIN_STATE_AUTO_LOITER) {
+					main_ret = main_state_transition(status_local, MAIN_STATE_AUTO_ABS_FOLLOW);
+				} else {
+					main_ret = main_state_transition(status_local, MAIN_STATE_AUTO_LOITER);
+				}
+			}
+			*/
+			if (main_ret != TRANSITION_DENIED){
+				cmd_result = VEHICLE_CMD_RESULT_ACCEPTED;
+			} else {
+				cmd_result = VEHICLE_CMD_RESULT_TEMPORARILY_REJECTED;
+			}
 		}
 		break;
 
@@ -716,6 +746,18 @@ int commander_thread_main(int argc, char *argv[])
 	param_t _param_ef_current2throttle_thres = param_find("COM_EF_C2T");
 	param_t _param_ef_time_thres = param_find("COM_EF_TIME");
 
+	float battery_warning_level;
+	float battery_critical_level;
+	float battery_flat_level;
+
+	param_t _param_battery_warning_level = param_find("BAT_WATN_LVL");
+	param_t _param_battery_critical_level = param_find("BAT_CRIT_LVL");
+	param_t _param_battery_flat_level = param_find("BAT_FLAT_LVL");
+
+	param_get(_param_battery_warning_level, &battery_warning_level);
+	param_get(_param_battery_critical_level, &battery_critical_level);
+	param_get(_param_battery_flat_level, &battery_flat_level);
+
 	/* welcome user */
 	warnx("starting");
 
@@ -747,6 +789,7 @@ int commander_thread_main(int argc, char *argv[])
 	nav_states_str[NAVIGATION_STATE_AUTO_LOITER]		= "AUTO_LOITER";
 	nav_states_str[NAVIGATION_STATE_AUTO_RTL]		= "AUTO_RTL";
 	nav_states_str[NAVIGATION_STATE_AUTO_RTGS]		= "AUTO_RTGS";
+	nav_states_str[NAVIGATION_STATE_AUTO_ABS_FOLLOW]    = "AUTO_ABS_FOLLOW";
 	nav_states_str[NAVIGATION_STATE_ACRO]			= "ACRO";
 	nav_states_str[NAVIGATION_STATE_LAND]			= "LAND";
 	nav_states_str[NAVIGATION_STATE_DESCEND]		= "DESCEND";
@@ -877,6 +920,7 @@ int commander_thread_main(int argc, char *argv[])
 
 	bool low_battery_voltage_actions_done = false;
 	bool critical_battery_voltage_actions_done = false;
+	bool flat_battery_voltage_actions_done = false;
 
 	hrt_abstime last_idle_time = 0;
 	hrt_abstime start_time = 0;
@@ -996,6 +1040,11 @@ int commander_thread_main(int argc, char *argv[])
 	int actuator_controls_sub = orb_subscribe(ORB_ID_VEHICLE_ATTITUDE_CONTROLS);
 	struct actuator_controls_s actuator_controls;
 	memset(&actuator_controls, 0, sizeof(actuator_controls));
+
+	/* Subscribe to commander requests - requests made for commander to process */
+	int commander_request_sub = orb_subscribe(ORB_ID(commander_request));
+	struct commander_request_s commander_request;
+	memset(&commander_request, 0, sizeof(commander_request));
 
 	control_status_leds(&status, &armed, true);
 
@@ -1399,13 +1448,17 @@ int commander_thread_main(int argc, char *argv[])
 		}
 
 		/* if battery voltage is getting lower, warn using buzzer, etc. */
-		if (status.condition_battery_voltage_valid && status.battery_remaining < 0.18f && !low_battery_voltage_actions_done) {
+		if (status.condition_battery_voltage_valid && status.battery_remaining < battery_warning_level && !low_battery_voltage_actions_done) {
 			low_battery_voltage_actions_done = true;
 			mavlink_log_critical(mavlink_fd, "LOW BATTERY, RETURN TO LAND ADVISED");
 			status.battery_warning = VEHICLE_BATTERY_WARNING_LOW;
-			status_changed = true;
 
-		} else if (status.condition_battery_voltage_valid && status.battery_remaining < 0.09f && !critical_battery_voltage_actions_done && low_battery_voltage_actions_done) {
+			if (! control_mode.flag_control_manual_enabled) {
+				if (main_state_transition(&status, MAIN_STATE_AUTO_RTL)) {
+					status_changed = true;
+				}
+			}
+		} else if (status.condition_battery_voltage_valid && status.battery_remaining < battery_critical_level && !critical_battery_voltage_actions_done && low_battery_voltage_actions_done) {
 			/* critical battery voltage, this is rather an emergency, change state machine */
 			critical_battery_voltage_actions_done = true;
 			mavlink_log_emergency(mavlink_fd, "CRITICAL BATTERY, LAND IMMEDIATELY");
@@ -1426,6 +1479,10 @@ int commander_thread_main(int argc, char *argv[])
 				}
 			}
 			status_changed = true;
+		} else if (status.condition_battery_voltage_valid && status.battery_remaining < battery_flat_level && !flat_battery_voltage_actions_done){
+			flat_battery_voltage_actions_done = true;
+			status.battery_warning = VEHICLE_BATTERY_WARNING_FLAT;
+			// TODO urgent land
 		}
 
 		/* End battery voltage check */
@@ -1665,6 +1722,39 @@ int commander_thread_main(int argc, char *argv[])
 			}
 		}
 
+		/* Handle commander requests here */
+		orb_check(commander_request_sub, &updated);
+
+		if (updated) {
+			orb_copy(ORB_ID(commander_request), commander_request_sub, &commander_request);
+
+			switch(commander_request.request_type) {
+			case V_MAIN_STATE_CHANGE:
+			{
+
+				if (main_state_transition(&status, commander_request.main_state)) {
+					status_changed = true;
+				}
+
+				break;
+			}
+			case V_DISARM:
+			{
+				arm_disarm(false, mavlink_fd, "Commander request.");
+				break;
+			}
+			case V_NAVIGATION_STATE_CHANGE:
+				break;
+			default:
+				break;
+
+			}
+
+			mavlink_log_info(mavlink_fd, "Commnander request processed\n");
+
+
+		}
+
 		/* Check engine failure
 		 * only for fixed wing for now
 		 */
@@ -1795,8 +1885,7 @@ int commander_thread_main(int argc, char *argv[])
 
 		/* now set navigation state according to failsafe and main state */
 		bool nav_state_changed = set_nav_state(&status, (bool)datalink_loss_enabled,
-						       mission_result.finished,
-						       mission_result.stay_in_failsafe);
+						       mission_result.finished, mission_result.stay_in_failsafe, mavlink_fd);
 
 		// TODO handle mode changes by commands
 		if (main_state_changed) {
@@ -2021,10 +2110,16 @@ set_main_state_rc(struct vehicle_status_s *status_local, struct manual_control_s
 	/* offboard switched off or denied, check main mode switch */
 	switch (sp_man->mode_switch) {
 	case SWITCH_POS_NONE:
+		
+        mode_switch_state = SWITCH_POS_NONE; 
+		
 		res = TRANSITION_NOT_CHANGED;
 		break;
 
 	case SWITCH_POS_OFF:		// MANUAL
+		
+        mode_switch_state = SWITCH_POS_OFF; 
+
 		if (sp_man->acro_switch == SWITCH_POS_ON) {
 			res = main_state_transition(status_local, MAIN_STATE_ACRO);
 
@@ -2035,6 +2130,9 @@ set_main_state_rc(struct vehicle_status_s *status_local, struct manual_control_s
 		break;
 
 	case SWITCH_POS_MIDDLE:		// ASSIST
+
+        mode_switch_state = SWITCH_POS_MIDDLE;
+
 		if (sp_man->follow_switch == SWITCH_POS_ON) {
 			res = main_state_transition(status_local, MAIN_STATE_FOLLOW);
 
@@ -2074,6 +2172,26 @@ set_main_state_rc(struct vehicle_status_s *status_local, struct manual_control_s
 		break;
 
 	case SWITCH_POS_ON:			// AUTO
+		
+		// Switch to loter only when switch state have changed
+        if (mode_switch_state != SWITCH_POS_ON) {
+
+            mode_switch_state = SWITCH_POS_ON;
+
+            res = main_state_transition(status_local, MAIN_STATE_AUTO_LOITER);
+
+            if (res != TRANSITION_DENIED) {
+                break;  // changed successfully or already in this state
+            }
+
+            print_reject_mode(status_local, "AUTO_LOITER");
+
+        } else {
+            res = TRANSITION_NOT_CHANGED; 
+            break;
+        }
+
+		/*
 		if (sp_man->return_switch == SWITCH_POS_ON) {
 			res = main_state_transition(status_local, MAIN_STATE_AUTO_RTL);
 
@@ -2133,6 +2251,9 @@ set_main_state_rc(struct vehicle_status_s *status_local, struct manual_control_s
 		// fallback to MANUAL
 		res = main_state_transition(status_local, MAIN_STATE_MANUAL);
 		// TRANSITION_DENIED is not possible here
+
+
+		*/
 		break;
 
 	default:
@@ -2272,6 +2393,16 @@ set_control_mode()
 
 	case NAVIGATION_STATE_AUTO_MISSION:
 	case NAVIGATION_STATE_AUTO_LOITER:
+		control_mode.flag_control_manual_enabled = false;
+		control_mode.flag_control_auto_enabled = true;
+		control_mode.flag_control_rates_enabled = true;
+		control_mode.flag_control_attitude_enabled = true;
+		control_mode.flag_control_altitude_enabled = true;
+		control_mode.flag_control_climb_rate_enabled = true;
+		control_mode.flag_control_position_enabled = true;
+		control_mode.flag_control_velocity_enabled = true;
+		control_mode.flag_control_termination_enabled = false;
+		control_mode.flag_control_point_to_target = true;
 	case NAVIGATION_STATE_AUTO_RTL:
 	case NAVIGATION_STATE_AUTO_RTGS:
 	case NAVIGATION_STATE_AUTO_LANDENGFAIL:
@@ -2296,6 +2427,20 @@ set_control_mode()
 		control_mode.flag_control_position_enabled = false;
 		control_mode.flag_control_velocity_enabled = false;
 		control_mode.flag_control_termination_enabled = false;
+		break;
+
+	case NAVIGATION_STATE_AUTO_ABS_FOLLOW:
+		control_mode.flag_control_manual_enabled = false;
+		control_mode.flag_control_auto_enabled = true;
+		control_mode.flag_control_rates_enabled = true;
+		control_mode.flag_control_attitude_enabled = true;
+		control_mode.flag_control_altitude_enabled = true;
+		control_mode.flag_control_climb_rate_enabled = true;
+		control_mode.flag_control_position_enabled = true;
+		control_mode.flag_control_velocity_enabled = true;
+		control_mode.flag_control_termination_enabled = false;
+		control_mode.flag_control_follow_target = true;
+		control_mode.flag_control_point_to_target = true;
 		break;
 
 	case NAVIGATION_STATE_LAND:
@@ -2428,6 +2573,7 @@ void *commander_low_prio_loop(void *arg)
 		if (cmd.command == VEHICLE_CMD_DO_SET_MODE ||
 		    cmd.command == VEHICLE_CMD_COMPONENT_ARM_DISARM ||
 		    cmd.command == VEHICLE_CMD_NAV_TAKEOFF ||
+		    cmd.command == VEHICLE_CMD_NAV_REMOTE_CMD ||
 		    cmd.command == VEHICLE_CMD_DO_SET_SERVO) {
 			continue;
 		}
