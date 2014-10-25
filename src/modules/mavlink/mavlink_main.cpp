@@ -387,7 +387,7 @@ Mavlink::forward_message(const mavlink_message_t *msg, Mavlink *self)
 	Mavlink *inst;
 	LL_FOREACH(_mavlink_instances, inst) {
 		if (inst != self) {
-
+			// TODO! Consider if this code should run on targeter.
 			/* if not in normal mode, we are an onboard link
 			 * onboard links should only pass on messages from the same system ID */
 			if (!(self->_mode != MAVLINK_MODE_NORMAL && msg->sysid != mavlink_system.sysid)) {
@@ -1241,6 +1241,9 @@ Mavlink::task_main(int argc, char *argv[])
 			} else if (strcmp(optarg, "onboard") == 0) {
 				_mode = MAVLINK_MODE_ONBOARD;
 			}
+			else if (strcmp(optarg, "targeter") == 0) {
+				_mode = MAVLINK_MODE_TARGETER;
+			}
 
 			break;
 
@@ -1301,6 +1304,9 @@ Mavlink::task_main(int argc, char *argv[])
 
 	case MAVLINK_MODE_ONBOARD:
 		warnx("mode: ONBOARD");
+		break;
+	case MAVLINK_MODE_TARGETER:
+		warnx("mode: TARGETER");
 		break;
 
 	default:
@@ -1370,6 +1376,7 @@ Mavlink::task_main(int argc, char *argv[])
 	/* HEARTBEAT is constant rate stream, rate never adjusted */
 	configure_stream("HEARTBEAT", 1.0f);
 
+	// TODO! Consider if any streams except Heartbeat are required on Target
 	/* STATUSTEXT stream is like normal stream but gets messages from logbuffer instead of uORB */
 	configure_stream("STATUSTEXT", 20.0f);
 
@@ -1390,6 +1397,7 @@ Mavlink::task_main(int argc, char *argv[])
 	LL_APPEND(_streams, _mission_manager);
 
 	switch (_mode) {
+	// TODO! Consider limiting copter's topics
 	case MAVLINK_MODE_NORMAL:
 		configure_stream("SYS_STATUS", 1.0f);
 		configure_stream("GPS_GLOBAL_ORIGIN", 0.5f);
@@ -1414,6 +1422,14 @@ Mavlink::task_main(int argc, char *argv[])
 		configure_stream("ATTITUDE_TARGET", 10.0f);
 		configure_stream("POSITION_TARGET_GLOBAL_INT", 10.0f);
 		configure_stream("VFR_HUD", 10.0f);
+		break;
+
+	// Targeter requires different streams
+	case MAVLINK_MODE_TARGETER:
+		// TODO! Check which rates fit best
+		// TODO! Change to custom message, when it is available
+		configure_stream("GLOBAL_POSITION_INT", 10.0f);
+		configure_stream("TRAJECTORY", 10.0f);
 		break;
 
 	default:
@@ -1668,8 +1684,6 @@ Mavlink::display_status()
 	if (_rstatus.heartbeat_time > 0) {
 		printf("\tGCS heartbeat:\t%llu us ago\n", hrt_elapsed_time(&_rstatus.heartbeat_time));
 	}
-
-	printf("\tmavlink chan: #%u\n", _channel);
 
 	if (_rstatus.timestamp > 0) {
 

@@ -99,6 +99,7 @@ MavlinkReceiver::MavlinkReceiver(Mavlink *parent) :
 	_gyro_pub(-1),
 	_accel_pub(-1),
 	_mag_pub(-1),
+	_range_finder_pub(-1),
 	_baro_pub(-1),
 	_airspeed_pub(-1),
 	_battery_pub(-1),
@@ -117,12 +118,15 @@ MavlinkReceiver::MavlinkReceiver(Mavlink *parent) :
 	_rc_pub(-1),
 	_manual_pub(-1),
 	_target_pos_pub(-1),
+	_external_trajectory_pub(-1),
 	_control_mode_sub(orb_subscribe(ORB_ID(vehicle_control_mode))),
 	_hil_frames(0),
 	_old_timestamp(0),
 	_hil_local_proj_inited(0),
 	_hil_local_alt0(0.0f),
-	_hil_local_proj_ref{}
+	_hil_local_proj_ref{},
+	_airdog_status_pub(-1),
+	_airdog_status{}
 {
 
 	// make sure the FTP server is started
@@ -183,6 +187,7 @@ MavlinkReceiver::handle_message(mavlink_message_t *msg)
 
 	case MAVLINK_MSG_ID_HEARTBEAT:
 		handle_message_heartbeat(msg);
+		handle_message_drone_heartbeat(msg);
 		break;
 
 	case MAVLINK_MSG_ID_REQUEST_DATA_STREAM:
@@ -191,6 +196,14 @@ MavlinkReceiver::handle_message(mavlink_message_t *msg)
 
 	case MAVLINK_MSG_ID_FILE_TRANSFER_PROTOCOL:
 		MavlinkFTP::get_server()->handle_message(_mavlink, msg);
+		break;
+
+	case MAVLINK_MSG_ID_SYS_STATUS:
+		handle_message_drone_status(msg);
+		break;
+
+	case MAVLINK_MSG_ID_TRAJECTORY:
+		handle_message_trajectory(msg);
 		break;
 
 	default:
@@ -247,6 +260,7 @@ MavlinkReceiver::handle_message(mavlink_message_t *msg)
 void
 MavlinkReceiver::handle_message_command_long(mavlink_message_t *msg)
 {
+
 	/* command */
 	mavlink_command_long_t cmd_mavlink;
 	mavlink_msg_command_long_decode(msg, &cmd_mavlink);
@@ -924,6 +938,78 @@ MavlinkReceiver::handle_message_heartbeat(mavlink_message_t *msg)
 }
 
 void
+MavlinkReceiver::handle_message_drone_heartbeat(mavlink_message_t *msg)
+{
+    if(msg->sysid == 1) { //SIMIS TODO get sysid from linked airdog
+		mavlink_heartbeat_t heartbeat;
+		mavlink_msg_heartbeat_decode(msg, &heartbeat);
+
+		union px4_custom_mode custom_mode;
+		custom_mode.data = heartbeat.custom_mode;
+
+		_airdog_status.main_mode = custom_mode.main_mode;
+		_airdog_status.sub_mode = custom_mode.sub_mode;
+		_airdog_status.base_mode = heartbeat.base_mode;
+		_airdog_status.system_status = heartbeat.system_status;
+		_airdog_status.timestamp = hrt_absolute_time();
+
+		if (_airdog_status_pub < 0) {
+			_airdog_status_pub = orb_advertise(ORB_ID(airdog_status), &_airdog_status);
+
+		} else {
+			orb_publish(ORB_ID(airdog_status), _airdog_status_pub, &_airdog_status);
+		}
+	}
+}
+
+void
+MavlinkReceiver::handle_message_drone_status(mavlink_message_t *msg)
+{
+    if(msg->sysid == 1) { //SIMIS TODO get sysid from linked airdog
+		mavlink_sys_status_t drone_status;
+		mavlink_msg_sys_status_decode(msg, &drone_status);
+
+		_airdog_status.timestamp = hrt_absolute_time();
+		_airdog_status.battery_remaining = drone_status.battery_remaining;
+		// _airdog_status.discharged_mah = drone_status.battery_discharged_mah;
+
+		if (_airdog_status_pub < 0) {
+			_airdog_status_pub = orb_advertise(ORB_ID(airdog_status), &_airdog_status);
+
+		} else {
+			orb_publish(ORB_ID(airdog_status), _airdog_status_pub, &_airdog_status);
+		}
+	}
+}
+
+void
+MavlinkReceiver::handle_message_trajectory(mavlink_message_t *msg)
+{
+	mavlink_trajectory_t msg_traj;
+	mavlink_msg_trajectory_decode(msg, &msg_traj);
+
+	struct external_trajectory_s ext_traj;
+
+	ext_traj.timestamp = ((uint64_t) msg_traj.time_boot_ms) * 1000;
+	ext_traj.sysid = msg->sysid;
+	ext_traj.lat = msg_traj.lat * 1.0e-7d;
+	ext_traj.lon = msg_traj.lon * 1.0e-7d;
+	ext_traj.alt = msg_traj.alt * 1.0e-3f;
+	ext_traj.relative_alt = msg_traj.relative_alt * 1.0e-3f;
+	ext_traj.vel_n = msg_traj.vx * 1.0e-2f;
+	ext_traj.vel_e = msg_traj.vy * 1.0e-2f;
+	ext_traj.vel_d = msg_traj.vz * 1.0e-2f;
+	ext_traj.heading = msg_traj.hdg * 1.0e-2f * M_DEG_TO_RAD_F;
+
+	if (_external_trajectory_pub < 0) {
+		_external_trajectory_pub = orb_advertise(ORB_ID(external_trajectory), &ext_traj);
+
+	} else {
+		orb_publish(ORB_ID(external_trajectory), _external_trajectory_pub, &ext_traj);
+	}
+}
+
+void
 MavlinkReceiver::handle_message_request_data_stream(mavlink_message_t *msg)
 {
 	mavlink_request_data_stream_t req;
@@ -1032,6 +1118,27 @@ MavlinkReceiver::handle_message_hil_sensor(mavlink_message_t *msg)
 
 		} else {
 			orb_publish(ORB_ID(sensor_mag0), _mag_pub, &mag);
+		}
+	}
+
+    /* sonar */
+	{
+		struct range_finder_report sonar;
+		memset(&sonar, 0, sizeof(sonar));
+
+		sonar.timestamp = timestamp;
+		sonar.error_count = 0;
+		sonar.type = 1;
+		sonar.distance = imu.range_finder;
+		sonar.minimum_distance = 0.4f;
+		sonar.maximum_distance = 6;
+		sonar.valid = (sonar.distance <= sonar.maximum_distance && sonar.distance >= sonar.minimum_distance) ? 1 : 0;
+
+		if (_range_finder_pub < 0) {
+			_range_finder_pub = orb_advertise(ORB_ID(sensor_range_finder), &sonar);
+
+		} else {
+			orb_publish(ORB_ID(sensor_range_finder), _range_finder_pub, &sonar);
 		}
 	}
 

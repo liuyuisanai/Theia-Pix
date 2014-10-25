@@ -73,6 +73,8 @@
 #include <uORB/topics/airspeed.h>
 #include <uORB/topics/battery_status.h>
 #include <uORB/topics/vehicle_force_setpoint.h>
+#include <uORB/topics/airdog_status.h>
+#include <uORB/topics/external_trajectory.h>
 
 #include "mavlink_ftp.h"
 
@@ -129,6 +131,10 @@ private:
 	void handle_message_hil_sensor(mavlink_message_t *msg);
 	void handle_message_hil_gps(mavlink_message_t *msg);
 	void handle_message_hil_state_quaternion(mavlink_message_t *msg);
+	void handle_message_drone_heartbeat(mavlink_message_t *msg);
+	void handle_message_drone_status(mavlink_message_t *msg);
+	void handle_message_trajectory(mavlink_message_t *msg);
+
 
 	void *receive_thread(void *arg);
 
@@ -143,12 +149,12 @@ private:
 	orb_advert_t _gyro_pub;
 	orb_advert_t _accel_pub;
 	orb_advert_t _mag_pub;
+	orb_advert_t _range_finder_pub;
 	orb_advert_t _baro_pub;
 	orb_advert_t _airspeed_pub;
 	orb_advert_t _battery_pub;
 	orb_advert_t _cmd_pub;
 	orb_advert_t _flow_pub;
-	orb_advert_t _range_pub;
 	orb_advert_t _offboard_control_sp_pub;
 	orb_advert_t _global_vel_sp_pub;
 	orb_advert_t _att_sp_pub;
@@ -161,12 +167,15 @@ private:
 	orb_advert_t _rc_pub;
 	orb_advert_t _manual_pub;
 	orb_advert_t _target_pos_pub;
+	orb_advert_t _external_trajectory_pub;
 	int _control_mode_sub;
 	int _hil_frames;
 	uint64_t _old_timestamp;
 	bool _hil_local_proj_inited;
 	float _hil_local_alt0;
 	struct map_projection_reference_s _hil_local_proj_ref;
+	orb_advert_t _airdog_status_pub;
+	struct airdog_status_s _airdog_status;
 
 	/* do not allow copying this class */
 	MavlinkReceiver(const MavlinkReceiver&);

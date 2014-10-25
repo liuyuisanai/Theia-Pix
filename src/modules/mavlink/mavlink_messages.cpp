@@ -49,6 +49,7 @@
 #include <uORB/topics/vehicle_gps_position.h>
 #include <uORB/topics/vehicle_global_position.h>
 #include <uORB/topics/vehicle_local_position.h>
+#include <uORB/topics/trajectory.h>
 #include <uORB/topics/home_position.h>
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/offboard_control_setpoint.h>
@@ -169,8 +170,6 @@ void get_mavlink_mode_state(struct vehicle_status_s *status, struct position_set
 			break;
 
 		case NAVIGATION_STATE_AUTO_RTL:
-			/* fallthrough */
-		case NAVIGATION_STATE_AUTO_RCRECOVER:
 			*mavlink_base_mode |= MAV_MODE_FLAG_AUTO_ENABLED
 			                      | MAV_MODE_FLAG_STABILIZE_ENABLED
 					      | MAV_MODE_FLAG_GUIDED_ENABLED;
@@ -179,8 +178,6 @@ void get_mavlink_mode_state(struct vehicle_status_s *status, struct position_set
 			break;
 
 		case NAVIGATION_STATE_LAND:
-		case NAVIGATION_STATE_AUTO_LANDENGFAIL:
-		case NAVIGATION_STATE_AUTO_LANDGPSFAIL:
 			/* fallthrough */
 		case NAVIGATION_STATE_DESCEND:
 			*mavlink_base_mode |= MAV_MODE_FLAG_AUTO_ENABLED
@@ -196,6 +193,14 @@ void get_mavlink_mode_state(struct vehicle_status_s *status, struct position_set
 					      | MAV_MODE_FLAG_GUIDED_ENABLED;
 			custom_mode.main_mode = PX4_CUSTOM_MAIN_MODE_AUTO;
 			custom_mode.sub_mode = PX4_CUSTOM_SUB_MODE_AUTO_RTGS;
+			break;
+
+		case NAVIGATION_STATE_AUTO_ABS_FOLLOW:
+			*mavlink_base_mode |= MAV_MODE_FLAG_AUTO_ENABLED
+			                      | MAV_MODE_FLAG_STABILIZE_ENABLED
+					      | MAV_MODE_FLAG_GUIDED_ENABLED;
+			custom_mode.main_mode = PX4_CUSTOM_MAIN_MODE_AUTO;
+			custom_mode.sub_mode = PX4_CUSTOM_SUB_MODE_AUTO_ABS_FOLLOW;
 			break;
 
 		case NAVIGATION_STATE_TERMINATION:
@@ -961,11 +966,13 @@ protected:
 			msg.lat = pos.lat * 1e7;
 			msg.lon = pos.lon * 1e7;
 			msg.alt = pos.alt * 1000.0f;
-			msg.relative_alt = (pos.alt - home.alt) * 1000.0f;
-			msg.vx = pos.vel_n * 100.0f;
-			msg.vy = pos.vel_e * 100.0f;
-			msg.vz = pos.vel_d * 100.0f;
-			msg.hdg = _wrap_2pi(pos.yaw) * M_RAD_TO_DEG_F * 100.0f;
+		    msg.relative_alt = (pos.alt - home.alt) * 1000.0f;
+		    msg.vx = pos.vel_n * 100.0f;
+		    msg.vy = pos.vel_e * 100.0f;
+		    msg.vz = pos.vel_d * 100.0f;
+		    msg.eph = cm_uint16_from_m_float(gps.eph);
+		    msg.epv = cm_uint16_from_m_float(gps.epv);
+		    msg.hdg = _wrap_2pi(pos.yaw) * M_RAD_TO_DEG_F * 100.0f;
 
 			_mavlink->send_message(MAVLINK_MSG_ID_GLOBAL_POSITION_INT, &msg);
 		}
@@ -2095,6 +2102,61 @@ protected:
 };
 
 
+class MavlinkStreamTrajectory : public MavlinkStream {
+public:
+	static const char *get_name_static() {
+		return "TRAJECTORY";
+	}
+	const char *get_name() const {
+		return MavlinkStreamTrajectory::get_name_static();
+	}
+	uint8_t get_id() {
+		return MAVLINK_MSG_ID_TRAJECTORY;
+	}
+	static MavlinkStream *new_instance(Mavlink *mavlink)
+	{
+		return new MavlinkStreamTrajectory(mavlink);
+	}
+	unsigned get_size() {
+		// TODO! Change to if published -> length, else -> 0 when correct topic will be available
+		return MAVLINK_MSG_ID_TRAJECTORY_LEN + MAVLINK_NUM_NON_PAYLOAD_BYTES;
+	}
+private:
+	MavlinkOrbSubscription *trajectory_sub;
+	uint64_t trajectory_time;
+	/* do not allow top copying this class */
+	MavlinkStreamTrajectory(MavlinkStreamTrajectory &);
+	MavlinkStreamTrajectory& operator = (const MavlinkStreamTrajectory &);
+protected:
+	explicit MavlinkStreamTrajectory(Mavlink *mavlink) : MavlinkStream(mavlink),
+			trajectory_sub(mavlink->add_orb_subscription(ORB_ID(trajectory))),
+			trajectory_time(0)
+	{}
+	void send(const hrt_abstime t) {
+		mavlink_trajectory_t msg;
+		trajectory_s report;
+		// TODO! Check if the messages match!
+		if (trajectory_sub->update(&trajectory_time, &report)) {
+			msg.time_boot_ms = report.timestamp / 1000; // uint32_t Timestamp (milliseconds since system boot)
+			msg.lat = report.lat * 1e7; // int32_t Latitude, expressed as * 1E7
+			msg.lon = report.lon * 1e7; // int32_t Longitude, expressed as * 1E7
+			// TODO! Check the altitude. Is it WGS84 or AMSL?!
+			msg.alt = report.alt * 1000.0f; // int32_t Altitude in meters, expressed as * 1000 (millimeters)
+			msg.relative_alt = report.relative_alt * 1000.0f; // int32_t Altitude above ground in meters, expressed as * 1000 (millimeters)
+			msg.vx = report.vel_n * 100.0f; // int16_t Ground X Speed (Latitude), expressed as m/s * 100
+			msg.vy = report.vel_e * 100.0f; // int16_t Ground Y Speed (Longitude), expressed as m/s * 100
+			msg.vz = report.vel_d * 100.0f; // int16_t Ground Z Speed (Altitude), expressed as m/s * 100
+			msg.hdg = report.heading * M_RAD_TO_DEG_F * 100.0f; // uint16_t Compass heading in degrees * 100, 0.0..359.99 degrees. If unknown, set to: UINT16_MAX
+
+			msg.point_type = report.point_type; // uint8_t Indicates type of the trajectory reference point. Currently 0 is for "still point" and 1 is for "valid point".
+			/* warnx("%d\n%d %d %d\n%d\n%d %d %d\n%d\n%d", msg.time_boot_ms, msg.lat, msg.lon, msg.alt,
+					msg.relative_alt, msg.vx, msg.vy, msg.vz, msg.hdg, msg.point_type); */
+			_mavlink->send_message(MAVLINK_MSG_ID_TRAJECTORY, &msg);
+		}
+	}
+};
+
+
 StreamListItem *streams_list[] = {
 	new StreamListItem(&MavlinkStreamHeartbeat::new_instance, &MavlinkStreamHeartbeat::get_name_static),
 	new StreamListItem(&MavlinkStreamStatustext::new_instance, &MavlinkStreamStatustext::get_name_static),
@@ -2124,5 +2186,6 @@ StreamListItem *streams_list[] = {
 	new StreamListItem(&MavlinkStreamNamedValueFloat::new_instance, &MavlinkStreamNamedValueFloat::get_name_static),
 	new StreamListItem(&MavlinkStreamCameraCapture::new_instance, &MavlinkStreamCameraCapture::get_name_static),
 	new StreamListItem(&MavlinkStreamDistanceSensor::new_instance, &MavlinkStreamDistanceSensor::get_name_static),
+	new StreamListItem(&MavlinkStreamTrajectory::new_instance, &MavlinkStreamTrajectory::get_name_static),
 	nullptr
 };
