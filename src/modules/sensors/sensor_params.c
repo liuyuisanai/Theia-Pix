@@ -45,6 +45,30 @@
 #include <systemlib/param/param.h>
 
 /**
+ * Sonar sensor on/off trigger
+ * @on 1
+ * @off 0
+ * @group Sensor Calibration
+ */
+PARAM_DEFINE_FLOAT(SENS_SON_ON, 1);
+
+/**
+ * Minimal distance to surface allowed by sonar
+ * @min 0.0
+ * @max unlimited;    max range of sonar, but there is no real maximal boundary
+ * @group Sensor Calibration
+ */
+PARAM_DEFINE_FLOAT(SENS_SON_MIN, 2.0f);
+
+/**
+ * Sonar safety belt width
+ * @min 0.0
+ * @max unlimited
+ * @group Sensor Calibration
+ */
+PARAM_DEFINE_FLOAT(SENS_SON_DELTA, 0.2f);
+
+/**
  * Gyro X-axis offset
  *
  * @min -10.0
