@@ -1,6 +1,9 @@
 /****************************************************************************
  *
- *   Copyright (C) 2012-2014 PX4 Development Team. All rights reserved.
+ *   Copyright (C) 2008-2012 PX4 Development Team. All rights reserved.
+ *   Author: @author Thomas Gubler <thomasgubler@student.ethz.ch>
+ *           @author Julian Oes <joes@student.ethz.ch>
+ *           @author Lorenz Meier <lm@inf.ethz.ch>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -68,6 +71,7 @@ enum VEHICLE_CMD {
 	VEHICLE_CMD_NAV_GUIDED_LIMITS=90, /* set limits for external control |timeout - maximum time (in seconds) that external controller will be allowed to control vehicle. 0 means no timeout| absolute altitude min (in meters, WGS84) - if vehicle moves below this alt, the command will be aborted and the mission will continue.  0 means no lower altitude limit| absolute altitude max (in meters)- if vehicle moves above this alt, the command will be aborted and the mission will continue.  0 means no upper altitude limit| horizontal move limit (in meters, WGS84) - if vehicle moves more than this distance from it's location at the moment the command was executed, the command will be aborted and the mission will continue. 0 means no horizontal altitude limit| Empty| Empty| Empty|  */
 	VEHICLE_CMD_NAV_GUIDED_MASTER=91, /* set id of master controller |System ID| Component ID| Empty| Empty| Empty| Empty| Empty|  */
 	VEHICLE_CMD_NAV_GUIDED_ENABLE=92, /* hand control over to an external controller |On / Off (> 0.5f on)| Empty| Empty| Empty| Empty| Empty| Empty|  */
+	VEHICLE_CMD_NAV_REMOTE_CMD = 94, /* Handle command from Remote |ENUM REMOTE_CMD| Empty| Empty| Empty| Empty| Empty */
 	VEHICLE_CMD_NAV_LAST = 95, /* NOP - This command is only used to mark the upper limit of the NAV/ACTION commands in the enumeration |Empty| Empty| Empty| Empty| Empty| Empty| Empty|  */
 	VEHICLE_CMD_CONDITION_DELAY = 112, /* Delay mission state machine. |Delay in seconds (decimal)| Empty| Empty| Empty| Empty| Empty| Empty|  */
 	VEHICLE_CMD_CONDITION_CHANGE_ALT = 113, /* Ascend/descend at rate.  Delay mission state machine until desired altitude reached. |Descent / Ascend rate (m/s)| Empty| Empty| Empty| Empty| Empty| Finish Altitude|  */
@@ -95,7 +99,8 @@ enum VEHICLE_CMD {
 	VEHICLE_CMD_COMPONENT_ARM_DISARM = 400, /* Arms / Disarms a component |1 to arm, 0 to disarm|  */
 	VEHICLE_CMD_START_RX_PAIR = 500, /* Starts receiver pairing |0:Spektrum| 0:Spektrum DSM2, 1:Spektrum DSMX|  */
 	VEHICLE_CMD_PAYLOAD_PREPARE_DEPLOY = 30001, /**< Prepare a payload deployment in the flight plan */
-	VEHICLE_CMD_PAYLOAD_CONTROL_DEPLOY = 30002 /**< Control a pre-programmed payload deployment */
+	VEHICLE_CMD_PAYLOAD_CONTROL_DEPLOY = 30002, /**< Control a pre-programmed payload deployment */
+	VEHICLE_CMD_ENUM_END = 50001, /*  | */
 };
 
 /**
@@ -111,6 +116,24 @@ enum VEHICLE_CMD_RESULT {
 	VEHICLE_CMD_RESULT_UNSUPPORTED = 3, /* Command UNKNOWN/UNSUPPORTED | */
 	VEHICLE_CMD_RESULT_FAILED = 4, /* Command executed, but failed | */
 	VEHICLE_CMD_RESULT_ENUM_END = 5, /*  | */
+};
+
+/**
+ * Commands for airleash.
+ *
+ */
+enum REMOTE_CMD {
+	REMOTE_CMD_TAKEOFF = 0,
+	REMOTE_CMD_PLAY_PAUSE = 1,
+	REMOTE_CMD_COME_TO_ME = 2,
+	REMOTE_CMD_UP = 3,
+	REMOTE_CMD_DOWN = 4,
+	REMOTE_CMD_LEFT = 5,
+	REMOTE_CMD_RIGHT = 6,
+	REMOTE_CMD_FURTHER = 7,
+	REMOTE_CMD_CLOSER = 8,
+	REMOTE_CMD_LAND_DISARM = 9,
+	REMOTE_CMD_LOOK_DOWN = 10
 };
 
 /**

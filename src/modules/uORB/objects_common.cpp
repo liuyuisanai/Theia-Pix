@@ -248,3 +248,12 @@ ORB_DEFINE(get_drone_parameter, struct get_drone_param_s);
 
 #include "topics/pass_drone_parameter.h"
 ORB_DEFINE(pass_drone_parameter, struct pass_drone_param_s);
+
+#include "topics/commander_request.h"
+ORB_DEFINE(commander_request, struct commander_request_s);
+
+#include "topics/trajectory.h"
+ORB_DEFINE(trajectory, struct trajectory_s);
+
+#include "topics/external_trajectory.h"
+ORB_DEFINE(external_trajectory, struct external_trajectory_s);

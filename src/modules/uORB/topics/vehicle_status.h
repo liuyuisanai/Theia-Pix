@@ -69,6 +69,7 @@ typedef enum {
 	MAIN_STATE_AUTO_MISSION,
 	MAIN_STATE_AUTO_LOITER,
 	MAIN_STATE_AUTO_RTL,
+	MAIN_STATE_AUTO_ABS_FOLLOW,
 	MAIN_STATE_ACRO,
 	MAIN_STATE_OFFBOARD,
 	MAIN_STATE_FOLLOW,
@@ -98,21 +99,22 @@ typedef enum {
  */
 typedef enum {
 	NAVIGATION_STATE_MANUAL = 0,		/**< Manual mode */
-	NAVIGATION_STATE_ALTCTL,		/**< Altitude control mode */
-	NAVIGATION_STATE_POSCTL,		/**< Position control mode */
+	NAVIGATION_STATE_ALTCTL,			/**< Altitude control mode */
+	NAVIGATION_STATE_POSCTL,			/**< Position control mode */
 	NAVIGATION_STATE_AUTO_MISSION,		/**< Auto mission mode */
 	NAVIGATION_STATE_AUTO_LOITER,		/**< Auto loiter mode */
-	NAVIGATION_STATE_AUTO_RTL,		/**< Auto return to launch mode */
+	NAVIGATION_STATE_AUTO_RTL,			/**< Auto return to launch mode */
 	NAVIGATION_STATE_AUTO_RCRECOVER,	/**< RC recover mode */
-	NAVIGATION_STATE_AUTO_RTGS,		/**< Auto return to groundstation on data link loss */
+	NAVIGATION_STATE_AUTO_RTGS,			/**< Auto return to groundstation on data link loss */
+	NAVIGATION_STATE_AUTO_ABS_FOLLOW,   /**< AUTO Abs Follow mode */
 	NAVIGATION_STATE_AUTO_LANDENGFAIL,	/**< Auto land on engine failure */
 	NAVIGATION_STATE_AUTO_LANDGPSFAIL,	/**< Auto land on gps failure (e.g. open loop loiter down) */
-	NAVIGATION_STATE_ACRO,			/**< Acro mode */
-	NAVIGATION_STATE_LAND,			/**< Land mode */
+	NAVIGATION_STATE_ACRO,				/**< Acro mode */
+	NAVIGATION_STATE_LAND,				/**< Land mode */
 	NAVIGATION_STATE_DESCEND,			/**< Descend mode (no position control) */
 	NAVIGATION_STATE_TERMINATION,		/**< Termination mode */
 	NAVIGATION_STATE_OFFBOARD,
-	NAVIGATION_STATE_FOLLOW,		/**< Manual-controlled follow mode */
+	NAVIGATION_STATE_FOLLOW,			/**< Manual-controlled follow mode */
 	NAVIGATION_STATE_MAX,
 } navigation_state_t;
 
@@ -154,8 +156,9 @@ enum VEHICLE_TYPE {
 
 enum VEHICLE_BATTERY_WARNING {
 	VEHICLE_BATTERY_WARNING_NONE = 0,	/**< no battery low voltage warning active */
-	VEHICLE_BATTERY_WARNING_LOW,	/**< warning of low voltage */
-	VEHICLE_BATTERY_WARNING_CRITICAL	/**< alerting of critical voltage */
+	VEHICLE_BATTERY_WARNING_LOW,		/**< warning of low voltage */
+	VEHICLE_BATTERY_WARNING_CRITICAL,	/**< alerting of critical voltage */
+	VEHICLE_BATTERY_WARNING_FLAT		/**< alerting of flat battery */
 };
 
 /**
@@ -175,10 +178,10 @@ struct vehicle_status_s {
 	uint64_t timestamp; /**< in microseconds since system start, is set whenever the writing thread stores new data */
 
 	main_state_t main_state;		    	/**< main state machine */
-	navigation_state_t nav_state;		/**< set navigation state machine to specified value */
+	navigation_state_t nav_state;			/**< set navigation state machine to specified value */
 	arming_state_t arming_state;			/**< current arming state */
-	hil_state_t hil_state;				/**< current hil state */
-	bool failsafe;					/**< true if system is in failsafe state */
+	hil_state_t hil_state;					/**< current hil state */
+	bool failsafe;							/**< true if system is in failsafe state */
 
 	int32_t system_type;				/**< system type, inspired by MAVLink's VEHICLE_TYPE enum */
 	int32_t	system_id;				/**< system id, inspired by MAVLink's system ID field */
