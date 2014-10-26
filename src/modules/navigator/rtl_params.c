@@ -17,7 +17,7 @@
  *    without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * AS IS AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
  * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
  * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
@@ -34,29 +34,13 @@
 /**
  * @file rtl_params.c
  *
- * Parameters for RTL
+ * Parameter for RTL.
  *
- * @author Julian Oes <julian@oes.ch>
+ * @author Martins Frolovs <martins.f@airdog.com>
  */
 
 #include <nuttx/config.h>
-
 #include <systemlib/param/param.h>
-
-/*
- * RTL parameters, accessible via MAVLink
- */
-
-/**
- * Loiter radius after RTL (FW only)
- *
- * Default value of loiter radius after RTL (fixedwing only).
- *
- * @unit meters
- * @min 0.0
- * @group RTL
- */
-PARAM_DEFINE_FLOAT(RTL_LOITER_RAD, 50.0f);
 
 /**
  * RTL altitude
@@ -64,35 +48,7 @@ PARAM_DEFINE_FLOAT(RTL_LOITER_RAD, 50.0f);
  * Altitude to fly back in RTL in meters
  *
  * @unit meters
- * @min 0
- * @max 1
- * @group RTL
+ * @min 1
+ * @group Navigator
  */
-PARAM_DEFINE_FLOAT(RTL_RETURN_ALT, 100);
-
-
-/**
- * RTL loiter altitude
- *
- * Stay at this altitude above home position after RTL descending.
- * Land (i.e. slowly descend) from this altitude if autolanding allowed.
- *
- * @unit meters
- * @min 0
- * @max 100
- * @group RTL
- */
-PARAM_DEFINE_FLOAT(RTL_DESCEND_ALT, 20);
-
-/**
- * RTL delay
- *
- * Delay after descend before landing in RTL mode.
- * If set to -1 the system will not land but loiter at NAV_LAND_ALT.
- *
- * @unit seconds
- * @min -1
- * @max
- * @group RTL
- */
-PARAM_DEFINE_FLOAT(RTL_LAND_DELAY, -1.0f);
+PARAM_DEFINE_FLOAT(RTL_RET_ALT, 30.00f);

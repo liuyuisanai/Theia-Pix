@@ -17,7 +17,7 @@
  *    without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * AS IS AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
  * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
  * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
@@ -32,79 +32,78 @@
  ****************************************************************************/
 
 /**
- * @file navigator_params.c
+ * @file navigator_mode_params.c
  *
- * Parameters for navigator in general
+ * Parameter for all navigator modes.
  *
- * @author Julian Oes <julian@oes.ch>
- * @author Thomas Gubler <thomasgubler@gmail.com>
+ * @author Martins Frolovs <martins.f@airdog.com>
  */
 
 #include <nuttx/config.h>
-
 #include <systemlib/param/param.h>
 
+/*
+ * Navigator mode parameters
+ */
+
 /**
- * Loiter radius (FW only)
+ * Take-off altitude
  *
- * Default value of loiter radius for missions, loiter, RTL, etc. (fixedwing only).
+ *	Altitude to which vehicle will take-off.
  *
  * @unit meters
- * @min 0.0
- * @group Mission
- */
-PARAM_DEFINE_FLOAT(NAV_LOITER_RAD, 50.0f);
-
-
-/**
- * Set OBC mode for data link loss
- *
- * If set to 1 the behaviour on data link loss is set to a mode according to the OBC rules
- *
  * @min 0
- * @group Mission
+ * @group Navigator
  */
-PARAM_DEFINE_INT32(NAV_DLL_OBC, 0);
+PARAM_DEFINE_FLOAT(NAV_TAKEOFF_ALT, 10.0f);
+
 
 /**
- * Set OBC mode for rc loss
+ * Step size for one commend in loiter navigator mode
  *
- * If set to 1 the behaviour on data link loss is set to a mode according to the OBC rules
+ * Altitude to fly back in RTL in meters
  *
- * @min 0
- * @group Mission
+ * @unit meters
+ * @min 1
+ * @group Navigator
  */
-PARAM_DEFINE_INT32(NAV_RCL_OBC, 0);
+PARAM_DEFINE_FLOAT(LOI_STEP_LEN, 5.00f);
 
 /**
- * Airfield home Lat
+ *	Velocity LPF.
  *
- * Latitude of airfield home waypoint
+ *	Low pass filter. Time in seconds to average target movements.
  *
- * @unit degrees * 1e7
- * @min 0.0
- * @group DLL
+ *	@unit seconds
+ *	@group Navigator
  */
-PARAM_DEFINE_INT32(NAV_AH_LAT, -265847810);
+PARAM_DEFINE_FLOAT(NAV_VEL_LPF, 0.3f);
 
 /**
- * Airfield home Lon
+ * Acceptance radius to determine if setpoint have been reached
  *
- * Longitude of airfield home waypoint
- *
- * @unit degrees * 1e7
- * @min 0.0
- * @group DLL
+ * @unit meters
+ * @min 1
+ * @max 50
+ * @group Navigator
  */
-PARAM_DEFINE_INT32(NAV_AH_LON, 1518423250);
+PARAM_DEFINE_FLOAT(NAV_ACC_RAD, 2.00f);
 
 /**
- * Airfield home alt
+ * Minimum altitude above target in loiter.
  *
- * Altitude of airfield home waypoint
- *
- * @unit m
- * @min 0.0
- * @group DLL
+ * @unit meters
+ * @group Navigator
  */
-PARAM_DEFINE_FLOAT(NAV_AH_ALT, 600.0f);
+PARAM_DEFINE_FLOAT(LOI_MIN_ALT, 2.00f);
+
+/**
+ * Acceptance radius for takeoff setpoint
+ *
+ * @unit meters
+ * @group Navigator
+ */
+PARAM_DEFINE_FLOAT(NAV_TAKEOFF_ACR, 2.00f);
+
+
+

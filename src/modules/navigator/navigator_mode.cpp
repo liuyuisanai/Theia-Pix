@@ -37,20 +37,53 @@
  *
  * @author Julian Oes <julian@oes.ch>
  * @author Anton Babushkin <anton.babushkin@me.com>
+ * @author Martins Frolovs <martins.f@airdog.com>
  */
 
 #include "navigator_mode.h"
 #include "navigator.h"
+
+#include <uORB/uORB.h>
+#include <uORB/topics/position_setpoint_triplet.h>
+#include <uORB/topics/parameter_update.h>
+
+#include <nuttx/config.h>
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <math.h>
+#include <poll.h>
+#include <time.h>
+#include <sys/ioctl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
+#include <drivers/device/device.h>
+#include <drivers/drv_hrt.h>
+#include <arch/board/board.h>
+
+#include <systemlib/err.h>
+#include <systemlib/systemlib.h>
+#include <geo/geo.h>
+#include <dataman/dataman.h>
+#include <mathlib/mathlib.h>
+#include <mavlink/mavlink_log.h>
+
 
 NavigatorMode::NavigatorMode(Navigator *navigator, const char *name) :
 	SuperBlock(navigator, name),
 	_navigator(navigator),
 	_first_run(true)
 {
-	/* load initial params */
 	updateParams();
-	/* set initial mission items */
 	on_inactive();
+
+	_mavlink_fd = open(MAVLINK_LOG_DEVICE, 0);
+
 }
 
 NavigatorMode::~NavigatorMode()
@@ -58,7 +91,60 @@ NavigatorMode::~NavigatorMode()
 }
 
 void
-NavigatorMode::run(bool active) {
+NavigatorMode::updateParameters() {
+
+	updateParamHandles();
+	updateParamValues();
+
+}
+
+void
+NavigatorMode::updateParamHandles() {
+
+	_parameter_handles.takeoff_alt = param_find("NAV_TAKEOFF_ALT");
+	_parameter_handles.takeoff_acceptance_radius = param_find("NAV_TAKEOFF_ACR");
+	_parameter_handles.acceptance_radius = param_find("NAV_ACC_RAD");
+	_parameter_handles.velocity_lpf = param_find("NAV_VEL_LPF");
+
+	_parameter_handles.afol_use_cam_pitch = param_find("AFOL_USE_CAM_P");
+	_parameter_handles.afol_rep_target_alt = param_find("AFOL_REP_TALT");
+
+	_parameter_handles.loi_min_alt = param_find("LOI_MIN_ALT");
+	_parameter_handles.loi_step_len = param_find("LOI_STEP_LEN");
+
+	_parameter_handles.rtl_ret_alt = param_find("RTL_RET_ALT");
+}
+
+void
+NavigatorMode::updateParamValues() {
+
+	param_get(_parameter_handles.takeoff_alt, &(_parameters.takeoff_alt));
+	param_get(_parameter_handles.takeoff_acceptance_radius, &(_parameters.takeoff_acceptance_radius));
+	param_get(_parameter_handles.acceptance_radius, &(_parameters.acceptance_radius));
+	param_get(_parameter_handles.velocity_lpf, &(_parameters.velocity_lpf));
+
+	param_get(_parameter_handles.afol_use_cam_pitch, &(_parameters.afol_use_cam_pitch));
+	param_get(_parameter_handles.afol_rep_target_alt, &(_parameters.afol_rep_target_alt));
+
+	param_get(_parameter_handles.loi_min_alt, &(_parameters.loi_min_alt));
+	param_get(_parameter_handles.loi_step_len, &(_parameters.loi_step_len));
+
+	param_get(_parameter_handles.rtl_ret_alt, &(_parameters.rtl_ret_alt));
+
+    int toa = (int)_parameters.takeoff_alt;
+    mavlink_log_info(_navigator->get_mavlink_fd(), "Takeoff alt now is %d", toa);
+
+}
+
+
+void
+NavigatorMode::run(bool active, bool parameters_updated) {
+
+
+    if (parameters_updated) {
+        updateParameters();    
+    }
+
 	if (active) {
 		if (_first_run) {
 			/* first run */
@@ -95,4 +181,103 @@ NavigatorMode::on_activation()
 void
 NavigatorMode::on_active()
 {
+}
+
+bool
+NavigatorMode::update_vehicle_command()
+{
+	bool vcommand_updated = false;
+	orb_check(_navigator->get_vehicle_command_sub(), &vcommand_updated);
+
+	if (vcommand_updated) {
+
+		if (orb_copy(ORB_ID(vehicle_command), _navigator->get_vehicle_command_sub(), &_vcommand) == OK) {
+			return true;
+		}
+		else
+			return false;
+	}
+
+	return false;
+}
+
+void
+NavigatorMode::execute_vehicle_command()
+{
+}
+
+void
+NavigatorMode::point_camera_to_target(position_setpoint_s *sp)
+{
+	target_pos = _navigator->get_target_position();
+	global_pos = _navigator->get_global_position();
+
+	// Calculate offset values for later use.
+	float offset_x;
+	float offset_y;
+	float offset_z = target_pos->alt - global_pos->alt;
+
+	get_vector_to_next_waypoint(
+			target_pos->lat,
+			target_pos->lon,
+			global_pos->lat,
+			global_pos->lon,
+			&offset_x,
+			&offset_y
+	);
+
+	math::Vector<3> offset(offset_x, offset_y, offset_z);
+	math::Vector<2> offset_xy(offset_x, offset_y);
+
+	float offset_xy_len = offset_xy.length();
+
+	if (offset_xy_len > 2.0f)
+		sp->yaw = _wrap_pi(atan2f(-offset_xy(1), -offset_xy(0)));
+
+	sp->camera_pitch = atan2f(offset(2), offset_xy_len);
+}
+
+bool
+NavigatorMode::check_current_pos_sp_reached()
+{
+	struct vehicle_status_s *vstatus = _navigator->get_vstatus();
+	struct position_setpoint_triplet_s 	*pos_sp_triplet = _navigator->get_position_setpoint_triplet();
+	struct vehicle_global_position_s 	*global_pos = _navigator->get_global_position();;
+
+	switch (pos_sp_triplet->current.type)
+	{
+	case SETPOINT_TYPE_IDLE:
+		return true;
+		break;
+
+	case SETPOINT_TYPE_LAND:
+		return vstatus->condition_landed;
+		break;
+
+	case SETPOINT_TYPE_TAKEOFF:
+	{
+		float alt_diff = fabs(pos_sp_triplet->current.alt - global_pos->alt);
+		return _parameters.takeoff_acceptance_radius >= alt_diff;
+		break;
+	}
+	case SETPOINT_TYPE_POSITION:
+	{
+		float dist_xy = -1;
+		float dist_z = -1;
+
+		float distance = get_distance_to_point_global_wgs84(
+			global_pos->lat, global_pos->lon, global_pos->alt,
+			pos_sp_triplet->current.lat, pos_sp_triplet->current.lon, pos_sp_triplet->current.alt,
+			&dist_xy, &dist_z
+		);
+
+		return _parameters.acceptance_radius >= distance;
+
+		break;
+	}
+	default:
+		return false;
+		break;
+
+	}
 }

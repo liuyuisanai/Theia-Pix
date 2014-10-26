@@ -44,6 +44,8 @@
 #include <controllib/blocks.hpp>
 #include <controllib/block/BlockParam.hpp>
 
+#include <uORB/uORB.h>
+
 #include <uORB/topics/mission.h>
 #include <uORB/topics/mission.h>
 #include <uORB/topics/home_position.h>
@@ -51,6 +53,7 @@
 
 #include "navigator_mode.h"
 #include "mission_block.h"
+
 
 class Navigator;
 
@@ -67,30 +70,28 @@ public:
 
 	virtual void on_active();
 
+	virtual void execute_vehicle_command();
+
 private:
-	/**
-	 * Set the RTL item
-	 */
-	void		set_rtl_item();
 
-	/**
-	 * Move to next RTL item
-	 */
-	void		advance_rtl();
+	void		set_rtl_setpoint();
 
-	enum RTLState {
+	void		set_next_rtl_state();
+
+	void		disarm();
+
+	enum RTL_state {
 		RTL_STATE_NONE = 0,
 		RTL_STATE_CLIMB,
 		RTL_STATE_RETURN,
-		RTL_STATE_DESCEND,
-		RTL_STATE_LOITER,
 		RTL_STATE_LAND,
 		RTL_STATE_LANDED,
-	} _rtl_state;
+	} rtl_state;
 
-	control::BlockParamFloat _param_return_alt;
-	control::BlockParamFloat _param_descend_alt;
-	control::BlockParamFloat _param_land_delay;
+	float return_alt;
+	int mv_fd;
+	bool first_rtl_setpoint_set;
+
 };
 
 #endif

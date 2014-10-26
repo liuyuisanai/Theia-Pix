@@ -1,4 +1,4 @@
-/****************************************************************************
+/***************************************************************************
  *
  *   Copyright (c) 2014 PX4 Development Team. All rights reserved.
  *
@@ -17,7 +17,7 @@
  *    without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * AS IS AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
  * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
  * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
@@ -30,81 +30,49 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-
 /**
- * @file navigator_params.c
+ * @file abs_follow.h
  *
- * Parameters for navigator in general
- *
- * @author Julian Oes <julian@oes.ch>
- * @author Thomas Gubler <thomasgubler@gmail.com>
+ * @author Edgars Simanovskis <es@robotics.lv>
+ * @author Martins Frolovs <martins.f@airdog.com>
  */
 
-#include <nuttx/config.h>
+#ifndef NAVIGATOR_ABS_FOLLOW_H
+#define NAVIGATOR_ABS_FOLLOW_H
 
-#include <systemlib/param/param.h>
+#include <controllib/blocks.hpp>
+#include <controllib/block/BlockParam.hpp>
 
-/**
- * Loiter radius (FW only)
- *
- * Default value of loiter radius for missions, loiter, RTL, etc. (fixedwing only).
- *
- * @unit meters
- * @min 0.0
- * @group Mission
- */
-PARAM_DEFINE_FLOAT(NAV_LOITER_RAD, 50.0f);
+#include <uORB/uORB.h>
 
+#include "navigator_mode.h"
+#include "mission_block.h"
 
-/**
- * Set OBC mode for data link loss
- *
- * If set to 1 the behaviour on data link loss is set to a mode according to the OBC rules
- *
- * @min 0
- * @group Mission
- */
-PARAM_DEFINE_INT32(NAV_DLL_OBC, 0);
+class AbsFollow : public MissionBlock
+{
+public:
+	AbsFollow(Navigator *navigator, const char *name);
 
-/**
- * Set OBC mode for rc loss
- *
- * If set to 1 the behaviour on data link loss is set to a mode according to the OBC rules
- *
- * @min 0
- * @group Mission
- */
-PARAM_DEFINE_INT32(NAV_RCL_OBC, 0);
+	~AbsFollow();
 
-/**
- * Airfield home Lat
- *
- * Latitude of airfield home waypoint
- *
- * @unit degrees * 1e7
- * @min 0.0
- * @group DLL
- */
-PARAM_DEFINE_INT32(NAV_AH_LAT, -265847810);
+	virtual void on_inactive();
 
-/**
- * Airfield home Lon
- *
- * Longitude of airfield home waypoint
- *
- * @unit degrees * 1e7
- * @min 0.0
- * @group DLL
- */
-PARAM_DEFINE_INT32(NAV_AH_LON, 1518423250);
+	virtual void on_activation();
 
-/**
- * Airfield home alt
- *
- * Altitude of airfield home waypoint
- *
- * @unit m
- * @min 0.0
- * @group DLL
- */
-PARAM_DEFINE_FLOAT(NAV_AH_ALT, 600.0f);
+	virtual void on_active();
+
+	virtual void execute_vehicle_command();
+
+private:
+
+	math::Vector<3>  _afollow_offset;			/**< offset from target for AFOLLOW mode */
+	double	_target_lat;		/**< prediction for target latitude */
+	double	_target_lon;		/**< prediction for target longitude */
+	float	_target_alt;		/**< prediction for target altitude */
+	float 	_init_alt; 			/**< initial altitude on abs follow start > */
+	math::Vector<3>	_target_vel;	/**< target velocity vector */
+	hrt_abstime _t_prev;
+
+};
+
+#endif

@@ -41,8 +41,11 @@
 #ifndef NAVIGATOR_LOITER_H
 #define NAVIGATOR_LOITER_H
 
+#include <mathlib/mathlib.h>
+#include <geo/geo.h>
 #include <controllib/blocks.hpp>
 #include <controllib/block/BlockParam.hpp>
+#include <uORB/topics/vehicle_command.h>
 
 #include "navigator_mode.h"
 #include "mission_block.h"
@@ -59,6 +62,35 @@ public:
 	virtual void on_activation();
 
 	virtual void on_active();
+
+	virtual void execute_vehicle_command();
+
+private:
+
+	void		takeoff();
+	void 		land();
+	void		disarm();
+
+	enum LOITER_SUB_MODE {
+		LOITER_SUB_MODE_LANDED = 0, 		// vehicle on ground
+		LOITER_SUB_MODE_AIM_AND_SHOOT,		// aim and shoot
+		LOITER_SUB_MODE_LOOK_DOWN, 			// look down
+		LOITER_SUB_MODE_COME_TO_ME, 		// come to me
+		LOITER_SUB_MODE_LANDING, 			// vehicle is landing
+		LOITER_SUB_MODE_TAKING_OFF,			// vehicle is taking off
+
+	} loiter_sub_mode;
+
+	void execute_command_in_landed(vehicle_command_s cmd);
+	void execute_command_in_aim_and_shoot(vehicle_command_s cmd);
+	void execute_command_in_look_down(vehicle_command_s cmd);
+	void execute_command_in_come_to_me(vehicle_command_s cmd);
+	void execute_command_in_landing(vehicle_command_s cmd);
+	void execute_command_in_taking_off(vehicle_command_s cmd);
+
+	void set_sub_mode(LOITER_SUB_MODE new_sub_mode);
+
+	bool flag_sub_mode_goal_reached;
 };
 
 #endif

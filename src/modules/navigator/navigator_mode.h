@@ -50,6 +50,7 @@
 #include <dataman/dataman.h>
 
 #include <uORB/topics/position_setpoint_triplet.h>
+#include <uORB/topics/vehicle_command.h>
 
 class Navigator;
 
@@ -66,7 +67,7 @@ public:
 	 */
 	virtual ~NavigatorMode();
 
-	void run(bool active);
+	void run(bool active, bool parameters_updated);
 
 	/**
 	 * This function is called while the mode is inactive
@@ -83,17 +84,88 @@ public:
 	 */
 	virtual void on_active();
 
+	/*
+	 * This function defines how vehicle reacts on commands in
+	 * current navigator mode
+	 */
+	virtual void execute_vehicle_command();
+
+	/*
+	 * Check if vehicle command subscription has been updated
+	 * if it has it updates _vcommand structure and returns true
+	 */
+	bool update_vehicle_command();
+
+	void point_camera_to_target(position_setpoint_s *sp);
+
+	void updateParameters();
+	void updateParamValues();
+	void updateParamHandles();
+
+	struct {
+		float takeoff_alt;
+		float takeoff_acceptance_radius;
+		float acceptance_radius;
+		float loiter_step;
+		float velocity_lpf;
+
+		int afol_rep_target_alt;
+		int afol_use_cam_pitch;
+
+		float loi_step_len;
+		float loi_min_alt;
+
+		float rtl_ret_alt;
+
+	} _parameters;		
+
+
+	struct {
+		param_t takeoff_alt;
+		param_t takeoff_acceptance_radius;
+		param_t acceptance_radius;
+		param_t velocity_lpf;
+
+		param_t afol_rep_target_alt;
+		param_t afol_use_cam_pitch;
+
+		param_t loi_step_len;
+		param_t loi_min_alt;
+
+		param_t rtl_ret_alt;
+
+	} _parameter_handles;
+
+
+
 protected:
 	Navigator *_navigator;
 
+	struct position_setpoint_triplet_s 	*pos_sp_triplet;
+
+	struct target_global_position_s 	*target_pos;
+	struct vehicle_global_position_s 	*global_pos;
+	struct home_position_s 				*home_pos;
+
+	struct vehicle_command_s _vcommand;
+
+	int		_mavlink_fd;			/**< the file descriptor to send messages over mavlink */
+
+	bool check_current_pos_sp_reached();
+
+
+
 private:
+
 	bool _first_run;
 
-	/* this class has ptr data members, so it should not be copied,
+	/*
+	 * This class has ptr data members, so it should not be copied,
 	 * consequently the copy constructors are private.
 	 */
 	NavigatorMode(const NavigatorMode&);
 	NavigatorMode operator=(const NavigatorMode&);
+
 };
 
 #endif

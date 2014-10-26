@@ -108,9 +108,12 @@ Navigator::Navigator() :
 	_onboard_mission_sub(-1),
 	_offboard_mission_sub(-1),
 	_param_update_sub(-1),
+	_vcommand_sub(-1),
+	_target_pos_sub(-1),
 	_pos_sp_triplet_pub(-1),
 	_mission_result_pub(-1),
 	_att_sp_pub(-1),
+	_commander_request_pub(-1),
 	_vstatus{},
 	_control_mode{},
 	_global_pos{},
@@ -135,8 +138,10 @@ Navigator::Navigator() :
 	_dataLinkLoss(this, "DLL"),
 	_engineFailure(this, "EF"),
 	_gpsFailure(this, "GPSF"),
+	_abs_follow(this, "FOL"),
 	_can_loiter_at_sp(false),
 	_pos_sp_triplet_updated(false),
+	_commander_request_updated(false),
 	_param_loiter_radius(this, "LOITER_RAD"),
 	_param_acceptance_radius(this, "ACC_RAD"),
 	_param_datalinkloss_obc(this, "DLL_OBC"),
@@ -150,6 +155,7 @@ Navigator::Navigator() :
 	_navigation_mode_array[4] = &_engineFailure;
 	_navigation_mode_array[5] = &_gpsFailure;
 	_navigation_mode_array[6] = &_rcLoss;
+	_navigation_mode_array[4] = &_abs_follow;
 
 	updateParams();
 }
@@ -236,6 +242,12 @@ Navigator::params_update()
 }
 
 void
+Navigator::target_position_update()
+{
+	orb_copy(ORB_ID(target_global_position), _target_pos_sub, &_target_pos);
+}
+
+void
 Navigator::task_main_trampoline(int argc, char *argv[])
 {
 	navigator::g_navigator->task_main();
@@ -278,6 +290,8 @@ Navigator::task_main()
 	_onboard_mission_sub = orb_subscribe(ORB_ID(onboard_mission));
 	_offboard_mission_sub = orb_subscribe(ORB_ID(offboard_mission));
 	_param_update_sub = orb_subscribe(ORB_ID(parameter_update));
+	_vcommand_sub = orb_subscribe(ORB_ID(vehicle_command));
+	_target_pos_sub = orb_subscribe(ORB_ID(target_global_position));
 
 	/* copy all topics first time */
 	vehicle_status_update();
@@ -288,6 +302,7 @@ Navigator::task_main()
 	home_position_update();
 	navigation_capabilities_update();
 	params_update();
+	target_position_update();
 
 	/* rate limit position updates to 50 Hz */
 	orb_set_interval(_global_pos_sub, 20);
@@ -296,7 +311,7 @@ Navigator::task_main()
 	const hrt_abstime mavlink_open_interval = 500000;
 
 	/* wakeup source(s) */
-	struct pollfd fds[8];
+	struct pollfd fds[9];
 
 	/* Setup of loop */
 	fds[0].fd = _global_pos_sub;
@@ -315,6 +330,8 @@ Navigator::task_main()
 	fds[6].events = POLLIN;
 	fds[7].fd = _gps_pos_sub;
 	fds[7].events = POLLIN;
+	fds[8].fd = _target_pos_sub;
+	fds[8].events = POLLIN;
 
 	while (!_task_should_exit) {
 
@@ -339,6 +356,11 @@ Navigator::task_main()
 			_mavlink_fd = open(MAVLINK_LOG_DEVICE, 0);
 		}
 
+		/* target position updated */
+		if (fds[8].revents & POLLIN) {
+			target_position_update();
+		}
+
 		static bool have_geofence_position_data = false;
 
 		/* gps updated */
@@ -354,10 +376,13 @@ Navigator::task_main()
 			sensor_combined_update();
 		}
 
+		bool parameters_updated = false;
+
 		/* parameters updated */
 		if (fds[5].revents & POLLIN) {
 			params_update();
 			updateParams();
+			parameters_updated = true;
 		}
 
 		/* vehicle control mode updated */
@@ -454,6 +479,9 @@ Navigator::task_main()
 			case NAVIGATION_STATE_AUTO_LANDENGFAIL:
 				_navigation_mode = &_engineFailure;
 				break;
+			case NAVIGATION_STATE_AUTO_ABS_FOLLOW:
+				_navigation_mode = &_abs_follow; /* TODO: change this to something else */
+				break;
 			case NAVIGATION_STATE_AUTO_LANDGPSFAIL:
 				_navigation_mode = &_gpsFailure;
 				break;
@@ -465,7 +493,7 @@ Navigator::task_main()
 
 		/* iterate through navigation modes and set active/inactive for each */
 		for(unsigned int i = 0; i < NAVIGATOR_MODE_ARRAY_SIZE; i++) {
-			_navigation_mode_array[i]->run(_navigation_mode == _navigation_mode_array[i]);
+			_navigation_mode_array[i]->run(_navigation_mode == _navigation_mode_array[i], parameters_updated);
 		}
 
 		/* if nothing is running, set position setpoint triplet invalid */
@@ -480,6 +508,11 @@ Navigator::task_main()
 		if (_pos_sp_triplet_updated) {
 			publish_position_setpoint_triplet();
 			_pos_sp_triplet_updated = false;
+		}
+
+		if (_commander_request_updated) {
+			publish_commander_request();
+			_commander_request_updated = false;
 		}
 
 		perf_end(_loop_perf);
@@ -553,6 +586,18 @@ Navigator::publish_position_setpoint_triplet()
 	}
 }
 
+void
+Navigator::publish_commander_request()
+{
+	/* publish commander request only once available */
+	if (_commander_request_pub > 0) {
+		orb_publish(ORB_ID(commander_request), _commander_request_pub, &_commander_request);
+
+	} else {
+		_commander_request_pub = orb_advertise(ORB_ID(commander_request), &_commander_request);
+	}
+}
+
 void Navigator::add_fence_point(int argc, char *argv[])
 {
 	_geofence.addPoint(argc, argv);
@@ -562,7 +607,6 @@ void Navigator::load_fence_from_file(const char *filename)
 {
 	_geofence.loadFromFile(filename);
 }
-
 
 static void usage()
 {

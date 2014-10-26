@@ -17,7 +17,7 @@
  *    without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * AS IS AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
  * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
  * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
@@ -32,79 +32,32 @@
  ****************************************************************************/
 
 /**
- * @file navigator_params.c
+ * @file loter_params.c
  *
- * Parameters for navigator in general
+ * Parameter for loter.
  *
- * @author Julian Oes <julian@oes.ch>
- * @author Thomas Gubler <thomasgubler@gmail.com>
+ * @author Martins Frolovs <martins.f@airdog.com>
  */
 
 #include <nuttx/config.h>
-
 #include <systemlib/param/param.h>
 
 /**
- * Loiter radius (FW only)
- *
- * Default value of loiter radius for missions, loiter, RTL, etc. (fixedwing only).
+ * Step length for one movement command
  *
  * @unit meters
- * @min 0.0
- * @group Mission
+ * @min 1
+ * @group Navigator
  */
-PARAM_DEFINE_FLOAT(NAV_LOITER_RAD, 50.0f);
+PARAM_DEFINE_FLOAT(LOI_STEP_LEN, 5.00f);
 
 
 /**
- * Set OBC mode for data link loss
+ * Minimum altitude above target
  *
- * If set to 1 the behaviour on data link loss is set to a mode according to the OBC rules
- *
- * @min 0
- * @group Mission
+ * @unit meters
+ * @group Navigator
  */
-PARAM_DEFINE_INT32(NAV_DLL_OBC, 0);
+PARAM_DEFINE_FLOAT(LOI_MIN_ALT, 2.00f);
 
-/**
- * Set OBC mode for rc loss
- *
- * If set to 1 the behaviour on data link loss is set to a mode according to the OBC rules
- *
- * @min 0
- * @group Mission
- */
-PARAM_DEFINE_INT32(NAV_RCL_OBC, 0);
 
-/**
- * Airfield home Lat
- *
- * Latitude of airfield home waypoint
- *
- * @unit degrees * 1e7
- * @min 0.0
- * @group DLL
- */
-PARAM_DEFINE_INT32(NAV_AH_LAT, -265847810);
-
-/**
- * Airfield home Lon
- *
- * Longitude of airfield home waypoint
- *
- * @unit degrees * 1e7
- * @min 0.0
- * @group DLL
- */
-PARAM_DEFINE_INT32(NAV_AH_LON, 1518423250);
-
-/**
- * Airfield home alt
- *
- * Altitude of airfield home waypoint
- *
- * @unit m
- * @min 0.0
- * @group DLL
- */
-PARAM_DEFINE_FLOAT(NAV_AH_ALT, 600.0f);

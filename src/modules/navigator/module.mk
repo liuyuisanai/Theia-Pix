@@ -40,10 +40,12 @@ MODULE_COMMAND	= navigator
 SRCS		= navigator_main.cpp \
 		  navigator_params.c \
 		  navigator_mode.cpp \
+		  navigator_mode_params.c \
 		  mission_block.cpp \
 		  mission.cpp \
 		  mission_params.c \
 		  loiter.cpp \
+		  loiter_params.c \
 		  rtl.cpp \
 		  rtl_params.c \
 		  mission_feasibility_checker.cpp \
@@ -55,7 +57,9 @@ SRCS		= navigator_main.cpp \
 		  rcloss_params.c \
 		  enginefailure.cpp \
 		  gpsfailure.cpp \
-		  gpsfailure_params.c
+		  gpsfailure_params.c \
+		  abs_follow.cpp \
+		  abs_follow_params.c 
 
 INCLUDE_DIRS	 += $(MAVLINK_SRC)/include/mavlink
 
