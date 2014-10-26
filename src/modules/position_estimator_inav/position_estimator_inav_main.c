@@ -62,6 +62,7 @@
 #include <uORB/topics/vision_position_estimate.h>
 #include <uORB/topics/home_position.h>
 #include <uORB/topics/optical_flow.h>
+#include <drivers/drv_range_finder.h>
 #include <mavlink/mavlink_log.h>
 #include <poll.h>
 #include <systemlib/err.h>
@@ -83,12 +84,12 @@ static bool verbose_mode = false;
 
 static const hrt_abstime vision_topic_timeout = 500000;	// Vision topic timeout = 0.5s
 static const hrt_abstime gps_topic_timeout = 500000;		// GPS topic timeout = 0.5s
-static const hrt_abstime flow_topic_timeout = 1000000;	// optical flow topic timeout = 1s
+//static const hrt_abstime flow_topic_timeout = 1000000;	// optical flow topic timeout = 1s
 static const hrt_abstime sonar_timeout = 150000;	// sonar timeout = 150ms
 static const hrt_abstime sonar_valid_timeout = 1000000;	// estimate sonar distance during this time after sonar loss
 static const hrt_abstime xy_src_timeout = 2000000;	// estimate position during this time after position sources loss
 static const uint32_t updates_counter_len = 1000000;
-static const float max_flow = 1.0f;	// max flow value that can be used, rad/s
+//static const float max_flow = 1.0f;	// max flow value that can be used, rad/s
 
 __EXPORT int position_estimator_inav_main(int argc, char *argv[]);
 
@@ -233,10 +234,9 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 	float eph = max_eph_epv;
 	float epv = 1.0f;
 
-	float eph_flow = 1.0f;
-
 	float eph_vision = 0.5f;
 	float epv_vision = 0.5f;
+	//float eph_flow = 1.0f;
 
 	float x_est_prev[2], y_est_prev[2], z_est_prev[2];
 	memset(x_est_prev, 0, sizeof(x_est_prev));
@@ -246,8 +246,8 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 	int baro_init_cnt = 0;
 	int baro_init_num = 200;
 	float baro_offset = 0.0f;		// baro offset for reference altitude, initialized on start, then adjusted
-	float surface_offset = 0.0f;	// ground level offset from reference altitude
-	float surface_offset_rate = 0.0f;	// surface offset change rate
+	//float surface_offset = 0.0f;	// ground level offset from reference altitude
+	//float surface_offset_rate = 0.0f;	// surface offset change rate
 	float alt_avg = 0.0f;
 	bool landed = true;
 	hrt_abstime landed_time = 0;
@@ -266,7 +266,7 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 	uint16_t baro_updates = 0;
 	uint16_t gps_updates = 0;
 	uint16_t attitude_updates = 0;
-	uint16_t flow_updates = 0;
+	//uint16_t flow_updates = 0;
 
 	hrt_abstime updates_counter_start = hrt_absolute_time();
 	hrt_abstime pub_last = hrt_absolute_time();
@@ -291,22 +291,23 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 		{ 0.0f, 0.0f },		// D (pos, vel)
 	};
 	
-	float corr_sonar = 0.0f;
+	//float corr_sonar = 0.0f;
 	float corr_sonar_filtered = 0.0f;
 
-	float corr_flow[] = { 0.0f, 0.0f };	// N E
-	float w_flow = 0.0f;
+	//float corr_flow[] = { 0.0f, 0.0f };	// N E
+	//float w_flow = 0.0f;
 
 	float sonar_prev = 0.0f;
-	hrt_abstime flow_prev = 0;			// time of last flow measurement
+	float dist_bottom = 0.0f;
+	//hrt_abstime flow_prev = 0;			// time of last flow measurement
 	hrt_abstime sonar_time = 0;			// time of last sonar measurement (not filtered)
 	hrt_abstime sonar_valid_time = 0;	// time of last sonar measurement used for correction (filtered)
 
 	bool gps_valid = false;			// GPS is valid
 	bool sonar_valid = false;		// sonar is valid
-	bool flow_valid = false;		// flow is valid
-	bool flow_accurate = false;		// flow should be accurate (this flag not updated if flow_valid == false)
 	bool vision_valid = false;
+	//bool flow_valid = false;		// flow is valid
+	//bool flow_accurate = false;		// flow should be accurate (this flag not updated if flow_valid == false)
 
 	/* declare and safely initialize all structs */
 	struct actuator_controls_s actuator;
@@ -323,12 +324,13 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 	memset(&att, 0, sizeof(att));
 	struct vehicle_local_position_s local_pos;
 	memset(&local_pos, 0, sizeof(local_pos));
-	struct optical_flow_s flow;
-	memset(&flow, 0, sizeof(flow));
 	struct vision_position_estimate vision;
 	memset(&vision, 0, sizeof(vision));
+	//struct optical_flow_s flow;
+	//memset(&flow, 0, sizeof(flow));
 	struct vehicle_global_position_s global_pos;
 	memset(&global_pos, 0, sizeof(global_pos));
+    struct range_finder_report range_finder;
 
 	/* subscribe */
 	int parameter_update_sub = orb_subscribe(ORB_ID(parameter_update));
@@ -336,10 +338,11 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 	int armed_sub = orb_subscribe(ORB_ID(actuator_armed));
 	int sensor_combined_sub = orb_subscribe(ORB_ID(sensor_combined));
 	int vehicle_attitude_sub = orb_subscribe(ORB_ID(vehicle_attitude));
-	int optical_flow_sub = orb_subscribe(ORB_ID(optical_flow));
+	//int optical_flow_sub = orb_subscribe(ORB_ID(optical_flow));
 	int vehicle_gps_position_sub = orb_subscribe(ORB_ID(vehicle_gps_position));
 	int vision_position_estimate_sub = orb_subscribe(ORB_ID(vision_position_estimate));
 	int home_position_sub = orb_subscribe(ORB_ID(home_position));
+    int range_finder_sub = orb_subscribe(ORB_ID(sensor_range_finder));
 
 	/* advertise */
 	orb_advert_t vehicle_local_position_pub = orb_advertise(ORB_ID(vehicle_local_position), &local_pos);
@@ -484,114 +487,172 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 				}
 			}
 
+            /* range finder */
+            orb_check(range_finder_sub, &updated);
+            if (updated) {
+                orb_copy(ORB_ID(sensor_range_finder), range_finder_sub, &range_finder);
+               
+                    switch(range_finder.type)
+                    {
+                        case RANGE_FINDER_TYPE_ULTRASONIC:
+                            
+                            if (    range_finder.distance > range_finder.minimum_distance &&
+                                    range_finder.distance < range_finder.maximum_distance)
+                            {
+                                float angle_correction = 1;
+                                if (att.R[2][2] < 0.85f){
+                                    angle_correction = 0.95; //cos(15) <- maximal correction if we are flying with pi/4 angle
+                                    range_finder.distance *= angle_correction;
+                                }
+                            	//mavlink_log_info(mavlink_fd, "[inav] RAW SONAR alt = % 9.6f", (double)range_finder.distance);
+                                sonar_time = t;
+                                
+                                /* hack by ilya */
+
+                                
+                                if (range_finder.distance != sonar_prev){
+                                	/* spike detection and filter */
+                                	
+                                    corr_sonar_filtered += (range_finder.distance - corr_sonar_filtered) * params.sonar_filt;
+
+                                    /* Check if spike was detected*/
+                                    /* Params could be configured from qgroundcontroll */
+                                    bool spike_detected;
+                                    spike_detected = fabsf(range_finder.distance - corr_sonar_filtered) > params.sonar_err ? true : false;
+
+                                	if (spike_detected) {
+                                		sonar_valid = false;
+                                		mavlink_log_info(mavlink_fd, "spike detected act: %.3f corr: %.3f", (double)range_finder.distance, (double)corr_sonar_filtered);
+                                	}
+                                	else {
+                                	 	dist_bottom = corr_sonar_filtered;
+                                	 	sonar_valid_time = t;
+	                                 	sonar_valid = true;
+                                	}
+                                	
+                                	/* spike detection and filter end */
+
+                                	sonar_prev = range_finder.distance; //used only to check whether the mesured distance has changed
+                                }
+                                else {	                                
+	                                dist_bottom = range_finder.distance;	
+	                                sonar_valid_time = t;
+	                                sonar_valid = true;
+                                }
+                                
+                                
+                                /* end hack */
+
+                                // corr_sonar = range_finder.distance + surface_offset + z_est[0];
+                                // corr_sonar_filtered += (corr_sonar - corr_sonar_filtered) * params.sonar_filt;
+                               
+                                // if (fabsf(corr_sonar) > params.sonar_err) {
+                                //     /* correction is too large: spike or new ground level? */
+                                //     if (fabsf(corr_sonar - corr_sonar_filtered) > params.sonar_err) {
+                                //         /* spike detected, ignore */
+                                //         corr_sonar = 0.0f;
+                                //         sonar_valid = false;
+                                        
+                                //     } else {
+                                //         /* new ground level */
+                                //         local_pos.surface_bottom_timestamp = t;
+                                //         local_pos.dist_bottom = corr_sonar_filtered;
+                                //         local_pos.dist_bottom_valid = true;
+                                //         surface_offset -= corr_sonar;
+                                //         surface_offset_rate = 0.0f;
+                                //         corr_sonar = 0.0f;
+                                //         corr_sonar_filtered = 0.0f;
+                                //         sonar_valid_time = t;
+                                //         sonar_valid = true;
+                                //         mavlink_log_info(mavlink_fd, "[inav] new surface level: %.2f", (double)surface_offset);
+                                //     }
+                                    
+                                // } else {
+                                //     /* correction is ok, use it */
+                                //     sonar_valid_time = t;
+                                //     sonar_valid = true;
+                                // }
+                            }
+                            else {
+                            	sonar_valid = false;
+                            }
+                        break;
+                        }
+                }
+
+
 			/* optical flow */
-			orb_check(optical_flow_sub, &updated);
+			//orb_check(optical_flow_sub, &updated);
 
-			if (updated) {
-				orb_copy(ORB_ID(optical_flow), optical_flow_sub, &flow);
+			// if (updated) {
+			// 	orb_copy(ORB_ID(optical_flow), optical_flow_sub, &flow);
 
-				/* calculate time from previous update */
-				float flow_dt = flow_prev > 0 ? (flow.flow_timestamp - flow_prev) * 1e-6f : 0.1f;
-				flow_prev = flow.flow_timestamp;
+			// 	/* calculate time from previous update */
+			// 	float flow_dt = flow_prev > 0 ? (flow.flow_timestamp - flow_prev) * 1e-6f : 0.1f;
+			// 	flow_prev = flow.flow_timestamp;
 
-				if ((flow.ground_distance_m > 0.31f) &&
-					(flow.ground_distance_m < 4.0f) &&
-					(att.R[2][2] > 0.7f) &&
-					(fabsf(flow.ground_distance_m - sonar_prev) > FLT_EPSILON)) {
+			// 	float flow_q = flow.quality / 255.0f;
+			// 	float dist_bottom = - z_est[0] - surface_offset;
 
-					sonar_time = t;
-					sonar_prev = flow.ground_distance_m;
-					corr_sonar = flow.ground_distance_m + surface_offset + z_est[0];
-					corr_sonar_filtered += (corr_sonar - corr_sonar_filtered) * params.sonar_filt;
+			// 	if (dist_bottom > 0.3f && flow_q > params.flow_q_min && (t < sonar_valid_time + sonar_valid_timeout) && att.R[2][2] > 0.7f) {
+			// 		/* distance to surface */
+			// 		float flow_dist = dist_bottom / att.R[2][2];
+			// 		/* check if flow if too large for accurate measurements */
+			// 		/* calculate estimated velocity in body frame */
+			// 		float body_v_est[2] = { 0.0f, 0.0f };
 
-					if (fabsf(corr_sonar) > params.sonar_err) {
-						/* correction is too large: spike or new ground level? */
-						if (fabsf(corr_sonar - corr_sonar_filtered) > params.sonar_err) {
-							/* spike detected, ignore */
-							corr_sonar = 0.0f;
-							sonar_valid = false;
+			// 		for (int i = 0; i < 2; i++) {
+			// 			body_v_est[i] = att.R[0][i] * x_est[1] + att.R[1][i] * y_est[1] + att.R[2][i] * z_est[1];
+			// 		}
 
-						} else {
-							/* new ground level */
-							surface_offset -= corr_sonar;
-							surface_offset_rate = 0.0f;
-							corr_sonar = 0.0f;
-							corr_sonar_filtered = 0.0f;
-							sonar_valid_time = t;
-							sonar_valid = true;
-							local_pos.surface_bottom_timestamp = t;
-							mavlink_log_info(mavlink_fd, "[inav] new surface level: %.2f", (double)surface_offset);
-						}
+			// 		/* set this flag if flow should be accurate according to current velocity and attitude rate estimate */
+			// 		flow_accurate = fabsf(body_v_est[1] / flow_dist - att.rollspeed) < max_flow &&
+			// 				fabsf(body_v_est[0] / flow_dist + att.pitchspeed) < max_flow;
 
-					} else {
-						/* correction is ok, use it */
-						sonar_valid_time = t;
-						sonar_valid = true;
-					}
-				}
+			// 		/* convert raw flow to angular flow (rad/s) */
+			// 		float flow_ang[2];
+			// 		flow_ang[0] = flow.flow_raw_x * params.flow_k / 1000.0f / flow_dt;
+			// 		flow_ang[1] = flow.flow_raw_y * params.flow_k / 1000.0f / flow_dt;
+			// 		/* flow measurements vector */
+			// 		float flow_m[3];
+			// 		flow_m[0] = -flow_ang[0] * flow_dist;
+			// 		flow_m[1] = -flow_ang[1] * flow_dist;
+			// 		flow_m[2] = z_est[1];
+			// 		/* velocity in NED */
+			// 		float flow_v[2] = { 0.0f, 0.0f };
 
-				float flow_q = flow.quality / 255.0f;
-				float dist_bottom = - z_est[0] - surface_offset;
+			// 		/* project measurements vector to NED basis, skip Z component */
+			// 		for (int i = 0; i < 2; i++) {
+			// 			for (int j = 0; j < 3; j++) {
+			// 				flow_v[i] += att.R[i][j] * flow_m[j];
+			// 			}
+			// 		}
 
-				if (dist_bottom > 0.3f && flow_q > params.flow_q_min && (t < sonar_valid_time + sonar_valid_timeout) && att.R[2][2] > 0.7f) {
-					/* distance to surface */
-					float flow_dist = dist_bottom / att.R[2][2];
-					/* check if flow if too large for accurate measurements */
-					/* calculate estimated velocity in body frame */
-					float body_v_est[2] = { 0.0f, 0.0f };
+			// 		/* velocity correction */
+			// 		corr_flow[0] = flow_v[0] - x_est[1];
+			// 		corr_flow[1] = flow_v[1] - y_est[1];
+			// 		/* adjust correction weight */
+			// 		float flow_q_weight = (flow_q - params.flow_q_min) / (1.0f - params.flow_q_min);
+			// 		w_flow = att.R[2][2] * flow_q_weight / fmaxf(1.0f, flow_dist);
 
-					for (int i = 0; i < 2; i++) {
-						body_v_est[i] = att.R[0][i] * x_est[1] + att.R[1][i] * y_est[1] + att.R[2][i] * z_est[1];
-					}
+			// 		/* if flow is not accurate, reduce weight for it */
+			// 		// TODO make this more fuzzy
+			// 		if (!flow_accurate) {
+			// 			w_flow *= 0.05f;
+			// 		}
 
-					/* set this flag if flow should be accurate according to current velocity and attitude rate estimate */
-					flow_accurate = fabsf(body_v_est[1] / flow_dist - att.rollspeed) < max_flow &&
-							fabsf(body_v_est[0] / flow_dist + att.pitchspeed) < max_flow;
+			// 		/* under ideal conditions, on 1m distance assume EPH = 10cm */
+			// 		eph_flow = 0.1f / w_flow;
 
-					/* convert raw flow to angular flow (rad/s) */
-					float flow_ang[2];
-					flow_ang[0] = flow.flow_raw_x * params.flow_k / 1000.0f / flow_dt;
-					flow_ang[1] = flow.flow_raw_y * params.flow_k / 1000.0f / flow_dt;
-					/* flow measurements vector */
-					float flow_m[3];
-					flow_m[0] = -flow_ang[0] * flow_dist;
-					flow_m[1] = -flow_ang[1] * flow_dist;
-					flow_m[2] = z_est[1];
-					/* velocity in NED */
-					float flow_v[2] = { 0.0f, 0.0f };
+			// 		flow_valid = true;
 
-					/* project measurements vector to NED basis, skip Z component */
-					for (int i = 0; i < 2; i++) {
-						for (int j = 0; j < 3; j++) {
-							flow_v[i] += att.R[i][j] * flow_m[j];
-						}
-					}
+			// 	} else {
+			// 		w_flow = 0.0f;
+			// 		flow_valid = false;
+			// 	}
 
-					/* velocity correction */
-					corr_flow[0] = flow_v[0] - x_est[1];
-					corr_flow[1] = flow_v[1] - y_est[1];
-					/* adjust correction weight */
-					float flow_q_weight = (flow_q - params.flow_q_min) / (1.0f - params.flow_q_min);
-					w_flow = att.R[2][2] * flow_q_weight / fmaxf(1.0f, flow_dist);
-
-					/* if flow is not accurate, reduce weight for it */
-					// TODO make this more fuzzy
-					if (!flow_accurate) {
-						w_flow *= 0.05f;
-					}
-
-					/* under ideal conditions, on 1m distance assume EPH = 10cm */
-					eph_flow = 0.1f / w_flow;
-
-					flow_valid = true;
-
-				} else {
-					w_flow = 0.0f;
-					flow_valid = false;
-				}
-
-				flow_updates++;
-			}
+			// 	flow_updates++;
+			// }
 
 			/* home position */
 			orb_check(home_position_sub, &updated);
@@ -780,12 +841,11 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 		}
 
 		/* check for timeout on FLOW topic */
-		if ((flow_valid || sonar_valid) && t > flow.timestamp + flow_topic_timeout) {
-			flow_valid = false;
-			sonar_valid = false;
-			warnx("FLOW timeout");
-			mavlink_log_info(mavlink_fd, "[inav] FLOW timeout");
-		}
+		// if ((flow_valid) && t > flow.timestamp + flow_topic_timeout) {
+		// 	flow_valid = false;
+		// 	warnx("FLOW timeout");
+		// 	mavlink_log_info(mavlink_fd, "[inav] FLOW timeout");
+		// }
 
 		/* check for timeout on GPS topic */
 		if (gps_valid && (t > (gps.timestamp_position + gps_topic_timeout))) {
@@ -802,9 +862,14 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 		}
 
 		/* check for sonar measurement timeout */
-		if (sonar_valid && (t > (sonar_time + sonar_timeout))) {
-			corr_sonar = 0.0f;
+		if (sonar_valid && t > sonar_time + sonar_timeout) {
+			//corr_sonar = 0.0f;
 			sonar_valid = false;
+			warnx("SONAR timeout");
+			mavlink_log_info(mavlink_fd, "[inav] SONAR timeout");
+		}
+		else if (sonar_valid) {
+			//mavlink_log_info(mavlink_fd, "[inav] SONAR VALID alt = % 9.6f", (double)dist_bottom);	
 		}
 
 		float dt = t_prev > 0 ? (t - t_prev) / 1000000.0f : 0.0f;
@@ -826,23 +891,23 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 		bool use_vision_xy = vision_valid && params.w_xy_vision_p > MIN_VALID_W;
 		bool use_vision_z = vision_valid && params.w_z_vision_p > MIN_VALID_W;
 		/* use flow if it's valid and (accurate or no GPS available) */
-		bool use_flow = flow_valid && (flow_accurate || !use_gps_xy);
+		// bool use_flow = flow_valid && (flow_accurate || !use_gps_xy);
 
-		bool can_estimate_xy = (eph < max_eph_epv) || use_gps_xy || use_flow || use_vision_xy;
+		bool can_estimate_xy = (eph < max_eph_epv) || use_gps_xy || use_vision_xy; //|| use_flow;
 
-		bool dist_bottom_valid = (t < sonar_valid_time + sonar_valid_timeout);
+		// if (dist_bottom_valid) {
+		// 	/* surface distance prediction */
+		// 	surface_offset += surface_offset_rate * dt;
 
-		if (dist_bottom_valid) {
-			/* surface distance prediction */
-			surface_offset += surface_offset_rate * dt;
+		// 	/* surface distance correction */
+		// 	if (sonar_valid) {
+		// 		surface_offset_rate -= corr_sonar * 0.5f * params.w_z_sonar * params.w_z_sonar * dt;
+		// 		surface_offset -= corr_sonar * params.w_z_sonar * dt;
+		// 	}
+		// }
 
-			/* surface distance correction */
-			if (sonar_valid) {
-				surface_offset_rate -= corr_sonar * 0.5f * params.w_z_sonar * params.w_z_sonar * dt;
-				surface_offset -= corr_sonar * params.w_z_sonar * dt;
-			}
-		}
-
+		bool dist_bottom_valid = sonar_valid && (t < sonar_valid_time + sonar_valid_timeout);
+		
 		float w_xy_gps_p = params.w_xy_gps_p * w_gps_xy;
 		float w_xy_gps_v = params.w_xy_gps_v * w_gps_xy;
 		float w_z_gps_p = params.w_z_gps_p * w_gps_z;
@@ -852,10 +917,10 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 		float w_z_vision_p = params.w_z_vision_p;
 
 		/* reduce GPS weight if optical flow is good */
-		if (use_flow && flow_accurate) {
-			w_xy_gps_p *= params.w_gps_flow;
-			w_xy_gps_v *= params.w_gps_flow;
-		}
+		// if (use_flow && flow_accurate) {
+		// 	w_xy_gps_p *= params.w_gps_flow;
+		// 	w_xy_gps_v *= params.w_gps_flow;
+		// }
 
 		/* baro offset correction */
 		if (use_gps_z) {
@@ -925,10 +990,10 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 		accel_bias_corr[1] = 0.0f;
 		accel_bias_corr[2] = 0.0f;
 
-		if (use_flow) {
-			accel_bias_corr[0] -= corr_flow[0] * params.w_xy_flow;
-			accel_bias_corr[1] -= corr_flow[1] * params.w_xy_flow;
-		}
+		// if (use_flow) {
+		// 	accel_bias_corr[0] -= corr_flow[0] * params.w_xy_flow;
+		// 	accel_bias_corr[1] -= corr_flow[1] * params.w_xy_flow;
+		// }
 
 		accel_bias_corr[2] -= corr_baro * params.w_z_baro * params.w_z_baro;
 
@@ -990,12 +1055,12 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 			}
 
 			/* inertial filter correction for position */
-			if (use_flow) {
-				eph = fminf(eph, eph_flow);
+			// if (use_flow) {
+			// 	eph = fminf(eph, eph_flow);
 
-				inertial_filter_correct(corr_flow[0], dt, x_est, 1, params.w_xy_flow * w_flow);
-				inertial_filter_correct(corr_flow[1], dt, y_est, 1, params.w_xy_flow * w_flow);
-			}
+			// 	inertial_filter_correct(corr_flow[0], dt, x_est, 1, params.w_xy_flow * w_flow);
+			// 	inertial_filter_correct(corr_flow[1], dt, y_est, 1, params.w_xy_flow * w_flow);
+			// }
 
 			if (use_gps_xy) {
 				eph = fminf(eph, gps.eph);
@@ -1027,7 +1092,7 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 				memcpy(y_est, y_est_prev, sizeof(y_est));
 				memset(corr_gps, 0, sizeof(corr_gps));
 				memset(corr_vision, 0, sizeof(corr_vision));
-				memset(corr_flow, 0, sizeof(corr_flow));
+				//memset(corr_flow, 0, sizeof(corr_flow));
 
 			} else {
 				memcpy(x_est_prev, x_est, sizeof(x_est));
@@ -1079,14 +1144,15 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 					(double)(accel_updates / updates_dt),
 					(double)(baro_updates / updates_dt),
 					(double)(gps_updates / updates_dt),
-					(double)(attitude_updates / updates_dt),
-					(double)(flow_updates / updates_dt));
+					(double)(attitude_updates / updates_dt)//,
+					//(double)(flow_updates / updates_dt)
+					);
 				updates_counter_start = t;
 				accel_updates = 0;
 				baro_updates = 0;
 				gps_updates = 0;
 				attitude_updates = 0;
-				flow_updates = 0;
+				//flow_updates = 0;
 			}
 		}
 
@@ -1122,14 +1188,18 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 			local_pos.vz = z_est[1];
 			local_pos.landed = landed;
 			local_pos.yaw = att.yaw;
+			local_pos.dist_bottom = dist_bottom;
 			local_pos.dist_bottom_valid = dist_bottom_valid;
 			local_pos.eph = eph;
 			local_pos.epv = epv;
 
-			if (local_pos.dist_bottom_valid) {
-				local_pos.dist_bottom = -z_est[0] - surface_offset;
-				local_pos.dist_bottom_rate = -z_est[1] - surface_offset_rate;
-			}
+			//mavlink_log_info(mavlink_fd, "[inav] Local pos sonar alt = % 9.6f", (double)local_pos.dist_bottom);
+            //local_pos.dist_bottom_rate = 10; // For now this is equal to installed sonar data output rate
+
+			//if (local_pos.dist_bottom_valid) {
+			//	local_pos.dist_bottom = -z_est[0] - surface_offset;
+			//	local_pos.dist_bottom_rate = -z_est[1] - surface_offset_rate;
+			//}
 
 			local_pos.timestamp = t;
 
