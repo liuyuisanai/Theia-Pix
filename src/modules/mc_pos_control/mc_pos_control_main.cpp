@@ -174,7 +174,7 @@ private:
 		param_t cam_pitch_max;
         param_t sonar_correction_on;
         param_t sonar_min_dist;
-        param_t sonar_safe_belt;
+        param_t sonar_factory_max;
         param_t mc_allowed_down_sp;
 	}		_params_handles;		/**< handles for interesting parameters */
 
@@ -192,9 +192,9 @@ private:
 		bool follow_rpt_alt;
 		float follow_lpf;
 		float cam_pitch_max;
-		bool sonar_correction_on;
+        bool sonar_correction_on;
         float sonar_min_dist;
-        float sonar_safe_belt; 
+        float sonar_factory_max;
         float mc_allowed_down_sp;
         
 		math::Vector<3> pos_p;
@@ -450,9 +450,8 @@ MulticopterPositionControl::MulticopterPositionControl() :
 	_params_handles.follow_lpf	= param_find("FOL_LPF");
 	_params_handles.cam_pitch_max	= param_find("CAM_P_MAX");
 
-	_params_handles.sonar_correction_on     = param_find("SENS_SON_ON");
+    _params_handles.sonar_correction_on     = param_find("SENS_SON_ON");
     _params_handles.sonar_min_dist          = param_find("SENS_SON_MIN");
-    _params_handles.sonar_safe_belt         = param_find("SENS_SON_DELTA");
     _params_handles.mc_allowed_down_sp      = param_find("MPC_ALLOWED_LAND");
 
 	/* fetch initial parameter values */
@@ -518,6 +517,9 @@ MulticopterPositionControl::parameters_update(bool force)
 		_params.follow_use_alt = (i != 0);
 		param_get(_params_handles.follow_rpt_alt, &i);
 		_params.follow_rpt_alt = (i != 0);
+        param_get(_params_handles.sonar_correction_on, &i);
+        _params.sonar_correction_on = i;
+        
 
 		float v;
 		param_get(_params_handles.xy_p, &v);
@@ -552,14 +554,12 @@ MulticopterPositionControl::parameters_update(bool force)
 		param_get(_params_handles.z_ff, &v);
 		v = math::constrain(v, 0.0f, 1.0f);
 		_params.vel_ff(2) = v;
-		param_get(_params_handles.sonar_correction_on, &v);
-        _params.sonar_correction_on = v;
         param_get(_params_handles.sonar_min_dist, &v);
         _params.sonar_min_dist = v;
-        param_get(_params_handles.sonar_safe_belt, &v);
-        _params.sonar_safe_belt = v;
         param_get(_params_handles.mc_allowed_down_sp, &v);
         _params.mc_allowed_down_sp = v;
+        param_get(_params_handles.sonar_factory_max, &v);
+        _params.sonar_factory_max = v;
 
 		_params.sp_offs_max = _params.vel_max.edivide(_params.pos_p) * 2.0f;
 	}
@@ -1432,7 +1432,8 @@ MulticopterPositionControl::task_main()
 
 
 				//Ground distance correction
-				float max_vel_z = _ground_position_available_drop * _params.vel_max(2) / _params.mc_allowed_down_sp;
+                float range = _params.sonar_factory_max - _params.sonar_min_dist;
+                float max_vel_z = _params.vel_max(2) * (float)pow(_ground_position_available_drop/range, 2.0);
 				if (_ground_position_invalid) {
 						float drop = _pos(2) - _pos_sp(2) ;
 						if (drop >= 0) {
@@ -1444,7 +1445,6 @@ MulticopterPositionControl::task_main()
 					//_vel_sp(2) = - _params.vel_max(2);
                     _vel_sp(2) = - _params.vel_max(2);
 					_sp_move_rate(2)= 0.0f;
-					//mavlink_log_info(_mavlink_fd, "+++++++ going down too fast, vel: %.2f, vel_sp: %.2f", (double)_vel(2), (double)_vel_sp(2));
 				}
 				else if (_local_pos.dist_bottom_valid && _params.sonar_correction_on){
 					if (_ground_position_available_drop > 0.0f && _vel_sp(2) > 0){
@@ -1455,7 +1455,7 @@ MulticopterPositionControl::task_main()
 							//mavlink_log_info(_mavlink_fd, " limiting downsp - vel_Sp: %.2f", (double)_vel_sp(2));
 						}
 						else {
-							//mavlink_log_info(_mavlink_fd, "other_vel_Sp: %.2f", (double)_vel_sp(2));	
+							mavlink_log_info(_mavlink_fd, "other_vel_Sp: %.2f", (double)_vel_sp(2));	
 						}
 						_sp_move_rate(2)= 0.0f;
 
@@ -1755,7 +1755,6 @@ MulticopterPositionControl::task_main()
 			/* position controller disabled, reset setpoints */
 			_reset_alt_sp = true;
 			_reset_pos_sp = true;
-			_mode_auto = false;
 			_reset_follow_offset = true;
 			reset_int_z = true;
 			reset_int_xy = true;
@@ -1831,7 +1830,7 @@ bool MulticopterPositionControl::ground_dist_correction(){
 		// 	_pos_sp(2) = _pos(2) + available_drop - _params.sonar_safe_belt ;
 		// 	alt_corrected = true;
 		// }
-		_pos_sp(2) = _pos(2) + available_drop;// - _params.sonar_safe_belt ;
+		_pos_sp(2) = _pos(2) + available_drop;
 		_ground_position_invalid = true;
 		_ground_setpoint_corrected = true;
 		alt_corrected = true;
@@ -1840,10 +1839,10 @@ bool MulticopterPositionControl::ground_dist_correction(){
 	//can go down
 		if (desired_drop > 0){
 		//want to go down
-			if (desired_drop > available_drop) {// - _params.sonar_safe_belt ){
+			if (desired_drop > available_drop) {
 			//want to go down too much
 				//limit going down too much
-				_pos_sp(2) = _pos(2) + available_drop;// - _params.sonar_safe_belt;
+				_pos_sp(2) = _pos(2) + available_drop;
 				_ground_setpoint_corrected = true;
 				_ground_position_invalid = false;
 				alt_corrected = true;

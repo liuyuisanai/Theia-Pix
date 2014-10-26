@@ -32,14 +32,15 @@
 /**
  * Minimal and maximal distances are get from
  * http://www.maxbotix.com/documents/XL-MaxSonar-EZ_Datasheet.pdf
+ * Measure unit: METER
  */
-#define MINIMAL_DISTANCE 20
-#define MAXIMAL_DISTANCE 700
+#define MINIMAL_DISTANCE 0.2f
+#define MAXIMAL_DISTANCE 7.0f
 
 /**
  * Experimentally found scale value
  */
-#define DISTANCE_SCALE 0.01022f
+#define DISTANCE_SCALE 0.01f
 
 
 __EXPORT int mb1230serial_main(int argc, char *argv[]);
@@ -201,11 +202,12 @@ int mb1230serial_thread_main(int argc, char *argv[])
 								(raw_data[1] - '0') * 10 +
 								(raw_data[2] - '0');
 
-						if (distance >= MINIMAL_DISTANCE && distance <= MAXIMAL_DISTANCE) {
+						if (distance >= (MINIMAL_DISTANCE * 100) && distance <= (MAXIMAL_DISTANCE * 100)) {
 							data.timestamp = hrt_absolute_time();
 							data.distance = (float)distance * DISTANCE_SCALE;
+                            
+                             //printf("Sonar %s %s %s: %.3fcm\n", raw_data[0], raw_data[1], raw_data[2], (double)data.distance);
 
-							//printf("%llu: %.3f\n", data.timestamp, data.distance);
 
 							if (range_finder_pub > 0) {
 								orb_publish(ORB_ID(sensor_range_finder), range_finder_pub, &data);

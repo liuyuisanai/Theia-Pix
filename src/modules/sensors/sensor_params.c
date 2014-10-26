@@ -50,7 +50,7 @@
  * @off 0
  * @group Sensor Calibration
  */
-PARAM_DEFINE_FLOAT(SENS_SON_ON, 1);
+PARAM_DEFINE_INT32(SENS_SON_ON, 1);
 
 /**
  * Minimal distance to surface allowed by sonar
@@ -61,12 +61,18 @@ PARAM_DEFINE_FLOAT(SENS_SON_ON, 1);
 PARAM_DEFINE_FLOAT(SENS_SON_MIN, 2.0f);
 
 /**
- * Sonar safety belt width
- * @min 0.0
- * @max unlimited
+ * Sonar factory minimal distance
+ * @min/max get from http://www.maxbotix.com/documents/XL-MaxSonar-EZ_Datasheet.pdf
  * @group Sensor Calibration
  */
-PARAM_DEFINE_FLOAT(SENS_SON_DELTA, 0.2f);
+PARAM_DEFINE_FLOAT(SENS_SON_F_MIN, 0.2f);
+
+/**
+ * Sonar factory maximal distance
+ * @min/max get from http://www.maxbotix.com/documents/XL-MaxSonar-EZ_Datasheet.pdf
+ * @group Sensor Calibration
+ */
+PARAM_DEFINE_FLOAT(SENS_SON_F_MAX, 7.0f);
 
 /**
  * Gyro X-axis offset
