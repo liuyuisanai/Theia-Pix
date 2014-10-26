@@ -105,7 +105,7 @@ MavlinkReceiver::MavlinkReceiver(Mavlink *parent) :
 	_battery_pub(-1),
 	_cmd_pub(-1),
 	_flow_pub(-1),
-	_range_pub(-1),
+	//_range_pub(-1),
 	_offboard_control_sp_pub(-1),
 	_global_vel_sp_pub(-1),
 	_att_sp_pub(-1),
@@ -437,11 +437,12 @@ MavlinkReceiver::handle_message_hil_optical_flow(mavlink_message_t *msg)
 	r.maximum_distance = 40.0f; // this is set to match the typical range of real sensors, could be made configurable
 	r.valid = (r.distance > r.minimum_distance) && (r.distance < r.maximum_distance);
 
-	if (_range_pub < 0) {
-		_range_pub = orb_advertise(ORB_ID(sensor_range_finder), &r);
-	} else {
-		orb_publish(ORB_ID(sensor_range_finder), _range_pub, &r);
-	}
+	//Range finder should be separete from optical flow
+	// if (_range_pub < 0) {
+	// 	_range_pub = orb_advertise(ORB_ID(sensor_range_finder), &r);
+	// } else {
+	// 	orb_publish(ORB_ID(sensor_range_finder), _range_pub, &r);
+	// }
 }
 
 void

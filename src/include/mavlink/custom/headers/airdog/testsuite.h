@@ -30,17 +30,8 @@ static void mavlink_test_trajectory(uint8_t system_id, uint8_t component_id, mav
         uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
         uint16_t i;
 	mavlink_trajectory_t packet_in = {
-		963497464,
-	}963497672,
-	}963497880,
-	}963498088,
-	}963498296,
-	}18275,
-	}18379,
-	}18483,
-	}18587,
-	}89,
-	};
+		963497464,963497672,963497880,963498088,963498296,18275,18379,18483,18587,89
+    };
 	mavlink_trajectory_t packet1, packet2;
         memset(&packet1, 0, sizeof(packet1));
         	packet1.time_boot_ms = packet_in.time_boot_ms;

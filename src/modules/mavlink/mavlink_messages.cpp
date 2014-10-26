@@ -939,6 +939,9 @@ private:
 	MavlinkOrbSubscription *_home_sub;
 	uint64_t _home_time;
 
+	MavlinkOrbSubscription *_gps_sub;
+	uint64_t _gps_time;
+
 	/* do not allow top copying this class */
 	MavlinkStreamGlobalPositionInt(MavlinkStreamGlobalPositionInt &);
 	MavlinkStreamGlobalPositionInt& operator = (const MavlinkStreamGlobalPositionInt &);
@@ -948,16 +951,20 @@ protected:
 		_pos_sub(_mavlink->add_orb_subscription(ORB_ID(vehicle_global_position))),
 		_pos_time(0),
 		_home_sub(_mavlink->add_orb_subscription(ORB_ID(home_position))),
-		_home_time(0)
+		_home_time(0),
+        _gps_sub(_mavlink->add_orb_subscription(ORB_ID(vehicle_gps_position))),
+        _gps_time(0)
 	{}
 
 	void send(const hrt_abstime t)
 	{
 		struct vehicle_global_position_s pos;
-		struct home_position_s home;
-
-		bool updated = _pos_sub->update(&_pos_time, &pos);
-		updated |= _home_sub->update(&_home_time, &home);
+        struct home_position_s home;
+        struct vehicle_gps_position_s gps;
+ 
+        bool updated = _pos_sub->update(&_pos_time, &pos);
+        updated |= _home_sub->update(&_home_time, &home);
+        updated |= _gps_sub->update(&_gps_time, &gps);
 
 		if (updated) {
 			mavlink_global_position_int_t msg;
@@ -1459,7 +1466,7 @@ protected:
 			msg.lat_int = pos_sp_triplet.current.lat * 1e7;
 			msg.lon_int = pos_sp_triplet.current.lon * 1e7;
 			msg.alt = pos_sp_triplet.current.alt;
-
+			msg.yaw = pos_sp_triplet.current.yaw * M_RAD_TO_DEG_F * 100.0f;
 			_mavlink->send_message(MAVLINK_MSG_ID_POSITION_TARGET_GLOBAL_INT, &msg);
 		}
 	}
