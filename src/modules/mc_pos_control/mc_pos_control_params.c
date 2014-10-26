@@ -42,6 +42,14 @@
 #include <systemlib/param/param.h>
 
 /**
+ * Allowed landing speed
+ *
+ * @min max unlimited
+ * @group Multicopter Position Control
+ * */
+PARAM_DEFINE_FLOAT(MPC_ALLOWED_LAND, 5.0f);
+
+/**
  * Minimum thrust
  *
  * Minimum vertical thrust. It's recommended to set it > 0 to avoid free fall with zero thrust.
@@ -206,7 +214,16 @@ PARAM_DEFINE_FLOAT(MPC_TILTMAX_LND, 15.0f);
  * @min 0.0
  * @group Multicopter Position Control
  */
-PARAM_DEFINE_FLOAT(MPC_LAND_SPEED, 1.0f);
+PARAM_DEFINE_FLOAT(MPC_LAND_SPD, 1.0f);
+
+/**
+ * Takeoff ascend rate
+ *
+ * @unit m/s
+ * @min 0.0
+ * @group Multicopter Position Control
+ */
+PARAM_DEFINE_FLOAT(MPC_TAKEOFF_SPD, 1.0f);
 
 /**
  * Follow mode velocity feed-forward
