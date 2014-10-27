@@ -75,7 +75,7 @@
  * Number of navigation modes that need on_active/on_inactive calls
  * Currently: mission, loiter, rtl, offboard, abs_follow
  */
-#define NAVIGATOR_MODE_ARRAY_SIZE 7
+#define NAVIGATOR_MODE_ARRAY_SIZE 8
 
 class Navigator : public control::SuperBlock
 {
