@@ -17,7 +17,10 @@ PathFollow::PathFollow(Navigator *navigator, const char *name):
 		_saved_trajectory(),
 		_trajectory_distance(0.0f),
 		_has_valid_setpoint(false),
-		_desired_speed(0.0f) {
+		_desired_speed(0.0f),
+		_min_distance(0.0f),
+		_max_distance(0.0f),
+		_ok_distance(0.0f){
 
 }
 PathFollow::~PathFollow() {
@@ -33,6 +36,11 @@ void PathFollow::on_inactive() {
 }
 void PathFollow::on_activation() {
 	_has_valid_setpoint = false;
+
+	// TODO! Parameters or other type of initialization
+	_min_distance = 5.0f;
+	_max_distance = 20.0f;
+	_ok_distance = 10.0f;
 	// TODO! Consider if we really want to reset the trajectory state
 	_saved_trajectory.do_empty();
 	update_saved_trajectory();
@@ -53,7 +61,7 @@ void PathFollow::on_active() {
 	pos_sp_triplet = _navigator->get_position_setpoint_triplet();
 
 	if (!_has_valid_setpoint) {
-		// Waiting for the first trajectory point
+		// Waiting for the first trajectory point. Should not occur during the flight
 		_has_valid_setpoint = _saved_trajectory.pop(_actual_point);
 		if (_has_valid_setpoint) {
 			update_setpoint(_actual_point);
@@ -122,14 +130,13 @@ void PathFollow::update_setpoint(const buffer_point_s &desired_point) {
 	pos_sp_triplet->current.alt = desired_point.alt + offset;
 }
 
+// TODO! Parameters for speed calculation functions
 float PathFollow::calculate_desired_speed(float distance) {
-	// TODO! Parameters both for min, max, ok and for functions
-	float max_dist = 20.0f, min_dist = 5.0f, ok_dist = 10.0f;
 	float max_speed = 11.1111f;
-	if (distance <= min_dist) {
+	if (distance <= _min_distance) {
 		return 0;
 	}
-	else if (distance >= max_dist) {
+	else if (distance >= _max_distance) {
 		// TODO! Max speed
 		return max_speed;
 	}
@@ -137,13 +144,13 @@ float PathFollow::calculate_desired_speed(float distance) {
 	float res;
 	target_pos = _navigator->get_target_position();
 	float target_speed = float(sqrt(double(target_pos->vel_n * target_pos->vel_n + target_pos->vel_e * target_pos->vel_e)));
-	if (distance >= ok_dist) {
+	if (distance >= _ok_distance) {
 		// TODO! Simplify and add precalculated values
-		res = target_speed * ((distance - ok_dist)*(distance - ok_dist)*4.0f/(max_dist-ok_dist)/(max_dist-ok_dist)+1.0f);
+		res = target_speed * ((distance - _ok_distance)*(distance - _ok_distance)*4.0f/(_max_distance-_ok_distance)/(_max_distance-_ok_distance)+1.0f);
 	}
 	else {
 		// TODO! Simplify and add precalculated values
-		res = target_speed * ((float(-atan(double(-(distance-2.5f-min_dist)*20.0f/(ok_dist-min_dist))))/M_PI_F)+0.5f);
+		res = target_speed * ((float(-atan(double(-(distance-2.5f-_min_distance)*20.0f/(_ok_distance-_min_distance))))/M_PI_F)+0.5f);
 	}
 	if (res < 0.0f) return 0.0f;
 	if (res > max_speed) return max_speed;
@@ -154,6 +161,10 @@ float PathFollow::calculate_current_distance() {
 	float res = _trajectory_distance;
 	global_pos = _navigator->get_global_position();
 	res += get_distance_to_next_waypoint(global_pos->lat, global_pos->lon, _actual_point.lat, _actual_point.lon);
+	// Don't get closer than minimum distance to the last known point
+	if (res <= _min_distance) {
+		return _min_distance;
+	}
 	target_pos = _navigator->get_target_position();
 	res += get_distance_to_next_waypoint(_last_point.lat, _last_point.lon, target_pos->lat, target_pos->lon);
 	return res;
