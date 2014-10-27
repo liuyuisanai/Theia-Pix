@@ -387,7 +387,7 @@ Mavlink::forward_message(const mavlink_message_t *msg, Mavlink *self)
 	Mavlink *inst;
 	LL_FOREACH(_mavlink_instances, inst) {
 		if (inst != self) {
-			// TODO! Consider if this code should run on targeter.
+			// TODO! Consider if this code should run on target.
 			/* if not in normal mode, we are an onboard link
 			 * onboard links should only pass on messages from the same system ID */
 			if (!(self->_mode != MAVLINK_MODE_NORMAL && msg->sysid != mavlink_system.sysid)) {
@@ -1241,8 +1241,8 @@ Mavlink::task_main(int argc, char *argv[])
 			} else if (strcmp(optarg, "onboard") == 0) {
 				_mode = MAVLINK_MODE_ONBOARD;
 			}
-			else if (strcmp(optarg, "targeter") == 0) {
-				_mode = MAVLINK_MODE_TARGETER;
+			else if (strcmp(optarg, "target") == 0) {
+				_mode = MAVLINK_MODE_TARGET;
 			}
 
 			break;
@@ -1305,8 +1305,8 @@ Mavlink::task_main(int argc, char *argv[])
 	case MAVLINK_MODE_ONBOARD:
 		warnx("mode: ONBOARD");
 		break;
-	case MAVLINK_MODE_TARGETER:
-		warnx("mode: TARGETER");
+	case MAVLINK_MODE_TARGET:
+		warnx("mode: TARGET");
 		break;
 
 	default:
@@ -1425,9 +1425,8 @@ Mavlink::task_main(int argc, char *argv[])
 		configure_stream("POSITION_TARGET_GLOBAL_INT", 10.0f);
 		configure_stream("VFR_HUD", 10.0f);
 		break;
-
-	// Targeter requires different streams
-	case MAVLINK_MODE_TARGETER:
+	// Target requires different streams
+	case MAVLINK_MODE_TARGET:
 		// TODO! Check which rates fit best
 		// TODO! Change to custom message, when it is available
 		configure_stream("GLOBAL_POSITION_INT", 10.0f);

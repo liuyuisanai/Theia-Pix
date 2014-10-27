@@ -128,7 +128,7 @@ public:
 		MAVLINK_MODE_NORMAL = 0,
 		MAVLINK_MODE_CUSTOM,
 		MAVLINK_MODE_ONBOARD,
-		MAVLINK_MODE_TARGETER // Special mode for airleash
+		MAVLINK_MODE_TARGET // Special mode for airleash
 	};
 
 	void			set_mode(enum MAVLINK_MODE);
