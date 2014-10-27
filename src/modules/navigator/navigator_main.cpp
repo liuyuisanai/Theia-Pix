@@ -141,6 +141,7 @@ Navigator::Navigator() :
 	_engineFailure(this, "EF"),
 	_gpsFailure(this, "GPSF"),
 	_abs_follow(this, "FOL"),
+	_abs_follow(this, "ABS"),
 	_path_follow(this, "PAT"),
 	_can_loiter_at_sp(false),
 	_pos_sp_triplet_updated(false),
@@ -494,7 +495,7 @@ Navigator::task_main()
 				}
 				break;
 			case NAVIGATION_STATE_AUTO_RTL:
-					_navigation_mode = &_rtl;
+				_navigation_mode = &_rtl;
 				break;
 			case NAVIGATION_STATE_AUTO_RTGS:
 				/* Use complex data link loss mode only when enabled via param
@@ -509,7 +510,11 @@ Navigator::task_main()
 				_navigation_mode = &_engineFailure;
 				break;
 			case NAVIGATION_STATE_AUTO_ABS_FOLLOW:
-				_navigation_mode = &_abs_follow; /* TODO: change this to something else */
+				_navigation_mode = &_abs_follow;
+				break;
+
+			case NAVIGATION_STATE_AUTO_PATH_FOLLOW:
+				_navigation_mode = &_path_follow;
 				break;
 			case NAVIGATION_STATE_AUTO_LANDGPSFAIL:
 				_navigation_mode = &_gpsFailure;

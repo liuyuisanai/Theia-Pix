@@ -70,6 +70,7 @@ typedef enum {
 	MAIN_STATE_AUTO_LOITER,
 	MAIN_STATE_AUTO_RTL,
 	MAIN_STATE_AUTO_ABS_FOLLOW,
+    MAIN_STATE_AUTO_PATH_FOLLOW,
 	MAIN_STATE_ACRO,
 	MAIN_STATE_OFFBOARD,
 	MAIN_STATE_FOLLOW,
@@ -77,7 +78,7 @@ typedef enum {
 } main_state_t;
 
 // If you change the order, add or remove arming_state_t states make sure to update the arrays
-// in state_machine_helper.cpp as well.
+// in_state_machine_helper.cpp as well.
 typedef enum {
 	ARMING_STATE_INIT = 0,
 	ARMING_STATE_STANDBY,
@@ -109,6 +110,7 @@ typedef enum {
 	NAVIGATION_STATE_AUTO_ABS_FOLLOW,   /**< AUTO Abs Follow mode */
 	NAVIGATION_STATE_AUTO_LANDENGFAIL,	/**< Auto land on engine failure */
 	NAVIGATION_STATE_AUTO_LANDGPSFAIL,	/**< Auto land on gps failure (e.g. open loop loiter down) */
+    NAVIGATION_STATE_AUTO_PATH_FOLLOW,  /**< AUTO Path Follow mode */
 	NAVIGATION_STATE_ACRO,				/**< Acro mode */
 	NAVIGATION_STATE_LAND,				/**< Land mode */
 	NAVIGATION_STATE_DESCEND,			/**< Descend mode (no position control) */

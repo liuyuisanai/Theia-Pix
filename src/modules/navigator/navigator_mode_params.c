@@ -74,3 +74,15 @@ PARAM_DEFINE_FLOAT(NAV_ACC_RAD, 2.00f);
  * @group Navigator
  */
 PARAM_DEFINE_FLOAT(NAV_TAKEOFF_ACR, 2.00f);
+
+/**
+ * Auto follow mode: which auto follow mode to use
+ *
+ * 0: ABS_FOLLOW
+ * 1: PATH_FOLLOW
+ *
+ * @min 0
+ * @max 1
+ *
+ */
+PARAM_DEFINE_INT32(NAV_AFOL_MODE, 0);

@@ -109,6 +109,8 @@ public:
 		float loiter_step;
 		float velocity_lpf;
 
+        int afol_mode;
+
 		int afol_rep_target_alt;
 		int afol_use_cam_pitch;
 
@@ -125,6 +127,8 @@ public:
 		param_t takeoff_acceptance_radius;
 		param_t acceptance_radius;
 		param_t velocity_lpf;
+
+        param_t afol_mode;
 
 		param_t afol_rep_target_alt;
 		param_t afol_use_cam_pitch;
