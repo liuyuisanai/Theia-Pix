@@ -3,7 +3,7 @@
 	url = git://github.com/mavlink/c_library.git
 [submodule "NuttX"]
 	path = NuttX
-	url = git://github.com/PX4/NuttX.git
+	url = git@gitlab.com:airdog/nuttx.git
 [submodule "uavcan"]
 	path = uavcan
 	url = git://github.com/pavel-kirienko/uavcan.git
