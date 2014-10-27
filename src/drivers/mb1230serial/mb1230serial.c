@@ -34,8 +34,8 @@
  * http://www.maxbotix.com/documents/XL-MaxSonar-EZ_Datasheet.pdf
  * Measure unit: METER
  */
-#define MINIMAL_DISTANCE 0.2f
-#define MAXIMAL_DISTANCE 7.0f
+__EXPORT const float MINIMAL_DISTANCE = 0.2f;
+__EXPORT const float MAXIMAL_DISTANCE = 7.0f;
 
 /**
  * Experimentally found scale value
