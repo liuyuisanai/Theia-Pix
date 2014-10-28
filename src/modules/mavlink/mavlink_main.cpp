@@ -1368,6 +1368,8 @@ Mavlink::task_main(int argc, char *argv[])
 	MavlinkOrbSubscription *status_sub = add_orb_subscription(ORB_ID(vehicle_status));
 	uint64_t status_time = 0;
 
+    _pass_drone_parameter_pub = -1;
+
 	struct vehicle_status_s status;
 	status_sub->update(&status_time, &status);
 

@@ -50,14 +50,3 @@
  * @group Navigator
  */
 PARAM_DEFINE_FLOAT(LOI_STEP_LEN, 5.00f);
-
-
-/**
- * Minimum altitude above target
- *
- * @unit meters
- * @group Navigator
- */
-PARAM_DEFINE_FLOAT(LOI_MIN_ALT, 2.00f);
-
-

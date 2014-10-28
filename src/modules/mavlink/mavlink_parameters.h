@@ -41,6 +41,7 @@
 #pragma once
 
 #include <systemlib/param/param.h>
+#include <uORB/topics/pass_drone_parameter.h>
 
 #include "mavlink_bridge_header.h"
 #include "mavlink_stream.h"
@@ -98,6 +99,8 @@ public:
 	 * @see 		mavlink_pm_queued_send()
 	 */
 	void		start_send_all();
+
+    static orb_advert_t _pass_drone_parameter_pub;
 
 private:
 	int		_send_all_index;

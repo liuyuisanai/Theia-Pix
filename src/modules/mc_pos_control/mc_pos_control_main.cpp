@@ -1356,7 +1356,7 @@ MulticopterPositionControl::task_main()
 			}
 
 			/* reset follow offset after non-follow modes */
-			if (!(_control_mode.flag_control_manual_enabled && _control_mode.flag_control_follow_target)) {
+			if (!(_control_mode.flag_control_follow_target)) {
 				_reset_follow_offset = true;
 			}
 
@@ -1422,7 +1422,7 @@ MulticopterPositionControl::task_main()
 					_vel_sp(2) = _params.land_speed;
 				}
 
-				/* use constant descend rate during take off, ignore altitude setpoint */
+				/* use constant ascend rate during take off */
 				if (!_control_mode.flag_control_manual_enabled && _pos_sp_triplet.current.valid && _pos_sp_triplet.current.type == SETPOINT_TYPE_TAKEOFF) {
 					_vel_sp.zero();
 					if (_pos(2) - _pos_sp(2) > 0) {

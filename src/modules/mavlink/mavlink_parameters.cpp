@@ -46,6 +46,8 @@
 MavlinkParametersManager::MavlinkParametersManager(Mavlink *mavlink) : MavlinkStream(mavlink),
 	_send_all_index(-1)
 {
+
+
 }
 
 unsigned
@@ -134,6 +136,25 @@ MavlinkParametersManager::handle_message(const mavlink_message_t *msg)
 			}
 			break;
 		}
+
+      case MAVLINK_MSG_ID_PARAM_VALUE: {
+                         
+             mavlink_param_value_t param_value_msg;
+             mavlink_msg_param_value_decode(msg, &param_value_msg);
+             struct pass_drone_param_s cmd;
+             memset(&cmd, 0, sizeof(cmd));
+     
+             cmd.param_value = param_value_msg.param_value;
+             cmd.param_type = param_value_msg.param_type;
+             strncpy(cmd.param_id, param_value_msg.param_id, 16);
+
+             if (_mavlink->_pass_drone_parameter_pub < 0)
+                 _mavlink->_pass_drone_parameter_pub = orb_advertise(ORB_ID(pass_drone_parameter), &cmd);
+             else
+                orb_publish(ORB_ID(pass_drone_parameter), _mavlink->_pass_drone_parameter_pub, &cmd);
+
+         } break;
+
 
 	default:
 		break;

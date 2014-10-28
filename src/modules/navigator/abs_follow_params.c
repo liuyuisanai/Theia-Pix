@@ -41,25 +41,3 @@
 
 #include <nuttx/config.h>
 #include <systemlib/param/param.h>
-
-
-/**
- * 	Use camera pitch
- *
- * 	Used in Abs_follow mode
- *
- *	0: Camera pitch is still
- *	1: Camera pitch follows target
- *	@group Navigator
- */
-PARAM_DEFINE_INT32(AFOL_USE_CAM_P, 1);
-
-
-/**
- * 	Drone repeat target altitude changes
- *
- *	0: Drone don't repeat target's altitude change
- *	1: Drone repeat target's altitude changes
- *	@group Navigator
- */
-PARAM_DEFINE_INT32(AFOL_REP_TALT, 1);

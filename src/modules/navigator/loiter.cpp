@@ -113,11 +113,6 @@ Loiter::on_active()
 		set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT);
 	}
 
-
-	if ( (loiter_sub_mode == LOITER_SUB_MODE_AIM_AND_SHOOT) && (target_pos->alt + _parameters.loi_min_alt > pos_sp_triplet->current.alt)){
-		pos_sp_triplet->current.alt = target_pos->alt + _parameters.loi_min_alt;
-	}
-
 	if ( update_vehicle_command() )
 			execute_vehicle_command();
 

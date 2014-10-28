@@ -57,28 +57,6 @@
  */
 PARAM_DEFINE_FLOAT(NAV_TAKEOFF_ALT, 10.0f);
 
-
-/**
- * Step size for one commend in loiter navigator mode
- *
- * Altitude to fly back in RTL in meters
- *
- * @unit meters
- * @min 1
- * @group Navigator
- */
-PARAM_DEFINE_FLOAT(LOI_STEP_LEN, 5.00f);
-
-/**
- *	Velocity LPF.
- *
- *	Low pass filter. Time in seconds to average target movements.
- *
- *	@unit seconds
- *	@group Navigator
- */
-PARAM_DEFINE_FLOAT(NAV_VEL_LPF, 0.3f);
-
 /**
  * Acceptance radius to determine if setpoint have been reached
  *
@@ -90,20 +68,9 @@ PARAM_DEFINE_FLOAT(NAV_VEL_LPF, 0.3f);
 PARAM_DEFINE_FLOAT(NAV_ACC_RAD, 2.00f);
 
 /**
- * Minimum altitude above target in loiter.
- *
- * @unit meters
- * @group Navigator
- */
-PARAM_DEFINE_FLOAT(LOI_MIN_ALT, 2.00f);
-
-/**
  * Acceptance radius for takeoff setpoint
  *
  * @unit meters
  * @group Navigator
  */
 PARAM_DEFINE_FLOAT(NAV_TAKEOFF_ACR, 2.00f);
-
-
-

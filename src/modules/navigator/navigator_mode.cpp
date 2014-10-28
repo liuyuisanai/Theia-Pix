@@ -104,12 +104,7 @@ NavigatorMode::updateParamHandles() {
 	_parameter_handles.takeoff_alt = param_find("NAV_TAKEOFF_ALT");
 	_parameter_handles.takeoff_acceptance_radius = param_find("NAV_TAKEOFF_ACR");
 	_parameter_handles.acceptance_radius = param_find("NAV_ACC_RAD");
-	_parameter_handles.velocity_lpf = param_find("NAV_VEL_LPF");
 
-	_parameter_handles.afol_use_cam_pitch = param_find("AFOL_USE_CAM_P");
-	_parameter_handles.afol_rep_target_alt = param_find("AFOL_REP_TALT");
-
-	_parameter_handles.loi_min_alt = param_find("LOI_MIN_ALT");
 	_parameter_handles.loi_step_len = param_find("LOI_STEP_LEN");
 
 	_parameter_handles.rtl_ret_alt = param_find("RTL_RET_ALT");
@@ -121,12 +116,7 @@ NavigatorMode::updateParamValues() {
 	param_get(_parameter_handles.takeoff_alt, &(_parameters.takeoff_alt));
 	param_get(_parameter_handles.takeoff_acceptance_radius, &(_parameters.takeoff_acceptance_radius));
 	param_get(_parameter_handles.acceptance_radius, &(_parameters.acceptance_radius));
-	param_get(_parameter_handles.velocity_lpf, &(_parameters.velocity_lpf));
 
-	param_get(_parameter_handles.afol_use_cam_pitch, &(_parameters.afol_use_cam_pitch));
-	param_get(_parameter_handles.afol_rep_target_alt, &(_parameters.afol_rep_target_alt));
-
-	param_get(_parameter_handles.loi_min_alt, &(_parameters.loi_min_alt));
 	param_get(_parameter_handles.loi_step_len, &(_parameters.loi_step_len));
 
 	param_get(_parameter_handles.rtl_ret_alt, &(_parameters.rtl_ret_alt));

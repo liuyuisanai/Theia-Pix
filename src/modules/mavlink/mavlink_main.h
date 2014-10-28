@@ -266,6 +266,8 @@ public:
 
 	struct mavlink_logbuffer	*get_logbuffer() { return &_logbuffer; }
 
+    orb_advert_t _pass_drone_parameter_pub;
+
 protected:
 	Mavlink			*next;
 
