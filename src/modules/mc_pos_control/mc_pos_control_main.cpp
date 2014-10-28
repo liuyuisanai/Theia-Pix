@@ -89,6 +89,9 @@
  */
 extern "C" __EXPORT int mc_pos_control_main(int argc, char *argv[]);
 
+// Sonar factory maximal distance, needed in distance corretion function
+extern const float MAXIMAL_DISTANCE; 
+
 class MulticopterPositionControl
 {
 public:
@@ -174,7 +177,6 @@ private:
 		param_t cam_pitch_max;
         param_t sonar_correction_on;
         param_t sonar_min_dist;
-        param_t sonar_factory_max;
         param_t mc_allowed_down_sp;
 	}		_params_handles;		/**< handles for interesting parameters */
 
@@ -194,7 +196,6 @@ private:
 		float cam_pitch_max;
         bool sonar_correction_on;
         float sonar_min_dist;
-        float sonar_factory_max;
         float mc_allowed_down_sp;
         
 		math::Vector<3> pos_p;
@@ -558,8 +559,6 @@ MulticopterPositionControl::parameters_update(bool force)
         _params.sonar_min_dist = v;
         param_get(_params_handles.mc_allowed_down_sp, &v);
         _params.mc_allowed_down_sp = v;
-        param_get(_params_handles.sonar_factory_max, &v);
-        _params.sonar_factory_max = v;
 
 		_params.sp_offs_max = _params.vel_max.edivide(_params.pos_p) * 2.0f;
 	}
@@ -1432,7 +1431,7 @@ MulticopterPositionControl::task_main()
 
 
 				//Ground distance correction
-                float range = _params.sonar_factory_max - _params.sonar_min_dist;
+                float range = MAXIMAL_DISTANCE - _params.sonar_min_dist;
                 float max_vel_z = _params.vel_max(2) * (float)pow(_ground_position_available_drop/range, 2.0);
 				if (_ground_position_invalid) {
 						float drop = _pos(2) - _pos_sp(2) ;

@@ -155,7 +155,7 @@ Navigator::Navigator() :
 	_navigation_mode_array[4] = &_engineFailure;
 	_navigation_mode_array[5] = &_gpsFailure;
 	_navigation_mode_array[6] = &_rcLoss;
-	_navigation_mode_array[4] = &_abs_follow;
+	_navigation_mode_array[7] = &_abs_follow;
 
 	updateParams();
 }
