@@ -85,8 +85,16 @@ void PathFollow::on_active() {
 
 	// If we have a setpoint, update speed
 	if (_has_valid_setpoint) {
+		float angle; // angle of current movement, from -pi to pi
 		_desired_speed = calculate_desired_speed(calculate_current_distance());
-		// TODO! Add setpoint modification
+		global_pos = _navigator->get_global_position();
+		angle = get_bearing_to_next_waypoint(global_pos->lat, global_pos->lon, _actual_point.lat, _actual_point.lon);
+		// TODO! Check if Moving point works
+		pos_sp_triplet->current.type = SETPOINT_TYPE_MOVING;
+		// TODO! Check what x and y axis stand for in this case and if cos and sin are used correctly
+		pos_sp_triplet->current.vx = float(cos((double)angle)) * _desired_speed;
+		pos_sp_triplet->current.vy = float(sin((double)angle)) * _desired_speed;
+		pos_sp_triplet->current.velocity_valid = true;
 	}
 
 	// In any scenario setpoint could have changed
@@ -128,6 +136,7 @@ void PathFollow::update_setpoint(const buffer_point_s &desired_point) {
 	pos_sp_triplet->current.lat = desired_point.lat;
 	pos_sp_triplet->current.lon = desired_point.lon;
 	pos_sp_triplet->current.alt = desired_point.alt + offset;
+	pos_sp_triplet->current.position_valid = true;
 }
 
 // TODO! Parameters for speed calculation functions
@@ -161,7 +170,8 @@ float PathFollow::calculate_current_distance() {
 	float res = _trajectory_distance;
 	global_pos = _navigator->get_global_position();
 	res += get_distance_to_next_waypoint(global_pos->lat, global_pos->lon, _actual_point.lat, _actual_point.lon);
-	// Don't get closer than minimum distance to the last known point
+	// TODO! Consider returning back if res is less than min distance
+	// Will produce the speed of 0 if passed to calculate speed
 	if (res <= _min_distance) {
 		return _min_distance;
 	}

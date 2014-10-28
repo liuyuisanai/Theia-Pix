@@ -141,7 +141,6 @@ Navigator::Navigator() :
 	_engineFailure(this, "EF"),
 	_gpsFailure(this, "GPSF"),
 	_abs_follow(this, "FOL"),
-	_abs_follow(this, "ABS"),
 	_path_follow(this, "PAT"),
 	_can_loiter_at_sp(false),
 	_pos_sp_triplet_updated(false),
