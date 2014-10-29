@@ -149,6 +149,25 @@ public:
 	}
 
 	/**
+	 * Returns the element with specified index without removing it from the queue
+	 *
+	 * @param index zero-based index of the element
+	 * @param value[out] the result will be stored in this parameter
+	 * @return true on success, false otherwise
+	 */
+	bool peek(ssize_t index, T &value) {
+		if (index >= get_value_count()) {
+			return false;
+		}
+		_tmp = _tail + index;
+		if (_tmp >= _size) {
+			_tmp -= _size;
+		}
+		value = _storage[_tmp];
+		return true;
+	}
+
+	/**
 	 * Checks if the queue is empty
 	 *
 	 * @return true if the queue is empty, false otherwise

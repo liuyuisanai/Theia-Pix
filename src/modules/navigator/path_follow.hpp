@@ -32,12 +32,13 @@ private:
 	float _trajectory_distance; // Distance by trajectory points only, excluding drone or target current position
 	buffer_point_s _actual_point; // Point currently in use as a setpoint
 	bool _has_valid_setpoint; // Flag indicating if _actual_point can be used
+	buffer_point_s _future_point; // Point of trajectory after the actual
 	float _desired_speed; // Speed we want to move with until distance changes
 	float _min_distance, _max_distance, _ok_distance; // Distances to use when following
 
 	// Updates saved trajectory and trajectory distance with a new point
 	void update_saved_trajectory();
-	void update_setpoint(const buffer_point_s &desired_point);
+	void update_setpoint(const buffer_point_s &desired_point, position_setpoint_s &destination);
 	// Calculates desired speed in m/s based on current distance and target's speed
 	float calculate_desired_speed(float distance);
 	float calculate_current_distance();

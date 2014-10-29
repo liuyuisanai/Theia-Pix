@@ -255,7 +255,7 @@ void
 Navigator::target_trajectory_update()
 {
 	orb_copy(ORB_ID(external_trajectory), _target_trajectory_sub, &_target_trajectory);
-	warnx("Trajectory updated! Time: %d", _target_trajectory.timestamp);
+	warnx("Trajectory updated! Time: %lld", _target_trajectory.timestamp);
 }
 
 void

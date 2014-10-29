@@ -252,7 +252,6 @@ NavigatorMode::check_current_pos_sp_reached()
 		return _parameters.takeoff_acceptance_radius >= alt_diff;
 		break;
 	}
-	case SETPOINT_TYPE_MOVING: // TODO! Check if this is applicable
 	case SETPOINT_TYPE_POSITION:
 	{
 		float dist_xy = -1;

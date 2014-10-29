@@ -6,6 +6,7 @@
 #include <geo/geo.h>
 #include <math.h>
 #include <mavlink/mavlink_log.h>
+#include <systemlib/err.h>
 #include <uORB/topics/external_trajectory.h>
 
 #include "navigator.h"
@@ -35,8 +36,10 @@ void PathFollow::on_inactive() {
 	// update_saved_trajectory();
 }
 void PathFollow::on_activation() {
+	warnx("Follow path active! No speed, prev+cur+next points version!");
 	_has_valid_setpoint = false;
 
+	updateParameters();
 	// TODO! Parameters or other type of initialization
 	_min_distance = 5.0f;
 	_max_distance = 20.0f;
@@ -57,6 +60,7 @@ void PathFollow::on_activation() {
 	_navigator->set_position_setpoint_triplet_updated();
 }
 void PathFollow::on_active() {
+	updateParameters();
 	update_saved_trajectory();
 	pos_sp_triplet = _navigator->get_position_setpoint_triplet();
 
@@ -64,18 +68,43 @@ void PathFollow::on_active() {
 		// Waiting for the first trajectory point. Should not occur during the flight
 		_has_valid_setpoint = _saved_trajectory.pop(_actual_point);
 		if (_has_valid_setpoint) {
-			update_setpoint(_actual_point);
+			update_setpoint(_actual_point, pos_sp_triplet->current);
+			if (_saved_trajectory.peek(1, _future_point)) {
+				update_setpoint(_future_point, pos_sp_triplet->next);
+			}
+			else {
+				pos_sp_triplet->next.valid = false;
+			}
 		}
 	}
 	else {
 		// TODO! Update the check for moving points and check for Follow Path compatibility
 		if (check_current_pos_sp_reached()) {
 			// We've reached the actual setpoint
-			_trajectory_distance -= get_distance_to_next_waypoint(pos_sp_triplet->current.lat,
-					pos_sp_triplet->current.lon, _actual_point.lat, _actual_point.lon);
 			_has_valid_setpoint = _saved_trajectory.pop(_actual_point);
 			if (_has_valid_setpoint) {
-				update_setpoint(_actual_point);
+				// Distance between reached point and the next stops being trajectory distance
+				// and becomes "drone to setpoint" distance
+				_trajectory_distance -= get_distance_to_next_waypoint(pos_sp_triplet->current.lat,
+					pos_sp_triplet->current.lon, _actual_point.lat, _actual_point.lon);
+
+				// TODO! Is the previous point needed?
+				pos_sp_triplet->previous = pos_sp_triplet->current;
+				// Trying to prevent L1 algorithm
+				// pos_sp_triplet->previous.valid = false;
+
+				update_setpoint(_actual_point, pos_sp_triplet->current);
+				if (_saved_trajectory.peek(1, _future_point)) {
+					update_setpoint(_future_point, pos_sp_triplet->next);
+				}
+				else {
+					pos_sp_triplet->next.valid = false;
+				}
+			}
+			else {
+				mavlink_log_info(_mavlink_fd, "Follow path queue empty!");
+				// No trajectory points left
+				_trajectory_distance = 0;
 			}
 		}
 	}
@@ -85,16 +114,16 @@ void PathFollow::on_active() {
 
 	// If we have a setpoint, update speed
 	if (_has_valid_setpoint) {
-		float angle; // angle of current movement, from -pi to pi
+		/* float angle; // angle of current movement, from -pi to pi
 		_desired_speed = calculate_desired_speed(calculate_current_distance());
+		// warnx("Absolute speed: % 9.6f", double(_desired_speed));
 		global_pos = _navigator->get_global_position();
 		angle = get_bearing_to_next_waypoint(global_pos->lat, global_pos->lon, _actual_point.lat, _actual_point.lon);
-		// TODO! Check if Moving point works
-		pos_sp_triplet->current.type = SETPOINT_TYPE_MOVING;
+		// warnx("Would be speed: x = % 9.6f, y = % 9.6f", double(float(cos((double)angle)) * _desired_speed), double(float(sin((double)angle)) * _desired_speed));
 		// TODO! Check what x and y axis stand for in this case and if cos and sin are used correctly
 		pos_sp_triplet->current.vx = float(cos((double)angle)) * _desired_speed;
 		pos_sp_triplet->current.vy = float(sin((double)angle)) * _desired_speed;
-		pos_sp_triplet->current.velocity_valid = true;
+		pos_sp_triplet->current.velocity_valid = true;*/
 	}
 
 	// In any scenario setpoint could have changed
@@ -126,17 +155,15 @@ void PathFollow::update_saved_trajectory() {
 }
 
 // TODO! Add velocity
-void PathFollow::update_setpoint(const buffer_point_s &desired_point) {
+// TODO! Write two separate methods, one that does copying and applying offsets, other - for prev, next, current point magic
+void PathFollow::update_setpoint(const buffer_point_s &desired_point, position_setpoint_s &destination) {
 	// TODO! Parameters
 	float offset = 5;
-	pos_sp_triplet = _navigator->get_position_setpoint_triplet();
-	// TODO! Is the previous point needed?
-	pos_sp_triplet->previous = pos_sp_triplet->current;
-	pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
-	pos_sp_triplet->current.lat = desired_point.lat;
-	pos_sp_triplet->current.lon = desired_point.lon;
-	pos_sp_triplet->current.alt = desired_point.alt + offset;
-	pos_sp_triplet->current.position_valid = true;
+	destination.type = SETPOINT_TYPE_POSITION;
+	destination.lat = desired_point.lat;
+	destination.lon = desired_point.lon;
+	destination.alt = desired_point.alt + offset;
+	destination.position_valid = true;
 }
 
 // TODO! Parameters for speed calculation functions
