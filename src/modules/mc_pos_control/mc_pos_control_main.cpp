@@ -1495,7 +1495,11 @@ MulticopterPositionControl::task_main()
 				}
 			}
 
-			if (_control_mode.flag_control_position_enabled || _control_mode.flag_control_follow_target) {
+			if  (
+                (_control_mode.flag_control_position_enabled || _control_mode.flag_control_follow_target) && 
+                _pos_sp_triplet.current.type != SETPOINT_TYPE_LAND && _pos_sp_triplet.current.type != SETPOINT_TYPE_TAKEOFF &&
+                _pos_sp_triplet.current.type != SETPOINT_TYPE_IDLE
+                ) {
 				/* try to correct this altitude with sonar */
 			    ground_dist_correction();
 
@@ -1580,7 +1584,13 @@ MulticopterPositionControl::task_main()
 
 				/* use constant descend rate when landing, ignore altitude setpoint */
 				if (!_control_mode.flag_control_manual_enabled && _pos_sp_triplet.current.valid && _pos_sp_triplet.current.type == SETPOINT_TYPE_LAND) {
-					_vel_sp(2) = _params.land_speed;
+                    if(_params.sonar_correction_on && _local_pos.dist_bottom_valid)
+                    {
+                        float coeff = _local_pos.dist_bottom/(MAXIMAL_DISTANCE*0.5f);
+                        _vel_sp(2) = coeff * _params.land_speed;
+                    }
+                    else
+                        _vel_sp(2) = _params.land_speed;
 				}
 
 				/* use constant ascend rate during take off */
@@ -1594,17 +1604,22 @@ MulticopterPositionControl::task_main()
 
 				//Ground distance correction
                 float range = MAXIMAL_DISTANCE - _params.sonar_min_dist;
+                // Used when we are above allowed limit
                 float max_vel_z = _params.vel_max(2) * (float)pow(_ground_position_available_drop/range, 2.0);
-				if (_ground_position_invalid) {
+                if (_ground_position_invalid) {
 						float drop = _pos(2) - _pos_sp(2) ;
 						if (drop >= 0) {
-							_vel_sp(2) = - (2 * drop * _params.vel_max(2) / _params.sonar_min_dist);
+                            //float min_vel_z = - _params.vel_max(2) * (float)pow(_ground_position_available_drop/_params.sonar_min_dist, 2.0);
+                            printf("[WARN] vel(2) %0.3f  sp_vel(2) %.03f\n", (double)_vel(2), (double)_vel_sp(2));
+							//_vel_sp(2) = - (2 * drop * _params.vel_max(2) / _params.sonar_min_dist);
+                            _vel_sp(2) = - max_vel_z;
 							_sp_move_rate(2)= 0.0f;
 						}
 				}
 				else if (_ground_setpoint_corrected && (_vel(2) > _params.vel_max(2) || _vel_sp(2) > _params.vel_max(2))) {
 					//_vel_sp(2) = - _params.vel_max(2);
                     _vel_sp(2) = - _params.vel_max(2);
+                    printf("[NO IDEA] vel(2) %0.3f  sp_vel(2) %.03f\n", (double)_vel(2), (double)_vel_sp(2));
 					_sp_move_rate(2)= 0.0f;
 				}
 				else if (_local_pos.dist_bottom_valid && _params.sonar_correction_on){
@@ -1612,6 +1627,7 @@ MulticopterPositionControl::task_main()
 						//limit down speed
 						if (_vel_sp(2) > max_vel_z) {
 							_vel_sp(2) = max_vel_z;
+                            printf("[LIMIT] vel(2) %0.3f  sp_vel(2) %.03f\n", (double)_vel(2), (double)_vel_sp(2));
 							
 							//mavlink_log_info(_mavlink_fd, " limiting downsp - vel_Sp: %.2f", (double)_vel_sp(2));
 						}
@@ -1991,10 +2007,14 @@ bool MulticopterPositionControl::ground_dist_correction(){
 		// 	_pos_sp(2) = _pos(2) + available_drop - _params.sonar_safe_belt ;
 		// 	alt_corrected = true;
 		// }
-		_pos_sp(2) = _pos(2) + available_drop;
-		_ground_position_invalid = true;
-		_ground_setpoint_corrected = true;
-		alt_corrected = true;
+        if ( - desired_drop < - available_drop )
+            // If we want to go up not sufficiently
+        {
+            _pos_sp(2) = _pos(2) + available_drop;
+            _ground_position_invalid = true;
+            _ground_setpoint_corrected = true;
+            alt_corrected = true;
+        }
 	}
 	else {
 	//can go down

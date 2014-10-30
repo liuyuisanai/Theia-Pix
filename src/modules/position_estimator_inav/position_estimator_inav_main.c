@@ -496,8 +496,7 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                     {
                         case RANGE_FINDER_TYPE_ULTRASONIC:
                             
-                            if (    range_finder.distance > range_finder.minimum_distance &&
-                                    range_finder.distance < range_finder.maximum_distance)
+                            if (range_finder.valid)
                             {
                                 float angle_correction = 1;
                                 if (att.R[2][2] < 0.85f){
