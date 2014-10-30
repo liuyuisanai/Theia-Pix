@@ -116,6 +116,8 @@ Loiter::on_active()
 	if ( update_vehicle_command() )
 			execute_vehicle_command();
 
+	pos_sp_triplet = _navigator->get_position_setpoint_triplet();
+
 	if (loiter_sub_mode == LOITER_SUB_MODE_AIM_AND_SHOOT || loiter_sub_mode == LOITER_SUB_MODE_COME_TO_ME)
 		point_camera_to_target(&(pos_sp_triplet->current));
 
@@ -513,15 +515,10 @@ Loiter::takeoff()
 	pos_sp_triplet->current.lon = global_pos->lon;
 	pos_sp_triplet->current.alt = global_pos->alt + _parameters.takeoff_alt;
 
-    int toa = (int)_parameters.takeoff_alt;
-
-    mavlink_log_info(_navigator->get_mavlink_fd(), "Use takeoff alt: %d", toa);
-
 	pos_sp_triplet->current.yaw = NAN;
 	pos_sp_triplet->current.type = SETPOINT_TYPE_TAKEOFF;
 
 	_navigator->set_position_setpoint_triplet_updated();
-
 }
 
 void

@@ -1,0 +1,3 @@
+SRCS			= hmc5883spi.cpp
+MODULE_COMMAND		= hmc5883spi
+MODULE_STACKSIZE	= 1200

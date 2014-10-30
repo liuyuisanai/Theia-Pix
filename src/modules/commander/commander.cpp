@@ -2275,6 +2275,8 @@ set_control_mode()
 	control_mode.flag_control_follow_target = false;
 	control_mode.flag_control_point_to_target = false;
 
+    control_mode.flag_control_leash_control_offset = false;
+
 	switch (status.nav_state) {
 	case NAVIGATION_STATE_MANUAL:
 		control_mode.flag_control_manual_enabled = true;
@@ -2402,7 +2404,7 @@ set_control_mode()
 		control_mode.flag_control_position_enabled = true;
 		control_mode.flag_control_velocity_enabled = true;
 		control_mode.flag_control_termination_enabled = false;
-		control_mode.flag_control_point_to_target = true;
+		control_mode.flag_control_point_to_target = false;
 	case NAVIGATION_STATE_AUTO_RTL:
 	case NAVIGATION_STATE_AUTO_RTGS:
 	case NAVIGATION_STATE_AUTO_LANDENGFAIL:
@@ -2455,6 +2457,7 @@ set_control_mode()
 		control_mode.flag_control_termination_enabled = false;
 		control_mode.flag_control_follow_target = true;
 		control_mode.flag_control_point_to_target = true;
+        control_mode.flag_control_leash_control_offset = true;
 		break;
 
 	case NAVIGATION_STATE_LAND:

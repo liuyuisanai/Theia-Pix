@@ -327,6 +327,7 @@ void cAirdog::send_record_path_cmd(bool start)
 
 void cAirdog::set_land_mode()
 {
+    /*
 	float value = pparam_handler->get(PARAM_NAV_LAND_HOME);
 	if(value > 0)
 		value = 0;
@@ -341,6 +342,7 @@ void cAirdog::set_land_mode()
 	} else {
 		pi2c_disp_ctrl->set_symbols(SYMBOL_E, SYMBOL_R, SYMBOL_R);
 	}
+    */
 }
 
 bool cAirdog::button_pressed_i2c(uint8_t button, hrt_abstime time)
@@ -354,6 +356,7 @@ bool cAirdog::button_pressed_i2c(uint8_t button, hrt_abstime time)
 
 bool cAirdog::button_clicked_i2c(uint8_t button, bool long_press)
 {
+
 	if(pmenu_ctrl->isActive()) {
 		pmenu_ctrl->handleClickedButton(button/*, long_press*/);
 		return BUTTON_HANDLED;

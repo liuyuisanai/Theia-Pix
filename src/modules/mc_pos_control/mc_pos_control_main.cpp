@@ -19,7 +19,7 @@
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THr
  * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
@@ -68,6 +68,7 @@
 #include <uORB/topics/vehicle_global_velocity_setpoint.h>
 #include <uORB/topics/vehicle_local_position_setpoint.h>
 #include <uORB/topics/target_global_position.h>
+#include <uORB/topics/vehicle_command.h>
 #include <systemlib/param/param.h>
 #include <systemlib/err.h>
 #include <systemlib/systemlib.h>
@@ -130,6 +131,7 @@ private:
 	int		_local_pos_sp_sub;		/**< offboard local position setpoint */
 	int		_global_vel_sp_sub;		/**< offboard global velocity setpoint */
 	int		_target_pos_sub;		/**< target global position subscription */
+    int     _vcommand_sub;          /**< vehicle command subscription */
 
 	orb_advert_t	_att_sp_pub;			/**< attitude setpoint publication */
 	orb_advert_t	_local_pos_sp_pub;		/**< vehicle local position setpoint publication */
@@ -174,10 +176,12 @@ private:
 		param_t follow_use_alt;
 		param_t follow_rpt_alt;
 		param_t follow_lpf;
+        param_t loi_step_len;
 		param_t cam_pitch_max;
         param_t sonar_correction_on;
         param_t sonar_min_dist;
         param_t mc_allowed_down_sp;
+        
 	}		_params_handles;		/**< handles for interesting parameters */
 
 	struct {
@@ -193,6 +197,7 @@ private:
 		bool follow_use_alt;
 		bool follow_rpt_alt;
 		float follow_lpf;
+        float loi_step_len;
 		float cam_pitch_max;
         bool sonar_correction_on;
         float sonar_min_dist;
@@ -240,6 +245,8 @@ private:
 	bool _ground_setpoint_corrected = false;
 	bool _ground_position_invalid = false;
 	float _ground_position_available_drop = 0;
+
+	struct vehicle_command_s _vcommand;
 
 	/**
 	 * Update our local parameter cache.
@@ -334,6 +341,16 @@ private:
      * Change setpoint Z coordinate according to sonar measurements
      */
     bool       ground_dist_correction(); 
+
+    /*
+     *  Check vehicle_command topic and update _vcommand if it's updated
+     */
+    bool       update_vehicle_command();
+
+    /*
+     *  Execute vcommand to modify _follow_offset
+     */
+    void       vcommand_modify_follow_offset();
 };
 
 namespace pos_control
@@ -451,6 +468,8 @@ MulticopterPositionControl::MulticopterPositionControl() :
 	_params_handles.follow_lpf	= param_find("FOL_LPF");
 	_params_handles.cam_pitch_max	= param_find("CAM_P_MAX");
 
+    _params_handles.loi_step_len = param_find("LOI_STEP_LEN");
+
     _params_handles.sonar_correction_on     = param_find("SENS_SON_ON");
     _params_handles.sonar_min_dist          = param_find("SENS_SON_MIN");
     _params_handles.mc_allowed_down_sp      = param_find("MPC_ALLOWED_LAND");
@@ -510,6 +529,7 @@ MulticopterPositionControl::parameters_update(bool force)
 		_params.follow_yaw_off_max = math::radians(_params.follow_yaw_off_max);
 		param_get(_params_handles.follow_lpf, &_params.follow_lpf);
 		_tvel_lpf.set_cutoff_frequency(_params.follow_lpf);
+		param_get(_params_handles.loi_step_len, &_params.loi_step_len);
 		param_get(_params_handles.cam_pitch_max, &_params.cam_pitch_max);
 		_params.cam_pitch_max = math::radians(_params.cam_pitch_max);
 
@@ -700,6 +720,130 @@ MulticopterPositionControl::reset_follow_offset()
 	}
 }
 
+bool
+MulticopterPositionControl::update_vehicle_command()
+{
+	bool vcommand_updated = false;
+	orb_check(_vcommand_sub, &vcommand_updated);
+
+	if (vcommand_updated) {
+
+		if (orb_copy(ORB_ID(vehicle_command), _vcommand_sub, &_vcommand) == OK) {
+			return true;
+		}
+		else
+			return false;
+	}
+
+	return false;
+}
+
+
+void
+MulticopterPositionControl::vcommand_modify_follow_offset() {
+
+	vehicle_command_s cmd = _vcommand;
+
+	if (cmd.command == VEHICLE_CMD_NAV_REMOTE_CMD) {
+
+		REMOTE_CMD remote_cmd = (REMOTE_CMD)cmd.param1;
+
+		math::Vector<3> offset =_follow_offset;
+
+		switch(remote_cmd){
+
+			case REMOTE_CMD_UP: {
+
+				_follow_offset.data[2] -= _params.loi_step_len;
+				break;
+			}
+			case REMOTE_CMD_DOWN: {
+
+				_follow_offset.data[2] += _params.loi_step_len;
+				break;
+			}
+			case REMOTE_CMD_LEFT: {
+
+				math::Matrix<3, 3> R_phi;
+
+				double radius = sqrt(offset(0) * offset(0) + offset(1) * offset(1));
+
+				// derived from formula: ( step / ( sqrt(x^2 + y^2)*2PI ) ) *  2PI
+				// radius: (sqrt(x^2 + y^2)
+				// circumference C: (radius * 2* PI)
+				// step length fraction of C: step/C
+				// angle of step fraction in radians: step/C * 2PI
+				double alpha = (double)_params.loi_step_len / radius;
+
+				// vector yaw rotation +alpha or -alpha depending on left or right
+				R_phi.from_euler(0.0f, 0.0f, alpha);
+				math::Vector<3> offset_new  = R_phi * offset;
+
+				_follow_offset = offset_new;
+
+				break;
+			}
+			case REMOTE_CMD_RIGHT: {
+
+				math::Matrix<3, 3> R_phi;
+
+				double radius = sqrt(offset(0) * offset(0) + offset(1) * offset(1));
+
+				// derived from formula: ( step / ( sqrt(x^2 + y^2)*2PI ) ) *  2PI
+				// radius: (sqrt(x^2 + y^2)
+				// circumference C: (radius * 2* PI)
+				// step length fraction of C: step/C
+				// angle of step fraction in radians: step/C * 2PI
+				double alpha = (double)_params.loi_step_len / radius;
+
+				// vector yaw rotation +alpha or -alpha depending on left or right
+				R_phi.from_euler(0.0f, 0.0f, -alpha);
+				math::Vector<3> offset_new  = R_phi * offset;
+
+				_follow_offset = offset_new;
+
+				break;
+			}
+			case REMOTE_CMD_CLOSER: {
+
+				// Calculate vector angle from target to device with atan2(y, x)
+				float alpha = atan2f(offset(1), offset(0));
+
+				// Create vector in the same direction, with loiter_step length
+				math::Vector<3> offset_delta(
+						cosf(alpha) * _params.loi_step_len,
+						sinf(alpha) * _params.loi_step_len,
+						0);
+
+				math::Vector<3> offset_new = offset - offset_delta;
+
+				_follow_offset = offset_new;
+
+				break;
+
+			}
+
+			case REMOTE_CMD_FURTHER: {
+
+				// Calculate vector angle from target to device with atan2(y, x)
+				float alpha = atan2(offset(1), offset(0));
+
+				// Create vector in the same direction, with loiter_step length
+				math::Vector<3> offset_delta(
+						cosf(alpha) * _params.loi_step_len,
+						sinf(alpha) * _params.loi_step_len,
+						0);
+
+				math::Vector<3> offset_new = offset + offset_delta;
+
+				_follow_offset = offset_new;
+
+				break;
+			}
+
+		}
+	}
+}
 
 void
 MulticopterPositionControl::reset_alt_sp()
@@ -895,6 +1039,8 @@ MulticopterPositionControl::control_auto(float dt)
 	}
 
 	if (_pos_sp_triplet.current.valid) {
+
+
 		/* in case of interrupted mission don't go to waypoint but stay at current position */
 		_reset_pos_sp = true;
 		_reset_alt_sp = true;
@@ -1073,6 +1219,7 @@ MulticopterPositionControl::control_follow(float dt)
 	/* follow target, change offset from target instead of moving setpoint directly */
 	reset_follow_offset();
 
+
 	/* new value for _follow_offset vector */
 	math::Vector<3> follow_offset_new(_follow_offset);
 
@@ -1201,6 +1348,7 @@ MulticopterPositionControl::task_main()
 	_local_pos_sp_sub = orb_subscribe(ORB_ID(vehicle_local_position_setpoint));
 	_global_vel_sp_sub = orb_subscribe(ORB_ID(vehicle_global_velocity_setpoint));
 	_target_pos_sub = orb_subscribe(ORB_ID(target_global_position));
+	_vcommand_sub = orb_subscribe(ORB_ID(vehicle_command));
 
 
 	parameters_update(true);
@@ -1307,6 +1455,16 @@ MulticopterPositionControl::task_main()
 			_sp_move_rate.zero();
 			_att_rates_ff.zero();
 
+
+            if (update_vehicle_command()) {
+
+                if (_control_mode.flag_control_follow_target && _control_mode.flag_control_leash_control_offset){
+                    vcommand_modify_follow_offset();
+                }
+
+            }
+
+
 			/* select control source */
 			if (_control_mode.flag_control_manual_enabled) {
 				if (_control_mode.flag_control_follow_target) {
@@ -1337,7 +1495,11 @@ MulticopterPositionControl::task_main()
 				}
 			}
 
-			if (_control_mode.flag_control_position_enabled || _control_mode.flag_control_follow_target) {
+			if  (
+                (_control_mode.flag_control_position_enabled || _control_mode.flag_control_follow_target) && 
+                _pos_sp_triplet.current.type != SETPOINT_TYPE_LAND && _pos_sp_triplet.current.type != SETPOINT_TYPE_TAKEOFF &&
+                _pos_sp_triplet.current.type != SETPOINT_TYPE_IDLE
+                ) {
 				/* try to correct this altitude with sonar */
 			    ground_dist_correction();
 
@@ -1416,9 +1578,19 @@ MulticopterPositionControl::task_main()
 					_vel_sp(1) = 0.0f;
 				}
 
+                if (_pos_sp_triplet.current.valid && _pos_sp_triplet.current.camera_pitch) {
+                    _cam_control.control[1] = _pos_sp_triplet.current.camera_pitch;
+                }
+
 				/* use constant descend rate when landing, ignore altitude setpoint */
 				if (!_control_mode.flag_control_manual_enabled && _pos_sp_triplet.current.valid && _pos_sp_triplet.current.type == SETPOINT_TYPE_LAND) {
-					_vel_sp(2) = _params.land_speed;
+                    if(_params.sonar_correction_on && _local_pos.dist_bottom_valid)
+                    {
+                        float coeff = _local_pos.dist_bottom/(MAXIMAL_DISTANCE*0.5f);
+                        _vel_sp(2) = coeff * _params.land_speed;
+                    }
+                    else
+                        _vel_sp(2) = _params.land_speed;
 				}
 
 				/* use constant ascend rate during take off */
@@ -1432,17 +1604,22 @@ MulticopterPositionControl::task_main()
 
 				//Ground distance correction
                 float range = MAXIMAL_DISTANCE - _params.sonar_min_dist;
+                // Used when we are above allowed limit
                 float max_vel_z = _params.vel_max(2) * (float)pow(_ground_position_available_drop/range, 2.0);
-				if (_ground_position_invalid) {
+                if (_ground_position_invalid) {
 						float drop = _pos(2) - _pos_sp(2) ;
 						if (drop >= 0) {
-							_vel_sp(2) = - (2 * drop * _params.vel_max(2) / _params.sonar_min_dist);
+                            //float min_vel_z = - _params.vel_max(2) * (float)pow(_ground_position_available_drop/_params.sonar_min_dist, 2.0);
+                            printf("[WARN] vel(2) %0.3f  sp_vel(2) %.03f\n", (double)_vel(2), (double)_vel_sp(2));
+							//_vel_sp(2) = - (2 * drop * _params.vel_max(2) / _params.sonar_min_dist);
+                            _vel_sp(2) = - max_vel_z;
 							_sp_move_rate(2)= 0.0f;
 						}
 				}
 				else if (_ground_setpoint_corrected && (_vel(2) > _params.vel_max(2) || _vel_sp(2) > _params.vel_max(2))) {
 					//_vel_sp(2) = - _params.vel_max(2);
                     _vel_sp(2) = - _params.vel_max(2);
+                    printf("[NO IDEA] vel(2) %0.3f  sp_vel(2) %.03f\n", (double)_vel(2), (double)_vel_sp(2));
 					_sp_move_rate(2)= 0.0f;
 				}
 				else if (_local_pos.dist_bottom_valid && _params.sonar_correction_on){
@@ -1450,6 +1627,7 @@ MulticopterPositionControl::task_main()
 						//limit down speed
 						if (_vel_sp(2) > max_vel_z) {
 							_vel_sp(2) = max_vel_z;
+                            printf("[LIMIT] vel(2) %0.3f  sp_vel(2) %.03f\n", (double)_vel(2), (double)_vel_sp(2));
 							
 							//mavlink_log_info(_mavlink_fd, " limiting downsp - vel_Sp: %.2f", (double)_vel_sp(2));
 						}
@@ -1829,10 +2007,14 @@ bool MulticopterPositionControl::ground_dist_correction(){
 		// 	_pos_sp(2) = _pos(2) + available_drop - _params.sonar_safe_belt ;
 		// 	alt_corrected = true;
 		// }
-		_pos_sp(2) = _pos(2) + available_drop;
-		_ground_position_invalid = true;
-		_ground_setpoint_corrected = true;
-		alt_corrected = true;
+        if ( - desired_drop < - available_drop )
+            // If we want to go up not sufficiently
+        {
+            _pos_sp(2) = _pos(2) + available_drop;
+            _ground_position_invalid = true;
+            _ground_setpoint_corrected = true;
+            alt_corrected = true;
+        }
 	}
 	else {
 	//can go down

@@ -25,12 +25,12 @@ void cButtonController::check(enum button_set bs, struct button_s *buttons, int 
 	hrt_abstime now;
 	bool now_pressed;
 	bc_callback_clicked_t cb_clicked;
-	bc_callback_pressed_t cb_pressed;
+	//bc_callback_pressed_t cb_pressed;
 
 	now = hrt_absolute_time();
 
 	cb_clicked = (bc_callback_clicked_t)callbacks[bs][BCBT_CLICKED];
-	cb_pressed = (bc_callback_pressed_t)callbacks[bs][BCBT_PRESSED];
+	//cb_pressed = (bc_callback_pressed_t)callbacks[bs][BCBT_PRESSED];
 
 	bool center_button_pressed = buttons[4].pressed;
 	hrt_abstime center_button_time_pressed = buttons[4].time_pressed;
@@ -46,10 +46,12 @@ void cButtonController::check(enum button_set bs, struct button_s *buttons, int 
 			buttons[i].pressed = true;
 		}
 
+        /*
 		// Pressed buttons have to be handled first for menu to work.
 		if(cb_pressed && (*cb_pressed)(callback_args[bs][BCBT_CLICKED], i, now - buttons[i].time_pressed)) {
 			continue;
 		}
+        */
 
 		// In last iteration button was pressed. Now it's now.
 		if (!now_pressed && buttons[i].pressed) {
@@ -64,8 +66,18 @@ void cButtonController::check(enum button_set bs, struct button_s *buttons, int 
 			buttons[i].pressed = false;
 		}
 
+        // Center button special handling
+        if (i==4 && buttons[i].pressed) {
+        
+            // Handle button press the first time
+            if (buttons[i].last_command_sent == 0) {
+                (*cb_clicked)(callback_args[bs][BCBT_CLICKED], i, false);
+                buttons[i].last_command_sent = now;
+            }
 
-		// Center button won't work alone, only in combination of others.
+        }
+        else
+
 		if (i!=4 && buttons[i].pressed)
 		{
 			// If center button is held down, all other buttons will have different functionality.

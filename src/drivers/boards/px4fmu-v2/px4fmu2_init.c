@@ -118,12 +118,12 @@ __END_DECLS
 
 static GRAN_HANDLE dma_allocator;
 
-/* 
- * The DMA heap size constrains the total number of things that can be 
+/*
+ * The DMA heap size constrains the total number of things that can be
  * ready to do DMA at a time.
  *
  * For example, FAT DMA depends on one sector-sized buffer per filesystem plus
- * one sector-sized buffer per file. 
+ * one sector-sized buffer per file.
  *
  * We use a fundamental alignment / granule size of 64B; this is sufficient
  * to guarantee alignment for the largest STM32 DMA burst (16 beats x 32bits).
@@ -327,6 +327,8 @@ __EXPORT int nsh_archinitialize(void)
 	SPI_SETMODE(spi4, SPIDEV_MODE3);
 	SPI_SELECT(spi4, PX4_SPIDEV_EXT0, false);
 	SPI_SELECT(spi4, PX4_SPIDEV_EXT1, false);
+	SPI_SELECT(spi4, PX4_SPIDEV_EXT2, false);
+	SPI_SELECT(spi4, PX4_SPIDEV_EXT3, false);
 
 	message("[boot] Initialized SPI port 4\n");
 

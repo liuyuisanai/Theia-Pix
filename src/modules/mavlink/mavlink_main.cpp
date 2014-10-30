@@ -72,6 +72,8 @@
 #include <mavlink/mavlink_log.h>
 
 #include <uORB/topics/parameter_update.h>
+#include <uORB/topics/get_drone_parameter.h>
+#include <uORB/topics/set_drone_parameter.h>
 
 #include "mavlink_bridge_header.h"
 #include "mavlink_main.h"
@@ -1348,6 +1350,9 @@ Mavlink::task_main(int argc, char *argv[])
 		/* initialize message buffer mutex */
 		pthread_mutex_init(&_message_buffer_mutex, NULL);
 	}
+
+    get_drone_parameter_sub = orb_subscribe(ORB_ID(get_drone_parameter));
+    set_drone_parameter_sub = orb_subscribe(ORB_ID(set_drone_parameter));
 
 	/* create the device node that's used for sending text log messages, etc. */
 	register_driver(MAVLINK_LOG_DEVICE, &fops, 0666, NULL);

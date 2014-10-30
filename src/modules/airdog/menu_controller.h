@@ -55,37 +55,12 @@ private:
 	void selectNextParam(void);
 	void editCurrentParam(void);
 
-	void decCurrentParam(hrt_abstime time);
-	void incCurrentParam(hrt_abstime time);
+	void decCurrentParam(void/*hrt_abstime time*/);
+	void incCurrentParam(void/*hrt_abstime time*/);
 	void cancelEditing(void);
 	void saveCurrentParam(void);
 
 	inline void nop(void) { }
-
-	button_map_t buttonMap[MAX_MENU_LEVEL][BUTTON_COUNT_I2C] = {
-		{ //Menu level PARAMS
-		  /* 0 ON/OFF */			{ BCBT_CLICKED, { .clicked = &MENU_CONTROLLER::close } },
-		  /* 1 DOWN */				{ BCBT_CLICKED, { .clicked = &MENU_CONTROLLER::nop } },
-		  /* 2 PLAY */				{ BCBT_CLICKED, { .clicked = &MENU_CONTROLLER::nop } },
-		  /* 3 UP */				{ BCBT_CLICKED, { .clicked = &MENU_CONTROLLER::nop } },
-		  /* 4 CENTER */			{ BCBT_CLICKED, { .clicked = &MENU_CONTROLLER::editCurrentParam } },
-		  /* 5 CENTER DOWN */		{ BCBT_CLICKED, { .clicked = &MENU_CONTROLLER::selectPrevParam } },
-		  /* 6 CENTER RIGHT */		{ BCBT_CLICKED, { .clicked = &MENU_CONTROLLER::nop } },
-		  /* 7 CENTER UP */			{ BCBT_CLICKED, { .clicked = &MENU_CONTROLLER::selectNextParam } },
-		  /* 8 CENTER LEFT */		{ BCBT_CLICKED, { .clicked = &MENU_CONTROLLER::nop } },
-		},
-		{ //Menu level SET
-		  /* 0 ON/OFF */			{ BCBT_CLICKED, { .clicked = &MENU_CONTROLLER::close } },
-		  /* 1 DOWN */				{ BCBT_CLICKED, { .clicked = &MENU_CONTROLLER::nop } },
-		  /* 2 PLAY */				{ BCBT_CLICKED, { .clicked = &MENU_CONTROLLER::nop } },
-		  /* 3 UP */				{ BCBT_CLICKED, { .clicked = &MENU_CONTROLLER::nop } },
-		  /* 4 CENTER */			{ BCBT_CLICKED, { .clicked = &MENU_CONTROLLER::saveCurrentParam } },
-		  /* 5 CENTER DOWN */		{ BCBT_PRESSED, { .pressed = &MENU_CONTROLLER::decCurrentParam } },
-		  /* 6 CENTER RIGHT */		{ BCBT_CLICKED, { .clicked = &MENU_CONTROLLER::nop } },
-		  /* 7 CENTER UP */			{ BCBT_PRESSED, { .pressed = &MENU_CONTROLLER::incCurrentParam } },
-		  /* 8 CENTER LEFT */		{ BCBT_CLICKED, { .clicked = &MENU_CONTROLLER::cancelEditing } },
-		}
-	};
 };
 
 #endif //_MENU_CONTROLLER_H

@@ -80,6 +80,7 @@ RTL::on_activation()
 	global_pos =  _navigator->get_global_position();
 	home_pos = _navigator->get_home_position();
 	pos_sp_triplet = _navigator->get_position_setpoint_triplet();
+    target_pos = _navigator->get_target_position();
 
 	first_rtl_setpoint_set = false;
 
@@ -118,6 +119,7 @@ RTL::on_active()
 	global_pos =  _navigator->get_global_position();
 	home_pos = _navigator->get_home_position();
 	pos_sp_triplet = _navigator->get_position_setpoint_triplet();
+    target_pos = _navigator->get_target_position();
 
 	if ( update_vehicle_command() )
 			execute_vehicle_command();
@@ -207,13 +209,10 @@ RTL::set_rtl_setpoint()
 			pos_sp_triplet->current.lon = home_pos->lon;
 			pos_sp_triplet->current.alt = global_pos->alt;
 			pos_sp_triplet->current.type = SETPOINT_TYPE_LAND;
-
 			break;
 		}
 		case RTL_STATE_LANDED: {
-
 			disarm();
-
 			break;
 		}
 		default:
@@ -227,7 +226,6 @@ RTL::set_rtl_setpoint()
 void
 RTL::set_next_rtl_state()
 {
-
 	switch (rtl_state) {
 		case RTL_STATE_CLIMB:
 			rtl_state = RTL_STATE_RETURN;

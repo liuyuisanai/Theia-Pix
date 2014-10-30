@@ -65,13 +65,7 @@ void cParamHandler::loadCycle(void) {
         
 		res = orb_check(passed_param_sub, &updated);
 		if(res == -1) {
-			//orb_check failed
-            //
-
-            FILE * fh = fopen("/fs/microsd/log/m256", "a");
-            fprintf(fh, "Orb check failed\n");
-            fclose(fh);
-
+            //orb check failed
 		} else if(updated) {
            
 			ad_param_t *pparam;
@@ -79,16 +73,7 @@ void cParamHandler::loadCycle(void) {
 			orb_copy(ORB_ID(pass_drone_parameter), passed_param_sub, &param);
 			pparam = &paramTable[loaded_count];
 
-
-            FILE * fh = fopen("/fs/microsd/log/m256", "a");
-            fprintf(fh, "Orb check ok\n");
-            fclose(fh);
-
 			if(!strncmp(param.param_id, pparam->name, sizeof(param.param_id))) {
-
-                FILE * fh = fopen("/fs/microsd/log/m256", "a");
-                fprintf(fh, "Compare ok \n");
-                fclose(fh);
 
 				pparam->type = (enum param_type)param.param_type;
 				switch(pparam->type) {
@@ -108,11 +93,6 @@ void cParamHandler::loadCycle(void) {
 
 			is_requested = false;
 		} else if((hrt_absolute_time() - request_time) / 10000.0f > load_update_timeout) {
-
-            FILE * fh = fopen("/fs/microsd/log/m256", "a");
-            fprintf(fh, "Load update fail\n");
-            fclose(fh);
-
 			load_update_fail_count++;
 			if(load_update_fail_count >= max_load_update_fail_count) {
 				//TODO: Do something?
@@ -134,6 +114,7 @@ float cParamHandler::get(int id) {
 }
 
 bool cParamHandler::request(enum param_id id) {
+
 	strncpy(get_param_s.param_id, paramTable[id].name, sizeof(get_param_s.param_id));
 
 	if (m_orb_get_param < 0) {
