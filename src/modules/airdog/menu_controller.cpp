@@ -68,33 +68,13 @@ void MENU_CONTROLLER::handleClickedButton(uint8_t button/*, bool long_press*/) {
 			break;
 		case 1:
 			// DOWN button
-            
-            if (currentLevel == MENU_LEVEL_SET) {
-                decCurrentParam();
-            } 
-            else 
-            if (currentLevel == MENU_LEVEL_PARAMS) {
-                selectPrevParam();
-            } 
 			break;
 		case 2:
 			// PLAY button
 			break;
 		case 3:
 			// UP button
-            //
-            //
-            
-            if (currentLevel == MENU_LEVEL_SET) {
-                incCurrentParam();
-            } 
-            else 
-            if (currentLevel == MENU_LEVEL_PARAMS) {
-                selectNextParam();
-            } 
-
 			break;
-
 		case 4:
 			// CENTER button
             if (currentLevel == MENU_LEVEL_SET) {
@@ -109,12 +89,27 @@ void MENU_CONTROLLER::handleClickedButton(uint8_t button/*, bool long_press*/) {
 			break;
 		case 5:
 			// CENTER DOWN
+            if (currentLevel == MENU_LEVEL_SET) {
+                decCurrentParam();
+            } 
+            else 
+            if (currentLevel == MENU_LEVEL_PARAMS) {
+                selectPrevParam();
+            } 
 			break;
 		case 6:
 			// CENTER RIGHT
 			break;
 		case 7:
 			// CENTER UP
+            
+            if (currentLevel == MENU_LEVEL_SET) {
+                incCurrentParam();
+            } 
+            else 
+            if (currentLevel == MENU_LEVEL_PARAMS) {
+                selectNextParam();
+            } 
 			break;
 		case 8:
 			// CENTER LEFT
