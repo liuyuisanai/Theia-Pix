@@ -63,4 +63,8 @@
 #define	HW_ARCH "AEROCORE"
 #endif
 
+#ifdef CONFIG_ARCH_BOARD_AIRDOG_FMU
+#define	HW_ARCH "AIRDOG_FMU"
+#endif
+
 #endif /* VERSION_H_ */

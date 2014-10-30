@@ -111,7 +111,7 @@ private:
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
 	static const unsigned _max_actuators = 4;
 #endif
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2) or defined(CONFIG_ARCH_BOARD_AIRDOG_FMU)
 	static const unsigned _max_actuators = 6;
 #endif
 #if defined(CONFIG_ARCH_BOARD_AEROCORE)
@@ -195,7 +195,7 @@ const PX4FMU::GPIOConfig PX4FMU::_gpio_tab[] = {
 	{GPIO_GPIO6_INPUT, GPIO_GPIO6_OUTPUT, GPIO_CAN2_TX_2},
 	{GPIO_GPIO7_INPUT, GPIO_GPIO7_OUTPUT, GPIO_CAN2_RX_2},
 #endif
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2) or defined(CONFIG_ARCH_BOARD_AIRDOG_FMU)
 	{GPIO_GPIO0_INPUT,       GPIO_GPIO0_OUTPUT,       0},
 	{GPIO_GPIO1_INPUT,       GPIO_GPIO1_OUTPUT,       0},
 	{GPIO_GPIO2_INPUT,       GPIO_GPIO2_OUTPUT,       0},
@@ -1141,9 +1141,15 @@ PX4FMU::pwm_ioctl(file *filp, int cmd, unsigned long arg)
 		 * and PWM under control of the flight config
 		 * parameters. Note that this does not allow for
 		 * changing a set of pins to be used for serial on
-		 * FMUv1 
+		 * FMUv1
 		 */
 		switch (arg) {
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2) or defined(CONFIG_ARCH_BOARD_AIRDOG_FMU)
+		case 6:
+			set_mode(MODE_6PWM);
+			break;
+#endif
+#if not defined(CONFIG_ARCH_BOARD_AIRDOG_FMU)
 		case 0:
 			set_mode(MODE_NONE);
 			break;
@@ -1156,17 +1162,12 @@ PX4FMU::pwm_ioctl(file *filp, int cmd, unsigned long arg)
 			set_mode(MODE_4PWM);
 			break;
 
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
-		case 6:
-			set_mode(MODE_6PWM);
-			break;
-#endif
 #if defined(CONFIG_ARCH_BOARD_AEROCORE)
 		case 8:
 			set_mode(MODE_8PWM);
 			break;
 #endif
-
+#endif // end if not CONFIG_ARCH_BOARD_AIRDOG_FMU
 		default:
 			ret = -EINVAL;
 			break;
@@ -1283,7 +1284,7 @@ PX4FMU::write(file *filp, const char *buffer, size_t len)
 void
 PX4FMU::sensor_reset(int ms)
 {
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2) or defined(CONFIG_ARCH_BOARD_AIRDOG_FMU)
 
 	if (ms < 1) {
 		ms = 1;
@@ -1540,7 +1541,7 @@ fmu_new_mode(PortMode new_mode)
 		/* select 4-pin PWM mode */
 		servo_mode = PX4FMU::MODE_4PWM;
 #endif
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2) or defined(CONFIG_ARCH_BOARD_AIRDOG_FMU)
 		servo_mode = PX4FMU::MODE_6PWM;
 #endif
 #if defined(CONFIG_ARCH_BOARD_AEROCORE)
@@ -1863,7 +1864,7 @@ fmu_main(int argc, char *argv[])
 	fprintf(stderr, "FMU: unrecognised command %s, try:\n", verb);
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
 	fprintf(stderr, "  mode_gpio, mode_serial, mode_pwm, mode_gpio_serial, mode_pwm_serial, mode_pwm_gpio, test\n");
-#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V2) || defined(CONFIG_ARCH_BOARD_AEROCORE)
+#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V2) or defined(CONFIG_ARCH_BOARD_AEROCORE) or defined(CONFIG_ARCH_BOARD_AIRDOG_FMU)
 	fprintf(stderr, "  mode_gpio, mode_pwm, test, sensor_reset [milliseconds]\n");
 #endif
 	exit(1);
