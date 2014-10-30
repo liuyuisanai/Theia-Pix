@@ -132,6 +132,19 @@
 #define ADC_AIRSPEED_VOLTAGE_CHANNEL	-1
 #endif
 
+#ifdef CONFIG_ARCH_BOARD_AIRDOG_FMU
+# //
+# // GPIO_ADC1_IN11 GPIO_PORTC|GPIO_PIN1
+#define ADC_BATTERY_VOLTAGE_CHANNEL	11
+# //
+# // GPIO_ADC1_IN13 GPIO_PORTC|GPIO_PIN3
+#define ADC_BATTERY_CURRENT_CHANNEL	13
+# //
+# // GPIO_ADC1_IN4  GPIO_PORTA|GPIO_PIN4
+#define ADC_5V_RAIL_SENSE		4
+# //
+#endif
+
 #define BATT_V_LOWPASS 0.001f
 #define BATT_V_IGNORE_THRESHOLD 4.8f
 
@@ -907,7 +920,7 @@ Sensors::accel_init()
 		/* set the driver to poll at 1000Hz */
 		ioctl(fd, SENSORIOCSPOLLRATE, 1000);
 
-#elif CONFIG_ARCH_BOARD_PX4FMU_V2 || CONFIG_ARCH_BOARD_AEROCORE
+#elif CONFIG_ARCH_BOARD_PX4FMU_V2 || CONFIG_ARCH_BOARD_AEROCORE || CONFIG_ARCH_BOARD_AIRDOG_FMU
 
 		/* set the accel internal sampling rate up to at leat 800Hz */
 		ioctl(fd, ACCELIOCSSAMPLERATE, 800);
@@ -916,8 +929,7 @@ Sensors::accel_init()
 		ioctl(fd, SENSORIOCSPOLLRATE, 800);
 
 #else
-#error Need a board configuration, either CONFIG_ARCH_BOARD_PX4FMU_V1, CONFIG_ARCH_BOARD_PX4FMU_V2 or CONFIG_ARCH_BOARD_AEROCORE
-
+#error Unknown board.
 #endif
 
 		close(fd);
@@ -1460,8 +1472,9 @@ Sensors::adc_poll(struct sensor_combined_s &raw)
 					}
 
 					_battery_current_timestamp = t;
-
-				} else if (ADC_AIRSPEED_VOLTAGE_CHANNEL == buf_adc[i].am_channel) {
+				}
+#ifdef ADC_AIRSPEED_VOLTAGE_CHANNEL
+				else if (ADC_AIRSPEED_VOLTAGE_CHANNEL == buf_adc[i].am_channel) {
 
 					/* calculate airspeed, raw is the difference from */
 					float voltage = (float)(buf_adc[i].am_data) * 3.3f / 4096.0f * 2.0f;  // V_ref/4096 * (voltage divider factor)
@@ -1489,6 +1502,7 @@ Sensors::adc_poll(struct sensor_combined_s &raw)
 						}
 					}
 				}
+#endif // ADC_AIRSPEED_VOLTAGE_CHANNEL
 			}
 
 			_last_adc = t;
