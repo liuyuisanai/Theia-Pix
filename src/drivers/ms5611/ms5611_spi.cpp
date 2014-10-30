@@ -51,6 +51,7 @@
 #include <arch/board/board.h>
 
 #include <drivers/device/spi.h>
+#include <systemlib/err.h>
 
 #include "ms5611.h"
 #include "board_config.h"
@@ -118,9 +119,10 @@ device::Device *
 MS5611_spi_interface(ms5611::prom_u &prom_buf, bool external_bus)
 {
 	if (external_bus) {
-		#ifdef PX4_SPI_BUS_EXT
+		#ifdef PX4_SPIDEV_EXT_BARO
 		return new MS5611_SPI(PX4_SPI_BUS_EXT, (spi_dev_e)PX4_SPIDEV_EXT_BARO, prom_buf);
 		#else
+		warnx("External SPI BARO not available.");
 		return nullptr;
 		#endif
 	} else {

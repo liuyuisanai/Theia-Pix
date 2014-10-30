@@ -54,7 +54,7 @@ __BEGIN_DECLS
 #include <arch/board/board.h>
 
 #define UDID_START		0x1FFF7A10
- 
+
 /****************************************************************************************************
  * Definitions
  ****************************************************************************************************/
@@ -127,10 +127,14 @@ __BEGIN_DECLS
 #define PX4_SPIDEV_EXT3		4
 
 /* FMUv3 SPI on external bus */
-#define PX4_SPIDEV_EXT_MPU		PX4_SPIDEV_EXT0
-#define PX4_SPIDEV_EXT_BARO		PX4_SPIDEV_EXT1
-#define PX4_SPIDEV_EXT_ACCEL_MAG	PX4_SPIDEV_EXT2
-#define PX4_SPIDEV_EXT_GYRO		PX4_SPIDEV_EXT3
+// #define PX4_SPIDEV_EXT_MPU		PX4_SPIDEV_EXT0
+// #define PX4_SPIDEV_EXT_BARO		PX4_SPIDEV_EXT1
+// #define PX4_SPIDEV_EXT_ACCEL_MAG	PX4_SPIDEV_EXT2
+// #define PX4_SPIDEV_EXT_GYRO		PX4_SPIDEV_EXT3
+
+/* SPI HMC5883 config. */
+#define SPI_HMC5883_BUS		PX4_SPI_BUS_EXT
+#define SPI_HMC5883_DEV		PX4_SPIDEV_EXT0
 
 /* I2C busses */
 #define PX4_I2C_BUS_EXPANSION	1

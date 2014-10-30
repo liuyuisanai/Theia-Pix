@@ -1547,8 +1547,8 @@ hmc5883spi_main(int argc, char *argv[])
 	using namespace hmc5883spi;
 
 	int ch;
-	const int bus = PX4_SPI_BUS_EXT;
-	const spi_dev_e spi_dev = (spi_dev_e)PX4_SPIDEV_EXT0;
+	const int bus = SPI_HMC5883_BUS;
+	const spi_dev_e spi_dev = (spi_dev_e)SPI_HMC5883_DEV;
 
 	enum Rotation rotation = ROTATION_NONE;
         bool do_calibrate = false;
