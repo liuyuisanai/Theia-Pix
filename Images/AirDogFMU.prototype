@@ -1,11 +1,11 @@
 {
-    "board_id": 9, 
-    "magic": "PX4FWv1", 
-    "description": "Firmware for the PX4FMUv2 board", 
-    "image": "", 
-    "build_time": 0, 
-    "summary": "PX4FMUv2",
-    "version": "0.1",
+    "board_id": 9,
+    "magic": "AirDog FMU",
+    "summary": "AirDog FMU",
+    "description": "Firmware for the AirDOG FMU",
+    "image": "",
+    "build_time": 0,
+    "version": "0.0",
     "image_size": 0,
     "git_identity": "",
     "board_revision": 0

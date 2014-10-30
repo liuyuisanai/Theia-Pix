@@ -12,39 +12,41 @@ ROMFS_OPTIONAL_FILES = $(PX4_BASE)/Images/px4io-v2_default.bin
 #
 # Board support modules
 #
+MODULES		+= drivers/boards/AirDogFMU
 MODULES		+= drivers/device
+MODULES		+= drivers/frsky_telemetry
+MODULES		+= drivers/gps
+MODULES		+= drivers/hmc5883
+MODULES		+= drivers/hmc5883spi
+MODULES		+= drivers/l3gd20
+MODULES		+= drivers/led
+MODULES		+= drivers/lsm303d
+MODULES		+= drivers/mb1230serial
+MODULES		+= drivers/mpu6000
+MODULES		+= drivers/ms5611
+MODULES		+= drivers/px4fmu
+MODULES		+= drivers/px4io
 MODULES		+= drivers/stm32
 MODULES		+= drivers/stm32/adc
 MODULES		+= drivers/stm32/tone_alarm
-MODULES		+= drivers/led
-MODULES		+= drivers/px4fmu
-MODULES		+= drivers/px4io
-MODULES		+= drivers/boards/px4fmu-v2
-MODULES		+= drivers/rgbled
-MODULES		+= drivers/mpu6000
-MODULES		+= drivers/lsm303d
-MODULES		+= drivers/l3gd20
-MODULES		+= drivers/hmc5883
-MODULES		+= drivers/hmc5883spi
-MODULES		+= drivers/ms5611
-MODULES		+= drivers/mb12xx
-MODULES		+= drivers/sf0x
-MODULES		+= drivers/ll40ls
-MODULES		+= drivers/gps
-#MODULES		+= drivers/hil
-#MODULES		+= drivers/hott/hott_telemetry
-#MODULES		+= drivers/hott/hott_sensors
-#MODULES		+= drivers/blinkm
-#MODULES		+= drivers/airspeed
-#MODULES		+= drivers/ets_airspeed
-#MODULES		+= drivers/meas_airspeed
-#MODULES		+= drivers/frsky_telemetry
+MODULES		+= modules/gpio_tool
 MODULES		+= modules/sensors
-MODULES		+= drivers/mkblctrl
-MODULES		+= drivers/pca8574
+MODULES		+= modules/sensors_probe
+MODULES		+= modules/sensors_switch
+MODULES		+= modules/spi_exchange
+#MODULES		+= drivers/airspeed
+#MODULES		+= drivers/blinkm
+#MODULES		+= drivers/ets_airspeed
+#MODULES		+= drivers/hil
+#MODULES		+= drivers/hott/hott_sensors
+#MODULES		+= drivers/hott/hott_telemetry
+#MODULES		+= drivers/ll40ls
+#MODULES		+= drivers/mb12xx
+#MODULES		+= drivers/meas_airspeed
+#MODULES		+= drivers/pca8574
 #MODULES		+= drivers/px4flow
-
-MODULES		+= drivers/mb1230serial
+#MODULES		+= drivers/rgbled
+#MODULES		+= drivers/sf0x
 
 # Needs to be burned to the ground and re-written; for now,
 # just don't build it.
@@ -78,27 +80,27 @@ MODULES		+= modules/commander
 MODULES		+= modules/navigator
 MODULES		+= modules/mavlink
 MODULES		+= modules/gpio_led
-MODULES		+= modules/uavcan
 MODULES 	+= modules/airdog
+#MODULES		+= modules/uavcan
 
 #
 # Estimation modules (EKF/ SO3 / other filters)
 #
+MODULES		+= modules/airdog/trajectory_calculator
 MODULES		+= modules/attitude_estimator_ekf
-#MODULES		+= modules/attitude_estimator_so3
-#MODULES		+= modules/ekf_att_pos_estimator
 MODULES		+= modules/position_estimator_inav
 #MODULES		+= examples/flow_position_estimator
-MODULES		+= modules/airdog/trajectory_calculator
+#MODULES		+= modules/attitude_estimator_so3
+#MODULES		+= modules/ekf_att_pos_estimator
 
 #
 # Vehicle Control
 #
+MODULES		+= modules/mc_att_control
+MODULES		+= modules/mc_pos_control
 #MODULES		+= modules/segway # XXX Needs GCC 4.7 fix
 #MODULES		+= modules/fw_pos_control_l1
 #MODULES		+= modules/fw_att_control
-MODULES		+= modules/mc_att_control
-MODULES		+= modules/mc_pos_control
 
 #
 # Logging
@@ -157,12 +159,12 @@ MODULES		+= lib/launchdetection
 
 # Tutorial code from
 # https://pixhawk.ethz.ch/px4/dev/example_fixedwing_control
-#MODULES			+= examples/fixedwing_control
+#MODULES		+= examples/fixedwing_control
 
 # Hardware test
-#MODULES			+= examples/hwtest
-MODULES				+= modules/serial_echo
-MODULES				+= modules/bt_cfg
+#MODULES		+= examples/hwtest
+#MODULES		+= modules/serial_echo
+#MODULES		+= modules/bt_cfg
 
 #
 # Transitional support - add commands from the NuttX export archive.
