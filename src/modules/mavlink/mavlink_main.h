@@ -153,6 +153,7 @@ public:
 
 	void			get_mavlink_mode_and_state(struct vehicle_status_s *status, struct position_setpoint_triplet_s *pos_sp_triplet, uint8_t *mavlink_state, uint8_t *mavlink_base_mode, uint32_t *mavlink_custom_mode);
 
+
 	/**
 	 * Enable / disable Hardware in the Loop simulation mode.
 	 *
@@ -267,6 +268,11 @@ public:
 	struct mavlink_logbuffer	*get_logbuffer() { return &_logbuffer; }
 
     orb_advert_t _pass_drone_parameter_pub;
+
+
+    int get_drone_parameter_sub;
+    int set_drone_parameter_sub;
+
 
 protected:
 	Mavlink			*next;

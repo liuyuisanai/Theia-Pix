@@ -12,8 +12,14 @@
  */
 
 #define PARAM_LIST \
+	X(0,	/* FTO */				FOL_TALT_OFF,		0, 0, 1.0f,		PTYPE_INT,		0,		1,		1,		"FTO" ) \
+	X(1,	/* FRA */				FOL_RPT_ALT,		0, 0, 1.0f,		PTYPE_INT,		0,		1,		1,		"FRA" ) \
+	X(2,	/* FUA */				FOL_USE_ALT,		0, 0, 1.0f,		PTYPE_INT,		0,		1,		1,		"FUA" ) \
+	X(3,	/* FF */				FOL_VEL_FF,			0, 0, 1.0f,		PTYPE_FLOAT,	0.0f,	1.0f,	0.05f,	" FF" ) \
+	X(4,	/* LPF */				FOL_LPF,			0, 0, 1.0f,		PTYPE_FLOAT,	0.0f,	10.0f,	0.05f,	"LPF" ) 
+
 	/*								Parameter id		cv ev mul		Type			Min		Max		Step	Display symbols */\
-	X(0,	/* AYAW */				MPC_YAW_OFF,		0, 0, 1.0f,		PTYPE_INT,		0,		1,		1,		"AYA" ) \
+//	X(0,	/* AYAW */				MPC_YAW_OFF,		0, 0, 1.0f,		PTYPE_INT,		0,		1,		1,		"AYA" ) \
 	X(1,	/* PI */				NAV_TALT_USE,		0, 0, 1.0f,		PTYPE_INT,		0,		1,		1,		" P1" ) \
 	X(2,	/* BA */				NAV_TALT_RPT,		0, 0, 1.0f,		PTYPE_INT,		0,		1,		1,		" BA" ) \
 	X(3,	/* FF */				MPC_FW_FF,			0, 0, 1.0f,		PTYPE_FLOAT,	0.0f,	1.0f,	0.05f,	" FF" ) \
@@ -34,7 +40,7 @@
 	X(18,	/* NAV_RTL_ALT */		NAV_RTL_ALT,		0, 0, 1.0f,		PTYPE_FLOAT,	3.0f,	50.0f,	1.0f,	"RAL" ) \
 	X(19,	/* NAV_LAND_HOME */		NAV_LAND_HOME,		0, 0, 1.0f,		PTYPE_INT,		0,		1,		1,		"LAH" )
 
-#define PARAM_COUNT 20
+#define PARAM_COUNT 5
 
 #define X(n, id, cv, ev, mul, type, min, max, step, dsym) PARAM_##id = n,
 enum param_id {

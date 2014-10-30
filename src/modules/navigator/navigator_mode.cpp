@@ -121,9 +121,6 @@ NavigatorMode::updateParamValues() {
 
 	param_get(_parameter_handles.rtl_ret_alt, &(_parameters.rtl_ret_alt));
 
-    int toa = (int)_parameters.takeoff_alt;
-    mavlink_log_info(_navigator->get_mavlink_fd(), "Takeoff alt now is %d", toa);
-
 }
 
 

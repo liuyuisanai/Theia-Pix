@@ -39,6 +39,8 @@
  */
 
 #include <stdio.h>
+#include <uORB/topics/get_drone_parameter.h>
+#include <uORB/topics/set_drone_parameter.h>
 
 #include "mavlink_parameters.h"
 #include "mavlink_main.h"
@@ -66,6 +68,8 @@ MavlinkParametersManager::handle_message(const mavlink_message_t *msg)
 {
 	switch (msg->msgid) {
 	case MAVLINK_MSG_ID_PARAM_REQUEST_LIST: {
+
+
 			/* request all parameters */
 			mavlink_param_request_list_t req_list;
 			mavlink_msg_param_request_list_decode(msg, &req_list);
@@ -113,6 +117,7 @@ MavlinkParametersManager::handle_message(const mavlink_message_t *msg)
 
 	case MAVLINK_MSG_ID_PARAM_REQUEST_READ: {
 			/* request one parameter */
+
 			mavlink_param_request_read_t req_read;
 			mavlink_msg_param_request_read_decode(msg, &req_read);
 
@@ -127,6 +132,7 @@ MavlinkParametersManager::handle_message(const mavlink_message_t *msg)
 					/* enforce null termination */
 					name[MAVLINK_MSG_PARAM_VALUE_FIELD_PARAM_ID_LEN] = '\0';
 					/* attempt to find parameter and send it */
+
 					send_param(param_find(name));
 
 				} else {
@@ -138,22 +144,22 @@ MavlinkParametersManager::handle_message(const mavlink_message_t *msg)
 		}
 
       case MAVLINK_MSG_ID_PARAM_VALUE: {
-                         
+
              mavlink_param_value_t param_value_msg;
              mavlink_msg_param_value_decode(msg, &param_value_msg);
              struct pass_drone_param_s cmd;
              memset(&cmd, 0, sizeof(cmd));
-     
+
              cmd.param_value = param_value_msg.param_value;
              cmd.param_type = param_value_msg.param_type;
              strncpy(cmd.param_id, param_value_msg.param_id, 16);
 
-             if (_mavlink->_pass_drone_parameter_pub < 0)
-                 _mavlink->_pass_drone_parameter_pub = orb_advertise(ORB_ID(pass_drone_parameter), &cmd);
-             else
+            if (_mavlink->_pass_drone_parameter_pub < 0)
+                _mavlink->_pass_drone_parameter_pub = orb_advertise(ORB_ID(pass_drone_parameter), &cmd);
+            else
                 orb_publish(ORB_ID(pass_drone_parameter), _mavlink->_pass_drone_parameter_pub, &cmd);
 
-         } break;
+        } break;
 
 
 	default:
@@ -172,6 +178,45 @@ MavlinkParametersManager::send(const hrt_abstime t)
 			_send_all_index = -1;
 		}
 	}
+     
+    bool updated;
+    orb_check(_mavlink->get_drone_parameter_sub, &updated);
+
+    if (updated) { 
+        get_drone_param_s get_drone_param;
+
+        memset(&get_drone_param, 0, sizeof(get_drone_param));
+
+        orb_copy(ORB_ID(get_drone_parameter), _mavlink->get_drone_parameter_sub , &get_drone_param); 
+
+        mavlink_param_request_read_t msg;
+
+        memcpy(msg.param_id, get_drone_param.param_id, sizeof(msg.param_id));
+        msg.param_index = get_drone_param.param_index;
+        msg.target_component = get_drone_param.target_component;
+        msg.target_system = get_drone_param.target_system;
+        _mavlink->send_message(MAVLINK_MSG_ID_PARAM_REQUEST_READ, &msg);
+
+    }
+
+    orb_check(_mavlink->set_drone_parameter_sub, &updated);
+
+    if (updated) {
+        set_drone_param_s set_drone_param;
+
+        memset(&set_drone_param, 0, sizeof(set_drone_param));
+
+        orb_copy(ORB_ID(set_drone_parameter), _mavlink->set_drone_parameter_sub, &set_drone_param);    
+
+        mavlink_param_set_t msg;
+
+        memcpy(msg.param_id, set_drone_param.param_id, sizeof(msg.param_id));
+        msg.target_system = set_drone_param.target_system;
+        msg.param_value = set_drone_param.param_value;
+        msg.param_type = set_drone_param.param_type;
+
+        _mavlink->send_message(MAVLINK_MSG_ID_PARAM_SET, &msg);
+    }
 }
 
 void

@@ -19,7 +19,7 @@
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THr
  * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
@@ -895,6 +895,8 @@ MulticopterPositionControl::control_auto(float dt)
 	}
 
 	if (_pos_sp_triplet.current.valid) {
+
+
 		/* in case of interrupted mission don't go to waypoint but stay at current position */
 		_reset_pos_sp = true;
 		_reset_alt_sp = true;
@@ -1415,6 +1417,10 @@ MulticopterPositionControl::task_main()
 					_vel_sp(0) = 0.0f;
 					_vel_sp(1) = 0.0f;
 				}
+
+                if (_pos_sp_triplet.current.valid && _pos_sp_triplet.current.camera_pitch) {
+                    _cam_control.control[1] = _pos_sp_triplet.current.camera_pitch;
+                }
 
 				/* use constant descend rate when landing, ignore altitude setpoint */
 				if (!_control_mode.flag_control_manual_enabled && _pos_sp_triplet.current.valid && _pos_sp_triplet.current.type == SETPOINT_TYPE_LAND) {
