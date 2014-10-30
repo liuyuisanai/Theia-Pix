@@ -170,7 +170,9 @@ static void
 ramtron_attach(void)
 {
 	/* find the right spi */
-#ifdef CONFIG_ARCH_BOARD_AEROCORE
+#if defined(PX4_SPI_BUS_MTD)
+	struct spi_dev_s *spi = up_spiinitialize(PX4_SPI_BUS_MTD);
+#elif defined(CONFIG_ARCH_BOARD_AEROCORE)
 	struct spi_dev_s *spi = up_spiinitialize(4);
 #else
 	struct spi_dev_s *spi = up_spiinitialize(2);

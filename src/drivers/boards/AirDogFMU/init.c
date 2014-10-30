@@ -204,7 +204,6 @@ stm32_boardinitialize(void)
  ****************************************************************************/
 
 static struct spi_dev_s *spi1;
-static struct spi_dev_s *spi2;
 static struct spi_dev_s *spi4;
 static struct sdio_dev_s *sdio;
 
@@ -274,16 +273,17 @@ __EXPORT int nsh_archinitialize(void)
 	SPI_SELECT(spi1, PX4_SPIDEV_ACCEL_MAG, false);
 	SPI_SELECT(spi1, PX4_SPIDEV_BARO, false);
 	SPI_SELECT(spi1, PX4_SPIDEV_MPU, false);
+	SPI_SELECT(spi1, PX4_SPIDEV_xMAG, false);
 	up_udelay(20);
 
 	message("[boot] Initialized SPI port 1 (SENSORS)\n");
 
 	/* Get the SPI port for the FRAM */
 
-	spi2 = up_spiinitialize(2);
+	spi4 = up_spiinitialize(4);
 
-	if (!spi2) {
-		message("[boot] FAILED to initialize SPI port 2\n");
+	if (!spi4) {
+		message("[boot] FAILED to initialize SPI port 4\n");
 		up_ledon(LED_AMBER);
 		return -ENODEV;
 	}
@@ -292,27 +292,14 @@ __EXPORT int nsh_archinitialize(void)
 	 * and de-assert the known chip selects. */
 
 	// XXX start with 10.4 MHz in FRAM usage and go up to 37.5 once validated
-	SPI_SETFREQUENCY(spi2, 12 * 1000 * 1000);
-	SPI_SETBITS(spi2, 8);
-	SPI_SETMODE(spi2, SPIDEV_MODE3);
-	SPI_SELECT(spi2, SPIDEV_FLASH, false);
-
-	message("[boot] Initialized SPI port 2 (RAMTRON FRAM)\n");
-
-	spi4 = up_spiinitialize(4);
-
-	/* Default SPI4 to 1MHz and de-assert the known chip selects. */
-	SPI_SETFREQUENCY(spi4, 10000000);
+	SPI_SETFREQUENCY(spi4, 12 * 1000 * 1000);
 	SPI_SETBITS(spi4, 8);
 	SPI_SETMODE(spi4, SPIDEV_MODE3);
-	SPI_SELECT(spi4, PX4_SPIDEV_EXT0, false);
-	SPI_SELECT(spi4, PX4_SPIDEV_EXT1, false);
-	SPI_SELECT(spi4, PX4_SPIDEV_EXT2, false);
-	SPI_SELECT(spi4, PX4_SPIDEV_EXT3, false);
+	SPI_SELECT(spi4, SPIDEV_FLASH, false);
 
-	message("[boot] Initialized SPI port 4\n");
+	message("[boot] Initialized SPI port 4 (RAMTRON FRAM)\n");
 
-	#ifdef CONFIG_MMCSD
+#ifdef CONFIG_MMCSD
 	/* First, get an instance of the SDIO interface */
 
 	sdio = sdio_initialize(CONFIG_NSH_MMCSDSLOTNO);
@@ -333,7 +320,7 @@ __EXPORT int nsh_archinitialize(void)
 	sdio_mediachange(sdio, true);
 
 	message("[boot] Initialized SDIO\n");
-	#endif
+#endif
 
 	return OK;
 }
