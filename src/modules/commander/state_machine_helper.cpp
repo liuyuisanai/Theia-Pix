@@ -662,7 +662,7 @@ bool set_nav_state(struct vehicle_status_s *status, const bool data_link_loss_en
 		/* require target position*/
 		if ((!status->condition_target_position_valid)) {
 
-			status->nav_state = NAVIGATION_STATE_AUTO_LOITER;
+			status->nav_state = NAVIGATION_STATE_LOITER;
 		} else {
 			status->nav_state = NAVIGATION_STATE_AUTO_PATH_FOLLOW;
 		}
