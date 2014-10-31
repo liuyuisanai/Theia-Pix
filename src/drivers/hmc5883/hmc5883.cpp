@@ -130,6 +130,18 @@ static const int ERROR = -1;
 # error This requires CONFIG_SCHED_WORKQUEUE.
 #endif
 
+
+static inline const char*
+device_name(int bus)
+{
+#ifdef PX4_I2C_BUS_ONBOARD
+	return (bus==PX4_I2C_BUS_ONBOARD?HMC5883L_DEVICE_PATH_INT:HMC5883L_DEVICE_PATH_EXT);
+#else
+	return HMC5883L_DEVICE_PATH_EXT;
+#endif
+}
+
+
 class HMC5883 : public device::I2C
 {
 public:
@@ -1387,7 +1399,7 @@ start(int bus, enum Rotation rotation)
 	if (bus == -1 || bus == PX4_I2C_BUS_EXPANSION) {
 		if (g_dev_ext != nullptr)
 			errx(0, "already started external");
-		g_dev_ext = new HMC5883(PX4_I2C_BUS_EXPANSION, HMC5883L_DEVICE_PATH_EXT, rotation);
+		g_dev_ext = new HMC5883(PX4_I2C_BUS_EXPANSION, device_name(bus), rotation);
 		if (g_dev_ext != nullptr && OK != g_dev_ext->init()) {
 			delete g_dev_ext;
 			g_dev_ext = nullptr;
@@ -1400,7 +1412,7 @@ start(int bus, enum Rotation rotation)
 	if (bus == -1 || bus == PX4_I2C_BUS_ONBOARD) {
 		if (g_dev_int != nullptr)
 			errx(0, "already started internal");
-		g_dev_int = new HMC5883(PX4_I2C_BUS_ONBOARD, HMC5883L_DEVICE_PATH_INT, rotation);
+		g_dev_int = new HMC5883(PX4_I2C_BUS_ONBOARD, device_name(bus), rotation);
 		if (g_dev_int != nullptr && OK != g_dev_int->init()) {
 
 			/* tear down the failing onboard instance */
@@ -1444,10 +1456,12 @@ start(int bus, enum Rotation rotation)
 	exit(0);
 
 fail:
+#ifdef PX4_I2C_BUS_ONBOARD
 	if (g_dev_int != nullptr && (bus == -1 || bus == PX4_I2C_BUS_ONBOARD)) {
 		delete g_dev_int;
 		g_dev_int = nullptr;
 	}
+#endif
 	if (g_dev_ext != nullptr && (bus == -1 || bus == PX4_I2C_BUS_EXPANSION)) {
 		delete g_dev_ext;
 		g_dev_ext = nullptr;
@@ -1467,7 +1481,7 @@ test(int bus)
 	struct mag_report report;
 	ssize_t sz;
 	int ret;
-	const char *path = (bus==PX4_I2C_BUS_ONBOARD?HMC5883L_DEVICE_PATH_INT:HMC5883L_DEVICE_PATH_EXT);
+	const char *path = device_name(bus);
 
 	int fd = open(path, O_RDONLY);
 
@@ -1568,7 +1582,7 @@ test(int bus)
 int calibrate(int bus)
 {
 	int ret;
-	const char *path = (bus==PX4_I2C_BUS_ONBOARD?HMC5883L_DEVICE_PATH_INT:HMC5883L_DEVICE_PATH_EXT);
+	const char *path = device_name(bus);
 
 	int fd = open(path, O_RDONLY);
 
@@ -1595,7 +1609,7 @@ int calibrate(int bus)
 void
 reset(int bus)
 {
-	const char *path = (bus==PX4_I2C_BUS_ONBOARD?HMC5883L_DEVICE_PATH_INT:HMC5883L_DEVICE_PATH_EXT);
+	const char *path = device_name(bus);
 
 	int fd = open(path, O_RDONLY);
 
@@ -1617,7 +1631,12 @@ reset(int bus)
 void
 info(int bus)
 {
-	HMC5883 *g_dev = (bus == PX4_I2C_BUS_ONBOARD?g_dev_int:g_dev_ext);
+	HMC5883 *g_dev;
+#ifdef PX4_I2C_BUS_ONBOARD
+	g_dev = (bus == PX4_I2C_BUS_ONBOARD?g_dev_int:g_dev_ext);
+#else
+	g_dev = g_dev_ext;
+#endif
 	if (g_dev == nullptr)
 		errx(1, "driver not running");
 
