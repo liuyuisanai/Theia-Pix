@@ -1130,8 +1130,8 @@ int HMC5883::calibrate(struct file *filp, unsigned enable)
 			ret = -EIO;
 			goto out;
 		}
-		float cal[3] = {fabsf(expected_cal[0] / report.x), 
-				fabsf(expected_cal[1] / report.y), 
+		float cal[3] = {fabsf(expected_cal[0] / report.x),
+				fabsf(expected_cal[1] / report.y),
 				fabsf(expected_cal[2] / report.z)};
 
 		if (cal[0] > 0.7f && cal[0] < 1.35f &&
@@ -1155,9 +1155,9 @@ int HMC5883::calibrate(struct file *filp, unsigned enable)
 	}
 
 #if 0
-	warnx("measurement avg: %.6f  %.6f  %.6f", 
-	      (double)sum_excited[0]/good_count, 
-	      (double)sum_excited[1]/good_count, 
+	warnx("measurement avg: %.6f  %.6f  %.6f",
+	      (double)sum_excited[0]/good_count,
+	      (double)sum_excited[1]/good_count,
 	      (double)sum_excited[2]/good_count);
 #endif
 
@@ -1344,7 +1344,7 @@ HMC5883::print_info()
 	printf("poll interval:  %u ticks\n", _measure_ticks);
 	printf("output  (%.2f %.2f %.2f)\n", (double)_last_report.x, (double)_last_report.y, (double)_last_report.z);
 	printf("offsets (%.2f %.2f %.2f)\n", (double)_scale.x_offset, (double)_scale.y_offset, (double)_scale.z_offset);
-	printf("scaling (%.2f %.2f %.2f) 1/range_scale %.2f range_ga %.2f\n", 
+	printf("scaling (%.2f %.2f %.2f) 1/range_scale %.2f range_ga %.2f\n",
 	       (double)_scale.x_scale, (double)_scale.y_scale, (double)_scale.z_scale,
 	       (double)(1.0f/_range_scale), (double)_range_ga);
 	_reports->print_info("report queue");
@@ -1393,7 +1393,7 @@ start(int bus, enum Rotation rotation)
 			g_dev_ext = nullptr;
 		}
 	}
-			
+
 
 #ifdef PX4_I2C_BUS_ONBOARD
 	/* if this failed, attempt onboard sensor */
@@ -1672,7 +1672,7 @@ hmc5883_main(int argc, char *argv[])
 		}
 	}
 
-	const char *verb = argv[optind];	
+	const char *verb = argv[optind];
 
 	/*
 	 * Start/load the driver.
@@ -1682,7 +1682,7 @@ hmc5883_main(int argc, char *argv[])
 		if (calibrate) {
 			if (hmc5883::calibrate(bus) == 0) {
 				errx(0, "calibration successful");
-				
+
 			} else {
 				errx(1, "calibration failed");
 			}
