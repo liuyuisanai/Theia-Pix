@@ -115,7 +115,7 @@ protected:
 
 private:
 	static const hrt_abstime _tickrate = 10000;	/**< 100Hz base rate */
-	
+
 	hrt_call		_call;
 	perf_counter_t		_sample_perf;
 
@@ -201,7 +201,7 @@ ADC::init()
 	rCR1 = 0;
 
 	/* enable the temperature sensor / Vrefint channel if supported*/
-	rCR2 = 
+	rCR2 =
 #ifdef ADC_CR2_TSVREFE
 		/* enable the temperature sensor in CR2 */
 		ADC_CR2_TSVREFE |
@@ -216,7 +216,7 @@ ADC::init()
 	/* configure for a single-channel sequence */
 	rSQR1 = 0;
 	rSQR2 = 0;
-	rSQR3 = 0;	/* will be updated with the channel each tick */ 
+	rSQR3 = 0;	/* will be updated with the channel each tick */
 
 	/* power-cycle the ADC and turn it on */
 	rCR2 &= ~ADC_CR2_ADON;
@@ -416,7 +416,7 @@ adc_main(int argc, char *argv[])
 #endif
 #ifdef CONFIG_ARCH_BOARD_PX4FMU_V2
 		/* XXX this hardcodes the default channel set for PX4FMUv2 - should be configurable */
-		g_adc = new ADC((1 << 2) | (1 << 3) | (1 << 4) | 
+		g_adc = new ADC((1 << 2) | (1 << 3) | (1 << 4) |
 			(1 << 10) | (1 << 11) | (1 << 12) | (1 << 13) | (1 << 14) | (1 << 15));
 #endif
 #ifdef CONFIG_ARCH_BOARD_AEROCORE
