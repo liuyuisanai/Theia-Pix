@@ -180,6 +180,7 @@ private:
 		param_t cam_pitch_max;
         param_t sonar_correction_on;
         param_t sonar_min_dist;
+        param_t sonar_smooth_coef;
         param_t mc_allowed_down_sp;
         
 	}		_params_handles;		/**< handles for interesting parameters */
@@ -201,6 +202,7 @@ private:
 		float cam_pitch_max;
         bool sonar_correction_on;
         float sonar_min_dist;
+        float sonar_smooth_coef;
         float mc_allowed_down_sp;
         
 		math::Vector<3> pos_p;
@@ -472,6 +474,7 @@ MulticopterPositionControl::MulticopterPositionControl() :
 
     _params_handles.sonar_correction_on     = param_find("SENS_SON_ON");
     _params_handles.sonar_min_dist          = param_find("SENS_SON_MIN");
+    _params_handles.sonar_smooth_coef       = param_find("SENS_SON_SMOT");
     _params_handles.mc_allowed_down_sp      = param_find("MPC_ALLOWED_LAND");
 
 	/* fetch initial parameter values */
@@ -577,6 +580,8 @@ MulticopterPositionControl::parameters_update(bool force)
 		_params.vel_ff(2) = v;
         param_get(_params_handles.sonar_min_dist, &v);
         _params.sonar_min_dist = v;
+        param_get(_params_handles.sonar_smooth_coef, &v);
+        _params.sonar_smooth_coef = v;
         param_get(_params_handles.mc_allowed_down_sp, &v);
         _params.mc_allowed_down_sp = v;
 
@@ -1602,37 +1607,43 @@ MulticopterPositionControl::task_main()
 				}
 
 
-				//Ground distance correction
-                float range = MAXIMAL_DISTANCE - _params.sonar_min_dist;
-                // Used when we are above allowed limit
-                float max_vel_z = _params.vel_max(2) * (float)pow(_ground_position_available_drop/range, 2.0);
-                if (_ground_position_invalid) {
+                //Ground distance correction
+				if (_ground_position_invalid) {
 						float drop = _pos(2) - _pos_sp(2) ;
 						if (drop >= 0) {
-                            //float min_vel_z = - _params.vel_max(2) * (float)pow(_ground_position_available_drop/_params.sonar_min_dist, 2.0);
-                            printf("[WARN] vel(2) %0.3f  sp_vel(2) %.03f\n", (double)_vel(2), (double)_vel_sp(2));
-							//_vel_sp(2) = - (2 * drop * _params.vel_max(2) / _params.sonar_min_dist);
-                            _vel_sp(2) = - max_vel_z;
+                            float range = _params.sonar_min_dist / _params.sonar_smooth_coef;
+                            float max_vel_z = - _params.vel_max(2) * (float)pow((_params.sonar_min_dist - _local_pos.dist_bottom)/range, 2.0);
+                            printf("[WARN] max_vel %.3f smooth: %.3f min-dist %.3f thing %.3f\n", 
+                                    (double)max_vel_z, 
+                                    (double)_params.sonar_smooth_coef, 
+                                    (double)_params.sonar_min_dist,
+                                    (double)(_params.sonar_min_dist - _local_pos.dist_bottom)); 
+                            _vel_sp(2) = max_vel_z;
 							_sp_move_rate(2)= 0.0f;
 						}
 				}
 				else if (_ground_setpoint_corrected && (_vel(2) > _params.vel_max(2) || _vel_sp(2) > _params.vel_max(2))) {
 					//_vel_sp(2) = - _params.vel_max(2);
-                    _vel_sp(2) = - _params.vel_max(2);
+                    _vel_sp(2) = - 2 * _params.vel_max(2);
                     printf("[NO IDEA] vel(2) %0.3f  sp_vel(2) %.03f\n", (double)_vel(2), (double)_vel_sp(2));
 					_sp_move_rate(2)= 0.0f;
 				}
 				else if (_local_pos.dist_bottom_valid && _params.sonar_correction_on){
 					if (_ground_position_available_drop > 0.0f && _vel_sp(2) > 0){
-						//limit down speed
+                    float range = MAXIMAL_DISTANCE - _params.sonar_min_dist;
+                    // Used when we are above allowed limit
+                    float max_vel_z = _params.vel_max(2) * (float)pow(_ground_position_available_drop/range, 2.0);
+                    
+                        //limit down speed
 						if (_vel_sp(2) > max_vel_z) {
 							_vel_sp(2) = max_vel_z;
-                            printf("[LIMIT] vel(2) %0.3f  sp_vel(2) %.03f\n", (double)_vel(2), (double)_vel_sp(2));
+                            //printf("[LIMIT] vel(2) %0.3f  sp_vel(2) %.03f\n max_vel_z %.3f", 
+                            //        (double)_vel(2),
+                            //        (double)_vel_sp(2),
+                            //        (double)max_vel_z);
 							
-							//mavlink_log_info(_mavlink_fd, " limiting downsp - vel_Sp: %.2f", (double)_vel_sp(2));
 						}
 						else {
-							mavlink_log_info(_mavlink_fd, "other_vel_Sp: %.2f", (double)_vel_sp(2));	
 						}
 						_sp_move_rate(2)= 0.0f;
 

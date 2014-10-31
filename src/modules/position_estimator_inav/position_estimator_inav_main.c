@@ -350,6 +350,18 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 
 	struct position_estimator_inav_params params;
 	struct position_estimator_inav_param_handles pos_inav_param_handles;
+    //struct {
+    //    param_t sonar_error;
+    //    param_t sonar_filtering;
+    //}   _param_handles;
+
+    //_param_handles.sonar_error      = param_find("SENS_SONAR_ERR");
+    //_param_handles.sonar_filtering  = param_find("SENS_SONAR_FILT");
+    //struct {
+    //    float sonar_err;
+    //    float sonar_filt;
+    //}   _params;
+    
 	/* initialize parameter handles */
 	parameters_init(&pos_inav_param_handles);
 
@@ -358,6 +370,11 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 	orb_copy(ORB_ID(parameter_update), parameter_update_sub, &param_update); /* read from param topic to clear updated flag */
 	/* first parameters update */
 	parameters_update(&pos_inav_param_handles, &params);
+    //float v;
+    //param_get(_param_handles.sonar_error, &v);
+    //_params.sonar_err = v;
+    //param_get(_param_handles.sonar_filtering, &v);
+    //_params.sonar_filt = v;
 
 	struct pollfd fds_init[1] = {
 		{ .fd = sensor_combined_sub, .events = POLLIN },
@@ -503,44 +520,72 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                                     angle_correction = 0.95; //cos(15) <- maximal correction if we are flying with pi/4 angle
                                     range_finder.distance *= angle_correction;
                                 }
-                            	//mavlink_log_info(mavlink_fd, "[inav] RAW SONAR alt = % 9.6f", (double)range_finder.distance);
                                 sonar_time = t;
-                                
-                                /* hack by ilya */
+                                /* hack by max */
 
-                                
-                                if (range_finder.distance != sonar_prev){
-                                	/* spike detection and filter */
-                                	
+                                if (fabsf(range_finder.distance - sonar_prev) < params.sonar_err) {
+                                    // Accepted difference - enabling LPF and stuff
+                                    
+                                    if (fabsf(corr_sonar_filtered - range_finder.distance) > 2 * params.sonar_err)
+                                        mavlink_log_info(mavlink_fd, "New ground: val%.3f corr: %.3f", (double)range_finder.distance, (double)corr_sonar_filtered);
                                     corr_sonar_filtered += (range_finder.distance - corr_sonar_filtered) * params.sonar_filt;
-
-                                    /* Check if spike was detected*/
-                                    /* Params could be configured from qgroundcontroll */
-                                    bool spike_detected;
-                                    spike_detected = fabsf(range_finder.distance - corr_sonar_filtered) > params.sonar_err ? true : false;
-
-                                	if (spike_detected) {
-                                		sonar_valid = false;
-                                		mavlink_log_info(mavlink_fd, "spike detected act: %.3f corr: %.3f", (double)range_finder.distance, (double)corr_sonar_filtered);
-                                	}
-                                	else {
-                                	 	dist_bottom = corr_sonar_filtered;
-                                	 	sonar_valid_time = t;
-	                                 	sonar_valid = true;
-                                	}
-                                	
-                                	/* spike detection and filter end */
-
-                                	sonar_prev = range_finder.distance; //used only to check whether the mesured distance has changed
+                                    // sonar_filt could have high tolerance for row value now
+                                    sonar_valid = true;
+                                    sonar_valid_time = t;
+                                    dist_bottom = corr_sonar_filtered;
+                                    sonar_prev = range_finder.distance;
                                 }
-                                else {	                                
-	                                dist_bottom = range_finder.distance;	
-	                                sonar_valid_time = t;
-	                                sonar_valid = true;
+                                else {
+                                    // This difference in not accepted, considering as a spike for now
+                                    if (fabsf(corr_sonar_filtered - range_finder.distance) < params.sonar_err) {
+                                        // No, this is not spike, the spike was last time!
+                                        corr_sonar_filtered += (range_finder.distance - corr_sonar_filtered) * params.sonar_filt;
+                                        dist_bottom = corr_sonar_filtered;
+                                        sonar_valid = true;
+                                        sonar_valid_time = t;
+                                    }
+                                    else {
+                                        // This is spike! Busted!
+                                        // BUT if it is the new ground level it will pass the IF on the next read
+                                        sonar_valid = true;
+                                        dist_bottom = corr_sonar_filtered;
+                                        mavlink_log_info(mavlink_fd, "spike detected act: %.3f corr: %.3f", (double)range_finder.distance, (double)corr_sonar_filtered);
+                                    }
+                                    sonar_prev = range_finder.distance;
                                 }
+                                    
+                                /* end of hack by max */
                                 
                                 
-                                /* end hack */
+                                //if (fabsf(range_finder.distance - sonar_prev) > params.sonar_err){
+                                //	/* spike detection and filter */
+                                //	
+                                //    corr_sonar_filtered += (range_finder.distance - corr_sonar_filtered) * params.sonar_filt;
+
+                                //    /* Check if spike was detected*/
+                                //    /* Params could be configured from qgroundcontroll */
+                                //    bool spike_detected;
+                                //    spike_detected = fabsf(range_finder.distance - corr_sonar_filtered) > params.sonar_err ? true : false;
+
+                                //	if (spike_detected) {
+                                //		sonar_valid = false;
+                                //		mavlink_log_info(mavlink_fd, "spike detected act: %.3f corr: %.3f", (double)range_finder.distance, (double)corr_sonar_filtered);
+                                //	}
+                                //	else {
+                                //	 	dist_bottom = corr_sonar_filtered;
+                                //	 	sonar_valid_time = t;
+	                            //     	sonar_valid = true;
+                                //	}
+                                //	
+
+                                //	sonar_prev = range_finder.distance; //used only to check whether the mesured distance has changed
+                                //}
+                                //else {	                                
+	                            //    dist_bottom = range_finder.distance;	
+	                            //    sonar_valid_time = t;
+	                            //    sonar_valid = true;
+                                //}
+                                
 
                                 // corr_sonar = range_finder.distance + surface_offset + z_est[0];
                                 // corr_sonar_filtered += (corr_sonar - corr_sonar_filtered) * params.sonar_filt;
