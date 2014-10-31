@@ -776,7 +776,7 @@ int sdlog2_lite_thread_main(int argc, char *argv[])
 
 	/* warning! using union here to save memory, elements should be used separately! */
 	union {
-		struct vehicle_command_s cmd;
+		struct airdog_path_log_s cmd;
 		struct sensor_combined_s sensor;
 		struct vehicle_attitude_s att;
 		struct vehicle_attitude_setpoint_s att_sp;
