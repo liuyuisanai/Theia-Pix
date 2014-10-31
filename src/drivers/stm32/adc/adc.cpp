@@ -326,11 +326,20 @@ ADC::update_system_power(void)
 
 	// note that the valid pins are active low
 	system_power.brick_valid   = !stm32_gpioread(GPIO_VDD_BRICK_VALID);
+#ifdef CONFIG_ARCH_BOARD_PX4FMU_V2
 	system_power.servo_valid   = !stm32_gpioread(GPIO_VDD_SERVO_VALID);
+#else
+	system_power.servo_valid   = true;
+#endif
 
+#ifdef CONFIG_ARCH_BOARD_PX4FMU_V2
 	// OC pins are active low
 	system_power.periph_5V_OC  = !stm32_gpioread(GPIO_VDD_5V_PERIPH_OC);
 	system_power.hipower_5V_OC = !stm32_gpioread(GPIO_VDD_5V_HIPOWER_OC);
+#else
+	system_power.periph_5V_OC  = false;
+	system_power.hipower_5V_OC = false;
+#endif
 
 	/* lazily publish */
 	if (_to_system_power > 0) {
@@ -424,6 +433,12 @@ adc_main(int argc, char *argv[])
 #elif CONFIG_ARCH_BOARD_AEROCORE
 		/* XXX this hardcodes the default channel set for AeroCore - should be configurable */
 		g_adc = new ADC((1 << 10) | (1 << 11) | (1 << 12) | (1 << 13));
+#elif CONFIG_ARCH_BOARD_AIRDOG_FMU
+		/* XXX this hardcodes the default channel set for AeroCore - should be configurable */
+		g_adc = new ADC((1 << ADC_BATTERY_VOLTAGE_CHANNEL)
+				| (1 << ADC_BATTERY_CURRENT_CHANNEL)
+				| (1 << ADC_SENSORS_VOLTAGE_CHANNEL)
+		);
 #else
 # error Unsupported board.
 #endif

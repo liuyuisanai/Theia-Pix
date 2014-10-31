@@ -195,7 +195,7 @@ const PX4FMU::GPIOConfig PX4FMU::_gpio_tab[] = {
 	{GPIO_GPIO6_INPUT, GPIO_GPIO6_OUTPUT, GPIO_CAN2_TX_2},
 	{GPIO_GPIO7_INPUT, GPIO_GPIO7_OUTPUT, GPIO_CAN2_RX_2},
 #endif
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2) or defined(CONFIG_ARCH_BOARD_AIRDOG_FMU)
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
 	{GPIO_GPIO0_INPUT,       GPIO_GPIO0_OUTPUT,       0},
 	{GPIO_GPIO1_INPUT,       GPIO_GPIO1_OUTPUT,       0},
 	{GPIO_GPIO2_INPUT,       GPIO_GPIO2_OUTPUT,       0},
@@ -209,6 +209,17 @@ const PX4FMU::GPIOConfig PX4FMU::_gpio_tab[] = {
 	{GPIO_VDD_SERVO_VALID,   0,                       0},
 	{GPIO_VDD_5V_HIPOWER_OC, 0,                       0},
 	{GPIO_VDD_5V_PERIPH_OC,  0,                       0},
+#endif
+#if defined(CONFIG_ARCH_BOARD_AIRDOG_FMU)
+	{GPIO_GPIO0_INPUT,       GPIO_GPIO0_OUTPUT,       0},
+	{GPIO_GPIO1_INPUT,       GPIO_GPIO1_OUTPUT,       0},
+	{GPIO_GPIO2_INPUT,       GPIO_GPIO2_OUTPUT,       0},
+	{GPIO_GPIO3_INPUT,       GPIO_GPIO3_OUTPUT,       0},
+	{GPIO_GPIO4_INPUT,       GPIO_GPIO4_OUTPUT,       0},
+	{GPIO_GPIO5_INPUT,       GPIO_GPIO5_OUTPUT,       0},
+
+	{0,                      GPIO_VDD_3V3_SENSORS_EN, 0},
+	{GPIO_VDD_BRICK_VALID,   0,                       0},
 #endif
 #if defined(CONFIG_ARCH_BOARD_AEROCORE)
 	/* AeroCore breaks out User GPIOs on J11 */
@@ -1295,13 +1306,16 @@ PX4FMU::sensor_reset(int ms)
 	stm32_configgpio(GPIO_SPI_CS_ACCEL_MAG_OFF);
 	stm32_configgpio(GPIO_SPI_CS_BARO_OFF);
 	stm32_configgpio(GPIO_SPI_CS_MPU_OFF);
-	stm32_configgpio(GPIO_SPI_CS_xMAG_OFF);
 
 	stm32_gpiowrite(GPIO_SPI_CS_GYRO_OFF, 0);
 	stm32_gpiowrite(GPIO_SPI_CS_ACCEL_MAG_OFF, 0);
 	stm32_gpiowrite(GPIO_SPI_CS_BARO_OFF, 0);
 	stm32_gpiowrite(GPIO_SPI_CS_MPU_OFF, 0);
+
+#ifdef GPIO_SPI_CS_xMAG_OFF
+	stm32_configgpio(GPIO_SPI_CS_xMAG_OFF);
 	stm32_gpiowrite(GPIO_SPI_CS_xMAG_OFF, 0);
+#endif
 
 	stm32_configgpio(GPIO_SPI1_SCK_OFF);
 	stm32_configgpio(GPIO_SPI1_MISO_OFF);
@@ -1315,15 +1329,14 @@ PX4FMU::sensor_reset(int ms)
 	stm32_configgpio(GPIO_MAG_DRDY_OFF);
 	stm32_configgpio(GPIO_ACCEL_DRDY_OFF);
 	stm32_configgpio(GPIO_EXTI_MPU_DRDY_OFF);
-#if GPIO_EXTI_xMAG_DRDY_OFF
-	stm32_configgpio(GPIO_EXTI_xMAG_DRDY_OFF);
-#endif
 
 	stm32_gpiowrite(GPIO_GYRO_DRDY_OFF, 0);
 	stm32_gpiowrite(GPIO_MAG_DRDY_OFF, 0);
 	stm32_gpiowrite(GPIO_ACCEL_DRDY_OFF, 0);
 	stm32_gpiowrite(GPIO_EXTI_MPU_DRDY_OFF, 0);
+
 #if GPIO_EXTI_xMAG_DRDY_OFF
+	stm32_configgpio(GPIO_EXTI_xMAG_DRDY_OFF);
 	stm32_gpiowrite(GPIO_EXTI_xMAG_DRDY_OFF, 0);
 #endif
 
@@ -1349,7 +1362,6 @@ PX4FMU::sensor_reset(int ms)
 	stm32_configgpio(GPIO_SPI_CS_ACCEL_MAG);
 	stm32_configgpio(GPIO_SPI_CS_BARO);
 	stm32_configgpio(GPIO_SPI_CS_MPU);
-	stm32_configgpio(GPIO_SPI_CS_xMAG);
 
 	/* De-activate all peripherals,
 	 * required for some peripheral
@@ -1359,7 +1371,11 @@ PX4FMU::sensor_reset(int ms)
 	stm32_gpiowrite(GPIO_SPI_CS_ACCEL_MAG, 1);
 	stm32_gpiowrite(GPIO_SPI_CS_BARO, 1);
 	stm32_gpiowrite(GPIO_SPI_CS_MPU, 1);
+
+#ifdef GPIO_SPI_CS_xMAG
+	stm32_configgpio(GPIO_SPI_CS_xMAG);
 	stm32_gpiowrite(GPIO_SPI_CS_xMAG, 1);
+#endif
 
 	// // XXX bring up the EXTI pins again
 	// stm32_configgpio(GPIO_GYRO_DRDY);

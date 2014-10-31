@@ -209,19 +209,13 @@ static struct sdio_dev_s *sdio;
 
 __EXPORT int nsh_archinitialize(void)
 {
-
-	/* configure ADC pins */
-	stm32_configgpio(GPIO_ADC1_IN11);	/* BATT_VOLTAGE_SENS */
-	stm32_configgpio(GPIO_ADC1_IN13);	/* BATT_CURRENT_SENS */
-	stm32_configgpio(GPIO_ADC1_IN4);	/* VDD_5V_SENS */
-
 	/* configure power supply control/sense pins */
-	stm32_configgpio(GPIO_VDD_5V_PERIPH_EN);
+	stm32_configgpio(GPIO_ADC_BATT_CURRENT);
+	stm32_configgpio(GPIO_ADC_BATT_VOLTAGE);
+	stm32_configgpio(GPIO_ADC_SENS_VOLTAGE);
+
 	stm32_configgpio(GPIO_VDD_3V3_SENSORS_EN);
 	stm32_configgpio(GPIO_VDD_BRICK_VALID);
-	stm32_configgpio(GPIO_VDD_SERVO_VALID);
-	stm32_configgpio(GPIO_VDD_5V_HIPOWER_OC);
-	stm32_configgpio(GPIO_VDD_5V_PERIPH_OC);
 
 	/* configure the high-resolution time/callout interface */
 	hrt_init();
