@@ -460,7 +460,7 @@ bool handle_command(struct vehicle_status_s *status_local, const struct safety_s
 
 				} else if (custom_main_mode == PX4_CUSTOM_MAIN_MODE_AUTO) {
 					//* AUTO */
-					main_ret = main_state_transition(status_local, MAIN_STATE_AUTO_LOITER);
+					main_ret = main_state_transition(status_local, MAIN_STATE_LOITER);
 
 				} else if (custom_main_mode == PX4_CUSTOM_MAIN_MODE_ACRO) {
 					/* ACRO */
@@ -540,7 +540,7 @@ bool handle_command(struct vehicle_status_s *status_local, const struct safety_s
 			unsigned int mav_goto = (cmd->param1 + 0.5f);
 
 			if (mav_goto == 0) {	// MAV_GOTO_DO_HOLD
-				status_local->nav_state = NAVIGATION_STATE_AUTO_LOITER;
+				status_local->nav_state = NAVIGATION_STATE_LOITER;
 				mavlink_log_critical(mavlink_fd, "Pause mission cmd");
 				cmd_result = VEHICLE_CMD_RESULT_ACCEPTED;
 
@@ -607,10 +607,10 @@ bool handle_command(struct vehicle_status_s *status_local, const struct safety_s
 
 			/*
 			if (cmd->param1 == REMOTE_CMD_PLAY_PAUSE) {
-				if(status_local->main_state == MAIN_STATE_AUTO_LOITER) {
-					main_ret = main_state_transition(status_local, MAIN_STATE_AUTO_ABS_FOLLOW);
+				if(status_local->main_state == MAIN_STATE_LOITER) {
+					main_ret = main_state_transition(status_local, MAIN_STATE_ABS_FOLLOW);
 				} else {
-					main_ret = main_state_transition(status_local, MAIN_STATE_AUTO_LOITER);
+					main_ret = main_state_transition(status_local, MAIN_STATE_LOITER);
 				}
 			}
 			*/
@@ -766,8 +766,8 @@ int commander_thread_main(int argc, char *argv[])
 	main_states_str[MAIN_STATE_ALTCTL]			= "ALTCTL";
 	main_states_str[MAIN_STATE_POSCTL]			= "POSCTL";
 	main_states_str[MAIN_STATE_AUTO_MISSION]		= "AUTO_MISSION";
-	main_states_str[MAIN_STATE_AUTO_LOITER]			= "AUTO_LOITER";
-	main_states_str[MAIN_STATE_AUTO_RTL]			= "AUTO_RTL";
+	main_states_str[MAIN_STATE_LOITER]			= "LOITER";
+	main_states_str[MAIN_STATE_RTL]			= "RTL";
 	main_states_str[MAIN_STATE_ACRO]			= "ACRO";
 	main_states_str[MAIN_STATE_OFFBOARD]			= "OFFBOARD";
 	main_states_str[MAIN_STATE_FOLLOW]			= "FOLLOW";
@@ -786,10 +786,10 @@ int commander_thread_main(int argc, char *argv[])
 	nav_states_str[NAVIGATION_STATE_ALTCTL]			= "ALTCTL";
 	nav_states_str[NAVIGATION_STATE_POSCTL]			= "POSCTL";
 	nav_states_str[NAVIGATION_STATE_AUTO_MISSION]		= "AUTO_MISSION";
-	nav_states_str[NAVIGATION_STATE_AUTO_LOITER]		= "AUTO_LOITER";
-	nav_states_str[NAVIGATION_STATE_AUTO_RTL]		= "AUTO_RTL";
+	nav_states_str[NAVIGATION_STATE_LOITER]		= "AUTO_LOITER";
+	nav_states_str[NAVIGATION_STATE_RTL]		= "AUTO_RTL";
 	nav_states_str[NAVIGATION_STATE_AUTO_RTGS]		= "AUTO_RTGS";
-	nav_states_str[NAVIGATION_STATE_AUTO_ABS_FOLLOW]    = "AUTO_ABS_FOLLOW";
+	nav_states_str[NAVIGATION_STATE_ABS_FOLLOW]    = "AUTO_ABS_FOLLOW";
 	nav_states_str[NAVIGATION_STATE_ACRO]			= "ACRO";
 	nav_states_str[NAVIGATION_STATE_LAND]			= "LAND";
 	nav_states_str[NAVIGATION_STATE_DESCEND]		= "DESCEND";
@@ -1454,7 +1454,7 @@ int commander_thread_main(int argc, char *argv[])
 			status.battery_warning = VEHICLE_BATTERY_WARNING_LOW;
 
 			if (! control_mode.flag_control_manual_enabled) {
-				if (main_state_transition(&status, MAIN_STATE_AUTO_RTL)) {
+				if (main_state_transition(&status, MAIN_STATE_RTL)) {
 					status_changed = true;
 				}
 			}
@@ -2178,7 +2178,7 @@ set_main_state_rc(struct vehicle_status_s *status_local, struct manual_control_s
 
             mode_switch_state = SWITCH_POS_ON;
 
-            res = main_state_transition(status_local, MAIN_STATE_AUTO_LOITER);
+            res = main_state_transition(status_local, MAIN_STATE_LOITER);
 
             if (res != TRANSITION_DENIED) {
                 break;  // changed successfully or already in this state
@@ -2193,7 +2193,7 @@ set_main_state_rc(struct vehicle_status_s *status_local, struct manual_control_s
 
 		/*
 		if (sp_man->return_switch == SWITCH_POS_ON) {
-			res = main_state_transition(status_local, MAIN_STATE_AUTO_RTL);
+			res = main_state_transition(status_local, MAIN_STATE_RTL);
 
 			if (res != TRANSITION_DENIED) {
 				break;	// changed successfully or already in this state
@@ -2202,14 +2202,14 @@ set_main_state_rc(struct vehicle_status_s *status_local, struct manual_control_s
             print_reject_mode(status_local, "AUTO_RTL");
 
             // fallback to LOITER if home position not set
-            res = main_state_transition(status_local, MAIN_STATE_AUTO_LOITER);
+            res = main_state_transition(status_local, MAIN_STATE_LOITER);
 
             if (res != TRANSITION_DENIED) {
                 break;  // changed successfully or already in this state
             }
 
 		} else if (sp_man->loiter_switch == SWITCH_POS_ON) {
-			res = main_state_transition(status_local, MAIN_STATE_AUTO_LOITER);
+			res = main_state_transition(status_local, MAIN_STATE_LOITER);
 
 			if (res != TRANSITION_DENIED) {
 				break;	// changed successfully or already in this state
@@ -2227,7 +2227,7 @@ set_main_state_rc(struct vehicle_status_s *status_local, struct manual_control_s
             print_reject_mode(status_local, "AUTO_MISSION");
 
             // fallback to LOITER if home position not set
-            res = main_state_transition(status_local, MAIN_STATE_AUTO_LOITER);
+            res = main_state_transition(status_local, MAIN_STATE_LOITER);
 
             if (res != TRANSITION_DENIED) {
                 break;  // changed successfully or already in this state
@@ -2394,7 +2394,7 @@ set_control_mode()
 		break;
 
 	case NAVIGATION_STATE_AUTO_MISSION:
-	case NAVIGATION_STATE_AUTO_LOITER:
+	case NAVIGATION_STATE_LOITER:
 		control_mode.flag_control_manual_enabled = false;
 		control_mode.flag_control_auto_enabled = true;
 		control_mode.flag_control_rates_enabled = true;
@@ -2405,7 +2405,7 @@ set_control_mode()
 		control_mode.flag_control_velocity_enabled = true;
 		control_mode.flag_control_termination_enabled = false;
 		control_mode.flag_control_point_to_target = false;
-	case NAVIGATION_STATE_AUTO_RTL:
+	case NAVIGATION_STATE_RTL:
 	case NAVIGATION_STATE_AUTO_RTGS:
 	case NAVIGATION_STATE_AUTO_LANDENGFAIL:
 		control_mode.flag_control_manual_enabled = false;
@@ -2431,7 +2431,7 @@ set_control_mode()
 		control_mode.flag_control_termination_enabled = false;
 		break;
 
-	case NAVIGATION_STATE_AUTO_ABS_FOLLOW:
+	case NAVIGATION_STATE_ABS_FOLLOW:
 		control_mode.flag_control_manual_enabled = false;
 		control_mode.flag_control_auto_enabled = true;
 		control_mode.flag_control_rates_enabled = true;

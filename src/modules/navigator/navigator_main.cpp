@@ -454,7 +454,7 @@ Navigator::task_main()
 			case NAVIGATION_STATE_AUTO_MISSION:
 				_navigation_mode = &_mission;
 				break;
-			case NAVIGATION_STATE_AUTO_LOITER:
+			case NAVIGATION_STATE_LOITER:
 				_navigation_mode = &_loiter;
 				break;
 			case NAVIGATION_STATE_AUTO_RCRECOVER:
@@ -464,7 +464,7 @@ Navigator::task_main()
 					_navigation_mode = &_rtl;
 				}
 				break;
-			case NAVIGATION_STATE_AUTO_RTL:
+			case NAVIGATION_STATE_RTL:
 					_navigation_mode = &_rtl;
 				break;
 			case NAVIGATION_STATE_AUTO_RTGS:
@@ -479,8 +479,8 @@ Navigator::task_main()
 			case NAVIGATION_STATE_AUTO_LANDENGFAIL:
 				_navigation_mode = &_engineFailure;
 				break;
-			case NAVIGATION_STATE_AUTO_ABS_FOLLOW:
-				_navigation_mode = &_abs_follow; /* TODO: change this to something else */
+			case NAVIGATION_STATE_ABS_FOLLOW:
+				_navigation_mode = &_abs_follow; 
 				break;
 			case NAVIGATION_STATE_AUTO_LANDGPSFAIL:
 				_navigation_mode = &_gpsFailure;

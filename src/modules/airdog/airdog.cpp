@@ -505,18 +505,21 @@ void cAirdog::display_drone_state() {
 	if (!drone_active) {
 		pi2c_disp_ctrl->set_symbols(SYMBOL_EMPTY, SYMBOL_EMPTY, SYMBOL_EMPTY);
 	} else {
-		switch(airdog_status.sub_mode) {
-			case PX4_CUSTOM_SUB_MODE_AUTO_TAKEOFF:
-				pi2c_disp_ctrl->set_symbols(SYMBOL_U, SYMBOL_P, SYMBOL_EMPTY);
-				break;
-			case PX4_CUSTOM_SUB_MODE_AUTO_LOITER:
+		switch(airdog_status.main_mode) {
+			case PX4_CUSTOM_MAIN_MODE_LOITER:
 				pi2c_disp_ctrl->set_symbols(SYMBOL_L, SYMBOL_0, SYMBOL_1);
 				break;
-			// case PX4_CUSTOM_SUB_MODE_AUTO_AFOLLOW:
-			// 	pi2c_disp_ctrl->set_symbols(SYMBOL_F, SYMBOL_0, SYMBOL_L);
-			// 	break;
-			case PX4_CUSTOM_SUB_MODE_AUTO_LAND:
+            case PX4_CUSTOM_MAIN_MODE_ABS_FOLLOW:
+			 	pi2c_disp_ctrl->set_symbols(SYMBOL_A, SYMBOL_8, SYMBOL_5);
+			 	break;
+			case PX4_CUSTOM_MAIN_MODE_FOLLOW:
+			 	pi2c_disp_ctrl->set_symbols(SYMBOL_F, SYMBOL_0, SYMBOL_L);
+			 	break;
+			case PX4_CUSTOM_MAIN_MODE_RTL:
 				pi2c_disp_ctrl->set_symbols(SYMBOL_L, SYMBOL_A, SYMBOL_EMPTY);
+				break;
+            case PX4_CUSTOM_MAIN_MODE_MANUAL:
+				pi2c_disp_ctrl->set_symbols(SYMBOL_H, SYMBOL_H, SYMBOL_H);
 				break;
 			default:
 				pi2c_disp_ctrl->set_symbols(SYMBOL_0, SYMBOL_F, SYMBOL_F);

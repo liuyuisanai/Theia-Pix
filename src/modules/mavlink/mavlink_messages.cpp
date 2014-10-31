@@ -161,20 +161,18 @@ void get_mavlink_mode_state(struct vehicle_status_s *status, struct position_set
 			custom_mode.sub_mode = PX4_CUSTOM_SUB_MODE_AUTO_MISSION;
 			break;
 
-		case NAVIGATION_STATE_AUTO_LOITER:
+		case NAVIGATION_STATE_LOITER:
 			*mavlink_base_mode |= MAV_MODE_FLAG_AUTO_ENABLED
 			                      | MAV_MODE_FLAG_STABILIZE_ENABLED
 					      | MAV_MODE_FLAG_GUIDED_ENABLED;
-			custom_mode.main_mode = PX4_CUSTOM_MAIN_MODE_AUTO;
-			custom_mode.sub_mode = PX4_CUSTOM_SUB_MODE_AUTO_LOITER;
+			custom_mode.main_mode = PX4_CUSTOM_MAIN_MODE_LOITER;
 			break;
 
-		case NAVIGATION_STATE_AUTO_RTL:
+		case NAVIGATION_STATE_RTL:
 			*mavlink_base_mode |= MAV_MODE_FLAG_AUTO_ENABLED
 			                      | MAV_MODE_FLAG_STABILIZE_ENABLED
 					      | MAV_MODE_FLAG_GUIDED_ENABLED;
-			custom_mode.main_mode = PX4_CUSTOM_MAIN_MODE_AUTO;
-			custom_mode.sub_mode = PX4_CUSTOM_SUB_MODE_AUTO_RTL;
+			custom_mode.main_mode = PX4_CUSTOM_MAIN_MODE_RTL;
 			break;
 
 		case NAVIGATION_STATE_LAND:
@@ -195,12 +193,11 @@ void get_mavlink_mode_state(struct vehicle_status_s *status, struct position_set
 			custom_mode.sub_mode = PX4_CUSTOM_SUB_MODE_AUTO_RTGS;
 			break;
 
-		case NAVIGATION_STATE_AUTO_ABS_FOLLOW:
+		case NAVIGATION_STATE_ABS_FOLLOW:
 			*mavlink_base_mode |= MAV_MODE_FLAG_AUTO_ENABLED
 			                      | MAV_MODE_FLAG_STABILIZE_ENABLED
 					      | MAV_MODE_FLAG_GUIDED_ENABLED;
-			custom_mode.main_mode = PX4_CUSTOM_MAIN_MODE_AUTO;
-			custom_mode.sub_mode = PX4_CUSTOM_SUB_MODE_AUTO_ABS_FOLLOW;
+			custom_mode.main_mode = PX4_CUSTOM_MAIN_MODE_ABS_FOLLOW;
 			break;
 
 		case NAVIGATION_STATE_TERMINATION:
