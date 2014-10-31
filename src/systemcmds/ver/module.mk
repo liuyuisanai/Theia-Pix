@@ -36,15 +36,15 @@
 # can be also included and used in own code via "ver.h"
 #
 
-REBUILD_TAG		= $(MODULE_WORK_DIR)/rebuild_tag.c
+REBUILD_VER		= $(MODULE_WORK_DIR)/rebuild_ver.c
 
 MODULE_COMMAND	 	= ver
-SRCS	 		= ver.c $(REBUILD_TAG)
+SRCS	 		= $(REBUILD_VER)
 
 MODULE_STACKSIZE 	= 1024
 
 MAXOPTIMIZATION	 	= -Os
 
-.PHONY: $(REBUILD_TAG)
-$(REBUILD_TAG):
-	touch $@
+.PHONY: $(REBUILD_VER)
+$(REBUILD_VER): ver.c
+	cp -f $^ $@

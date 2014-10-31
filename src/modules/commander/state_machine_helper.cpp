@@ -296,7 +296,7 @@ main_state_transition(struct vehicle_status_s *status, main_state_t new_main_sta
 		}
 		break;
 
-	case MAIN_STATE_AUTO_LOITER:
+	case MAIN_STATE_LOITER:
 		/* need global position estimate */
 		if (status->condition_global_position_valid) {
 			ret = TRANSITION_CHANGED;
@@ -304,14 +304,14 @@ main_state_transition(struct vehicle_status_s *status, main_state_t new_main_sta
 		break;
 
 	case MAIN_STATE_AUTO_MISSION:
-	case MAIN_STATE_AUTO_RTL:
+	case MAIN_STATE_RTL:
 		/* need global position and home position */
 		if (status->condition_global_position_valid && status->condition_home_position_valid) {
 			ret = TRANSITION_CHANGED;
 		}
 		break;
 
-	case MAIN_STATE_AUTO_ABS_FOLLOW:
+	case MAIN_STATE_ABS_FOLLOW:
 		/* need global position estimate */
 		if (status->condition_global_position_valid && status->condition_target_position_valid) {
 			ret = TRANSITION_CHANGED;
@@ -584,7 +584,7 @@ bool set_nav_state(struct vehicle_status_s *status, const bool data_link_loss_en
 		}
 		break;
 
-	case MAIN_STATE_AUTO_LOITER:
+	case MAIN_STATE_LOITER:
 		/* go into failsafe on a engine failure */
 		if (status->engine_failure) {
 			status->nav_state = NAVIGATION_STATE_AUTO_LANDENGFAIL;
@@ -620,14 +620,14 @@ bool set_nav_state(struct vehicle_status_s *status, const bool data_link_loss_en
 		} else if (status->rc_signal_lost) {
 
 			/* this mode is ok, we don't need RC for loitering */
-			status->nav_state = NAVIGATION_STATE_AUTO_LOITER;
+			status->nav_state = NAVIGATION_STATE_LOITER;
 		} else {
 			/* everything is perfect */
-			status->nav_state = NAVIGATION_STATE_AUTO_LOITER;
+			status->nav_state = NAVIGATION_STATE_LOITER;
 		}
 		break;
 
-	case MAIN_STATE_AUTO_RTL:
+	case MAIN_STATE_RTL:
 		/* require global position and home, also go into failsafe on an engine failure */
 
 		if (status->engine_failure) {
@@ -644,17 +644,17 @@ bool set_nav_state(struct vehicle_status_s *status, const bool data_link_loss_en
 				status->nav_state = NAVIGATION_STATE_TERMINATION;
 			}
 		} else {
-			status->nav_state = NAVIGATION_STATE_AUTO_RTL;
+			status->nav_state = NAVIGATION_STATE_RTL;
 		}
 		break;
 		
-	case MAIN_STATE_AUTO_ABS_FOLLOW:
+	case MAIN_STATE_ABS_FOLLOW:
 		/* require target position*/
 		if ((!status->condition_target_position_valid)) {
 
-			status->nav_state = NAVIGATION_STATE_AUTO_LOITER;
+			status->nav_state = NAVIGATION_STATE_LOITER;
 		} else {
-			status->nav_state = NAVIGATION_STATE_AUTO_ABS_FOLLOW;
+			status->nav_state = NAVIGATION_STATE_ABS_FOLLOW;
 		}
 		break;
 

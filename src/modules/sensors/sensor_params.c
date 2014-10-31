@@ -45,6 +45,29 @@
 #include <systemlib/param/param.h>
 
 /**
+ * Weight for sonar filter
+ *
+ * Sonar filter detects spikes on sonar measurements and used to detect new surface level.
+ *
+ * @min 0.0
+ * @max 1.0
+ * @group Position Estimator INAV
+ */
+PARAM_DEFINE_FLOAT(SENS_SON_FILT, 0.8f);
+
+/**
+ * Sonar maximal accepted delta for non-spike/new level sonar measurment
+ *
+ * If sonar measurement delta is larger than this value it skiped (spike) or accepted as new surface level (if offset is stable).
+ *
+ * @min 0.0
+ * @max not limited
+ * @unit m
+ * @group Position Estimator INAV
+ */
+PARAM_DEFINE_FLOAT(SENS_SON_ERR, 0.5f);
+
+/**
  * Sonar sensor on/off trigger
  * @on 1
  * @off 0
@@ -59,6 +82,14 @@ PARAM_DEFINE_INT32(SENS_SON_ON, 1);
  * @group Sensor Calibration
  */
 PARAM_DEFINE_FLOAT(SENS_SON_MIN, 2.0f);
+
+/**
+ * Sonar speed smoothing when below minimal distance
+ * @min 0.0f
+ * @max 10.0f practically unlimited but even 5 is very close to full speed up to minimal distance reach
+ * @unit coefficient
+ */
+PARAM_DEFINE_FLOAT(SENS_SON_SMOT, 1.0f);
 
 /**
  * Gyro X-axis offset

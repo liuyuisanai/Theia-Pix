@@ -197,29 +197,6 @@ PARAM_DEFINE_FLOAT(INAV_FLOW_K, 0.15f);
 PARAM_DEFINE_FLOAT(INAV_FLOW_Q_MIN, 0.5f);
 
 /**
- * Weight for sonar filter
- *
- * Sonar filter detects spikes on sonar measurements and used to detect new surface level.
- *
- * @min 0.0
- * @max 1.0
- * @group Position Estimator INAV
- */
-PARAM_DEFINE_FLOAT(INAV_SONAR_FILT, 0.05f);
-
-/**
- * Sonar maximal error for new surface
- *
- * If sonar measurement error is larger than this value it skiped (spike) or accepted as new surface level (if offset is stable).
- *
- * @min 0.0
- * @max 1.0
- * @unit m
- * @group Position Estimator INAV
- */
-PARAM_DEFINE_FLOAT(INAV_SONAR_ERR, 0.5f);
-
-/**
  * Land detector time
  *
  * Vehicle assumed landed if no altitude changes happened during this time on low throttle.
@@ -293,8 +270,8 @@ int parameters_init(struct position_estimator_inav_param_handles *h)
 	h->w_acc_bias = param_find("INAV_W_ACC_BIAS");
 	h->flow_k = param_find("INAV_FLOW_K");
 	h->flow_q_min = param_find("INAV_FLOW_Q_MIN");
-	h->sonar_filt = param_find("INAV_SONAR_FILT");
-	h->sonar_err = param_find("INAV_SONAR_ERR");
+	h->sonar_filt = param_find("SENS_SON_FILT");
+	h->sonar_err = param_find("SENS_SON_ERR");
 	h->land_t = param_find("INAV_LAND_T");
 	h->land_disp = param_find("INAV_LAND_DISP");
 	h->land_thr = param_find("INAV_LAND_THR");

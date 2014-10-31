@@ -1490,10 +1490,10 @@ start(bool external_bus, enum Rotation rotation)
 
 	/* create the driver */
         if (external_bus) {
-#ifdef PX4_SPI_BUS_EXT
+#ifdef PX4_SPIDEV_EXT_MPU
 		*g_dev_ptr = new MPU6000(PX4_SPI_BUS_EXT, path_accel, path_gyro, (spi_dev_e)PX4_SPIDEV_EXT_MPU, rotation);
 #else
-		errx(0, "External SPI not available");
+		errx(0, "External SPI MPU not available");
 #endif
 	} else {
 		*g_dev_ptr = new MPU6000(PX4_SPI_BUS_SENSORS, path_accel, path_gyro, (spi_dev_e)PX4_SPIDEV_MPU, rotation);

@@ -1023,10 +1023,10 @@ start(bool external_bus, enum Rotation rotation)
 
 	/* create the driver */
         if (external_bus) {
-#ifdef PX4_SPI_BUS_EXT
+#ifdef PX4_SPIDEV_EXT_GYRO
 		g_dev = new L3GD20(PX4_SPI_BUS_EXT, L3GD20_DEVICE_PATH, (spi_dev_e)PX4_SPIDEV_EXT_GYRO, rotation);
 #else
-		errx(0, "External SPI not available");
+		errx(0, "External SPI GYRO not available");
 #endif
 	} else {
 		g_dev = new L3GD20(PX4_SPI_BUS_SENSORS, L3GD20_DEVICE_PATH, (spi_dev_e)PX4_SPIDEV_GYRO, rotation);

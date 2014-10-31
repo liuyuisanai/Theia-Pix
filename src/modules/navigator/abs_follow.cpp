@@ -157,7 +157,7 @@ AbsFollow::execute_vehicle_command() {
 			case REMOTE_CMD_PLAY_PAUSE: {
 				commander_request_s *commander_request = _navigator->get_commander_request();
 				commander_request->request_type = V_MAIN_STATE_CHANGE;
-				commander_request->main_state = MAIN_STATE_AUTO_LOITER;
+				commander_request->main_state = MAIN_STATE_LOITER;
 				_navigator->set_commander_request_updated();
 				break;
 			}
