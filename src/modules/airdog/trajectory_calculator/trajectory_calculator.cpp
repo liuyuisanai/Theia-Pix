@@ -28,13 +28,13 @@ class PointAnalyzer {
 private:
 	// TODO! Consider migrating to a vector filtering
 	math::LowPassFilter<float> x_filter, y_filter;
-	double radius;
+	float radius_sq;
 	float center_x, center_y;
 public:
 	PointAnalyzer(float filter_cutoff, float init_radius) :
 				x_filter(filter_cutoff),
 				y_filter(filter_cutoff),
-				radius(init_radius),
+				radius_sq(init_radius*init_radius),
 				center_x(0.0f/0.0f),
 				center_y(center_x) {
 	}
@@ -42,7 +42,7 @@ public:
 
 	// Analyze provided point, filter its x and y, update center, if needed and return point type
 	uint8_t analyze(vehicle_local_position_s &point) {
-		double x, y;
+		float x, y;
 
 		point.x = x_filter.apply(point.timestamp, point.x);
 		point.y = y_filter.apply(point.timestamp, point.y);
@@ -53,7 +53,7 @@ public:
 		x = point.x - center_x;
 		y = point.y - center_y;
 		// TODO! Consider variable radius based on speed
-		if (sqrt(x*x + y*y) < (double) radius) {
+		if ((x*x + y*y) < radius_sq) {
 			return 0; // still point
 		}
 		else {
@@ -125,7 +125,7 @@ int calculate(int argc, char *argv[]) {
 			trajectory_data.point_type = analyzer.analyze(local_position);
 
 			// TODO! Raw fix to avoid publishing a still point on top of a valid point, thus Mavlink will get only still points
-			// if (trajectory_data.point_type != 0) {
+			if (trajectory_data.point_type != 0) {
 				map_projection_reproject(&ref_point, local_position.x, local_position.y, &est_lat, &est_lon);
 
 				trajectory_data.alt = local_position.ref_alt - local_position.z;
@@ -144,7 +144,7 @@ int calculate(int argc, char *argv[]) {
 				} else {
 					orb_publish(ORB_ID(trajectory), trajectory_pub, &trajectory_data);
 				}
-			// }
+			}
 		}
 		else {
 			warnx("Poll error!");

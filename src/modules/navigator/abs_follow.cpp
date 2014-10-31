@@ -125,10 +125,10 @@ AbsFollow::on_active()
 	pos_sp_triplet->current.lat = lat_new;
 	pos_sp_triplet->current.lon = lon_new;
 
-	if (_parameters.afol_rep_target_alt)
-		pos_sp_triplet->current.alt = target_pos->alt - _afollow_offset(2);
-	else
-		pos_sp_triplet->current.alt = _init_alt;
+//	if (_parameters.afol_rep_target_alt)
+//		pos_sp_triplet->current.alt = target_pos->alt - _afollow_offset(2);
+//	else
+//		pos_sp_triplet->current.alt = _init_alt;
 
 
 	/* calculate direction to target */

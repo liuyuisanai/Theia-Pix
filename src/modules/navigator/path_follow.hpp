@@ -27,7 +27,6 @@ public:
 private:
 	uint64_t _last_trajectory_time; // Timestamp of the last trajectory point
 	buffer_point_s _last_point; // Last saved point
-	// Be considerate - each point takes 24 bytes and we have about 42500 bytes free
 	Queue<buffer_point_s> _saved_trajectory; // Saved trajectory points queue
 	float _trajectory_distance; // Distance by trajectory points only, excluding drone or target current position
 	buffer_point_s _actual_point; // Point currently in use as a setpoint
@@ -35,12 +34,19 @@ private:
 	buffer_point_s _future_point; // Point of trajectory after the actual
 	float _desired_speed; // Speed we want to move with until distance changes
 	float _min_distance, _max_distance, _ok_distance; // Distances to use when following
+	float _vertical_offset; // Vertical offset off the trajectory
 
 	// Updates saved trajectory and trajectory distance with a new point
 	void update_saved_trajectory();
+	// Update position setpoint to desired values
 	void update_setpoint(const buffer_point_s &desired_point, position_setpoint_s &destination);
+	// Updates minimum and maximum distance based on ok distance
+	inline void update_min_max_dist();
 	// Calculates desired speed in m/s based on current distance and target's speed
 	float calculate_desired_speed(float distance);
+	// Calculates total current distance by trajectory + drone distance to setpoint + target distance to last point
 	float calculate_current_distance();
+	// Checks if the next point in the buffer is safe to use
+	bool check_point_safe();
 
 };

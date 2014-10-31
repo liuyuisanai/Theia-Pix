@@ -106,19 +106,21 @@ public:
 		float takeoff_alt;
 		float takeoff_acceptance_radius;
 		float acceptance_radius;
-		float loiter_step;
-		float velocity_lpf;
 
         int afol_mode;
 
-		int afol_rep_target_alt;
-		int afol_use_cam_pitch;
-
 		float loi_step_len;
-		float loi_min_alt;
 
 		float rtl_ret_alt;
 
+		ssize_t pafol_buf_size;
+		float pafol_ok_dist;
+		float pafol_min_alt_off;
+		float pafol_dist_step;
+		float pafol_alt_step;
+		float pafol_min_ok_diff;
+		float pafol_ok_max_coef;
+		float pafol_safe_dist;
 	} _parameters;		
 
 
@@ -126,18 +128,21 @@ public:
 		param_t takeoff_alt;
 		param_t takeoff_acceptance_radius;
 		param_t acceptance_radius;
-		param_t velocity_lpf;
 
         param_t afol_mode;
 
-		param_t afol_rep_target_alt;
-		param_t afol_use_cam_pitch;
-
 		param_t loi_step_len;
-		param_t loi_min_alt;
 
 		param_t rtl_ret_alt;
 
+		param_t pafol_buf_size;
+		param_t pafol_ok_dist;
+		param_t pafol_min_alt_off;
+		param_t pafol_dist_step;
+		param_t pafol_alt_step;
+		param_t pafol_min_ok_diff;
+		param_t pafol_ok_max_coef;
+		param_t pafol_safe_dist;
 	} _parameter_handles;
 
 

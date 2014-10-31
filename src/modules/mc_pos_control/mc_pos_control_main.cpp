@@ -1160,6 +1160,10 @@ MulticopterPositionControl::control_auto(float dt)
 	} else {
 		/* no waypoint, do nothing, setpoint was already reset */
 	}
+
+	if (_control_mode.flag_control_point_to_target) {
+		point_to_target();
+	}
 }
 
 void
@@ -1484,7 +1488,7 @@ MulticopterPositionControl::task_main()
 
 			} else {
 				/* AUTO modes*/
-				
+
 				if (_control_mode.flag_control_follow_target) {
 					// For auto ABS Follow
 					control_follow(dt);
@@ -1565,7 +1569,18 @@ MulticopterPositionControl::task_main()
 				/* run position & altitude controllers, calculate velocity setpoint */
 				math::Vector<3> pos_err = _pos_sp - _pos;
 
-				_vel_sp = pos_err.emult(_params.pos_p) + _vel_ff;
+				if (!_control_mode.flag_control_setpoint_velocity) {
+					_vel_sp = pos_err.emult(_params.pos_p) + _vel_ff;
+				}
+				else if (_pos_sp_triplet.current.velocity_valid) {
+					// TODO! Proof of concept only. Consider replicating _vel_ff calculation in follow mode
+					_vel_sp(0) = pos_err(0) * _params.pos_p(0) + _pos_sp_triplet.current.vx;
+					_vel_sp(1) = pos_err(1) * _params.pos_p(1) + _pos_sp_triplet.current.vy;
+					_vel_sp(2) = pos_err(2) * _params.pos_p(2) + _pos_sp_triplet.current.vz;
+				}
+				else {
+					_vel_sp = pos_err.emult(_params.pos_p);
+				}
 
 				if (!_control_mode.flag_control_altitude_enabled) {
 					_reset_alt_sp = true;
@@ -1610,7 +1625,7 @@ MulticopterPositionControl::task_main()
 						float drop = _pos(2) - _pos_sp(2) ;
 						if (drop >= 0) {
                             //float min_vel_z = - _params.vel_max(2) * (float)pow(_ground_position_available_drop/_params.sonar_min_dist, 2.0);
-                            printf("[WARN] vel(2) %0.3f  sp_vel(2) %.03f\n", (double)_vel(2), (double)_vel_sp(2));
+                            // printf("[WARN] vel(2) %0.3f  sp_vel(2) %.03f\n", (double)_vel(2), (double)_vel_sp(2));
 							//_vel_sp(2) = - (2 * drop * _params.vel_max(2) / _params.sonar_min_dist);
                             _vel_sp(2) = - max_vel_z;
 							_sp_move_rate(2)= 0.0f;
@@ -1619,7 +1634,7 @@ MulticopterPositionControl::task_main()
 				else if (_ground_setpoint_corrected && (_vel(2) > _params.vel_max(2) || _vel_sp(2) > _params.vel_max(2))) {
 					//_vel_sp(2) = - _params.vel_max(2);
                     _vel_sp(2) = - _params.vel_max(2);
-                    printf("[NO IDEA] vel(2) %0.3f  sp_vel(2) %.03f\n", (double)_vel(2), (double)_vel_sp(2));
+                    // printf("[NO IDEA] vel(2) %0.3f  sp_vel(2) %.03f\n", (double)_vel(2), (double)_vel_sp(2));
 					_sp_move_rate(2)= 0.0f;
 				}
 				else if (_local_pos.dist_bottom_valid && _params.sonar_correction_on){
@@ -1627,12 +1642,12 @@ MulticopterPositionControl::task_main()
 						//limit down speed
 						if (_vel_sp(2) > max_vel_z) {
 							_vel_sp(2) = max_vel_z;
-                            printf("[LIMIT] vel(2) %0.3f  sp_vel(2) %.03f\n", (double)_vel(2), (double)_vel_sp(2));
+                            // printf("[LIMIT] vel(2) %0.3f  sp_vel(2) %.03f\n", (double)_vel(2), (double)_vel_sp(2));
 							
 							//mavlink_log_info(_mavlink_fd, " limiting downsp - vel_Sp: %.2f", (double)_vel_sp(2));
 						}
 						else {
-							mavlink_log_info(_mavlink_fd, "other_vel_Sp: %.2f", (double)_vel_sp(2));	
+							// mavlink_log_info(_mavlink_fd, "other_vel_Sp: %.2f", (double)_vel_sp(2));
 						}
 						_sp_move_rate(2)= 0.0f;
 

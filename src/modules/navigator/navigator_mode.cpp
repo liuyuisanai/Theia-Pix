@@ -109,6 +109,15 @@ NavigatorMode::updateParamHandles() {
 	_parameter_handles.loi_step_len = param_find("LOI_STEP_LEN");
 
 	_parameter_handles.rtl_ret_alt = param_find("RTL_RET_ALT");
+
+	_parameter_handles.pafol_buf_size = param_find("PAFOL_BUFF_SIZE");
+	_parameter_handles.pafol_ok_dist = param_find("PAFOL_OK_DIST");
+	_parameter_handles.pafol_min_alt_off = param_find("PAFOL_ALT_OFF");
+	_parameter_handles.pafol_dist_step = param_find("PAFOL_DIST_STEP");
+	_parameter_handles.pafol_alt_step = param_find("PAFOL_ALT_STEP");
+	_parameter_handles.pafol_min_ok_diff = param_find("PAFOL_MIN_TO_OK");
+	_parameter_handles.pafol_ok_max_coef = param_find("PAFOL_MAX_COEF");
+	_parameter_handles.pafol_safe_dist = param_find("PAFOL_SAFE_DIST");
 }
 
 void
@@ -123,6 +132,14 @@ NavigatorMode::updateParamValues() {
 
 	param_get(_parameter_handles.rtl_ret_alt, &(_parameters.rtl_ret_alt));
 
+	param_get(_parameter_handles.pafol_buf_size, &(_parameters.pafol_buf_size));
+	param_get(_parameter_handles.pafol_ok_dist, &(_parameters.pafol_ok_dist));
+	param_get(_parameter_handles.pafol_min_alt_off, &(_parameters.pafol_min_alt_off));
+	param_get(_parameter_handles.pafol_dist_step, &(_parameters.pafol_dist_step));
+	param_get(_parameter_handles.pafol_alt_step, &(_parameters.pafol_alt_step));
+	param_get(_parameter_handles.pafol_min_ok_diff, &(_parameters.pafol_min_ok_diff));
+	param_get(_parameter_handles.pafol_ok_max_coef, &(_parameters.pafol_ok_max_coef));
+	param_get(_parameter_handles.pafol_safe_dist, &(_parameters.pafol_safe_dist));
 }
 
 
