@@ -84,12 +84,14 @@ PARAM_DEFINE_INT32(SENS_SON_ON, 1);
 PARAM_DEFINE_FLOAT(SENS_SON_MIN, 2.0f);
 
 /**
- * Sonar speed smoothing when below minimal distance
- * @min 0.0f
- * @max 10.0f practically unlimited but even 5 is very close to full speed up to minimal distance reach
- * @unit coefficient
+ * Sonar coefficient to multiply sonar minimal distance by, resulting in critical distance
+ * ==0.5f means critical distance will be 0.5*SENS_SON_MIN and at this altitude sonar will
+ * trigger full throttle
+ * @min 1.0f
+ * @max 0.0f
+ * @unit meters
  */
-PARAM_DEFINE_FLOAT(SENS_SON_SMOT, 1.0f);
+PARAM_DEFINE_FLOAT(SENS_SON_SMOT, 0.5f);
 
 /**
  * Gyro X-axis offset
