@@ -1,0 +1,54 @@
+#!nsh
+#
+# Standard startup script for PX4FMU onboard sensor drivers.
+#
+
+ms5611 start
+adc start
+
+if [ _$MB_SONAR_TTY = _ ]
+then
+    set MB_SONAR_TTY /dev/ttyS2
+fi
+
+if mpu6000 start
+then
+fi
+
+if l3gd20 start
+then
+fi
+
+# MAG selection
+if hmc5883spi start
+# Prever SPI over I2C.
+then
+else
+	if hmc5883 start
+	then
+	fi
+fi
+
+if lsm303d start
+then
+fi
+
+# Start MaxBotix sonar on serial
+if mb1230serial start $MB_SONAR_TTY
+then
+ echo [init] Using MaxBotix sonar at $MB_SONAR_TTY
+else
+ echo error starting MaxBotix sonar at $MB_SONAR_TTY
+fi
+
+
+#
+# Start the sensor collection task.
+# IMPORTANT: this also loads param offsets
+# ALWAYS start this task before the
+# preflight_check.
+#
+if sensors start
+then
+	preflight_check &
+fi
