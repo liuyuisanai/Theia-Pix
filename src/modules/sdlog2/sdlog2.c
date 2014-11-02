@@ -73,6 +73,7 @@
 #include <uORB/topics/vehicle_local_position_setpoint.h>
 #include <uORB/topics/vehicle_global_position.h>
 #include <uORB/topics/target_global_position.h>
+#include <uORB/topics/external_trajectory.h>
 #include <uORB/topics/position_setpoint_triplet.h>
 #include <uORB/topics/vehicle_gps_position.h>
 #include <uORB/topics/satellite_info.h>
@@ -953,6 +954,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 		struct satellite_info_s sat_info;
 		struct wind_estimate_s wind_estimate;
 		struct target_global_position_s target_pos;
+		struct external_trajectory_s ext_traj;
 	} buf;
 
 	memset(&buf, 0, sizeof(buf));
@@ -996,6 +998,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 			struct log_TECS_s log_TECS;
 			struct log_WIND_s log_WIND;
 			struct log_TPOS_s log_TPOS;
+			struct log_EXTJ_s log_EXTJ;
 		} body;
 	} log_msg = {
 		LOG_PACKET_HEADER_INIT(0)
@@ -1034,6 +1037,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 		int servorail_status_sub;
 		int wind_sub;
 		int target_pos_sub;
+		int external_trajectory_sub;
 	} subs;
 
 	subs.cmd_sub = orb_subscribe(ORB_ID(vehicle_command));
@@ -1070,6 +1074,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 	/* we need to rate-limit wind, as we do not need the full update rate */
 	orb_set_interval(subs.wind_sub, 90);
 	subs.target_pos_sub = orb_subscribe(ORB_ID(target_global_position));
+	subs.external_trajectory_sub = orb_subscribe(ORB_ID(external_trajectory));
 
 	thread_running = true;
 
@@ -1666,6 +1671,23 @@ int sdlog2_thread_main(int argc, char *argv[])
 			log_msg.body.log_TPOS.vel_e = buf.target_pos.vel_e;
 			log_msg.body.log_TPOS.vel_d = buf.target_pos.vel_d;
 			LOGBUFFER_WRITE_AND_COUNT(TPOS);
+		}
+
+		/* --- EXTERNAL TRAJECTORY --- */
+		if (copy_if_updated(ORB_ID(external_trajectory), subs.external_trajectory_sub, &buf.ext_traj)) {
+			log_msg.msg_type = LOG_EXTJ_MSG;
+			log_msg.body.log_EXTJ.point_type = buf.ext_traj.point_type;
+			log_msg.body.log_EXTJ.sysid = buf.ext_traj.sysid;
+			log_msg.body.log_EXTJ.timestamp = buf.ext_traj.timestamp;
+			log_msg.body.log_EXTJ.lat = buf.ext_traj.lat * 1e7d;
+			log_msg.body.log_EXTJ.lon = buf.ext_traj.lon * 1e7d;
+			log_msg.body.log_EXTJ.alt = buf.ext_traj.alt;
+			log_msg.body.log_EXTJ.relative_alt = buf.ext_traj.relative_alt;
+			log_msg.body.log_EXTJ.vel_n = buf.ext_traj.vel_n;
+			log_msg.body.log_EXTJ.vel_e = buf.ext_traj.vel_e;
+			log_msg.body.log_EXTJ.vel_d = buf.ext_traj.vel_d;
+			log_msg.body.log_EXTJ.heading = buf.ext_traj.heading;
+			LOGBUFFER_WRITE_AND_COUNT(EXTJ);
 		}
 
 		/* signal the other thread new data, but not yet unlock */

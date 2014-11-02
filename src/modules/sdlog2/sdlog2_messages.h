@@ -418,6 +418,35 @@ struct log_TPOS_s {
 	float vel_e;
 	float vel_d;
 };
+/* --- EXTJ - EXTERNAL TRAJECTORY --- */
+#define LOG_EXTJ_MSG 65
+struct log_EXTJ_s {
+	uint8_t point_type; /**< Indicates whether movement has crossed the threshold, 0 - still point, 1 - moving */
+	uint8_t sysid; 		/**< External system id */
+	uint64_t timestamp;	/**< Time of this estimate, in microseconds since system start */
+	int32_t lat;			/**< Latitude in degrees */
+	int32_t lon;			/**< Longitude in degrees */
+	float alt;			/**< Altitude AMSL in meters */
+	float relative_alt; /**< Altitude above ground in meters */
+	float vel_n; 		/**< Ground north velocity, m/s	*/
+	float vel_e;		/**< Ground east velocity, m/s */
+	float vel_d;		/**< Ground downside velocity, m/s */
+	float heading;   	/**< Compass heading in radians [0..2PI) */
+};
+/* --- LOTJ - LOCAL TRAJECTORY --- */
+#define LOG_LOTJ_MSG 66
+struct log_LOTJ_s {
+	uint8_t point_type; /**< Indicates whether movement has crossed the threshold, 0 - still point, 1 - moving */
+	uint64_t timestamp;	/**< Time of this estimate, in microseconds since system start		*/
+	int32_t lat;			/**< Latitude in degrees	*/
+	int32_t lon;			/**< Longitude in degrees	*/
+	float alt;			/**< Altitude AMSL in meters */
+	float relative_alt; /**< Altitude above ground in meters */
+	float vel_n; 		/**< Ground north velocity, m/s	*/
+	float vel_e;		/**< Ground east velocity, m/s */
+	float vel_d;		/**< Ground downside velocity, m/s */
+	float heading;   	/**< Compass heading in radians [0..2PI) */
+};
 
 /********** SYSTEM MESSAGES, ID > 0x80 **********/
 
@@ -484,6 +513,8 @@ static const struct log_format_s log_formats[] = {
 	LOG_FORMAT(TECS, "fffffffffffffB",	"ASP,AF,FSP,F,FF,AsSP,AsF,AsDSP,AsD,TERSP,TER,EDRSP,EDR,M"),
 	LOG_FORMAT(WIND, "ffff",	"X,Y,CovX,CovY"),
 	LOG_FORMAT(TPOS, "BQLLffff", "SysID,Time,Lat,Lon,Alt,VelN,VelE,VelD"),
+	LOG_FORMAT(EXTJ, "BBQLLffffff", "Type,SysID,Time,Lat,Lon,Alt,RAlt,VelN,VelE,VelD,Head"),
+	LOG_FORMAT(LOTJ, "BQLLffffff", "Type,Time,Lat,Lon,Alt,RAlt,VelN,VelE,VelD,Head"),
 
 	/* system-level messages, ID >= 0x80 */
 	/* FMT: don't write format of format message, it's useless */
