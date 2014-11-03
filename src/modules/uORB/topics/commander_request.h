@@ -62,15 +62,16 @@
  * Request type.
  */
 typedef enum {
-	V_MAIN_STATE_CHANGE = 0,
-	V_DISARM,
-	V_NAVIGATION_STATE_CHANGE
+	V_MAIN_STATE_CHANGE = 0,    // Request to main_state change
+	V_DISARM,                   // Request to disarm vehicle
+    AIRD_STATE_CHANGE           // Request to change airdog_state
 } request_type_t;
 
 struct commander_request_s {
 	request_type_t request_type;
 
 	main_state_t main_state;
+    airdog_state_t airdog_state;
 
 };
 

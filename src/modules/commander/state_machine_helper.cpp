@@ -343,6 +343,33 @@ main_state_transition(struct vehicle_status_s *status, main_state_t new_main_sta
 	return ret;
 }
 
+void
+airdog_state_transition(struct vehicle_status_s *status, airdog_state_t new_airdog_state, const int mavlink_fd) {
+    status->airdog_state = new_airdog_state;
+
+    char * str;
+
+    switch (new_airdog_state){
+        case AIRD_STATE_DISARMED:
+            str = "disarmed";
+            break;
+        case AIRD_STATE_LANDED:
+            str = "landed";
+            break;
+        case AIRD_STATE_TAKING_OFF:
+            str = "taking_off";
+            break;
+        case AIRD_STATE_LANDING:
+            str = "landing";
+            break;
+        case AIRD_STATE_IN_AIR:
+            str = "in air";
+            break;
+    }
+
+    mavlink_log_info(mavlink_fd, "Airdog state machine state:%s", str);
+}
+
 /**
  * Transition from one hil state to another
  */

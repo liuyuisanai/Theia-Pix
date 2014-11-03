@@ -67,10 +67,6 @@ public:
 
 private:
 
-	void		takeoff();
-	void 		land();
-	void		disarm();
-
 	enum LOITER_SUB_MODE {
 		LOITER_SUB_MODE_LANDED = 0, 		// vehicle on ground
 		LOITER_SUB_MODE_AIM_AND_SHOOT,		// aim and shoot

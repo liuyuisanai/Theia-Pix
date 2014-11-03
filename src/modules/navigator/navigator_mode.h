@@ -102,6 +102,10 @@ public:
 	void updateParamValues();
 	void updateParamHandles();
 
+    void land();
+    void takeoff();
+    void disarm();
+
 	struct {
 		float takeoff_alt;
 		float takeoff_acceptance_radius;

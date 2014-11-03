@@ -205,10 +205,7 @@ RTL::set_rtl_setpoint()
 			break;
 		}
 		case RTL_STATE_LAND: {
-			pos_sp_triplet->current.lat = home_pos->lat;
-			pos_sp_triplet->current.lon = home_pos->lon;
-			pos_sp_triplet->current.alt = global_pos->alt;
-			pos_sp_triplet->current.type = SETPOINT_TYPE_LAND;
+            land();
 			break;
 		}
 		case RTL_STATE_LANDED: {
@@ -242,12 +239,4 @@ RTL::set_next_rtl_state()
 		default:
 			break;
 	}
-}
-
-void
-RTL::disarm()
-{
-	commander_request_s *commander_request = _navigator->get_commander_request();
-	commander_request->request_type = V_DISARM;
-	_navigator->set_commander_request_updated();
 }

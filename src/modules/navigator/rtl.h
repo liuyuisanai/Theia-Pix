@@ -78,8 +78,6 @@ private:
 
 	void		set_next_rtl_state();
 
-	void		disarm();
-
 	enum RTL_state {
 		RTL_STATE_NONE = 0,
 		RTL_STATE_CLIMB,

@@ -1732,6 +1732,7 @@ int commander_thread_main(int argc, char *argv[])
 			case V_MAIN_STATE_CHANGE:
 			{
 
+
 				if (main_state_transition(&status, commander_request.main_state)) {
 					status_changed = true;
 				}
@@ -1740,20 +1741,46 @@ int commander_thread_main(int argc, char *argv[])
 			}
 			case V_DISARM:
 			{
-				arm_disarm(false, mavlink_fd, "Commander request.");
+				
+                arm_disarm(false, mavlink_fd, "Commander request.");
 				break;
 			}
-			case V_NAVIGATION_STATE_CHANGE:
+			case AIRD_STATE_CHANGE:
+            {
+                airdog_state_transition(&status, commander_request.airdog_state, mavlink_fd);
 				break;
+            }
 			default:
 				break;
-
 			}
 
 			mavlink_log_info(mavlink_fd, "Commnander request processed\n");
 
-
 		}
+
+        if (status.arming_state != ARMING_STATE_ARMED){
+            if (status.airdog_state != AIRD_STATE_DISARMED)
+                airdog_state_transition(&status, AIRD_STATE_DISARMED, mavlink_fd); 
+        } 
+        else {
+            if (control_mode.flag_control_manual_enabled){
+                if (status.condition_landed) {
+                    if (status.airdog_state != AIRD_STATE_LANDED)
+                        airdog_state_transition(&status, AIRD_STATE_LANDED, mavlink_fd); 
+                } 
+                if (!status.condition_landed) {
+                    if (status.airdog_state != AIRD_STATE_IN_AIR)
+                        airdog_state_transition(&status, AIRD_STATE_IN_AIR, mavlink_fd);
+                }
+            }
+
+            if (control_mode.flag_control_auto_enabled){
+                // Default state set to Landed, all other airdog_state changes are in navigator_mode
+                if (status.airdog_state == AIRD_STATE_DISARMED){
+                    airdog_state_transition(&status, AIRD_STATE_LANDED, mavlink_fd);
+                } 
+            }
+        }
 
 		/* Check engine failure
 		 * only for fixed wing for now

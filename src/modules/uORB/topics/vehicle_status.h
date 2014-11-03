@@ -76,6 +76,14 @@ typedef enum {
 	MAIN_STATE_MAX,
 } main_state_t;
 
+typedef enum {
+    AIRD_STATE_DISARMED = 0,
+    AIRD_STATE_LANDED,
+    AIRD_STATE_TAKING_OFF,
+    AIRD_STATE_LANDING,
+    AIRD_STATE_IN_AIR
+} airdog_state_t;
+
 // If you change the order, add or remove arming_state_t states make sure to update the arrays
 // in state_machine_helper.cpp as well.
 typedef enum {
@@ -178,6 +186,7 @@ struct vehicle_status_s {
 	uint64_t timestamp; /**< in microseconds since system start, is set whenever the writing thread stores new data */
 
 	main_state_t main_state;		    	/**< main state machine */
+    airdog_state_t airdog_state;            /**< airdog custom state machine */
 	navigation_state_t nav_state;			/**< set navigation state machine to specified value */
 	arming_state_t arming_state;			/**< current arming state */
 	hil_state_t hil_state;					/**< current hil state */

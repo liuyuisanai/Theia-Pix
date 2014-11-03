@@ -127,7 +127,6 @@ NavigatorMode::updateParamValues() {
 void
 NavigatorMode::run(bool active, bool parameters_updated) {
 
-
     if (parameters_updated) {
         updateParameters();    
     }
@@ -238,13 +237,37 @@ NavigatorMode::check_current_pos_sp_reached()
 		break;
 
 	case SETPOINT_TYPE_LAND:
-		return vstatus->condition_landed;
+
+        if (vstatus->condition_landed){
+
+            commander_request_s *commander_request = _navigator->get_commander_request();
+            commander_request->request_type = AIRD_STATE_CHANGE;
+            commander_request->airdog_state = AIRD_STATE_LANDED;
+            _navigator->set_commander_request_updated();
+            return true;
+
+        }
+
+        return false;
+
 		break;
 
 	case SETPOINT_TYPE_TAKEOFF:
 	{
 		float alt_diff = fabs(pos_sp_triplet->current.alt - global_pos->alt);
-		return _parameters.takeoff_acceptance_radius >= alt_diff;
+
+        if (_parameters.takeoff_acceptance_radius >= alt_diff) {
+
+            commander_request_s *commander_request = _navigator->get_commander_request();
+            commander_request->request_type = AIRD_STATE_CHANGE;
+            commander_request->airdog_state = AIRD_STATE_IN_AIR;
+            _navigator->set_commander_request_updated();
+            return true;
+
+        }
+
+        return false;
+        
 		break;
 	}
 	case SETPOINT_TYPE_POSITION:
@@ -258,7 +281,11 @@ NavigatorMode::check_current_pos_sp_reached()
 			&dist_xy, &dist_z
 		);
 
-		return _parameters.acceptance_radius >= distance;
+        if (_parameters.acceptance_radius >= distance){
+            return true; 
+        }
+
+        return false;
 
 		break;
 	}
@@ -267,4 +294,62 @@ NavigatorMode::check_current_pos_sp_reached()
 		break;
 
 	}
+}
+
+
+void
+NavigatorMode::land()
+{
+    pos_sp_triplet = _navigator->get_position_setpoint_triplet();
+
+	pos_sp_triplet->previous.valid = false;
+	pos_sp_triplet->current.valid = true;
+	pos_sp_triplet->next.valid = false;
+
+	pos_sp_triplet->current.lat = global_pos->lat;
+	pos_sp_triplet->current.lon = global_pos->lon;
+	pos_sp_triplet->current.alt = global_pos->alt;
+	pos_sp_triplet->current.yaw = NAN;
+	pos_sp_triplet->current.type = SETPOINT_TYPE_LAND;
+
+	_navigator->set_position_setpoint_triplet_updated();
+
+	commander_request_s *commander_request = _navigator->get_commander_request();
+	commander_request->request_type = AIRD_STATE_CHANGE;
+    commander_request->airdog_state = AIRD_STATE_LANDING;
+	_navigator->set_commander_request_updated();
+}
+
+void
+NavigatorMode::takeoff()
+{
+    pos_sp_triplet = _navigator->get_position_setpoint_triplet();
+
+	pos_sp_triplet->previous.valid = false;
+	pos_sp_triplet->current.valid = true;
+	pos_sp_triplet->next.valid = false;
+
+	pos_sp_triplet->current.lat = global_pos->lat;
+	pos_sp_triplet->current.lon = global_pos->lon;
+	pos_sp_triplet->current.alt = global_pos->alt + _parameters.takeoff_alt;
+
+	pos_sp_triplet->current.yaw = NAN;
+	pos_sp_triplet->current.type = SETPOINT_TYPE_TAKEOFF;
+
+	_navigator->set_position_setpoint_triplet_updated();
+
+	commander_request_s *commander_request = _navigator->get_commander_request();
+	commander_request->request_type = AIRD_STATE_CHANGE;
+    commander_request->airdog_state = AIRD_STATE_TAKING_OFF;
+	_navigator->set_commander_request_updated();
+
+}
+
+
+void
+NavigatorMode::disarm()
+{
+	commander_request_s *commander_request = _navigator->get_commander_request();
+	commander_request->request_type = V_DISARM;
+	_navigator->set_commander_request_updated();
 }
