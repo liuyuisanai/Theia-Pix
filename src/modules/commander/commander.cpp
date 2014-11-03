@@ -1741,7 +1741,7 @@ int commander_thread_main(int argc, char *argv[])
 			}
 			case V_DISARM:
 			{
-				
+
                 arm_disarm(false, mavlink_fd, "Commander request.");
 				break;
 			}
@@ -1760,14 +1760,14 @@ int commander_thread_main(int argc, char *argv[])
 
         if (status.arming_state != ARMING_STATE_ARMED){
             if (status.airdog_state != AIRD_STATE_DISARMED)
-                airdog_state_transition(&status, AIRD_STATE_DISARMED, mavlink_fd); 
-        } 
+                airdog_state_transition(&status, AIRD_STATE_DISARMED, mavlink_fd);
+        }
         else {
             if (control_mode.flag_control_manual_enabled){
                 if (status.condition_landed) {
                     if (status.airdog_state != AIRD_STATE_LANDED)
-                        airdog_state_transition(&status, AIRD_STATE_LANDED, mavlink_fd); 
-                } 
+                        airdog_state_transition(&status, AIRD_STATE_LANDED, mavlink_fd);
+                }
                 if (!status.condition_landed) {
                     if (status.airdog_state != AIRD_STATE_IN_AIR)
                         airdog_state_transition(&status, AIRD_STATE_IN_AIR, mavlink_fd);
@@ -1778,7 +1778,7 @@ int commander_thread_main(int argc, char *argv[])
                 // Default state set to Landed, all other airdog_state changes are in navigator_mode
                 if (status.airdog_state == AIRD_STATE_DISARMED){
                     airdog_state_transition(&status, AIRD_STATE_LANDED, mavlink_fd);
-                } 
+                }
             }
         }
 
@@ -2137,15 +2137,15 @@ set_main_state_rc(struct vehicle_status_s *status_local, struct manual_control_s
 	/* offboard switched off or denied, check main mode switch */
 	switch (sp_man->mode_switch) {
 	case SWITCH_POS_NONE:
-		
-        mode_switch_state = SWITCH_POS_NONE; 
-		
+
+        mode_switch_state = SWITCH_POS_NONE;
+
 		res = TRANSITION_NOT_CHANGED;
 		break;
 
 	case SWITCH_POS_OFF:		// MANUAL
-		
-        mode_switch_state = SWITCH_POS_OFF; 
+
+        mode_switch_state = SWITCH_POS_OFF;
 
 		if (sp_man->acro_switch == SWITCH_POS_ON) {
 			res = main_state_transition(status_local, MAIN_STATE_ACRO);
@@ -2199,7 +2199,7 @@ set_main_state_rc(struct vehicle_status_s *status_local, struct manual_control_s
 		break;
 
 	case SWITCH_POS_ON:			// AUTO
-		
+
 		// Switch to loter only when switch state have changed
         if (mode_switch_state != SWITCH_POS_ON) {
 
@@ -2214,7 +2214,7 @@ set_main_state_rc(struct vehicle_status_s *status_local, struct manual_control_s
             print_reject_mode(status_local, "AUTO_LOITER");
 
         } else {
-            res = TRANSITION_NOT_CHANGED; 
+            res = TRANSITION_NOT_CHANGED;
             break;
         }
 
