@@ -1376,14 +1376,10 @@ PX4IO::io_handle_status(uint16_t status)
 	struct safety_s safety;
 	safety.timestamp = hrt_absolute_time();
 
-	if (status & PX4IO_P_STATUS_FLAGS_SAFETY_OFF) {
-		safety.safety_off = true;
-		safety.safety_switch_available = true;
-
-	} else {
-		safety.safety_off = false;
-		safety.safety_switch_available = true;
-	}
+	// AirDogFMU hack.
+	// TODO Do not publish at all.
+	safety.safety_off = false;
+	safety.safety_switch_available = false;
 
 	/* lazily publish the safety status */
 	if (_to_safety > 0) {
