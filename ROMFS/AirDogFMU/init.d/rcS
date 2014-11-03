@@ -17,8 +17,8 @@ set EXIT_ON_END no
 set FAILSAFE none
 set GPS yes
 set GPS_FAKE no
-set LOAD_DEFAULT_APPS yes
-set MAVLINK_FLAGS default
+
+set MAVLINK_FLAGS "-r 1000"
 
 set FMU_MODE pwm
 set PWM_DISARMED none
@@ -231,11 +231,6 @@ then
 	#
 	commander start
 
-	#
-	# Start primary output
-	#
-	set TTYS1_BUSY no
-
 	if [ $OUTPUT_MODE == io ]
 	then
 		echo "[init] Use PX4IO PWM as primary output"
@@ -266,18 +261,8 @@ then
 	#
 	if [ $MAVLINK_FLAGS == default ]
 	then
-		# Normal mode, use baudrate 57600 (default) and data rate 1000 bytes/s
-		if [ $TTYS1_BUSY == yes ]
-		then
-			# Start MAVLink on ttyS0, because FMU ttyS1 pins configured as something else
-			set MAVLINK_FLAGS "-r 1000 -d /dev/ttyS0"
-
-			# Exit from nsh to free port for mavlink
-			set EXIT_ON_END yes
-		else
-			# Start MAVLink on default port: ttyS1
-			set MAVLINK_FLAGS "-r 1000"
-		fi
+		# Start MAVLink on default port: ttyS1
+		set MAVLINK_FLAGS "-r 1000"
 	fi
 
 	mavlink start $MAVLINK_FLAGS
