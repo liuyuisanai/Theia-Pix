@@ -35,6 +35,7 @@ private:
 	float _desired_speed; // Speed we want to move with until distance changes
 	float _min_distance, _max_distance, _ok_distance; // Distances to use when following
 	float _vertical_offset; // Vertical offset off the trajectory
+	bool _inited; // Indicates if the mode was inited successfully
 
 	// Updates saved trajectory and trajectory distance with a new point
 	void update_saved_trajectory();

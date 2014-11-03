@@ -4,8 +4,12 @@
 #include <nuttx/config.h>
 
 #include <geo/geo.h>
+#include <drivers/drv_tone_alarm.h>
+#include <fcntl.h>
 #include <math.h>
 #include <mavlink/mavlink_log.h>
+#include <stdio.h>
+#include <sys/ioctl.h>
 #include <systemlib/err.h>
 #include <uORB/topics/external_trajectory.h>
 
@@ -22,7 +26,8 @@ PathFollow::PathFollow(Navigator *navigator, const char *name):
 		_min_distance(0.0f),
 		_max_distance(0.0f),
 		_ok_distance(0.0f),
-		_vertical_offset(0.0f){
+		_vertical_offset(0.0f),
+		_inited(false){
 
 }
 PathFollow::~PathFollow() {
@@ -30,14 +35,33 @@ PathFollow::~PathFollow() {
 }
 bool PathFollow::init() {
 	updateParameters();
-	return (_saved_trajectory.init(_parameters.pafol_buf_size));
+	// TODO! consider passing buffer size to the init method to allow retries with different buffer sizes
+	_inited = _saved_trajectory.init(_parameters.pafol_buf_size);
+	return (_inited);
 }
 void PathFollow::on_inactive() {
 	// TODO! Consider if we want to continue collecting trajectory data while inactive
 	// update_saved_trajectory();
 }
 void PathFollow::on_activation() {
-	warnx("Follow path active! Disabled speed, L1, parameters!");
+	_mavlink_fd = _navigator->get_mavlink_fd();
+	// TODO! This message belongs elsewhere
+	mavlink_log_info(_mavlink_fd, "Activated Follow Path");
+	warnx("Follow path active! Disabled speed, L1, parameters, memory check, mavlink_fd!");
+
+	if (!_inited) {
+		mavlink_log_critical(_mavlink_fd, "Follow Path mode wasn't initialized! Aborting...");
+		warnx("Follow Path mode wasn't initialized! Aborting...");
+		int buzzer = open(TONEALARM_DEVICE_PATH, O_WRONLY);
+		ioctl(buzzer, TONE_SET_ALARM, TONE_NOTIFY_NEGATIVE_TUNE);
+		close(buzzer);
+		commander_request_s *commander_request = _navigator->get_commander_request();
+		commander_request->request_type = V_MAIN_STATE_CHANGE;
+		commander_request->main_state = MAIN_STATE_LOITER;
+		_navigator->set_commander_request_updated();
+		return;
+	}
+
 	_has_valid_setpoint = false;
 
 	updateParameters();
@@ -64,10 +88,16 @@ void PathFollow::on_activation() {
 	pos_sp_triplet->current.lat = global_pos->lat;
 	pos_sp_triplet->current.lon = global_pos->lon;
 	pos_sp_triplet->current.alt = global_pos->alt;
+	pos_sp_triplet->current.valid = true;
+	pos_sp_triplet->current.position_valid = true;
 	// point_camera_to_target(&(pos_sp_triplet->current));
 	_navigator->set_position_setpoint_triplet_updated();
 }
 void PathFollow::on_active() {
+	if (!_inited) {
+		return; // Wait for the Loiter mode to take over, but avoid pausing main navigator thread
+	}
+
 	updateParameters();
 	bool setpointChanged = false;
 
