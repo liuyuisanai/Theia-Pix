@@ -217,6 +217,9 @@ __EXPORT int nsh_archinitialize(void)
 	stm32_configgpio(GPIO_VDD_3V3_SENSORS_EN);
 	stm32_configgpio(GPIO_VDD_BRICK_VALID);
 
+	/* configure debug button pin */
+	stm32_configgpio(GPIO_DEBUG_BTN);
+
 	/* configure the high-resolution time/callout interface */
 	hrt_init();
 
