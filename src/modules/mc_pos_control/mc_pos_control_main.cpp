@@ -1514,10 +1514,10 @@ MulticopterPositionControl::task_main()
 			    	//and altitude move rate
 			    	_sp_move_rate(2)= 0.0f;
 
-			    	if (_control_mode.flag_control_follow_target && _control_mode.flag_control_manual_enabled) {
-			    		//stop moving offset in manual follow mode
-				    	_follow_offset(2) = _pos_sp(2) - _tpos(2);
-			    	}
+			    	//if (_control_mode.flag_control_follow_target && _control_mode.flag_control_manual_enabled) {
+			    	//	//stop moving offset in manual follow mode
+				    //	_follow_offset(2) = _pos_sp(2) - _tpos(2);
+			    	//}
 				}
 			}
 
@@ -1611,8 +1611,12 @@ MulticopterPositionControl::task_main()
 				if (_ground_position_invalid) {
 						float drop = _pos(2) - _pos_sp(2) ;
 						if (drop >= 0) {
-                            float range = _params.sonar_min_dist / _params.sonar_smooth_coef;
-                            float max_vel_z = - _params.vel_max(2) * (float)pow((_params.sonar_min_dist - _local_pos.dist_bottom)/range, 2.0);
+
+                            float coef = (_params.sonar_min_dist - _local_pos.dist_bottom)/(_params.sonar_min_dist * _params.sonar_smooth_coef);
+
+                            coef *= coef;
+                            float max_vel_z = - _params.vel_max(2) * coef;
+
                             printf("[WARN] max_vel %.3f smooth: %.3f min-dist %.3f thing %.3f\n", 
                                     (double)max_vel_z, 
                                     (double)_params.sonar_smooth_coef, 
