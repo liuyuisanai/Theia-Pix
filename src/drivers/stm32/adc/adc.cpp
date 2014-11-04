@@ -305,14 +305,18 @@ void
 ADC::update_system_power(void)
 {
 #ifdef CONFIG_ARCH_BOARD_PX4FMU_V2
+# define ADC_SYSPOWER_VOLTAGE_CHANNEL	4
+# define ADC_SYSPOWER_VOLTAGE_SCALE	(6.6 / 4096)
+#endif
+#if defined(ADC_SYSPOWER_VOLTAGE_CHANNEL)
 	system_power_s system_power;
 	system_power.timestamp = hrt_absolute_time();
 
 	system_power.voltage5V_v = 0;
 	for (unsigned i = 0; i < _channel_count; i++) {
-		if (_samples[i].am_channel == 4) {
-			// it is 2:1 scaled
-			system_power.voltage5V_v = _samples[i].am_data * (6.6f / 4096);
+		if (_samples[i].am_channel == ADC_SYSPOWER_VOLTAGE_CHANNEL) {
+			system_power.voltage5V_v =
+				_samples[i].am_data * (float)ADC_SYSPOWER_VOLTAGE_SCALE;
 		}
 	}
 
@@ -334,7 +338,7 @@ ADC::update_system_power(void)
 	} else {
 		_to_system_power = orb_advertise(ORB_ID(system_power), &system_power);
 	}
-#endif // CONFIG_ARCH_BOARD_PX4FMU_V2
+#endif // ADC_SYSPOWER_VOLTAGE_CHANNEL
 }
 
 uint16_t
