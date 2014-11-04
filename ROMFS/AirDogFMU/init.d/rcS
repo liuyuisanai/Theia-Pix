@@ -13,11 +13,9 @@ set EXTRAS_FILE /fs/microsd/etc/extras.txt
 
 set TUNE_OUT_ERROR ML<<CP4CP4CP4CP4CP4
 
-set EXIT_ON_END no
 set FAILSAFE none
 set GPS yes
 set GPS_FAKE no
-
 set MAVLINK_FLAGS "-r 1000"
 
 set FMU_MODE pwm
@@ -34,6 +32,28 @@ set HIL no
 set MIXER FMU_quad_x
 set VEHICLE_TYPE mc
 set MAV_TYPE 2
+
+#set ALWAYS_DEBUG_MODE yes
+
+if [ notset$ALWAYS_DEBUG_MODE = notset ]
+then
+	if debug_button_pressed
+	then
+		set DEBUG_MODE yes
+	else
+		set DEBUG_MODE no
+	fi
+else
+	set DEBUG_MODE yes
+fi
+
+if [ $DEBUG_MODE = yes ]
+then
+	set EXIT_ON_END no
+	tone_alarm MFO3L4ABCABC
+else
+	set EXIT_ON_END yes
+fi
 
 #
 # Try to mount the microSD card.

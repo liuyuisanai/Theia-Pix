@@ -6,11 +6,6 @@
 ms5611 start
 adc start
 
-if [ _$MB_SONAR_TTY = _ ]
-then
-    set MB_SONAR_TTY /dev/ttyS2
-fi
-
 if mpu6000 start
 then
 fi
@@ -33,14 +28,20 @@ if lsm303d start
 then
 fi
 
-# Start MaxBotix sonar on serial
-if mb1230serial start $MB_SONAR_TTY
+# Sonar share tty with console
+if [ $DEBUG_MODE = no ]
 then
- echo [init] Using MaxBotix sonar at $MB_SONAR_TTY
-else
- echo error starting MaxBotix sonar at $MB_SONAR_TTY
+	if [ notset$MB_SONAR_TTY = notset ]
+	then
+		set MB_SONAR_TTY /dev/ttyS6
+	fi
+	if mb1230serial start $MB_SONAR_TTY
+	then
+		echo [init] Using MaxBotix sonar at $MB_SONAR_TTY
+	else
+		echo error starting MaxBotix sonar at $MB_SONAR_TTY
+	fi
 fi
-
 
 #
 # Start the sensor collection task.
