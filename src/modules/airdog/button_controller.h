@@ -75,6 +75,7 @@
  * Measured in microseconds
  */
 #define PRESSED_BUTTON_RESEND_CYCLE 500000
+#define LONG_PRESS_LENGTH 500000
 
 #define BUTTON_HANDLED true
 #define BUTTON_IGNORED false
@@ -111,8 +112,9 @@ public:
 	//Sets bitmap mask of a button set
 	void setMask(enum button_set bs, uint32_t m);
 
-
 	void setCallback(enum button_set bs, enum button_callback_type bct, void *cb, void *arg = nullptr);
+
+    
 
 private:
 	struct button_s {
@@ -130,6 +132,8 @@ private:
 
 	uint32_t mask[BS_COUNT];
 	uint32_t ignore_mask[BS_COUNT];
+
+    bool long_press_sent = false;
 };
 
 #endif // BUTTON_CONTROLLER_H

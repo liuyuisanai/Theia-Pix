@@ -378,7 +378,13 @@ bool cAirdog::button_clicked_i2c(uint8_t button, bool long_press)
             if (current_button_state == BUTTON_STATE_DEFAULT) {
                 send_command(REMOTE_CMD_DOWN);
             } else if (current_button_state == BUTTON_STATE_CHOOSE_FUNCTION){
-                send_command(REMOTE_CMD_LAND_DISARM);
+
+                uint8_t base_mode = MAV_MODE_FLAG_SAFETY_ARMED | MAV_MODE_FLAG_AUTO_ENABLED;
+                if (hil) base_mode |= MAV_MODE_FLAG_HIL_ENABLED;
+
+                send_set_auto_mode(base_mode, PX4_CUSTOM_SUB_MODE_AUTO_RTL);
+                set_current_button_state(BUTTON_STATE_DEFAULT);
+
                 set_current_button_state(BUTTON_STATE_DEFAULT);
             }
 			break;
@@ -386,10 +392,22 @@ bool cAirdog::button_clicked_i2c(uint8_t button, bool long_press)
 
 			// PLAY button
             //
-            if (current_button_state == BUTTON_STATE_DEFAULT) {
-                send_command(REMOTE_CMD_PLAY_PAUSE);
-            } else if (current_button_state == BUTTON_STATE_CHOOSE_FUNCTION){
-                set_current_button_state(BUTTON_STATE_DEFAULT);
+            //long_press - takeoff/ land
+            if (long_press) {
+                if (!armed & drone_active){
+                    set_current_button_state(BUTTON_STATE_CONFIRM_TAKEOFF);
+                } else {
+                    send_command(REMOTE_CMD_LAND_DISARM);
+                }
+
+            } else {
+            
+                if (current_button_state == BUTTON_STATE_DEFAULT) {
+                    send_command(REMOTE_CMD_PLAY_PAUSE);
+                } else if (current_button_state == BUTTON_STATE_CHOOSE_FUNCTION){
+                    set_current_button_state(BUTTON_STATE_DEFAULT);
+                }
+            
             }
 
 			break;
@@ -397,13 +415,7 @@ bool cAirdog::button_clicked_i2c(uint8_t button, bool long_press)
 			// UP button
 
             if (current_button_state == BUTTON_STATE_DEFAULT) {
-            
-                if (!armed & drone_active){
-                    set_current_button_state(BUTTON_STATE_CONFIRM_TAKEOFF);
-                } else {
-                    send_command(REMOTE_CMD_UP);
-                }
-
+                send_command(REMOTE_CMD_UP);
             }
 
 			break;
@@ -422,10 +434,7 @@ bool cAirdog::button_clicked_i2c(uint8_t button, bool long_press)
 
             } else if (current_button_state == BUTTON_STATE_CHOOSE_FUNCTION){
 
-                uint8_t base_mode = MAV_MODE_FLAG_SAFETY_ARMED | MAV_MODE_FLAG_AUTO_ENABLED;
-                if (hil) base_mode |= MAV_MODE_FLAG_HIL_ENABLED;
-
-                send_set_auto_mode(base_mode, PX4_CUSTOM_SUB_MODE_AUTO_RTL);
+                send_command(REMOTE_CMD_COME_TO_ME);
                 set_current_button_state(BUTTON_STATE_DEFAULT);
             }
 
@@ -438,9 +447,8 @@ bool cAirdog::button_clicked_i2c(uint8_t button, bool long_press)
 
             } else if (current_button_state == BUTTON_STATE_CHOOSE_FUNCTION){
 
-                send_command(REMOTE_CMD_COME_TO_ME);
+                send_command(REMOTE_CMD_LOOK_DOWN);
                 set_current_button_state(BUTTON_STATE_DEFAULT);
-
             }
 
 			break;
@@ -454,11 +462,8 @@ bool cAirdog::button_clicked_i2c(uint8_t button, bool long_press)
 			// CENTER UP
             if (current_button_state == BUTTON_STATE_DEFAULT) {
                 send_command(REMOTE_CMD_FURTHER);
-            } else if (current_button_state == BUTTON_STATE_CHOOSE_FUNCTION){
-                send_command(REMOTE_CMD_LOOK_DOWN);
-                set_current_button_state(BUTTON_STATE_DEFAULT);
-            }
-			break;
+            }		
+            break;
 		case 8:
 			// CENTER LEFT
             if (current_button_state == BUTTON_STATE_DEFAULT) {
