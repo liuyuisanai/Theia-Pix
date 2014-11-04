@@ -629,6 +629,8 @@ void sdlog2_start_log()
 	dprintf(perf_fd, "PERFORMANCE COUNTERS PRE-FLIGHT\n\n");
 	perf_print_all(perf_fd);
 	close(perf_fd);
+	// Reset all counters so that postflight will have min, max and avg counters for flight only
+	perf_reset_all();
 
 	logging_enabled = true;
 }
