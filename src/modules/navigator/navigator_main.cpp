@@ -255,7 +255,6 @@ void
 Navigator::target_trajectory_update()
 {
 	orb_copy(ORB_ID(external_trajectory), _target_trajectory_sub, &_target_trajectory);
-	warnx("Trajectory updated! Time: %lld", _target_trajectory.timestamp);
 }
 
 void
@@ -510,7 +509,7 @@ Navigator::task_main()
 				break;
 			case NAVIGATION_STATE_ABS_FOLLOW:
 				_navigation_mode = &_abs_follow;
-
+				break;
 			case NAVIGATION_STATE_AUTO_PATH_FOLLOW:
 				_navigation_mode = &_path_follow;
 				break;
