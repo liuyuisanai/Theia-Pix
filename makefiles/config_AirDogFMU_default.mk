@@ -24,7 +24,6 @@ MODULES		+= drivers/lsm303d
 MODULES		+= drivers/mb1230serial
 MODULES		+= drivers/mpu6000
 MODULES		+= drivers/ms5611
-MODULES		+= drivers/px4fmu
 MODULES		+= drivers/px4io
 MODULES		+= drivers/stm32
 MODULES		+= drivers/stm32/adc
@@ -46,6 +45,7 @@ MODULES		+= modules/spi_exchange
 #MODULES		+= drivers/meas_airspeed
 #MODULES		+= drivers/pca8574
 #MODULES		+= drivers/px4flow
+#MODULES		+= drivers/px4fmu
 #MODULES		+= drivers/rgbled
 #MODULES		+= drivers/sf0x
 
