@@ -81,6 +81,12 @@ private:
         MAV_STATE_ENUM_END=8, /*  | */
     };
 
+    enum BUTTON_STATE {
+        BUTTON_STATE_DEFAULT = 0,
+        BUTTON_STATE_CHOOSE_FUNCTION,
+        BUTTON_STATE_CONFIRM_TAKEOFF
+    } current_button_state;
+
 
 	void send_set_mode(uint8_t base_mode, enum PX4_CUSTOM_MAIN_MODE custom_main_mode);
 	void send_set_auto_mode(uint8_t base_mode, enum PX4_CUSTOM_SUB_MODE_AUTO custom_sub_mode_auto);
@@ -97,6 +103,7 @@ private:
 	void set_param_if_updated();
 	void handle_takeoff();
 	void display_discharged_mah();
+    void set_current_button_state(BUTTON_STATE button_state);
 
 	bool running;
 

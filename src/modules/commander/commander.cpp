@@ -458,7 +458,7 @@ bool handle_command(struct vehicle_status_s *status_local, const struct safety_s
 					/* POSCTL */
 					main_ret = main_state_transition(status_local, MAIN_STATE_POSCTL);
 
-				} else if (custom_main_mode == PX4_CUSTOM_MAIN_MODE_AUTO) {
+				} else if (custom_main_mode == PX4_CUSTOM_MAIN_MODE_LOITER) {
 					//* AUTO */
 					main_ret = main_state_transition(status_local, MAIN_STATE_LOITER);
 

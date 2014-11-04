@@ -79,6 +79,7 @@ void cAirdog::start()
 {
 	int ret;
 
+    current_button_state = BUTTON_STATE_DEFAULT;
 	base_mode = MAV_MODE_FLAG_SAFETY_ARMED | MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
 
 	buzzer = open(TONEALARM_DEVICE_PATH, O_WRONLY);
@@ -354,6 +355,7 @@ bool cAirdog::button_pressed_i2c(uint8_t button, hrt_abstime time)
 	return BUTTON_IGNORED;
 }
 
+
 bool cAirdog::button_clicked_i2c(uint8_t button, bool long_press)
 {
 
@@ -365,131 +367,139 @@ bool cAirdog::button_clicked_i2c(uint8_t button, bool long_press)
 	switch(button) {
 		case 0:
 			// ON/OFF button
-			if (!long_press) {
+            
+            if (current_button_state == BUTTON_STATE_DEFAULT) {
 				pmenu_ctrl->open();
-			}
+            }
+
 			break;
 		case 1:
 			// DOWN button
-			send_command(REMOTE_CMD_DOWN);
+            if (current_button_state == BUTTON_STATE_DEFAULT) {
+                send_command(REMOTE_CMD_DOWN);
+            } else if (current_button_state == BUTTON_STATE_CHOOSE_FUNCTION){
+                send_command(REMOTE_CMD_LAND_DISARM);
+                set_current_button_state(BUTTON_STATE_DEFAULT);
+            }
 			break;
 		case 2:
-			// PLAY button
 
-			if (!armed & drone_active)
-			{
-				uint8_t base_mode = MAV_MODE_FLAG_SAFETY_ARMED | MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
-				if (hil)
-				{
-					base_mode |= MAV_MODE_FLAG_HIL_ENABLED;
-				}
-				send_set_mode(base_mode, PX4_CUSTOM_MAIN_MODE_AUTO);
-			} else {
-				send_command(REMOTE_CMD_PLAY_PAUSE);
-			}
-			// } else {
-			// 	if (long_press)
-			// 	{
-			// 		if (pparam_handler->get(PARAM_NAV_LAND_HOME) > 0) {
-			// 			// send_set_state(NAV_STATE_RTL, MOVE_NONE);
-			// 		} else {
-			// 			// send_set_state(NAV_STATE_LAND, MOVE_NONE);
-			// 		}
-			// 		//send_set_mode(MAV_MODE_FLAG_CUSTOM_MODE_ENABLED, PX4_CUSTOM_MAIN_MODE_AUTO);
-			// 	} else {
-			// 		if (airdog_status.sub_mode == PX4_CUSTOM_SUB_MODE_AUTO_LOITER)
-			// 		{
-			// 			// send_set_state(NAV_STATE_AFOLLOW, MOVE_NONE);
-			// 		} else {
-			// 			// send_set_state(NAV_STATE_LOITER, MOVE_NONE);
-			// 		}
-			// 	}
-			// }
+			// PLAY button
+            //
+            if (current_button_state == BUTTON_STATE_DEFAULT) {
+                send_command(REMOTE_CMD_PLAY_PAUSE);
+            } else if (current_button_state == BUTTON_STATE_CHOOSE_FUNCTION){
+                set_current_button_state(BUTTON_STATE_DEFAULT);
+            }
+
 			break;
 		case 3:
 			// UP button
-			send_command(REMOTE_CMD_UP);
+
+            if (current_button_state == BUTTON_STATE_DEFAULT) {
+            
+                if (!armed & drone_active){
+                    set_current_button_state(BUTTON_STATE_CONFIRM_TAKEOFF);
+                } else {
+                    send_command(REMOTE_CMD_UP);
+                }
+
+            }
+
 			break;
 		case 4:
 			// CENTER button
-			//
-			if (long_press) {
-//				 if (!log_running) {
-//				 	send_record_path_cmd(true);
-//				 	log_running = true;
-//				 	pi2c_disp_ctrl->set_symbols(SYMBOL_L, SYMBOL_0, SYMBOL_EMPTY);
-//				 } else {
-//				 	send_record_path_cmd(false);
-//				 	log_running = false;
-//				 	pi2c_disp_ctrl->set_symbols(SYMBOL_MINUS, SYMBOL_L, SYMBOL_0);
-//				 }
-			} else if (vehicle_status.system_id == trainer_remote_id) { //TODO get trainer remote id from drone
-				// send_set_state(NAV_STATE_COME_HERE, MOVE_TRAINER);
-			} else {
-				// send_set_state(NAV_STATE_COME_HERE, MOVE_TARGET);
-			}
+            if (current_button_state == BUTTON_STATE_CONFIRM_TAKEOFF){
+                uint8_t base_mode = MAV_MODE_FLAG_SAFETY_ARMED | MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
+                if (hil) base_mode |= MAV_MODE_FLAG_HIL_ENABLED;
+				send_set_mode(base_mode, PX4_CUSTOM_MAIN_MODE_LOITER);
+                usleep(100000);
+                send_command(REMOTE_CMD_TAKEOFF);
+                set_current_button_state(BUTTON_STATE_DEFAULT);
+            
+            } else if (current_button_state == BUTTON_STATE_DEFAULT) {
+                set_current_button_state(BUTTON_STATE_CHOOSE_FUNCTION);
+
+            } else if (current_button_state == BUTTON_STATE_CHOOSE_FUNCTION){
+
+                uint8_t base_mode = MAV_MODE_FLAG_SAFETY_ARMED | MAV_MODE_FLAG_AUTO_ENABLED;
+                if (hil) base_mode |= MAV_MODE_FLAG_HIL_ENABLED;
+
+                send_set_auto_mode(base_mode, PX4_CUSTOM_SUB_MODE_AUTO_RTL);
+                set_current_button_state(BUTTON_STATE_DEFAULT);
+            }
+
 			break;
 		case 5:
 			// CENTER DOWN
-			send_command(REMOTE_CMD_CLOSER);
+            if (current_button_state == BUTTON_STATE_DEFAULT) {
+
+			    send_command(REMOTE_CMD_CLOSER);
+
+            } else if (current_button_state == BUTTON_STATE_CHOOSE_FUNCTION){
+
+                send_command(REMOTE_CMD_COME_TO_ME);
+                set_current_button_state(BUTTON_STATE_DEFAULT);
+
+            }
+
 			break;
 		case 6:
 			// CENTER RIGHT
-			send_command(REMOTE_CMD_RIGHT);
+            if (current_button_state == BUTTON_STATE_DEFAULT) {
+                send_command(REMOTE_CMD_RIGHT);
+            }
 			break;
 		case 7:
 			// CENTER UP
-			send_command(REMOTE_CMD_FURTHER);
+            if (current_button_state == BUTTON_STATE_DEFAULT) {
+                send_command(REMOTE_CMD_FURTHER);
+            } else if (current_button_state == BUTTON_STATE_CHOOSE_FUNCTION){
+                send_command(REMOTE_CMD_LOOK_DOWN);
+                set_current_button_state(BUTTON_STATE_DEFAULT);
+            }
 			break;
 		case 8:
 			// CENTER LEFT
-			send_command(REMOTE_CMD_LEFT);
+            if (current_button_state == BUTTON_STATE_DEFAULT) {
+                send_command(REMOTE_CMD_LEFT);
+            } else if (current_button_state == BUTTON_STATE_CHOOSE_FUNCTION){
+            
+                if (!log_running) {
+                    send_record_path_cmd(true);
+                    log_running = true;
+                    pi2c_disp_ctrl->set_symbols(SYMBOL_L, SYMBOL_0, SYMBOL_EMPTY);
+                 } else {
+                    send_record_path_cmd(false);
+                    log_running = false;
+                    pi2c_disp_ctrl->set_symbols(SYMBOL_MINUS, SYMBOL_L, SYMBOL_0);
+                 }
+                set_current_button_state(BUTTON_STATE_DEFAULT);
+
+            }
 			break;
 		case 9:
 			// DOWN + CENTER
-			send_command(REMOTE_CMD_LAND_DISARM);
 			break;
 		case 10:
 			// UP + CENTER
-			send_command(REMOTE_CMD_TAKEOFF);
 			break;
 		case 11:
 			// CENTER DOWN + CENTER
-			// pparam_handler->sendCustomParam("AIRD_PITCH_DOWN", PTYPE_INT, 1, false);
-			// pitch_down = true;
-
-			send_command(REMOTE_CMD_LOOK_DOWN);
 			break;
 		case 12:
 		{
 			// CENTER RIGHT + CENTER
-			uint8_t base_mode = MAV_MODE_FLAG_SAFETY_ARMED | MAV_MODE_FLAG_AUTO_ENABLED;
-			if (hil)
-			{
-				base_mode |= MAV_MODE_FLAG_HIL_ENABLED;
-			}
-
-			send_set_auto_mode(base_mode, PX4_CUSTOM_SUB_MODE_AUTO_RTL);
 
 			break;
 		}
 		case 13:
 		{
 			// CENTER UP + CENTER
-			send_command(REMOTE_CMD_COME_TO_ME);
 			break;
 		}
 		case 14:
 			// CENTER LEFT + CENTER
-			if (!log_running) {
-				send_record_path_cmd(true);
-				log_running = true;
-				pi2c_disp_ctrl->set_symbols(SYMBOL_L, SYMBOL_0, SYMBOL_EMPTY);
-			 } else {
-				send_record_path_cmd(false);
-				log_running = false;
-				pi2c_disp_ctrl->set_symbols(SYMBOL_MINUS, SYMBOL_L, SYMBOL_0);
-			 }
 			break;
 
 
@@ -502,6 +512,17 @@ void cAirdog::display_drone_state() {
 	if (pmenu_ctrl->isActive() || log_running) {
 		return;
 	}
+
+    if (current_button_state == BUTTON_STATE_CONFIRM_TAKEOFF){
+		pi2c_disp_ctrl->set_symbols(SYMBOL_U, SYMBOL_P, SYMBOL_DOT);
+        return;
+    }
+
+    if (current_button_state == BUTTON_STATE_CHOOSE_FUNCTION){
+		pi2c_disp_ctrl->set_symbols(SYMBOL_0, SYMBOL_H, SYMBOL_DOT);
+        return;
+    }
+
 	if (!drone_active) {
 		pi2c_disp_ctrl->set_symbols(SYMBOL_EMPTY, SYMBOL_EMPTY, SYMBOL_EMPTY);
 	} else {
@@ -538,6 +559,10 @@ void cAirdog::display_drone_state() {
         }
 	}
 
+}
+
+void cAirdog::set_current_button_state(BUTTON_STATE new_button_state) {
+    current_button_state = new_button_state;
 }
 
 void cAirdog::handle_takeoff()
