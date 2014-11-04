@@ -59,6 +59,7 @@
 #include <uORB/topics/vehicle_local_position.h>
 #include <uORB/topics/vehicle_global_position.h>
 #include <uORB/topics/vehicle_gps_position.h>
+#include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/vision_position_estimate.h>
 #include <uORB/topics/home_position.h>
 #include <uORB/topics/optical_flow.h>
@@ -248,7 +249,8 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 	float baro_offset = 0.0f;		// baro offset for reference altitude, initialized on start, then adjusted
 	//float surface_offset = 0.0f;	// ground level offset from reference altitude
 	//float surface_offset_rate = 0.0f;	// surface offset change rate
-	float alt_avg = 0.0f;
+	//float alt_avg = 0.0f;
+    //float alt_land = 0.0f;
 	bool landed = true;
 	hrt_abstime landed_time = 0;
 
@@ -331,6 +333,9 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 	struct vehicle_global_position_s global_pos;
 	memset(&global_pos, 0, sizeof(global_pos));
     struct range_finder_report range_finder;
+    memset(&range_finder, 0, sizeof(range_finder));
+    struct vehicle_status_s vehicle_status;
+    memset(&vehicle_status, 0, sizeof(vehicle_status));
 
 	/* subscribe */
 	int parameter_update_sub = orb_subscribe(ORB_ID(parameter_update));
@@ -343,6 +348,7 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 	int vision_position_estimate_sub = orb_subscribe(ORB_ID(vision_position_estimate));
 	int home_position_sub = orb_subscribe(ORB_ID(home_position));
     int range_finder_sub = orb_subscribe(ORB_ID(sensor_range_finder));
+    int vehicle_status_sub = orb_subscribe(ORB_ID(vehicle_status));
 
 	/* advertise */
 	orb_advert_t vehicle_local_position_pub = orb_advertise(ORB_ID(vehicle_local_position), &local_pos);
@@ -1149,42 +1155,127 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 		}
 
 		/* detect land */
-		alt_avg += (- z_est[0] - alt_avg) * dt / params.land_t;
-		float alt_disp2 = - z_est[0] - alt_avg;
-		alt_disp2 = alt_disp2 * alt_disp2;
-		float land_disp2 = params.land_disp * params.land_disp;
-		/* get actual thrust output */
-		float thrust = armed.armed ? actuator.control[3] : 0.0f;
 
-		if (landed) {
-			if (alt_disp2 > land_disp2 || thrust > params.land_thr) {
-				landed = false;
-				landed_time = 0;
-			}
+        /* hack by MAX */
+        bool updated;
+        orb_check(ORB_ID(vehicle_status), &updated);
+        if (updated) {
+            orb_copy(ORB_ID(vehicle_status), vehicle_status_sub, &vehicle_status);
+        
+            //fprintf(stdout, "arming state: %d landed: %d actuator: %.3f \n", vehicle_status.arming_state, landed, (double)actuator.control[3]);
+        
+        
+            float thrust = armed.armed ? actuator.control[3] : 0.0f;
+            if (landed) {
+                /* We are on land */
+                if (vehicle_status.arming_state == ARMING_STATE_ARMED) {
+                    // Get actual thrust we are already armed
+                    if (actuator.control[3] > params.land_thr) {
+                        //fprintf(stdout, "Thrust: %.3f, is greater than: %.3f\n", (double)actuator.control[3], (double)params.land_thr);
+                        landed = false;
+                    }
+                }
+                else if (vehicle_status.arming_state == ARMING_STATE_STANDBY) {
+                    fprintf(stdout, "Landed, state: %d, thrust: %.3f\n",
+                            vehicle_status.arming_state, (double)thrust);
+                }
+            }
+            else {
 
-		} else {
-			if (alt_disp2 < land_disp2 && thrust < params.land_thr) {
-				if (landed_time == 0) {
-					landed_time = t;    // land detected first time
+                /*========== We are flying ==========*/
+                if (vehicle_status.arming_state == ARMING_STATE_ARMED) {
+                    if (thrust <= params.land_thr) {
+                        /* If thrust is less or equal to landed thrust 
+                         * than we are either on the ground or falling down
+                         */
+                        float accepted_velosity_delta = 0.1f;
+                        if (landed_time == 0.0f) {
+                            landed_time = t;
+                            if (fabsf(local_pos.vz) > accepted_velosity_delta) {
+                                // We are sure that this is not landing, the very first velocity is too high
+                                landed_time = 0.0f;
+                            }
+                        }
+                        else {
+                            if(t - landed_time < params.land_t * 1000000.0f) {
+                                // We had detected a possible landing and this is the process of confirming it over time
+                               if (fabsf(local_pos.vz) > accepted_velosity_delta) {
+                                       landed_time = 0.0f;
+                               }
+                            }
+                            else {
+                            // Sufficient time has passed and within this time range our velocity change is negligible 
+                                landed = true;
+                                landed_time = 0.0f;
+                                fprintf(stderr, "We are happily landed\n");
+                            }
+                        }
+                        // This is the first time we realized throttle is too low, let's have a time to consider if we are on the ground
+                        fprintf(stderr, "z estimated velosity: %.3f time delta: %.3f\n",(double)local_pos.vz, (double)(t-landed_time));
+                    }
+                }
 
-				} else {
-					if (t > landed_time + params.land_t * 1000000.0f) {
-						landed = true;
-						landed_time = 0;
-					}
-				}
+                else if (vehicle_status.arming_state == ARMING_STATE_STANDBY) {
+                    if (thrust <= params.land_thr) {
+                        landed = true;
+                        fprintf(stdout, "Landed in standby state, thrust: %.3f\n", (double)thrust);
+                    }
+                }
+            }
+        }
+        /* end of hack by MAX */
 
-			} else {
-				landed_time = 0;
-			}
-		}
+		//alt_avg += (- z_est[0] - alt_avg) * dt / params.land_t;
+
+		//float alt_disp2 = - z_est[0] - alt_avg;
+		//alt_disp2 = alt_disp2 * alt_disp2;
+
+		//float land_disp2 = params.land_disp * params.land_disp;
+		///* get actual thrust output */
+		//float thrust = armed.armed ? actuator.control[3] : 0.0f;
+        //
+		//if (landed) {
+		//	if (alt_disp2 > land_disp2 || thrust > params.land_thr) {
+		//		landed = false;
+        //        fprintf(stdout, "alt_avg: %.3f alt_disp2: %.3f land_disp2: %.3f thrust %.3f landed %d\n",
+        //                (double)alt_avg,
+        //                (double)alt_disp2,
+        //                (double)land_disp2,
+        //                (double)thrust,
+        //                landed);
+		//landed_time = 0;
+		//	}
+
+		//} else {
+		//	if (alt_disp2 < land_disp2 && thrust < params.land_thr) {
+		//		if (landed_time == 0) {
+		//			landed_time = t;    // land detected first time
+
+		//		} else {
+		//			if (t > landed_time + params.land_t * 1000000.0f) {
+		//				landed = true;
+        //                    fprintf(stdout, "alt_avg: %.3f alt_disp2: %.3f land_disp2: %.3f thrust %.3f landed %d\n",
+        //                            (double)alt_avg,
+        //                            (double)alt_disp2,
+        //                            (double)land_disp2,
+        //                            (double)thrust,
+        //                            landed);
+        //            landed_time = 0;
+		//			}
+		//		}
+
+		//	} else {
+		//		landed_time = 0;
+		//	}
+		//}
+        
 
 		if (verbose_mode) {
 			/* print updates rate */
 			if (t > updates_counter_start + updates_counter_len) {
 				float updates_dt = (t - updates_counter_start) * 0.000001f;
 				warnx(
-					"updates rate: accelerometer = %.1f/s, baro = %.1f/s, gps = %.1f/s, attitude = %.1f/s, flow = %.1f/s",
+					"updates rate: accelerometer = %.1f/s, baro = %.1f/s, gps = %.1f/s, attitude = %.1f/s",
 					(double)(accel_updates / updates_dt),
 					(double)(baro_updates / updates_dt),
 					(double)(gps_updates / updates_dt),
