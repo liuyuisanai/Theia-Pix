@@ -60,6 +60,7 @@
 #include <drivers/drv_accel.h>
 #include <drivers/drv_airspeed.h>
 #include <drivers/drv_device.h>
+#include <drivers/drv_pwm_output.h>
 #include <mavlink/mavlink_log.h>
 
 #include "state_machine_helper.h"
@@ -151,6 +152,23 @@ arming_state_transition(struct vehicle_status_s *status,		///< current vehicle s
 			// We have a good transition. Now perform any secondary validation.
 			if (new_arming_state == ARMING_STATE_ARMED) {
 
+				// TODO! Check for correct fix!
+				int pwm_fd = open(PWM_OUTPUT_DEVICE_PATH, 0);
+				if (pwm_fd < 0) {
+					mavlink_log_critical(mavlink_fd, "can't open %s", PWM_OUTPUT_DEVICE_PATH);
+					feedback_provided = true;
+					valid_transition = false;
+				}
+				// 0x0F for 1234 channels
+				else if (ioctl(pwm_fd, PWM_SERVO_SET_FORCE_SAFETY_OFF, 0x0F) != 0) {
+					mavlink_log_critical(mavlink_fd, "Could not turn off pwm safety switch.");
+					feedback_provided = true;
+					valid_transition = false;
+				}
+				if (pwm_fd >= 0) {
+					mavlink_log_info(mavlink_fd, "Successfully disabled pwm safty!");
+					close(pwm_fd);
+				}
 				//      Do not perform pre-arm checks if coming from in air restore
 				//      Allow if HIL_STATE_ON
 				if (status->arming_state != ARMING_STATE_IN_AIR_RESTORE &&
@@ -200,7 +218,6 @@ arming_state_transition(struct vehicle_status_s *status,		///< current vehicle s
 					}
 
 				}
-
 			} else if (new_arming_state == ARMING_STATE_STANDBY && status->arming_state == ARMING_STATE_ARMED_ERROR) {
 				new_arming_state = ARMING_STATE_STANDBY_ERROR;
 			}
