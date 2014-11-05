@@ -11,6 +11,11 @@
 struct buffer_point_s {
 	double lat, lon;
 	float alt;
+	// Provide memcopy assignment for the Queue class
+	buffer_point_s& operator=(buffer_point_s const &copy) {
+		memcpy(this, &copy, sizeof(buffer_point_s));
+		return *this;
+	}
 };
 
 // TODO! All modes use Mission Block as a superclass. Is it really needed?
@@ -40,14 +45,14 @@ private:
 	// Updates saved trajectory and trajectory distance with a new point
 	void update_saved_trajectory();
 	// Update position setpoint to desired values
-	void update_setpoint(const buffer_point_s &desired_point, position_setpoint_s &destination);
+	inline void update_setpoint(const buffer_point_s &desired_point, position_setpoint_s &destination);
 	// Updates minimum and maximum distance based on ok distance
 	inline void update_min_max_dist();
 	// Calculates desired speed in m/s based on current distance and target's speed
-	float calculate_desired_speed(float distance);
+	inline float calculate_desired_speed(float distance);
 	// Calculates total current distance by trajectory + drone distance to setpoint + target distance to last point
-	float calculate_current_distance();
+	inline float calculate_current_distance();
 	// Checks if the next point in the buffer is safe to use
-	bool check_point_safe();
+	inline bool check_point_safe();
 
 };

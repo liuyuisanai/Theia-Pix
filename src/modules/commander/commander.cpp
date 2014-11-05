@@ -265,7 +265,7 @@ int commander_main(int argc, char *argv[])
 		daemon_task = task_spawn_cmd("commander",
 					     SCHED_DEFAULT,
 					     SCHED_PRIORITY_MAX - 40,
-					     2950,
+					     3150,
 					     commander_thread_main,
 					     (argv) ? (const char **)&argv[2] : (const char **)NULL);
 
@@ -2444,7 +2444,7 @@ set_control_mode()
 		control_mode.flag_control_termination_enabled = false;
 		control_mode.flag_control_follow_target = false;
 		control_mode.flag_control_point_to_target = true;
-		control_mode.flag_control_setpoint_velocity = false;
+		control_mode.flag_control_setpoint_velocity = true;
 		break;
 
 	case NAVIGATION_STATE_ABS_FOLLOW:

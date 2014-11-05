@@ -118,6 +118,8 @@ NavigatorMode::updateParamHandles() {
 	_parameter_handles.pafol_min_ok_diff = param_find("PAFOL_MIN_TO_OK");
 	_parameter_handles.pafol_ok_max_coef = param_find("PAFOL_MAX_COEF");
 	_parameter_handles.pafol_safe_dist = param_find("PAFOL_SAFE_DIST");
+
+	_parameter_handles.mpc_max_speed = param_find("MPC_XY_VEL_MAX");
 }
 
 void
@@ -140,6 +142,8 @@ NavigatorMode::updateParamValues() {
 	param_get(_parameter_handles.pafol_min_ok_diff, &(_parameters.pafol_min_ok_diff));
 	param_get(_parameter_handles.pafol_ok_max_coef, &(_parameters.pafol_ok_max_coef));
 	param_get(_parameter_handles.pafol_safe_dist, &(_parameters.pafol_safe_dist));
+
+	param_get(_parameter_handles.mpc_max_speed, &(_parameters.mpc_max_speed));
 }
 
 

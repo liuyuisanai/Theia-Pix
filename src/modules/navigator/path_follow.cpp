@@ -47,7 +47,7 @@ void PathFollow::on_activation() {
 	_mavlink_fd = _navigator->get_mavlink_fd();
 	// TODO! This message belongs elsewhere
 	mavlink_log_info(_mavlink_fd, "Activated Follow Path");
-	warnx("Follow path active! Disabled speed, L1, parameters, memory check, mavlink_fd!");
+	warnx("Follow path active! Max speed control, L1, parameters, memory check, mavlink_fd!");
 
 	if (!_inited) {
 		mavlink_log_critical(_mavlink_fd, "Follow Path mode wasn't initialized! Aborting...");
@@ -83,6 +83,7 @@ void PathFollow::on_activation() {
 
 	pos_sp_triplet = _navigator->get_position_setpoint_triplet();
 	pos_sp_triplet->next.valid = false;
+	pos_sp_triplet->previous.valid = false;
 	// Reset position setpoint to shoot and loiter until we get an acceptable trajectory point
 	pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
 	pos_sp_triplet->current.lat = global_pos->lat;
@@ -90,6 +91,7 @@ void PathFollow::on_activation() {
 	pos_sp_triplet->current.alt = global_pos->alt;
 	pos_sp_triplet->current.valid = true;
 	pos_sp_triplet->current.position_valid = true;
+	pos_sp_triplet->current.abs_velocity_valid = false;
 	// point_camera_to_target(&(pos_sp_triplet->current));
 	_navigator->set_position_setpoint_triplet_updated();
 }
@@ -148,7 +150,7 @@ void PathFollow::on_active() {
 						pos_sp_triplet->current.lon, _actual_point.lat, _actual_point.lon);
 
 					// Having both previous and next waypoint allows L1 algorithm
-					pos_sp_triplet->previous = pos_sp_triplet->current;
+					memcpy(&(pos_sp_triplet->previous),&(pos_sp_triplet->current),sizeof(position_setpoint_s));
 					// Trying to prevent L1 algorithm
 					// pos_sp_triplet->previous.valid = false;
 
@@ -184,17 +186,17 @@ void PathFollow::on_active() {
 
 	// If we have a setpoint, update speed
 	if (_has_valid_setpoint) {
-		float angle; // angle of current movement, from -pi to pi
+		// float angle; // angle of current movement, from -pi to pi
 		_desired_speed = calculate_desired_speed(calculate_current_distance());
-		// warnx("Absolute speed: % 9.6f", double(_desired_speed));
-		global_pos = _navigator->get_global_position();
-		angle = get_bearing_to_next_waypoint(global_pos->lat, global_pos->lon, _actual_point.lat, _actual_point.lon);
+		// warnx("Absolute desired speed: % 9.6f", double(_desired_speed));
+		// global_pos = _navigator->get_global_position();
+		// angle = get_bearing_to_next_waypoint(global_pos->lat, global_pos->lon, _actual_point.lat, _actual_point.lon);
 		// warnx("Would be speed: x = % 9.6f, y = % 9.6f", double(float(cos((double)angle)) * _desired_speed), double(float(sin((double)angle)) * _desired_speed));
 		// TODO! Check what x and y axis stand for in this case and if cos and sin are used correctly
-		pos_sp_triplet->current.vx = float(cos((double)angle)) * _desired_speed;
-		pos_sp_triplet->current.vy = float(sin((double)angle)) * _desired_speed;
-		pos_sp_triplet->current.vz = 0;
-		pos_sp_triplet->current.velocity_valid = true;
+		// pos_sp_triplet->current.vx = float(cos((double)angle)) * _desired_speed;
+		// pos_sp_triplet->current.vy = float(sin((double)angle)) * _desired_speed;
+		pos_sp_triplet->current.abs_velocity = _desired_speed;
+		pos_sp_triplet->current.abs_velocity_valid = true;
 
 		setpointChanged = true;
 	}
@@ -275,35 +277,39 @@ void PathFollow::update_setpoint(const buffer_point_s &desired_point, position_s
 
 void PathFollow::update_min_max_dist() {
 	_min_distance = _ok_distance - _parameters.pafol_min_ok_diff;
+	if (_min_distance < _parameters.pafol_safe_dist) {
+		_min_distance = _parameters.pafol_safe_dist;
+		// TODO! Do we need this check?
+		if (_ok_distance < _min_distance) {
+			_ok_distance = _min_distance;
+		}
+	}
+	// TODO! Add max limit (as in "no signal")
 	_max_distance = _ok_distance * _parameters.pafol_ok_max_coef;
 	warnx("Distances updated! Ok: %9.6f, Min: %9.6f, Max: %9.6f.", double(_ok_distance), double(_min_distance), double(_max_distance));
 }
 
 // TODO! Parameters for speed calculation functions
 float PathFollow::calculate_desired_speed(float distance) {
-	// TODO! Max speed is defined for MPC, possibly can be reused
-	float max_speed = 10.0f;
 	if (distance <= _min_distance) {
 		return 0;
 	}
 	else if (distance >= _max_distance) {
-		// TODO! Max speed
-		return max_speed;
+		return _parameters.mpc_max_speed;
 	}
-
 	float res;
 	target_pos = _navigator->get_target_position();
-	float target_speed = float(sqrt(double(target_pos->vel_n * target_pos->vel_n + target_pos->vel_e * target_pos->vel_e)));
+	float target_speed = float(sqrtf(target_pos->vel_n * target_pos->vel_n + target_pos->vel_e * target_pos->vel_e));
 	if (distance >= _ok_distance) {
 		// TODO! Simplify and add precalculated values
 		res = target_speed * ((distance - _ok_distance)*(distance - _ok_distance)*4.0f/(_max_distance-_ok_distance)/(_max_distance-_ok_distance)+1.0f);
 	}
 	else {
 		// TODO! Simplify and add precalculated values
-		res = target_speed * ((float(-atan(double(-(distance-2.5f-_min_distance)*20.0f/(_ok_distance-_min_distance))))/M_PI_F)+0.5f);
+		res = target_speed * ((-atanf((distance-2.5f-_min_distance)*(-20.0f)/(_ok_distance-_min_distance)))/M_PI_F+0.5f);
 	}
 	if (res < 0.0f) return 0.0f;
-	if (res > max_speed) return max_speed;
+	if (res > _parameters.mpc_max_speed) return _parameters.mpc_max_speed;
 	return res;
 }
 
@@ -318,6 +324,7 @@ float PathFollow::calculate_current_distance() {
 	}
 	target_pos = _navigator->get_target_position();
 	res += get_distance_to_next_waypoint(_last_point.lat, _last_point.lon, target_pos->lat, target_pos->lon);
+	// warnx("Current distance: %9.6f", (double) res);
 	return res;
 }
 

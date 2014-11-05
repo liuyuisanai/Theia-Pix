@@ -13,6 +13,7 @@ public:
 			_head(-1),
 			_tail(-1),
 			_size(-1),
+			_count(-1),
 			_storage(nullptr),
 			_tmp(-1),
 			_res(true)
@@ -44,6 +45,7 @@ public:
 		_size = size + 1;
 		_head = 0;
 		_tail = 0;
+		_count = 0;
 		return true;
 	}
 
@@ -82,6 +84,7 @@ public:
 		}
 		_storage[_head] = value;
 		_head = _tmp;
+		++_count;
 		return _res;
 	}
 
@@ -102,6 +105,7 @@ public:
 		if (_tail >= _size) {
 			_tail = 0;
 		}
+		--_count;
 		return true;
 	}
 
@@ -121,6 +125,7 @@ public:
 	 */
 	void do_empty(){
 		_tail = _head;
+		_count = 0;
 	}
 	/**
 	 * Checks the maximum number of values that can be stored in the queue
@@ -142,10 +147,11 @@ public:
 	 * @return the number of values stored
 	 */
 	ssize_t get_value_count() {
-		if (_head >= _tail) {
+		return _count;
+		/* if (_head >= _tail) {
 			return _head - _tail;
 		}
-		return (_head + _size - _tail);
+		return (_head + _size - _tail); */
 	}
 
 	/**
@@ -156,7 +162,7 @@ public:
 	 * @return true on success, false otherwise
 	 */
 	bool peek(ssize_t index, T &value) {
-		if (index >= get_value_count()) {
+		if (index >= _count) {
 			return false;
 		}
 		_tmp = _tail + index;
@@ -183,12 +189,14 @@ public:
 	 */
 	bool is_full() {
 		if (_storage != nullptr) {
-			return (get_size() == get_value_count());
+			return ((_size -1) == _count);
 		}
 		return true;
 	}
 private:
 	ssize_t _head, _tail, _size;
+	// Optimize calls to peek
+	ssize_t _count;
 	T *_storage;
 	// Reduce memory allocations
 	ssize_t _tmp;

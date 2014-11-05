@@ -81,3 +81,6 @@ PARAM_DEFINE_FLOAT(PAFOL_DIST_STEP, 1.0f);
  * @group PathFollow
  */
 PARAM_DEFINE_FLOAT(PAFOL_ALT_STEP, 1.0f);
+
+// 0 or 1. 1 - simple follower, 0 - L1 follower. Temporary.
+PARAM_DEFINE_INT32(PAFOL_MODE, 0);

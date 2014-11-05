@@ -563,7 +563,7 @@ Navigator::start()
 	_navigator_task = task_spawn_cmd("navigator",
 					 SCHED_DEFAULT,
 					 SCHED_PRIORITY_MAX - 5,
-					 2000,
+					 2500,
 					 (main_t)&Navigator::task_main_trampoline,
 					 nullptr);
 

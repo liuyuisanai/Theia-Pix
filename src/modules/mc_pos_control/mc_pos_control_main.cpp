@@ -77,6 +77,7 @@
 #include <lib/geo/geo.h>
 #include <lib/geo/position_predictor.h>
 #include <mavlink/mavlink_log.h>
+#include <systemlib/perf_counter.h>
 
 #define TILT_COS_MAX	0.7f
 #define SIGMA			0.000001f
@@ -182,7 +183,7 @@ private:
         param_t sonar_min_dist;
         param_t sonar_smooth_coef;
         param_t mc_allowed_down_sp;
-        
+        param_t pafol_mode;
 	}		_params_handles;		/**< handles for interesting parameters */
 
 	struct {
@@ -204,6 +205,7 @@ private:
         float sonar_min_dist;
         float sonar_smooth_coef;
         float mc_allowed_down_sp;
+        int pafol_mode;
         
 		math::Vector<3> pos_p;
 		math::Vector<3> vel_p;
@@ -249,6 +251,8 @@ private:
 	float _ground_position_available_drop = 0;
 
 	struct vehicle_command_s _vcommand;
+
+	perf_counter_t _loop_perf;
 
 	/**
 	 * Update our local parameter cache.
@@ -298,6 +302,11 @@ private:
 
 	bool		cross_sphere_line(const math::Vector<3>& sphere_c, float sphere_r,
 					const math::Vector<3> line_a, const math::Vector<3> line_b, math::Vector<3>& res);
+
+	/**
+	 * Set position setpoint for AUTO dumb-level simple
+	 */
+	void		simple_control_auto(float dt);
 
 	/**
 	 * Set position setpoint for AUTO
@@ -398,7 +407,8 @@ MulticopterPositionControl::MulticopterPositionControl() :
 	_reset_pos_sp(true),
 	_reset_alt_sp(true),
 	_mode_auto(false),
-	_reset_follow_offset(true)
+	_reset_follow_offset(true),
+	_loop_perf(perf_alloc(PC_ELAPSED, "mc_pos_control"))
 {
 	memset(&_att, 0, sizeof(_att));
 	memset(&_att_sp, 0, sizeof(_att_sp));
@@ -476,6 +486,7 @@ MulticopterPositionControl::MulticopterPositionControl() :
     _params_handles.sonar_min_dist          = param_find("SENS_SON_MIN");
     _params_handles.sonar_smooth_coef       = param_find("SENS_SON_SMOT");
     _params_handles.mc_allowed_down_sp      = param_find("MPC_ALLOWED_LAND");
+    _params_handles.pafol_mode				= param_find("PAFOL_MODE");
 
 	/* fetch initial parameter values */
 	parameters_update(true);
@@ -544,6 +555,8 @@ MulticopterPositionControl::parameters_update(bool force)
         param_get(_params_handles.sonar_correction_on, &i);
         _params.sonar_correction_on = i;
         
+        param_get(_params_handles.pafol_mode, &i);
+        _params.pafol_mode = i;
 
 		float v;
 		param_get(_params_handles.xy_p, &v);
@@ -1027,6 +1040,50 @@ MulticopterPositionControl::cross_sphere_line(const math::Vector<3>& sphere_c, f
 }
 
 void
+MulticopterPositionControl::simple_control_auto(float dt) {
+	bool updated;
+	orb_check(_pos_sp_triplet_sub, &updated);
+
+	if (updated) {
+		orb_copy(ORB_ID(position_setpoint_triplet), _pos_sp_triplet_sub, &_pos_sp_triplet);
+	}
+
+	// TODO! I'd prefer to check position_valid too, but it seems that current code does not support it
+	if (_pos_sp_triplet.current.valid) {
+		// Project setpoint position to local position to use by default
+		map_projection_project(&_ref_pos,
+				_pos_sp_triplet.current.lat, _pos_sp_triplet.current.lon,
+				&_pos_sp.data[0], &_pos_sp.data[1]);
+		if (_control_mode.flag_control_setpoint_velocity && _pos_sp_triplet.current.abs_velocity_valid) {
+			// Scale position by desired velocity, ignore distance to the point, prioritize the velocity
+			_pos_sp = _pos_sp - _pos;
+			// Reset altitude before normalizing the vector
+			_pos_sp(2) = 0;
+			_pos_sp.normalize();
+			// Scale by desired speed
+			_pos_sp *= _pos_sp_triplet.current.abs_velocity;
+			// TODO! Unneeded addition and later subtraction?
+			// Move back, 'cause later velocity is calculated by substracting _pos
+			_pos_sp += _pos;
+		}
+		// Use altitude as is in all cases
+		_pos_sp(2) = -(_pos_sp_triplet.current.alt - _ref_alt);
+
+		// Update yaw
+		// TODO! Current code (at least loiter) doesn't respect yaw_valid and just sets NAN to invalidate yaw
+		if (isfinite(_att_sp.yaw_body)) {
+			_att_sp.yaw_body = _pos_sp_triplet.current.yaw;
+		}
+	} else { // TODO! Is it ok? The drone might drift away if we reset the point all the time
+		reset_pos_sp();
+		reset_alt_sp();
+	}
+	if (_control_mode.flag_control_point_to_target) {
+		point_to_target();
+	}
+}
+
+void
 MulticopterPositionControl::control_auto(float dt)
 {
 	if (!_mode_auto) {
@@ -1043,9 +1100,15 @@ MulticopterPositionControl::control_auto(float dt)
 		orb_copy(ORB_ID(position_setpoint_triplet), _pos_sp_triplet_sub, &_pos_sp_triplet);
 	}
 
-	if (_pos_sp_triplet.current.valid) {
-
-
+	// TODO! Raw fix.
+	// Prevent collapse of the speed-scaled space on low speeds
+	if (_control_mode.flag_control_setpoint_velocity && _pos_sp_triplet.current.abs_velocity_valid
+			&& _pos_sp_triplet.current.abs_velocity <= 0.1f)
+	{ // TODO! Reset all the time? Or just once per case?
+		reset_pos_sp();
+		reset_alt_sp();
+	}
+	else if (_pos_sp_triplet.current.valid) {
 		/* in case of interrupted mission don't go to waypoint but stay at current position */
 		_reset_pos_sp = true;
 		_reset_alt_sp = true;
@@ -1058,7 +1121,15 @@ MulticopterPositionControl::control_auto(float dt)
 		curr_sp(2) = -(_pos_sp_triplet.current.alt - _ref_alt);
 
 		/* scaled space: 1 == position error resulting max allowed speed, L1 = 1 in this space */
-		math::Vector<3> scale = _params.pos_p.edivide(_params.vel_max);	// TODO add mult param here
+		math::Vector<3> scale;
+		if (_control_mode.flag_control_setpoint_velocity && _pos_sp_triplet.current.abs_velocity_valid) {
+			scale(0) = _params.pos_p(0) / _pos_sp_triplet.current.abs_velocity;
+			scale(1) = _params.pos_p(1) / _pos_sp_triplet.current.abs_velocity;
+			scale(2) = _params.pos_p(2) / _params.vel_max(2);
+		}
+		else {
+			scale = _params.pos_p.edivide(_params.vel_max);	// TODO add mult param here
+		}
 
 		/* convert current setpoint to scaled space */
 		math::Vector<3> curr_sp_s = curr_sp.emult(scale);
@@ -1161,9 +1232,9 @@ MulticopterPositionControl::control_auto(float dt)
 		if (isfinite(_pos_sp_triplet.current.yaw)) {
 			_att_sp.yaw_body = _pos_sp_triplet.current.yaw;
 		}
-
-	} else {
-		/* no waypoint, do nothing, setpoint was already reset */
+	}
+	else {
+		// Reset setpoint? Or is it ok? Reset only once?
 	}
 
 	if (_control_mode.flag_control_point_to_target) {
@@ -1387,6 +1458,7 @@ MulticopterPositionControl::task_main()
 	fds[0].events = POLLIN;
 
 	while (!_task_should_exit) {
+		perf_begin(_loop_perf);
 		_ground_position_invalid = false;
 		_ground_setpoint_corrected = false;	
 		_ground_position_available_drop = 0;
@@ -1396,12 +1468,14 @@ MulticopterPositionControl::task_main()
 
 		/* timed out - periodic check for _task_should_exit */
 		if (pret == 0) {
+			perf_end(_loop_perf);
 			continue;
 		}
 
 		/* this is undesirable but not much we can do */
 		if (pret < 0) {
 			warn("poll error %d, %d", pret, errno);
+			perf_end(_loop_perf);
 			continue;
 		}
 
@@ -1498,6 +1572,10 @@ MulticopterPositionControl::task_main()
 					// For auto ABS Follow
 					control_follow(dt);
 				}
+				// TODO! If we want to keep it, change detection to "path follow mode is active" & "simple mode"
+				else if (_control_mode.flag_control_setpoint_velocity && _params.pafol_mode == 1) {
+					simple_control_auto(dt);
+				}
 				else {
 					/* AUTO */
 					control_auto(dt);
@@ -1574,18 +1652,7 @@ MulticopterPositionControl::task_main()
 				/* run position & altitude controllers, calculate velocity setpoint */
 				math::Vector<3> pos_err = _pos_sp - _pos;
 
-				if (!_control_mode.flag_control_setpoint_velocity) {
-					_vel_sp = pos_err.emult(_params.pos_p) + _vel_ff;
-				}
-				else if (_pos_sp_triplet.current.velocity_valid) {
-					// TODO! Proof of concept only. Consider replicating _vel_ff calculation in follow mode
-					_vel_sp(0) = pos_err(0) * _params.pos_p(0) + _pos_sp_triplet.current.vx;
-					_vel_sp(1) = pos_err(1) * _params.pos_p(1) + _pos_sp_triplet.current.vy;
-					_vel_sp(2) = pos_err(2) * _params.pos_p(2) + _pos_sp_triplet.current.vz;
-				}
-				else {
-					_vel_sp = pos_err.emult(_params.pos_p);
-				}
+				_vel_sp = pos_err.emult(_params.pos_p) + _vel_ff;
 
 				if (!_control_mode.flag_control_altitude_enabled) {
 					_reset_alt_sp = true;
@@ -1632,11 +1699,11 @@ MulticopterPositionControl::task_main()
                             coef *= coef;
                             float max_vel_z = - _params.vel_max(2) * coef;
 
-                            printf("[WARN] max_vel %.3f smooth: %.3f min-dist %.3f thing %.3f\n", 
-                                    (double)max_vel_z, 
-                                    (double)_params.sonar_smooth_coef, 
-                                    (double)_params.sonar_min_dist,
-                                    (double)(_params.sonar_min_dist - _local_pos.dist_bottom)); 
+//                            printf("[WARN] max_vel %.3f smooth: %.3f min-dist %.3f thing %.3f\n",
+//                                    (double)max_vel_z,
+//                                    (double)_params.sonar_smooth_coef,
+//                                    (double)_params.sonar_min_dist,
+//                                    (double)(_params.sonar_min_dist - _local_pos.dist_bottom));
                             _vel_sp(2) = max_vel_z;
 							_sp_move_rate(2)= 0.0f;
 						}
@@ -1644,7 +1711,7 @@ MulticopterPositionControl::task_main()
 				else if (_ground_setpoint_corrected && (_vel(2) > _params.vel_max(2) || _vel_sp(2) > _params.vel_max(2))) {
 					//_vel_sp(2) = - _params.vel_max(2);
                     _vel_sp(2) = - 2 * _params.vel_max(2);
-                    printf("[NO IDEA] vel(2) %0.3f  sp_vel(2) %.03f\n", (double)_vel(2), (double)_vel_sp(2));
+//                    printf("[NO IDEA] vel(2) %0.3f  sp_vel(2) %.03f\n", (double)_vel(2), (double)_vel_sp(2));
 					_sp_move_rate(2)= 0.0f;
 				}
 				else if (_local_pos.dist_bottom_valid && _params.sonar_correction_on){
@@ -1976,6 +2043,7 @@ MulticopterPositionControl::task_main()
 		} else {
 			orb_publish(ORB_ID(actuator_controls_2), _cam_control_pub, &_cam_control);
 		}
+		perf_end(_loop_perf);
 	}
 
 	warnx("stopped");
@@ -1994,7 +2062,7 @@ MulticopterPositionControl::start()
 	_control_task = task_spawn_cmd("mc_pos_control",
 				       SCHED_DEFAULT,
 				       SCHED_PRIORITY_MAX - 5,
-				       2000,
+				       2500,
 				       (main_t)&MulticopterPositionControl::task_main_trampoline,
 				       nullptr);
 
