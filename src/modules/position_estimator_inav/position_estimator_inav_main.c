@@ -250,7 +250,7 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 	//float surface_offset = 0.0f;	// ground level offset from reference altitude
 	//float surface_offset_rate = 0.0f;	// surface offset change rate
 	//float alt_avg = 0.0f;
-    //float alt_land = 0.0f;
+    float accel_filt = 0.0f;
 	bool landed = true;
 	hrt_abstime landed_time = 0;
 
@@ -1161,8 +1161,10 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
         orb_check(ORB_ID(vehicle_status), &updated);
         if (updated) {
             orb_copy(ORB_ID(vehicle_status), vehicle_status_sub, &vehicle_status);
+            accel_filt += (sensor.accelerometer_m_s2[2] - accel_filt)*0.8f;
         
-            //fprintf(stdout, "arming state: %d landed: %d actuator: %.3f \n", vehicle_status.arming_state, landed, (double)actuator.control[3]);
+            //fprintf(stderr, "acc[2]: %.3f sens_acel: %.3f\n",(double)acc[2], (double)(accel_filt - sensor.accelerometer_m_s2[2]));
+            fprintf(stderr, "landed: %d armed state: %d main_state: %d\n", landed, vehicle_status.arming_state, vehicle_status.main_state);
         
         
             float thrust = armed.armed ? actuator.control[3] : 0.0f;
@@ -1176,8 +1178,8 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                     }
                 }
                 else if (vehicle_status.arming_state == ARMING_STATE_STANDBY) {
-                    fprintf(stdout, "Landed, state: %d, thrust: %.3f\n",
-                            vehicle_status.arming_state, (double)thrust);
+                    //fprintf(stdout, "Landed, state: %d, thrust: %.3f\n",
+                            //vehicle_status.arming_state, (double)thrust);
                 }
             }
             else {
@@ -1188,10 +1190,10 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                         /* If thrust is less or equal to landed thrust 
                          * than we are either on the ground or falling down
                          */
-                        float accepted_velosity_delta = 0.1f;
+                        float accepted_accel_rate = 0.3f;
                         if (landed_time == 0.0f) {
                             landed_time = t;
-                            if (fabsf(local_pos.vz) > accepted_velosity_delta) {
+                            if (fabsf(acc[2]) > accepted_accel_rate) {
                                 // We are sure that this is not landing, the very first velocity is too high
                                 landed_time = 0.0f;
                             }
@@ -1199,7 +1201,7 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                         else {
                             if(t - landed_time < params.land_t * 1000000.0f) {
                                 // We had detected a possible landing and this is the process of confirming it over time
-                               if (fabsf(local_pos.vz) > accepted_velosity_delta) {
+                               if (fabsf(acc[2]) > accepted_accel_rate) {
                                        landed_time = 0.0f;
                                }
                             }
@@ -1207,18 +1209,18 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                             // Sufficient time has passed and within this time range our velocity change is negligible 
                                 landed = true;
                                 landed_time = 0.0f;
-                                fprintf(stderr, "We are happily landed\n");
+                                //fprintf(stderr, "We are happily landed\n");
                             }
                         }
                         // This is the first time we realized throttle is too low, let's have a time to consider if we are on the ground
-                        fprintf(stderr, "z estimated velosity: %.3f time delta: %.3f\n",(double)local_pos.vz, (double)(t-landed_time));
+                        //fprintf(stderr, "z estimated velosity: %.3f z estimated position: %.3f\n",(double)z_est[1], (double)z_est[0]);
                     }
                 }
 
                 else if (vehicle_status.arming_state == ARMING_STATE_STANDBY) {
                     if (thrust <= params.land_thr) {
                         landed = true;
-                        fprintf(stdout, "Landed in standby state, thrust: %.3f\n", (double)thrust);
+                        //fprintf(stdout, "Landed in standby state, thrust: %.3f\n", (double)thrust);
                     }
                 }
             }
