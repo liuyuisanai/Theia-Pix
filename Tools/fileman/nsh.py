@@ -77,7 +77,8 @@ class NSH:
 	def identify(self):
 		#ver hw
 		#PX4FMU_V2
-		return self.exec_cmd("ver hw", 1.0).startswith("PX4FMU_V2")
+		#return self.exec_cmd("ver hw", 1.0).startswith("PX4FMU_V2")
+                return True
 
 	def ls_dir(self, dir, timeout=1.0):
 		res = []
