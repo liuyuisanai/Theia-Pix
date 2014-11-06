@@ -111,7 +111,7 @@ private:
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
 	static const unsigned _max_actuators = 4;
 #endif
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2) or defined(CONFIG_ARCH_BOARD_AIRDOG_FMU)
 	static const unsigned _max_actuators = 6;
 #endif
 #if defined(CONFIG_ARCH_BOARD_AEROCORE)
@@ -209,6 +209,10 @@ const PX4FMU::GPIOConfig PX4FMU::_gpio_tab[] = {
 	{GPIO_VDD_SERVO_VALID,   0,                       0},
 	{GPIO_VDD_5V_HIPOWER_OC, 0,                       0},
 	{GPIO_VDD_5V_PERIPH_OC,  0,                       0},
+#endif
+#if defined(CONFIG_ARCH_BOARD_AIRDOG_FMU)
+	{0,                      GPIO_VDD_3V3_SENSORS_EN, 0},
+	{GPIO_VDD_BRICK_VALID,   0,                       0},
 #endif
 #if defined(CONFIG_ARCH_BOARD_AEROCORE)
 	/* AeroCore breaks out User GPIOs on J11 */
@@ -1141,9 +1145,15 @@ PX4FMU::pwm_ioctl(file *filp, int cmd, unsigned long arg)
 		 * and PWM under control of the flight config
 		 * parameters. Note that this does not allow for
 		 * changing a set of pins to be used for serial on
-		 * FMUv1 
+		 * FMUv1
 		 */
 		switch (arg) {
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2) or defined(CONFIG_ARCH_BOARD_AIRDOG_FMU)
+		case 6:
+			set_mode(MODE_6PWM);
+			break;
+#endif
+#if not defined(CONFIG_ARCH_BOARD_AIRDOG_FMU)
 		case 0:
 			set_mode(MODE_NONE);
 			break;
@@ -1156,17 +1166,12 @@ PX4FMU::pwm_ioctl(file *filp, int cmd, unsigned long arg)
 			set_mode(MODE_4PWM);
 			break;
 
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
-		case 6:
-			set_mode(MODE_6PWM);
-			break;
-#endif
 #if defined(CONFIG_ARCH_BOARD_AEROCORE)
 		case 8:
 			set_mode(MODE_8PWM);
 			break;
 #endif
-
+#endif // end if not CONFIG_ARCH_BOARD_AIRDOG_FMU
 		default:
 			ret = -EINVAL;
 			break;
@@ -1283,7 +1288,7 @@ PX4FMU::write(file *filp, const char *buffer, size_t len)
 void
 PX4FMU::sensor_reset(int ms)
 {
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2) or defined(CONFIG_ARCH_BOARD_AIRDOG_FMU)
 
 	if (ms < 1) {
 		ms = 1;
@@ -1299,6 +1304,11 @@ PX4FMU::sensor_reset(int ms)
 	stm32_gpiowrite(GPIO_SPI_CS_ACCEL_MAG_OFF, 0);
 	stm32_gpiowrite(GPIO_SPI_CS_BARO_OFF, 0);
 	stm32_gpiowrite(GPIO_SPI_CS_MPU_OFF, 0);
+
+#ifdef GPIO_SPI_CS_xMAG_OFF
+	stm32_configgpio(GPIO_SPI_CS_xMAG_OFF);
+	stm32_gpiowrite(GPIO_SPI_CS_xMAG_OFF, 0);
+#endif
 
 	stm32_configgpio(GPIO_SPI1_SCK_OFF);
 	stm32_configgpio(GPIO_SPI1_MISO_OFF);
@@ -1317,6 +1327,11 @@ PX4FMU::sensor_reset(int ms)
 	stm32_gpiowrite(GPIO_MAG_DRDY_OFF, 0);
 	stm32_gpiowrite(GPIO_ACCEL_DRDY_OFF, 0);
 	stm32_gpiowrite(GPIO_EXTI_MPU_DRDY_OFF, 0);
+
+#if GPIO_EXTI_xMAG_DRDY_OFF
+	stm32_configgpio(GPIO_EXTI_xMAG_DRDY_OFF);
+	stm32_gpiowrite(GPIO_EXTI_xMAG_DRDY_OFF, 0);
+#endif
 
 	/* set the sensor rail off */
 	stm32_configgpio(GPIO_VDD_3V3_SENSORS_EN);
@@ -1350,14 +1365,22 @@ PX4FMU::sensor_reset(int ms)
 	stm32_gpiowrite(GPIO_SPI_CS_BARO, 1);
 	stm32_gpiowrite(GPIO_SPI_CS_MPU, 1);
 
+#ifdef GPIO_SPI_CS_xMAG
+	stm32_configgpio(GPIO_SPI_CS_xMAG);
+	stm32_gpiowrite(GPIO_SPI_CS_xMAG, 1);
+#endif
+
 	// // XXX bring up the EXTI pins again
 	// stm32_configgpio(GPIO_GYRO_DRDY);
 	// stm32_configgpio(GPIO_MAG_DRDY);
 	// stm32_configgpio(GPIO_ACCEL_DRDY);
 	// stm32_configgpio(GPIO_EXTI_MPU_DRDY);
+	// #ifdef GPIO_EXTI_xMAG_DRDY
+	// stm32_configgpio(GPIO_EXTI_xMAG_DRDY);
+	// #endif
 
-#endif
-#endif
+#endif // CONFIG_STM32_SPI1
+#endif // defined(CONFIG_ARCH_BOARD_PX4FMU_V2) or defined(CONFIG_ARCH_BOARD_AIRDOG_FMU)
 }
 
 
@@ -1540,7 +1563,7 @@ fmu_new_mode(PortMode new_mode)
 		/* select 4-pin PWM mode */
 		servo_mode = PX4FMU::MODE_4PWM;
 #endif
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2) or defined(CONFIG_ARCH_BOARD_AIRDOG_FMU)
 		servo_mode = PX4FMU::MODE_6PWM;
 #endif
 #if defined(CONFIG_ARCH_BOARD_AEROCORE)
@@ -1863,7 +1886,7 @@ fmu_main(int argc, char *argv[])
 	fprintf(stderr, "FMU: unrecognised command %s, try:\n", verb);
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
 	fprintf(stderr, "  mode_gpio, mode_serial, mode_pwm, mode_gpio_serial, mode_pwm_serial, mode_pwm_gpio, test\n");
-#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V2) || defined(CONFIG_ARCH_BOARD_AEROCORE)
+#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V2) or defined(CONFIG_ARCH_BOARD_AEROCORE) or defined(CONFIG_ARCH_BOARD_AIRDOG_FMU)
 	fprintf(stderr, "  mode_gpio, mode_pwm, test, sensor_reset [milliseconds]\n");
 #endif
 	exit(1);

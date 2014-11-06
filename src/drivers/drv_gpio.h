@@ -66,7 +66,7 @@
 
 #endif
 
-#ifdef CONFIG_ARCH_BOARD_PX4FMU_V2
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2) || defined(CONFIG_ARCH_BOARD_AIRDOG_FMU)
 /*
  * PX4FMUv2 GPIO numbers.
  *

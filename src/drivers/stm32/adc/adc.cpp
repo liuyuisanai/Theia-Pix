@@ -115,7 +115,7 @@ protected:
 
 private:
 	static const hrt_abstime _tickrate = 10000;	/**< 100Hz base rate */
-	
+
 	hrt_call		_call;
 	perf_counter_t		_sample_perf;
 
@@ -201,7 +201,7 @@ ADC::init()
 	rCR1 = 0;
 
 	/* enable the temperature sensor / Vrefint channel if supported*/
-	rCR2 = 
+	rCR2 =
 #ifdef ADC_CR2_TSVREFE
 		/* enable the temperature sensor in CR2 */
 		ADC_CR2_TSVREFE |
@@ -216,7 +216,7 @@ ADC::init()
 	/* configure for a single-channel sequence */
 	rSQR1 = 0;
 	rSQR2 = 0;
-	rSQR3 = 0;	/* will be updated with the channel each tick */ 
+	rSQR3 = 0;	/* will be updated with the channel each tick */
 
 	/* power-cycle the ADC and turn it on */
 	rCR2 &= ~ADC_CR2_ADON;
@@ -305,14 +305,18 @@ void
 ADC::update_system_power(void)
 {
 #ifdef CONFIG_ARCH_BOARD_PX4FMU_V2
+# define ADC_SYSPOWER_VOLTAGE_CHANNEL	4
+# define ADC_SYSPOWER_VOLTAGE_SCALE	(6.6 / 4096)
+#endif
+#if defined(ADC_SYSPOWER_VOLTAGE_CHANNEL)
 	system_power_s system_power;
 	system_power.timestamp = hrt_absolute_time();
 
 	system_power.voltage5V_v = 0;
 	for (unsigned i = 0; i < _channel_count; i++) {
-		if (_samples[i].am_channel == 4) {
-			// it is 2:1 scaled
-			system_power.voltage5V_v = _samples[i].am_data * (6.6f / 4096);
+		if (_samples[i].am_channel == ADC_SYSPOWER_VOLTAGE_CHANNEL) {
+			system_power.voltage5V_v =
+				_samples[i].am_data * (float)ADC_SYSPOWER_VOLTAGE_SCALE;
 		}
 	}
 
@@ -322,11 +326,20 @@ ADC::update_system_power(void)
 
 	// note that the valid pins are active low
 	system_power.brick_valid   = !stm32_gpioread(GPIO_VDD_BRICK_VALID);
+#ifdef CONFIG_ARCH_BOARD_PX4FMU_V2
 	system_power.servo_valid   = !stm32_gpioread(GPIO_VDD_SERVO_VALID);
+#else
+	system_power.servo_valid   = true;
+#endif
 
+#ifdef CONFIG_ARCH_BOARD_PX4FMU_V2
 	// OC pins are active low
 	system_power.periph_5V_OC  = !stm32_gpioread(GPIO_VDD_5V_PERIPH_OC);
 	system_power.hipower_5V_OC = !stm32_gpioread(GPIO_VDD_5V_HIPOWER_OC);
+#else
+	system_power.periph_5V_OC  = false;
+	system_power.hipower_5V_OC = false;
+#endif
 
 	/* lazily publish */
 	if (_to_system_power > 0) {
@@ -334,7 +347,7 @@ ADC::update_system_power(void)
 	} else {
 		_to_system_power = orb_advertise(ORB_ID(system_power), &system_power);
 	}
-#endif // CONFIG_ARCH_BOARD_PX4FMU_V2
+#endif // ADC_SYSPOWER_VOLTAGE_CHANNEL
 }
 
 uint16_t
@@ -410,18 +423,24 @@ int
 adc_main(int argc, char *argv[])
 {
 	if (g_adc == nullptr) {
-#ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
+#if CONFIG_ARCH_BOARD_PX4FMU_V1
 		/* XXX this hardcodes the default channel set for PX4FMUv1 - should be configurable */
 		g_adc = new ADC((1 << 10) | (1 << 11) | (1 << 12) | (1 << 13));
-#endif
-#ifdef CONFIG_ARCH_BOARD_PX4FMU_V2
+#elif CONFIG_ARCH_BOARD_PX4FMU_V2
 		/* XXX this hardcodes the default channel set for PX4FMUv2 - should be configurable */
-		g_adc = new ADC((1 << 2) | (1 << 3) | (1 << 4) | 
+		g_adc = new ADC((1 << 2) | (1 << 3) | (1 << 4) |
 			(1 << 10) | (1 << 11) | (1 << 12) | (1 << 13) | (1 << 14) | (1 << 15));
-#endif
-#ifdef CONFIG_ARCH_BOARD_AEROCORE
+#elif CONFIG_ARCH_BOARD_AEROCORE
 		/* XXX this hardcodes the default channel set for AeroCore - should be configurable */
 		g_adc = new ADC((1 << 10) | (1 << 11) | (1 << 12) | (1 << 13));
+#elif CONFIG_ARCH_BOARD_AIRDOG_FMU
+		/* XXX this hardcodes the default channel set for AeroCore - should be configurable */
+		g_adc = new ADC((1 << ADC_BATTERY_VOLTAGE_CHANNEL)
+				| (1 << ADC_BATTERY_CURRENT_CHANNEL)
+				| (1 << ADC_SENSORS_VOLTAGE_CHANNEL)
+		);
+#else
+# error Unsupported board.
 #endif
 
 		if (g_adc == nullptr)

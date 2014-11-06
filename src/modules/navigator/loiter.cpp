@@ -101,6 +101,9 @@ Loiter::on_active()
 
 	if (loiter_sub_mode == LOITER_SUB_MODE_TAKING_OFF && check_current_pos_sp_reached()) {
 		set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT);
+
+        // Send command to commander that we are in the AIR
+        //
 	}
 
 	if (loiter_sub_mode == LOITER_SUB_MODE_LANDING && check_current_pos_sp_reached()) {
@@ -502,44 +505,3 @@ void
 Loiter::execute_command_in_taking_off(vehicle_command_s cmd) {
 }
 
-void
-Loiter::takeoff()
-{
-	pos_sp_triplet->previous.valid = false;
-	pos_sp_triplet->current.valid = true;
-	pos_sp_triplet->next.valid = false;
-
-	pos_sp_triplet->current.lat = global_pos->lat;
-	pos_sp_triplet->current.lon = global_pos->lon;
-	pos_sp_triplet->current.alt = global_pos->alt + _parameters.takeoff_alt;
-
-	pos_sp_triplet->current.yaw = NAN;
-	pos_sp_triplet->current.type = SETPOINT_TYPE_TAKEOFF;
-
-	_navigator->set_position_setpoint_triplet_updated();
-}
-
-void
-Loiter::land()
-{
-
-	pos_sp_triplet->previous.valid = false;
-	pos_sp_triplet->current.valid = true;
-	pos_sp_triplet->next.valid = false;
-
-	pos_sp_triplet->current.lat = global_pos->lat;
-	pos_sp_triplet->current.lon = global_pos->lon;
-	pos_sp_triplet->current.alt = global_pos->alt;
-	pos_sp_triplet->current.yaw = NAN;
-	pos_sp_triplet->current.type = SETPOINT_TYPE_LAND;
-
-	_navigator->set_position_setpoint_triplet_updated();
-}
-
-void
-Loiter::disarm()
-{
-	commander_request_s *commander_request = _navigator->get_commander_request();
-	commander_request->request_type = V_DISARM;
-	_navigator->set_commander_request_updated();
-}

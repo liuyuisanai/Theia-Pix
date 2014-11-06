@@ -1,0 +1,12 @@
+{
+    "board_id": 9,
+    "magic": "AirDog FMU",
+    "summary": "AirDog FMU",
+    "description": "Firmware for the AirDOG FMU",
+    "image": "",
+    "build_time": 0,
+    "version": "0.0",
+    "image_size": 0,
+    "git_identity": "",
+    "board_revision": 0
+}

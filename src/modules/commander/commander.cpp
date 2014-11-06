@@ -265,7 +265,7 @@ int commander_main(int argc, char *argv[])
 		daemon_task = task_spawn_cmd("commander",
 					     SCHED_DEFAULT,
 					     SCHED_PRIORITY_MAX - 40,
-					     3150,
+					     4096,
 					     commander_thread_main,
 					     (argv) ? (const char **)&argv[2] : (const char **)NULL);
 
@@ -458,7 +458,7 @@ bool handle_command(struct vehicle_status_s *status_local, const struct safety_s
 					/* POSCTL */
 					main_ret = main_state_transition(status_local, MAIN_STATE_POSCTL);
 
-				} else if (custom_main_mode == PX4_CUSTOM_MAIN_MODE_AUTO) {
+				} else if (custom_main_mode == PX4_CUSTOM_MAIN_MODE_LOITER) {
 					//* AUTO */
 					main_ret = main_state_transition(status_local, MAIN_STATE_LOITER);
 
@@ -1732,6 +1732,7 @@ int commander_thread_main(int argc, char *argv[])
 			case V_MAIN_STATE_CHANGE:
 			{
 
+
 				if (main_state_transition(&status, commander_request.main_state)) {
 					status_changed = true;
 				}
@@ -1740,20 +1741,46 @@ int commander_thread_main(int argc, char *argv[])
 			}
 			case V_DISARM:
 			{
-				arm_disarm(false, mavlink_fd, "Commander request.");
+
+                arm_disarm(false, mavlink_fd, "Commander request.");
 				break;
 			}
-			case V_NAVIGATION_STATE_CHANGE:
+			case AIRD_STATE_CHANGE:
+            {
+                airdog_state_transition(&status, commander_request.airdog_state, mavlink_fd);
 				break;
+            }
 			default:
 				break;
-
 			}
 
 			mavlink_log_info(mavlink_fd, "Commnander request processed\n");
 
-
 		}
+
+        if (status.arming_state != ARMING_STATE_ARMED){
+            if (status.airdog_state != AIRD_STATE_DISARMED)
+                airdog_state_transition(&status, AIRD_STATE_DISARMED, mavlink_fd);
+        }
+        else {
+            if (control_mode.flag_control_manual_enabled){
+                if (status.condition_landed) {
+                    if (status.airdog_state != AIRD_STATE_LANDED)
+                        airdog_state_transition(&status, AIRD_STATE_LANDED, mavlink_fd);
+                }
+                if (!status.condition_landed) {
+                    if (status.airdog_state != AIRD_STATE_IN_AIR)
+                        airdog_state_transition(&status, AIRD_STATE_IN_AIR, mavlink_fd);
+                }
+            }
+
+            if (control_mode.flag_control_auto_enabled){
+                // Default state set to Landed, all other airdog_state changes are in navigator_mode
+                if (status.airdog_state == AIRD_STATE_DISARMED){
+                    airdog_state_transition(&status, AIRD_STATE_LANDED, mavlink_fd);
+                }
+            }
+        }
 
 		/* Check engine failure
 		 * only for fixed wing for now
@@ -2110,15 +2137,15 @@ set_main_state_rc(struct vehicle_status_s *status_local, struct manual_control_s
 	/* offboard switched off or denied, check main mode switch */
 	switch (sp_man->mode_switch) {
 	case SWITCH_POS_NONE:
-		
-        mode_switch_state = SWITCH_POS_NONE; 
-		
+
+        mode_switch_state = SWITCH_POS_NONE;
+
 		res = TRANSITION_NOT_CHANGED;
 		break;
 
 	case SWITCH_POS_OFF:		// MANUAL
-		
-        mode_switch_state = SWITCH_POS_OFF; 
+
+        mode_switch_state = SWITCH_POS_OFF;
 
 		if (sp_man->acro_switch == SWITCH_POS_ON) {
 			res = main_state_transition(status_local, MAIN_STATE_ACRO);
@@ -2172,7 +2199,7 @@ set_main_state_rc(struct vehicle_status_s *status_local, struct manual_control_s
 		break;
 
 	case SWITCH_POS_ON:			// AUTO
-		
+
 		// Switch to loter only when switch state have changed
         if (mode_switch_state != SWITCH_POS_ON) {
 
@@ -2187,7 +2214,7 @@ set_main_state_rc(struct vehicle_status_s *status_local, struct manual_control_s
             print_reject_mode(status_local, "AUTO_LOITER");
 
         } else {
-            res = TRANSITION_NOT_CHANGED; 
+            res = TRANSITION_NOT_CHANGED;
             break;
         }
 

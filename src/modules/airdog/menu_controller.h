@@ -11,6 +11,7 @@
 typedef enum {
 	MENU_LEVEL_PARAMS = 0,
 	MENU_LEVEL_SET,
+    MENU_LEVEL_CHOOSE_FUNCTION,
 	MAX_MENU_LEVEL,
 } menu_level_t;
 

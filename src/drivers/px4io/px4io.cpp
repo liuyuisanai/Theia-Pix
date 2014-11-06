@@ -1376,14 +1376,10 @@ PX4IO::io_handle_status(uint16_t status)
 	struct safety_s safety;
 	safety.timestamp = hrt_absolute_time();
 
-	if (status & PX4IO_P_STATUS_FLAGS_SAFETY_OFF) {
-		safety.safety_off = true;
-		safety.safety_switch_available = true;
-
-	} else {
-		safety.safety_off = false;
-		safety.safety_switch_available = true;
-	}
+	// AirDogFMU hack.
+	// TODO Do not publish at all.
+	safety.safety_off = false;
+	safety.safety_switch_available = false;
 
 	/* lazily publish the safety status */
 	if (_to_safety > 0) {
@@ -1510,7 +1506,7 @@ PX4IO::io_get_status()
 	io_handle_battery(regs[2], regs[3]);
 #endif
 
-#ifdef CONFIG_ARCH_BOARD_PX4FMU_V2
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2) or defined(CONFIG_ARCH_BOARD_AIRDOG_FMU)
 	io_handle_vservo(regs[4], regs[5]);
 #endif
 
@@ -1758,7 +1754,7 @@ PX4IO::io_reg_modify(uint8_t page, uint8_t offset, uint16_t clearbits, uint16_t 
 int
 PX4IO::print_debug()
 {
-#ifdef CONFIG_ARCH_BOARD_PX4FMU_V2
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2) or defined(CONFIG_ARCH_BOARD_AIRDOG_FMU)
 	int io_fd = -1;
 
 	if (io_fd < 0) {
@@ -2067,7 +2063,7 @@ PX4IO::print_status(bool extended_status)
 	       io_reg_get(PX4IO_PAGE_SETUP, PX4IO_P_SETUP_PWM_ALTRATE),
 	       io_reg_get(PX4IO_PAGE_SETUP, PX4IO_P_SETUP_RELAYS));
 #endif
-#ifdef CONFIG_ARCH_BOARD_PX4FMU_V2
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2) or defined(CONFIG_ARCH_BOARD_AIRDOG_FMU)
 	printf("rates 0x%04x default %u alt %u\n",
 	       io_reg_get(PX4IO_PAGE_SETUP, PX4IO_P_SETUP_PWM_RATES),
 	       io_reg_get(PX4IO_PAGE_SETUP, PX4IO_P_SETUP_PWM_DEFAULTRATE),
@@ -2378,7 +2374,7 @@ PX4IO::ioctl(file * filep, int cmd, unsigned long arg)
 
 			ret = io_reg_modify(PX4IO_PAGE_SETUP, PX4IO_P_SETUP_RELAYS, bits, 0);
 #endif
-#ifdef CONFIG_ARCH_BOARD_PX4FMU_V2
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2) or defined(CONFIG_ARCH_BOARD_AIRDOG_FMU)
 			ret = -EINVAL;
 #endif
 			break;
@@ -2396,7 +2392,7 @@ PX4IO::ioctl(file * filep, int cmd, unsigned long arg)
 
 		ret = io_reg_modify(PX4IO_PAGE_SETUP, PX4IO_P_SETUP_RELAYS, 0, arg);
 #endif
-#ifdef CONFIG_ARCH_BOARD_PX4FMU_V2
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2) or defined(CONFIG_ARCH_BOARD_AIRDOG_FMU)
 		ret = -EINVAL;
 #endif
 		break;
@@ -2413,7 +2409,7 @@ PX4IO::ioctl(file * filep, int cmd, unsigned long arg)
 
 		ret = io_reg_modify(PX4IO_PAGE_SETUP, PX4IO_P_SETUP_RELAYS, arg, 0);
 #endif
-#ifdef CONFIG_ARCH_BOARD_PX4FMU_V2
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2) or defined(CONFIG_ARCH_BOARD_AIRDOG_FMU)
 		ret = -EINVAL;
 #endif
 		break;
@@ -2426,7 +2422,7 @@ PX4IO::ioctl(file * filep, int cmd, unsigned long arg)
 			ret = -EIO;
 
 #endif
-#ifdef CONFIG_ARCH_BOARD_PX4FMU_V2
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2) or defined(CONFIG_ARCH_BOARD_AIRDOG_FMU)
 		ret = -EINVAL;
 #endif
 		break;
@@ -3077,6 +3073,9 @@ px4io_main(int argc, char *argv[])
 			fn[1] =	"/fs/microsd/px4io2.bin";
 			fn[2] =	"/fs/microsd/px4io.bin";
 			fn[3] =	nullptr;
+#elif defined(CONFIG_ARCH_BOARD_AIRDOG_FMU)
+			fn[0] = "/etc/extras/px4io-v2_default.bin";
+			fn[1] =	nullptr;
 #else
 #error "unknown board"
 #endif

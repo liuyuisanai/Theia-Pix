@@ -163,6 +163,10 @@ MODULES		+= lib/launchdetection
 #MODULES			+= examples/hwtest
 MODULES				+= modules/serial_echo
 MODULES				+= modules/bt_cfg
+MODULES				+= modules/gpio_tool
+MODULES				+= modules/spi_exchange
+MODULES				+= modules/sensors_probe
+MODULES				+= modules/sensors_switch
 
 #
 # Transitional support - add commands from the NuttX export archive.

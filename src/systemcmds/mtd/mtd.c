@@ -92,7 +92,7 @@ static void	mtd_erase(char *partition_names[], unsigned n_partitions);
 static void	mtd_readtest(char *partition_names[], unsigned n_partitions);
 static void	mtd_rwtest(char *partition_names[], unsigned n_partitions);
 static void	mtd_print_info(void);
-static int	mtd_get_geometry(unsigned long *blocksize, unsigned long *erasesize, unsigned long *neraseblocks, 
+static int	mtd_get_geometry(unsigned long *blocksize, unsigned long *erasesize, unsigned long *neraseblocks,
 	unsigned *blkpererase, unsigned *nblocks, unsigned *partsize, unsigned n_partitions);
 
 static bool attached = false;
@@ -109,7 +109,7 @@ mtd_status(void)
 {
 	if (!attached)
 		errx(1, "MTD driver not started");
-    
+
 	mtd_print_info();
 	exit(0);
 }
@@ -170,7 +170,9 @@ static void
 ramtron_attach(void)
 {
 	/* find the right spi */
-#ifdef CONFIG_ARCH_BOARD_AEROCORE
+#if defined(PX4_SPI_BUS_MTD)
+	struct spi_dev_s *spi = up_spiinitialize(PX4_SPI_BUS_MTD);
+#elif defined(CONFIG_ARCH_BOARD_AEROCORE)
 	struct spi_dev_s *spi = up_spiinitialize(4);
 #else
 	struct spi_dev_s *spi = up_spiinitialize(2);
@@ -320,7 +322,7 @@ mtd_start(char *partition_names[], unsigned n_partitions)
 	exit(0);
 }
 
-int mtd_get_geometry(unsigned long *blocksize, unsigned long *erasesize, unsigned long *neraseblocks, 
+int mtd_get_geometry(unsigned long *blocksize, unsigned long *erasesize, unsigned long *neraseblocks,
 	unsigned *blkpererase, unsigned *nblocks, unsigned *partsize, unsigned n_partitions)
 {
 		/* Get the geometry of the FLASH device */
@@ -469,13 +471,13 @@ mtd_rwtest(char *partition_names[], unsigned n_partitions)
 		while (read(fd, v, sizeof(v)) == sizeof(v)) {
 			count += sizeof(v);
                         if (lseek(fd, offset, SEEK_SET) != offset) {
-                            errx(1, "seek failed");                            
+                            errx(1, "seek failed");
                         }
                         if (write(fd, v, sizeof(v)) != sizeof(v)) {
                             errx(1, "write failed");
                         }
                         if (lseek(fd, offset, SEEK_SET) != offset) {
-                            errx(1, "seek failed");                            
+                            errx(1, "seek failed");
                         }
                         if (read(fd, v2, sizeof(v2)) != sizeof(v2)) {
                             errx(1, "read failed");

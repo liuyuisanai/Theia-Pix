@@ -56,13 +56,17 @@ void cButtonController::check(enum button_set bs, struct button_s *buttons, int 
 		// In last iteration button was pressed. Now it's now.
 		if (!now_pressed && buttons[i].pressed) {
 
+            // long press for play/ pause
+            if ( i == 2) {
 
-			// Added this to not break long_press functionality for play button.
-			// Everywhere else long_press is not used any more.
-			/*
-			if (cb_clicked && i == 2)
-				(*cb_clicked)(callback_args[bs][BCBT_CLICKED], i, (now - buttons[i].time_pressed) > LONG_PRESS_TIME);
-			 */
+                if (!long_press_sent) {
+                    // if not longpress was sent then it's short press
+                    (*cb_clicked)(callback_args[bs][BCBT_CLICKED], i, false);
+                } else {
+                    // init value to false
+                    long_press_sent = false;
+                }
+            }
 			buttons[i].pressed = false;
 		}
 
@@ -123,22 +127,36 @@ void cButtonController::check(enum button_set bs, struct button_s *buttons, int 
 			// Handle buttons when center button is not pressed.
 			} else {
 
-				// Handle button press the first time
-				if (buttons[i].last_command_sent == 0) {
-					(*cb_clicked)(callback_args[bs][BCBT_CLICKED], i, false);
-					buttons[i].last_command_sent = now;
-				}
 
-				// Pressed button resend cycle
-				// Resend will work with:
-				// DOWN, UP, CENTER DONW, CENTER RIGHT, CENTER UP, CENTER LEFT
-				if ( i == 1 || i == 3 || i == 5 || i == 6 || i == 7 || i == 8) {
+                if ( i== 2) {
+                    
+                    // Long press sent once the press time is longer than LONG_PRESS_LENGTH
+                    if (now - buttons[i].time_pressed > LONG_PRESS_LENGTH) {
+                        (*cb_clicked)(callback_args[bs][BCBT_CLICKED], i, true);
+                        long_press_sent = true;
+                    }
 
-					if ( now - buttons[i].last_command_sent > PRESSED_BUTTON_RESEND_CYCLE) {
-						(*cb_clicked)(callback_args[bs][BCBT_CLICKED], i, false);
-						buttons[i].last_command_sent = now;
-					}
-				}
+                }
+                else {
+                
+
+                    // Handle button press the first time
+                    if (buttons[i].last_command_sent == 0) {
+                        (*cb_clicked)(callback_args[bs][BCBT_CLICKED], i, false);
+                        buttons[i].last_command_sent = now;
+                    }
+
+                    // Pressed button resend cycle
+                    // Resend will work with:
+                    // DOWN, UP, CENTER DONW, CENTER RIGHT, CENTER UP, CENTER LEFT
+                    if ( i == 1 || i == 3 || i == 5 || i == 6 || i == 7 || i == 8) {
+
+                        if ( now - buttons[i].last_command_sent > PRESSED_BUTTON_RESEND_CYCLE) {
+                            (*cb_clicked)(callback_args[bs][BCBT_CLICKED], i, false);
+                            buttons[i].last_command_sent = now;
+                        }
+                    }
+                }
 			}
 		}
 

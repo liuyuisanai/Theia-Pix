@@ -165,7 +165,12 @@ void get_mavlink_mode_state(struct vehicle_status_s *status, struct position_set
 			*mavlink_base_mode |= MAV_MODE_FLAG_AUTO_ENABLED
 			                      | MAV_MODE_FLAG_STABILIZE_ENABLED
 					      | MAV_MODE_FLAG_GUIDED_ENABLED;
-			custom_mode.main_mode = PX4_CUSTOM_MAIN_MODE_LOITER;
+            if (status->condition_landed) {
+                custom_mode.main_mode = PX4_CUSTOM_MAIN_MODE_LANDED;
+            }
+            else {
+                custom_mode.main_mode = PX4_CUSTOM_MAIN_MODE_LOITER;
+            }
 			break;
 
 		case NAVIGATION_STATE_RTL:
@@ -218,6 +223,8 @@ void get_mavlink_mode_state(struct vehicle_status_s *status, struct position_set
 
 	}
 
+
+
 	*mavlink_custom_mode = custom_mode.data;
 
 	/* set system state */
@@ -240,6 +247,7 @@ void get_mavlink_mode_state(struct vehicle_status_s *status, struct position_set
 
 	} else {
 		*mavlink_state = MAV_STATE_CRITICAL;
+    
 	}
 }
 

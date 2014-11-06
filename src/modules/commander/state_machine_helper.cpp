@@ -7,7 +7,7 @@
  * are met:
  *
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
+ n*    notice, this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
@@ -60,6 +60,7 @@
 #include <drivers/drv_accel.h>
 #include <drivers/drv_airspeed.h>
 #include <drivers/drv_device.h>
+#include <drivers/drv_pwm_output.h>
 #include <mavlink/mavlink_log.h>
 
 #include "state_machine_helper.h"
@@ -151,6 +152,23 @@ arming_state_transition(struct vehicle_status_s *status,		///< current vehicle s
 			// We have a good transition. Now perform any secondary validation.
 			if (new_arming_state == ARMING_STATE_ARMED) {
 
+				// TODO! Check for correct fix!
+				int pwm_fd = open(PWM_OUTPUT_DEVICE_PATH, 0);
+				if (pwm_fd < 0) {
+					mavlink_log_critical(mavlink_fd, "can't open %s", PWM_OUTPUT_DEVICE_PATH);
+					feedback_provided = true;
+					valid_transition = false;
+				}
+				// 0x0F for 1234 channels
+				else if (ioctl(pwm_fd, PWM_SERVO_SET_FORCE_SAFETY_OFF, 0x0F) != 0) {
+					mavlink_log_critical(mavlink_fd, "Could not turn off pwm safety switch.");
+					feedback_provided = true;
+					valid_transition = false;
+				}
+				if (pwm_fd >= 0) {
+					mavlink_log_info(mavlink_fd, "Successfully disabled pwm safty!");
+					close(pwm_fd);
+				}
 				//      Do not perform pre-arm checks if coming from in air restore
 				//      Allow if HIL_STATE_ON
 				if (status->arming_state != ARMING_STATE_IN_AIR_RESTORE &&
@@ -200,7 +218,6 @@ arming_state_transition(struct vehicle_status_s *status,		///< current vehicle s
 					}
 
 				}
-
 			} else if (new_arming_state == ARMING_STATE_STANDBY && status->arming_state == ARMING_STATE_ARMED_ERROR) {
 				new_arming_state = ARMING_STATE_STANDBY_ERROR;
 			}
@@ -348,6 +365,33 @@ main_state_transition(struct vehicle_status_s *status, main_state_t new_main_sta
 	}
 
 	return ret;
+}
+
+void
+airdog_state_transition(struct vehicle_status_s *status, airdog_state_t new_airdog_state, const int mavlink_fd) {
+    status->airdog_state = new_airdog_state;
+
+    char * str;
+
+    switch (new_airdog_state){
+        case AIRD_STATE_DISARMED:
+            str = "disarmed";
+            break;
+        case AIRD_STATE_LANDED:
+            str = "landed";
+            break;
+        case AIRD_STATE_TAKING_OFF:
+            str = "taking_off";
+            break;
+        case AIRD_STATE_LANDING:
+            str = "landing";
+            break;
+        case AIRD_STATE_IN_AIR:
+            str = "in air";
+            break;
+    }
+
+    mavlink_log_info(mavlink_fd, "Airdog state machine state:%s", str);
 }
 
 /**
