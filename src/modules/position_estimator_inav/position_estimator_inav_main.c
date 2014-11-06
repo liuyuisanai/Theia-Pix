@@ -250,7 +250,9 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 	//float surface_offset = 0.0f;	// ground level offset from reference altitude
 	//float surface_offset_rate = 0.0f;	// surface offset change rate
 	//float alt_avg = 0.0f;
+    float land_sonar_last_val = 0.0f;
     float accel_filt = 0.0f;
+    uint16_t  land_by_sonar = 0;
 	bool landed = true;
 	hrt_abstime landed_time = 0;
 
@@ -1213,7 +1215,43 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                             }
                         }
                         // This is the first time we realized throttle is too low, let's have a time to consider if we are on the ground
-                        //fprintf(stderr, "z estimated velosity: %.3f z estimated position: %.3f\n",(double)z_est[1], (double)z_est[0]);
+                        //fprintf(stderr, "z estimated velocity: %.3f z estimated position: %.3f\n",(double)z_est[1], (double)z_est[0]);
+                    }
+                    if (vehicle_status.airdog_state == AIRD_STATE_LANDING && params.sonar_on) {
+                        // If we are in the landing state and we are using sonar - rely on the sonar
+                        if (range_finder.valid) {
+                            // If sonar is currently working define weather we are descending or ascending
+                            if (dist_bottom < land_sonar_last_val) 
+                                land_by_sonar ++;
+                            else
+                                land_by_sonar --;
+                            land_sonar_last_val = dist_bottom;
+                            //fprintf(stderr, "We are landing by sonar, dist_bottom: %.3f sonar_prev: %.3f land_by_sonar: %d\n",
+                            //        (double)dist_bottom,
+                            //        (double)sonar_prev,
+                            //        land_by_sonar);
+                            fprintf(stderr, "We are landing by sonar, land_sonar_last_val: %.3f > dist_bottom: %.3f\n", (double)land_sonar_last_val, (double)dist_bottom);
+                        }
+                        else {
+                            // If sonar is invalid - check if we WERE descending and last sonar value is low
+                            fprintf(stderr, "Sonar not valid, dist_bottom: %.3f sonar_prev: %.3f land_by_sonar: %d\n",
+                                    (double)dist_bottom,
+                                    (double)sonar_prev,
+                                    land_by_sonar);
+
+                            if (land_by_sonar > 0 && dist_bottom < 0.5f) {
+                                if (landed_time == 0.0f) {
+                                    landed_time = t;
+                                }
+                                else if (t - landed_time > 1000000.0f) {
+                                // We are alliwing 1 more second to accend
+                                    landed = true;
+                                    land_by_sonar = 0;
+                                    landed_time = 0.0f;
+                                    fprintf(stderr, "LANDED BY SONAR\n");
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -1311,7 +1349,6 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 			if (buf_ptr >= EST_BUF_SIZE) {
 				buf_ptr = 0;
 			}
-
 			/* publish local position */
 			local_pos.xy_valid = can_estimate_xy;
 			local_pos.v_xy_valid = can_estimate_xy;
