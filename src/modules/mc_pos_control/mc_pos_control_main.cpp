@@ -1458,7 +1458,6 @@ MulticopterPositionControl::task_main()
 	fds[0].events = POLLIN;
 
 	while (!_task_should_exit) {
-		perf_begin(_loop_perf);
 		_ground_position_invalid = false;
 		_ground_setpoint_corrected = false;	
 		_ground_position_available_drop = 0;
@@ -1468,16 +1467,16 @@ MulticopterPositionControl::task_main()
 
 		/* timed out - periodic check for _task_should_exit */
 		if (pret == 0) {
-			perf_end(_loop_perf);
 			continue;
 		}
 
 		/* this is undesirable but not much we can do */
 		if (pret < 0) {
 			warn("poll error %d, %d", pret, errno);
-			perf_end(_loop_perf);
 			continue;
 		}
+
+		perf_begin(_loop_perf);
 
 		poll_subscriptions();
 		parameters_update(false);
