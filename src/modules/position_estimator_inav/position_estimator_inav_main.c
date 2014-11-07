@@ -1166,7 +1166,7 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
             accel_filt += (sensor.accelerometer_m_s2[2] - accel_filt)*0.8f;
         
             //fprintf(stderr, "acc[2]: %.3f sens_acel: %.3f\n",(double)acc[2], (double)(accel_filt - sensor.accelerometer_m_s2[2]));
-            fprintf(stderr, "landed: %d armed state: %d main_state: %d\n", landed, vehicle_status.arming_state, vehicle_status.main_state);
+            //fprintf(stderr, "landed: %d armed state: %d main_state: %d\n", landed, vehicle_status.arming_state, vehicle_status.main_state);
         
         
             float thrust = armed.armed ? actuator.control[3] : 0.0f;
@@ -1230,14 +1230,14 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                             //        (double)dist_bottom,
                             //        (double)sonar_prev,
                             //        land_by_sonar);
-                            fprintf(stderr, "We are landing by sonar, land_sonar_last_val: %.3f > dist_bottom: %.3f\n", (double)land_sonar_last_val, (double)dist_bottom);
+                            //fprintf(stderr, "We are landing by sonar, land_sonar_last_val: %.3f > dist_bottom: %.3f\n", (double)land_sonar_last_val, (double)dist_bottom);
                         }
                         else {
                             // If sonar is invalid - check if we WERE descending and last sonar value is low
-                            fprintf(stderr, "Sonar not valid, dist_bottom: %.3f sonar_prev: %.3f land_by_sonar: %d\n",
-                                    (double)dist_bottom,
-                                    (double)sonar_prev,
-                                    land_by_sonar);
+                            //fprintf(stderr, "Sonar not valid, dist_bottom: %.3f sonar_prev: %.3f land_by_sonar: %d\n",
+                            //        (double)dist_bottom,
+                            //        (double)sonar_prev,
+                            //        land_by_sonar);
 
                             if (land_by_sonar > 0 && dist_bottom < 0.5f) {
                                 if (landed_time == 0.0f) {

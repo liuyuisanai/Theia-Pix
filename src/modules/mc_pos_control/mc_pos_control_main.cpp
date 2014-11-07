@@ -1592,10 +1592,12 @@ MulticopterPositionControl::task_main()
                     if(_params.sonar_correction_on && _local_pos.dist_bottom_valid)
                     {
                         float coeff = _local_pos.dist_bottom/(MAXIMAL_DISTANCE*0.5f);
-                        _vel_sp(2) = coeff * _params.land_speed;
+                        _vel_sp(2) = coeff * _params.land_speed > 0.3f ? coeff * _params.land_speed : 0.3f;
+                        fprintf(stderr, "Landing, _vel_sp: %.3f\n", (double)_vel_sp(2));
                     }
                     else
                         _vel_sp(2) = _params.land_speed;
+                        fprintf(stderr, "Landing, sonar invalid, _vel_sp: %.3f\n", (double)_vel_sp(2));
 				}
 
 				/* use constant ascend rate during take off */
@@ -1617,11 +1619,11 @@ MulticopterPositionControl::task_main()
                             coef *= coef;
                             float max_vel_z = - _params.vel_max(2) * coef;
 
-                            printf("[WARN] max_vel %.3f smooth: %.3f min-dist %.3f thing %.3f\n", 
-                                    (double)max_vel_z, 
-                                    (double)_params.sonar_smooth_coef, 
-                                    (double)_params.sonar_min_dist,
-                                    (double)(_params.sonar_min_dist - _local_pos.dist_bottom)); 
+                            //printf("[WARN] max_vel %.3f smooth: %.3f min-dist %.3f thing %.3f\n", 
+                            //        (double)max_vel_z, 
+                            //        (double)_params.sonar_smooth_coef, 
+                            //        (double)_params.sonar_min_dist,
+                            //        (double)(_params.sonar_min_dist - _local_pos.dist_bottom)); 
                             _vel_sp(2) = max_vel_z;
 							_sp_move_rate(2)= 0.0f;
 						}
@@ -1629,7 +1631,7 @@ MulticopterPositionControl::task_main()
 				else if (_ground_setpoint_corrected && (_vel(2) > _params.vel_max(2) || _vel_sp(2) > _params.vel_max(2))) {
 					//_vel_sp(2) = - _params.vel_max(2);
                     _vel_sp(2) = - 2 * _params.vel_max(2);
-                    printf("[NO IDEA] vel(2) %0.3f  sp_vel(2) %.03f\n", (double)_vel(2), (double)_vel_sp(2));
+                    //printf("[NO IDEA] vel(2) %0.3f  sp_vel(2) %.03f\n", (double)_vel(2), (double)_vel_sp(2));
 					_sp_move_rate(2)= 0.0f;
 				}
 				else if (_local_pos.dist_bottom_valid && _params.sonar_correction_on){

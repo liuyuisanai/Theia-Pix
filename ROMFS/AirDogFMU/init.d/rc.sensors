@@ -24,9 +24,9 @@ else
 	fi
 fi
 
-if lsm303d start
-then
-fi
+#if lsm303d start
+#then
+#fi
 
 # Sonar share tty with console
 if [ $DEBUG_MODE = no ]
