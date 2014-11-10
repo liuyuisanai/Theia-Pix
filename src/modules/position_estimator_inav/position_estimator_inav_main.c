@@ -1108,7 +1108,7 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                                 if (landed_time == 0.0f) {
                                     landed_time = t;
                                 }
-                                else if (t - landed_time > 2000000.0f) {
+                                else if (t - landed_time > 1000000.0f) {
                                 // We are alliwing 2 more second to accend
                                     landed = true;
                                     land_by_sonar = 0;

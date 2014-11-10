@@ -68,6 +68,7 @@
 #include <uORB/topics/vehicle_attitude.h>
 #include <uORB/topics/vehicle_control_mode.h>
 #include <uORB/topics/vehicle_command.h>
+#include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/target_global_position.h>
 #include <systemlib/param/param.h>
 #include <systemlib/err.h>
@@ -132,6 +133,7 @@ private:
 	int		_global_vel_sp_sub;		/**< offboard global velocity setpoint */
 	int		_target_pos_sub;		/**< target global position subscription */
     int     _vcommand_sub;          /**< vehicle command subscription */
+    int     _vehicle_status_sub;    /**< vehicle status subscription */
 
 	orb_advert_t	_att_sp_pub;			/**< attitude setpoint publication */
 	orb_advert_t	_local_pos_sp_pub;		/**< vehicle local position setpoint publication */
@@ -1594,7 +1596,7 @@ MulticopterPositionControl::task_main()
                     if(_params.sonar_correction_on && _local_pos.dist_bottom_valid)
                     {
                         float coeff = _local_pos.dist_bottom/(MAXIMAL_DISTANCE);
-                        _landing_coef = (coeff * _params.land_speed) > (_params.land_speed * 0.3f) ? coeff : 0.3f;
+                        _landing_coef = (coeff * _params.land_speed) > (_params.land_speed * 0.5f) ? coeff : 0.5f;
                         fprintf(stderr, "Landing, _landing_coef: %.3f\n", (double)_landing_coef);
                     }
                     _vel_sp(2) = _params.land_speed * _landing_coef;
