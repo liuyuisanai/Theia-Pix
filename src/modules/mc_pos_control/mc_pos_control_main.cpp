@@ -224,6 +224,7 @@ private:
 	bool _reset_alt_sp;
 	bool _mode_auto;
 	bool _reset_follow_offset;
+    float _landing_coef = 1.0f;
 
 	math::Vector<3> _pos;
 	math::Vector<3> _pos_sp;
@@ -1589,20 +1590,22 @@ MulticopterPositionControl::task_main()
 
 				/* use constant descend rate when landing, ignore altitude setpoint */
 				if (!_control_mode.flag_control_manual_enabled && _pos_sp_triplet.current.valid && _pos_sp_triplet.current.type == SETPOINT_TYPE_LAND) {
+                    /* In case we have sonar correction - use it */
                     if(_params.sonar_correction_on && _local_pos.dist_bottom_valid)
                     {
-                        float coeff = _local_pos.dist_bottom/(MAXIMAL_DISTANCE*0.5f);
-                        _vel_sp(2) = coeff * _params.land_speed > 0.3f ? coeff * _params.land_speed : 0.3f;
-                        fprintf(stderr, "Landing, _vel_sp: %.3f\n", (double)_vel_sp(2));
+                        float coeff = _local_pos.dist_bottom/(MAXIMAL_DISTANCE);
+                        _landing_coef = (coeff * _params.land_speed) > (_params.land_speed * 0.3f) ? coeff : 0.3f;
+                        fprintf(stderr, "Landing, _landing_coef: %.3f\n", (double)_landing_coef);
                     }
-                    else
-                        _vel_sp(2) = _params.land_speed;
-                        fprintf(stderr, "Landing, sonar invalid, _vel_sp: %.3f\n", (double)_vel_sp(2));
+                    _vel_sp(2) = _params.land_speed * _landing_coef;
+                    //fprintf(stderr, "Landing, sonar invalid, _vel_sp: %.3f\n", (double)_vel_sp(2));
 				}
 
 				/* use constant ascend rate during take off */
 				if (!_control_mode.flag_control_manual_enabled && _pos_sp_triplet.current.valid && _pos_sp_triplet.current.type == SETPOINT_TYPE_TAKEOFF) {
 					_vel_sp.zero();
+                    // Resetting landing coefficient
+                    _landing_coef = 1.0f;
 					if (_pos(2) - _pos_sp(2) > 0) {
 						_vel_sp.data[2] = -_params.takeoff_speed;
 					}
