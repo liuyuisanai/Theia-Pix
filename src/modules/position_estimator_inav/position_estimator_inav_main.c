@@ -63,6 +63,7 @@
 #include <uORB/topics/vision_position_estimate.h>
 #include <uORB/topics/home_position.h>
 #include <uORB/topics/optical_flow.h>
+#include <uORB/topics/commander_request_inav.h>
 #include <drivers/drv_range_finder.h>
 #include <mavlink/mavlink_log.h>
 #include <poll.h>
@@ -252,7 +253,7 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 	//float alt_avg = 0.0f;
     float land_sonar_last_val = 0.0f;
     float accel_filt = 0.0f;
-    uint16_t  land_by_sonar = 0;
+    int land_by_sonar = 0;
 	bool landed = true;
 	hrt_abstime landed_time = 0;
 
@@ -338,6 +339,8 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
     memset(&range_finder, 0, sizeof(range_finder));
     struct vehicle_status_s vehicle_status;
     memset(&vehicle_status, 0, sizeof(vehicle_status));
+    struct commander_request_inav_s commander_request;
+    memset(&commander_request, 0, sizeof(commander_request));
 
 	/* subscribe */
 	int parameter_update_sub = orb_subscribe(ORB_ID(parameter_update));
@@ -355,6 +358,7 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 	/* advertise */
 	orb_advert_t vehicle_local_position_pub = orb_advertise(ORB_ID(vehicle_local_position), &local_pos);
 	orb_advert_t vehicle_global_position_pub = -1;
+    orb_advert_t commander_request_inav_pub = orb_advertise(ORB_ID(commander_request_inav), &commander_request);
 
 	struct position_estimator_inav_params params;
 	struct position_estimator_inav_param_handles pos_inav_param_handles;
@@ -1092,6 +1096,7 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                                 land_by_sonar --;
                             land_sonar_last_val = dist_bottom;
                             //fprintf(stderr, "We are landing by sonar, dist_bottom: %.3f sonar_prev: %.3f land_by_sonar: %d\n",
+                            //
                             //        (double)dist_bottom,
                             //        (double)sonar_prev,
                             //        land_by_sonar);
@@ -1104,16 +1109,17 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                             //        (double)sonar_prev,
                             //        land_by_sonar);
 
-                            if (land_by_sonar > 0 && dist_bottom < 0.5f) {
+                            if (land_by_sonar > 0 && dist_bottom < 2.5f) {
                                 if (landed_time == 0.0f) {
                                     landed_time = t;
                                 }
                                 else if (t - landed_time > 1000000.0f) {
-                                // We are alliwing 2 more second to accend
+                                // We are alliwing 1 more second to accend
                                     landed = true;
                                     land_by_sonar = 0;
                                     landed_time = 0.0f;
-                                    fprintf(stderr, "LANDED BY SONAR\n");
+                                    commander_request.request_type = V_DISARM_INAV;
+                                    orb_publish(ORB_ID(commander_request_inav), commander_request_inav_pub, &commander_request);
                                 }
                             }
                         }

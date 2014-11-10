@@ -34,7 +34,7 @@
  * http://www.maxbotix.com/documents/XL-MaxSonar-EZ_Datasheet.pdf
  * Measure unit: METER
  */
-__EXPORT const float MINIMAL_DISTANCE = 0.25; // It realy is 0.2 but due to lags on land increased
+__EXPORT const float MINIMAL_DISTANCE = 1.25; // It realy is 0.2 but due to lags on land increased
 __EXPORT const float MAXIMAL_DISTANCE = 7.0f;
 
 /**
