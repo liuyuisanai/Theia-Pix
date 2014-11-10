@@ -516,195 +516,59 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
             orb_check(range_finder_sub, &updated);
             if (updated) {
                 orb_copy(ORB_ID(sensor_range_finder), range_finder_sub, &range_finder);
-               
+
                     switch(range_finder.type)
                     {
-                        case RANGE_FINDER_TYPE_ULTRASONIC:
+                        case RANGE_FINDER_TYPE_ULTRASONIC: {
                             
-                            if (range_finder.valid)
-                            {
-                                float angle_correction = 1;
-                                if (att.R[2][2] < 0.85f){
-                                    angle_correction = 0.95; //cos(15) <- maximal correction if we are flying with pi/4 angle
-                                    range_finder.distance *= angle_correction;
-                                }
-                                sonar_time = t;
-                                /* hack by max */
+                                    float angle_correction = 1;
+                                    if (att.R[2][2] < 0.85f){
+                                        angle_correction = 0.95; //cos(15) <- maximal correction if we are flying with pi/4 angle
+                                        range_finder.distance *= angle_correction;
+                                    }
+                                    sonar_time = t;
+                                    /* hack by max */
 
-                                if (fabsf(range_finder.distance - sonar_prev) < params.sonar_err) {
-                                    // Accepted difference - enabling LPF and stuff
-                                    
-                                    if (fabsf(corr_sonar_filtered - range_finder.distance) > 2 * params.sonar_err)
-                                        mavlink_log_info(mavlink_fd, "New ground: val%.3f corr: %.3f", (double)range_finder.distance, (double)corr_sonar_filtered);
-                                    corr_sonar_filtered += (range_finder.distance - corr_sonar_filtered) * params.sonar_filt;
-                                    // sonar_filt could have high tolerance for row value now
-                                    sonar_valid = true;
-                                    sonar_valid_time = t;
-                                    dist_bottom = corr_sonar_filtered;
-                                    sonar_prev = range_finder.distance;
-                                }
-                                else {
-                                    // This difference in not accepted, considering as a spike for now
-                                    if (fabsf(corr_sonar_filtered - range_finder.distance) < params.sonar_err) {
-                                        // No, this is not spike, the spike was last time!
+                                    if (fabsf(range_finder.distance - sonar_prev) < params.sonar_err) {
+                                        // Accepted difference - enabling LPF and stuff
+                                        
+                                        //if (fabsf(corr_sonar_filtered - range_finder.distance) > params.sonar_err)
+                                        //    mavlink_log_info(mavlink_fd, "New ground: val%.3f corr: %.3f", (double)range_finder.distance, (double)corr_sonar_filtered);
                                         corr_sonar_filtered += (range_finder.distance - corr_sonar_filtered) * params.sonar_filt;
-                                        dist_bottom = corr_sonar_filtered;
+                                        // sonar_filt could have high tolerance for row value now
                                         sonar_valid = true;
                                         sonar_valid_time = t;
+                                        dist_bottom = corr_sonar_filtered;
+                                        sonar_prev = range_finder.distance;
+                                        //mavlink_log_info(mavlink_fd, "Sonar: %.3f", (double)dist_bottom);
                                     }
                                     else {
-                                        // This is spike! Busted!
-                                        // BUT if it is the new ground level it will pass the IF on the next read
-                                        sonar_valid = true;
-                                        dist_bottom = corr_sonar_filtered;
-                                        mavlink_log_info(mavlink_fd, "spike detected act: %.3f corr: %.3f", (double)range_finder.distance, (double)corr_sonar_filtered);
+                                        // This difference in not accepted, considering as a spike for now
+                                        if (fabsf(corr_sonar_filtered - range_finder.distance) < params.sonar_err) {
+                                            // No, this is not spike, the spike was last time!
+                                            corr_sonar_filtered += (range_finder.distance - corr_sonar_filtered) * params.sonar_filt;
+                                            dist_bottom = corr_sonar_filtered;
+                                            sonar_valid = true;
+                                            sonar_valid_time = t;
+                                            //mavlink_log_info(mavlink_fd,"Lat time spike: %.3f filt: %.3f", 
+                                            //        (double)sonar_prev,
+                                            //        (double)corr_sonar_filtered);
+                                        }
+                                        else {
+                                            // This is spike! Busted!
+                                            // BUT if it is the new ground level it will pass the IF on the next read
+                                            //mavlink_log_info(mavlink_fd, "Spike! filt: %.3f, son: %.3f", 
+                                            //        (double)corr_sonar_filtered, 
+                                            //        (double)range_finder.distance);
+                                            sonar_valid = true;
+                                            dist_bottom = corr_sonar_filtered;
+                                        }
+                                        sonar_prev = range_finder.distance;
                                     }
-                                    sonar_prev = range_finder.distance;
-                                }
-                                    
-                                /* end of hack by max */
-                                
-                                
-                                //if (fabsf(range_finder.distance - sonar_prev) > params.sonar_err){
-                                //	/* spike detection and filter */
-                                //	
-                                //    corr_sonar_filtered += (range_finder.distance - corr_sonar_filtered) * params.sonar_filt;
-
-                                //    /* Check if spike was detected*/
-                                //    /* Params could be configured from qgroundcontroll */
-                                //    bool spike_detected;
-                                //    spike_detected = fabsf(range_finder.distance - corr_sonar_filtered) > params.sonar_err ? true : false;
-
-                                //	if (spike_detected) {
-                                //		sonar_valid = false;
-                                //		mavlink_log_info(mavlink_fd, "spike detected act: %.3f corr: %.3f", (double)range_finder.distance, (double)corr_sonar_filtered);
-                                //	}
-                                //	else {
-                                //	 	dist_bottom = corr_sonar_filtered;
-                                //	 	sonar_valid_time = t;
-	                            //     	sonar_valid = true;
-                                //	}
-                                //	
-
-                                //	sonar_prev = range_finder.distance; //used only to check whether the mesured distance has changed
-                                //}
-                                //else {	                                
-	                            //    dist_bottom = range_finder.distance;	
-	                            //    sonar_valid_time = t;
-	                            //    sonar_valid = true;
-                                //}
-                                
-
-                                // corr_sonar = range_finder.distance + surface_offset + z_est[0];
-                                // corr_sonar_filtered += (corr_sonar - corr_sonar_filtered) * params.sonar_filt;
-                               
-                                // if (fabsf(corr_sonar) > params.sonar_err) {
-                                //     /* correction is too large: spike or new ground level? */
-                                //     if (fabsf(corr_sonar - corr_sonar_filtered) > params.sonar_err) {
-                                //         /* spike detected, ignore */
-                                //         corr_sonar = 0.0f;
-                                //         sonar_valid = false;
-                                        
-                                //     } else {
-                                //         /* new ground level */
-                                //         local_pos.surface_bottom_timestamp = t;
-                                //         local_pos.dist_bottom = corr_sonar_filtered;
-                                //         local_pos.dist_bottom_valid = true;
-                                //         surface_offset -= corr_sonar;
-                                //         surface_offset_rate = 0.0f;
-                                //         corr_sonar = 0.0f;
-                                //         corr_sonar_filtered = 0.0f;
-                                //         sonar_valid_time = t;
-                                //         sonar_valid = true;
-                                //         mavlink_log_info(mavlink_fd, "[inav] new surface level: %.2f", (double)surface_offset);
-                                //     }
-                                    
-                                // } else {
-                                //     /* correction is ok, use it */
-                                //     sonar_valid_time = t;
-                                //     sonar_valid = true;
-                                // }
-                            }
-                            else {
-                            	sonar_valid = false;
-                            }
-                        break;
-                        }
+                                    break;
+                           }
+                      }
                 }
-
-
-			/* optical flow */
-			//orb_check(optical_flow_sub, &updated);
-
-			// if (updated) {
-			// 	orb_copy(ORB_ID(optical_flow), optical_flow_sub, &flow);
-
-			// 	/* calculate time from previous update */
-			// 	float flow_dt = flow_prev > 0 ? (flow.flow_timestamp - flow_prev) * 1e-6f : 0.1f;
-			// 	flow_prev = flow.flow_timestamp;
-
-			// 	float flow_q = flow.quality / 255.0f;
-			// 	float dist_bottom = - z_est[0] - surface_offset;
-
-			// 	if (dist_bottom > 0.3f && flow_q > params.flow_q_min && (t < sonar_valid_time + sonar_valid_timeout) && att.R[2][2] > 0.7f) {
-			// 		/* distance to surface */
-			// 		float flow_dist = dist_bottom / att.R[2][2];
-			// 		/* check if flow if too large for accurate measurements */
-			// 		/* calculate estimated velocity in body frame */
-			// 		float body_v_est[2] = { 0.0f, 0.0f };
-
-			// 		for (int i = 0; i < 2; i++) {
-			// 			body_v_est[i] = att.R[0][i] * x_est[1] + att.R[1][i] * y_est[1] + att.R[2][i] * z_est[1];
-			// 		}
-
-			// 		/* set this flag if flow should be accurate according to current velocity and attitude rate estimate */
-			// 		flow_accurate = fabsf(body_v_est[1] / flow_dist - att.rollspeed) < max_flow &&
-			// 				fabsf(body_v_est[0] / flow_dist + att.pitchspeed) < max_flow;
-
-			// 		/* convert raw flow to angular flow (rad/s) */
-			// 		float flow_ang[2];
-			// 		flow_ang[0] = flow.flow_raw_x * params.flow_k / 1000.0f / flow_dt;
-			// 		flow_ang[1] = flow.flow_raw_y * params.flow_k / 1000.0f / flow_dt;
-			// 		/* flow measurements vector */
-			// 		float flow_m[3];
-			// 		flow_m[0] = -flow_ang[0] * flow_dist;
-			// 		flow_m[1] = -flow_ang[1] * flow_dist;
-			// 		flow_m[2] = z_est[1];
-			// 		/* velocity in NED */
-			// 		float flow_v[2] = { 0.0f, 0.0f };
-
-			// 		/* project measurements vector to NED basis, skip Z component */
-			// 		for (int i = 0; i < 2; i++) {
-			// 			for (int j = 0; j < 3; j++) {
-			// 				flow_v[i] += att.R[i][j] * flow_m[j];
-			// 			}
-			// 		}
-
-			// 		/* velocity correction */
-			// 		corr_flow[0] = flow_v[0] - x_est[1];
-			// 		corr_flow[1] = flow_v[1] - y_est[1];
-			// 		/* adjust correction weight */
-			// 		float flow_q_weight = (flow_q - params.flow_q_min) / (1.0f - params.flow_q_min);
-			// 		w_flow = att.R[2][2] * flow_q_weight / fmaxf(1.0f, flow_dist);
-
-			// 		/* if flow is not accurate, reduce weight for it */
-			// 		// TODO make this more fuzzy
-			// 		if (!flow_accurate) {
-			// 			w_flow *= 0.05f;
-			// 		}
-
-			// 		/* under ideal conditions, on 1m distance assume EPH = 10cm */
-			// 		eph_flow = 0.1f / w_flow;
-
-			// 		flow_valid = true;
-
-			// 	} else {
-			// 		w_flow = 0.0f;
-			// 		flow_valid = false;
-			// 	}
-
-			// 	flow_updates++;
-			// }
 
 			/* home position */
 			orb_check(home_position_sub, &updated);
@@ -918,7 +782,8 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 			//corr_sonar = 0.0f;
 			sonar_valid = false;
 			warnx("SONAR timeout");
-			mavlink_log_info(mavlink_fd, "[inav] SONAR timeout");
+            sonar_prev = 0.0f;
+			//mavlink_log_info(mavlink_fd, "[inav] SONAR timeout");
 		}
 		else if (sonar_valid) {
 			//mavlink_log_info(mavlink_fd, "[inav] SONAR VALID alt = % 9.6f", (double)dist_bottom);	
@@ -1156,7 +1021,7 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 			inertial_filter_correct(-y_est[1], dt, y_est, 1, params.w_xy_res_v);
 		}
 
-		/* detect land */
+		/* =====LANDING===== */
 
         /* hack by MAX */
         bool updated;
@@ -1243,8 +1108,8 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                                 if (landed_time == 0.0f) {
                                     landed_time = t;
                                 }
-                                else if (t - landed_time > 1000000.0f) {
-                                // We are alliwing 1 more second to accend
+                                else if (t - landed_time > 2000000.0f) {
+                                // We are alliwing 2 more second to accend
                                     landed = true;
                                     land_by_sonar = 0;
                                     landed_time = 0.0f;
@@ -1263,52 +1128,8 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                 }
             }
         }
-        /* end of hack by MAX */
+        /* end of hack by max */
 
-		//alt_avg += (- z_est[0] - alt_avg) * dt / params.land_t;
-
-		//float alt_disp2 = - z_est[0] - alt_avg;
-		//alt_disp2 = alt_disp2 * alt_disp2;
-
-		//float land_disp2 = params.land_disp * params.land_disp;
-		///* get actual thrust output */
-		//float thrust = armed.armed ? actuator.control[3] : 0.0f;
-        //
-		//if (landed) {
-		//	if (alt_disp2 > land_disp2 || thrust > params.land_thr) {
-		//		landed = false;
-        //        fprintf(stdout, "alt_avg: %.3f alt_disp2: %.3f land_disp2: %.3f thrust %.3f landed %d\n",
-        //                (double)alt_avg,
-        //                (double)alt_disp2,
-        //                (double)land_disp2,
-        //                (double)thrust,
-        //                landed);
-		//landed_time = 0;
-		//	}
-
-		//} else {
-		//	if (alt_disp2 < land_disp2 && thrust < params.land_thr) {
-		//		if (landed_time == 0) {
-		//			landed_time = t;    // land detected first time
-
-		//		} else {
-		//			if (t > landed_time + params.land_t * 1000000.0f) {
-		//				landed = true;
-        //                    fprintf(stdout, "alt_avg: %.3f alt_disp2: %.3f land_disp2: %.3f thrust %.3f landed %d\n",
-        //                            (double)alt_avg,
-        //                            (double)alt_disp2,
-        //                            (double)land_disp2,
-        //                            (double)thrust,
-        //                            landed);
-        //            landed_time = 0;
-		//			}
-		//		}
-
-		//	} else {
-		//		landed_time = 0;
-		//	}
-		//}
-        
 
 		if (verbose_mode) {
 			/* print updates rate */
