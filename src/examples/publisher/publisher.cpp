@@ -67,7 +67,7 @@ int main(int argc, char **argv)
 	 */
 	int count = 0;
 
-	while (px4::ok()) {
+	while (n.ok()) {
 		/**
 		 * This is a message object. You stuff it with data, and then publish it.
 		 */
@@ -84,7 +84,7 @@ int main(int argc, char **argv)
 		 */
 		rc_channels_pub.publish(msg);
 
-		px4::spin_once();
+		n.spinOnce();
 
 		loop_rate.sleep();
 		++count;

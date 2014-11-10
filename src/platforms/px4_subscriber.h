@@ -37,6 +37,8 @@
  * PX4 Middleware Wrapper Subscriber
  */
 
+#pragma once
+
 namespace px4
 {
 class Subscriber

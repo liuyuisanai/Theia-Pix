@@ -41,18 +41,14 @@
 
 #include <stdint.h>
 
+#include "px4_nodehandle.h"
+
 namespace px4
 {
 
 void init(int argc, char *argv[], const char *process_name);
 
 uint64_t get_time_micros();
-
-bool ok();
-
-void spin_once();
-
-void spin();
 
 class Rate
 {

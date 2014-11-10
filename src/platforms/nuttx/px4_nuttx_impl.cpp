@@ -39,8 +39,6 @@
 
 #include <px4.h>
 
-extern bool task_should_exit;
-
 namespace px4
 {
 
@@ -53,23 +51,6 @@ void init(int argc, char *argv[], const char *process_name)
 uint64_t get_time_micros()
 {
 	return hrt_absolute_time();
-}
-
-bool ok()
-{
-	return !task_should_exit;
-}
-
-void spin_once()
-{
-	// XXX check linked list of topics with orb_check() here
-
-}
-
-void spin()
-{
-	// XXX block waiting for updated topics here
-
 }
 
 }

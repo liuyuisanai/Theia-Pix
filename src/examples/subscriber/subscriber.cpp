@@ -57,7 +57,7 @@ int main(int argc, char **argv)
 	 * The first NodeHandle constructed will fully initialize this node, and the last
 	 * NodeHandle destructed will close down the node.
 	 */
-	ros::NodeHandle n;
+	px4::NodeHandle n;
 
 	/**
 	 * The subscribe() call is how you tell ROS that you want to receive messages
@@ -74,14 +74,14 @@ int main(int argc, char **argv)
 	 * is the number of messages that will be buffered up before beginning to throw
 	 * away the oldest ones.
 	 */
-	ros::Subscriber sub = n.subscribe("rc_channels", 1000, rc_channels_callback);
+	px4::Subscriber sub = n.subscribe("rc_channels", 1000, rc_channels_callback);
 
 	/**
 	 * px4::spin() will enter a loop, pumping callbacks.  With this version, all
 	 * callbacks will be called from within this thread (the main one).  px4::spin()
 	 * will exit when Ctrl-C is pressed, or the node is shutdown by the master.
 	 */
-	px4::spin();
+	n.spin();
 
 	return 0;
 }

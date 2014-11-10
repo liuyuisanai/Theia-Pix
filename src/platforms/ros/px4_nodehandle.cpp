@@ -32,17 +32,40 @@
  ****************************************************************************/
 
 /**
- * @file px4_nodehandle.h
+ * @file px4_nodehandle.cpp
  *
  * PX4 Middleware Wrapper Node Handle
  */
 
-#pragma once
+namespace px4 {
 
-namespace px4
+void NodeHandle::spinOnce()
 {
-class Publisher
-{
-
-};
+	ros::spinOnce();
 }
+
+void NodeHandle::spin()
+{
+	ros::spin();
+}
+
+bool NodeHandle::ok()
+{
+	return ros::ok();
+}
+
+template<class M > Publisher
+NodeHandle::advertise (const char* topic, uint32_t queue_size, bool latch=false)
+{
+	
+}
+
+template <class M> Subscriber
+NodeHandle::subscribe(const char* topic_name, uint32_t queue_size,
+		const std::function< void(const std::shared_ptr< M const > &)> &callback)
+{
+
+}
+
+}
+

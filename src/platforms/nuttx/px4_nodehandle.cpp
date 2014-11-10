@@ -32,17 +32,27 @@
  ****************************************************************************/
 
 /**
- * @file px4_nodehandle.h
+ * @file px4_nodehandle.cpp
  *
  * PX4 Middleware Wrapper Node Handle
  */
 
-#pragma once
+namespace px4 {
 
-namespace px4
+void NodeHandle::spinOnce()
 {
-class Publisher
-{
-
-};
+	// XXX implement orb_check();
 }
+
+void NodeHandle::spin()
+{
+	// XXX polling wait
+}
+
+bool NodeHandle::ok()
+{
+	return !task_should_exit;
+}
+
+}
+

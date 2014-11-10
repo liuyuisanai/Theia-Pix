@@ -37,10 +37,32 @@
  * PX4 Middleware Wrapper Node Handle
  */
 
+#pragma once
+
+#include "px4_publisher.h"
+#include "px4_subscriber.h"
+
 namespace px4
 {
-class NodeHandle
+
+template<class T>
+	class NodeHandle
 {
 
+public:
+	void spin_once();
+
+	void spin();
+
+	template<class M > Publisher
+	advertise (const char* topic, uint32_t queue_size, bool latch=false);
+
+	template <class M> Subscriber
+	subscribe(const char* topic_name, uint32_t queue_size,
+		const std::function< void(const std::shared_ptr< M const > &)> &callback);
+
+protected:
+	bool task_should_exit;
 };
+
 }
