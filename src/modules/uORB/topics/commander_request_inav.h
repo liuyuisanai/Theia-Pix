@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (c) 2013, 2014 PX4 Development Team. All rights reserved.
+ *   Copyright (C) 2012 - 2014 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,76 +31,54 @@
  *
  ****************************************************************************/
 
-/*
- * @file position_estimator_inav_params.c
+/**
+ * @file commander_request_inav.h
+ * Definition of the commander_request_inav uORB topic.
  *
- * @author Anton Babushkin <rk3dov@gmail.com>
+ * Commander_requests_inav are requests to commander for vehicle status changes.
  *
- * Parameters definition for position_estimator_inav
+ * Commander is the responsible app for managing system related tasks
+ * and setting vehicle statuses other apps must make request for commander
+ * if system related task or system state change is needed.
+ *
+ * Commander will process this request and decide what to do with it.
+ *
+ * @author Maxims Shvetsov <maxim.shvetsov@airdog.com>
  */
 
-#include <systemlib/param/param.h>
+#ifndef COMMANDER_REQUEST_INAV_H_
+#define COMMANDER_REQUEST_INAV_H_
 
-struct position_estimator_inav_params {
-	float w_z_baro;
-	float w_z_gps_p;
-	float w_z_vision_p;
-	float w_z_sonar;
-	float w_xy_gps_p;
-	float w_xy_gps_v;
-	float w_xy_vision_p;
-	float w_xy_vision_v;
-	float w_xy_flow;
-	float w_xy_res_v;
-	float w_gps_flow;
-	float w_acc_bias;
-	float flow_k;
-	float flow_q_min;
-	float sonar_filt;
-	float sonar_err;
-    int32_t sonar_on;
-	float land_t;
-	float land_disp;
-	float land_thr;
-	int32_t no_vision;
-	float delay_gps;
-};
-
-struct position_estimator_inav_param_handles {
-	param_t w_z_baro;
-	param_t w_z_gps_p;
-	param_t w_z_vision_p;
-	param_t w_z_sonar;
-	param_t w_xy_gps_p;
-	param_t w_xy_gps_v;
-	param_t w_xy_vision_p;
-	param_t w_xy_vision_v;
-	param_t w_xy_flow;
-	param_t w_xy_res_v;
-	param_t w_gps_flow;
-	param_t w_acc_bias;
-	param_t flow_k;
-	param_t flow_q_min;
-	param_t sonar_filt;
-	param_t sonar_err;
-    param_t sonar_on;
-	param_t land_t;
-	param_t land_disp;
-	param_t land_thr;
-	param_t no_vision;
-	param_t delay_gps;
-};
-
-#define CBRK_NO_VISION_KEY	328754
+#include <stdint.h>
+#include <stdbool.h>
+#include "../uORB.h"
+#include "vehicle_status.h"
 
 /**
- * Initialize all parameter handles and values
- *
+ * @addtogroup topics @{
  */
-int parameters_init(struct position_estimator_inav_param_handles *h);
 
 /**
- * Update all parameters
- *
+ * Request type.
  */
-int parameters_update(const struct position_estimator_inav_param_handles *h, struct position_estimator_inav_params *p);
+typedef enum {
+	V_DISARM_INAV = 0,                   // Request to disarm vehicle
+    AIRD_STATE_CHANGE_INAV           // Request to change airdog_state
+} request_type_inav_t;
+
+struct commander_request_inav_s {
+	request_type_inav_t request_type;
+
+	main_state_t main_state;
+    airdog_state_t airdog_state;
+
+};
+
+/**
+ * @}
+ */
+
+/* register this as object request broker structure */
+ORB_DECLARE(commander_request_inav);
+
+#endif

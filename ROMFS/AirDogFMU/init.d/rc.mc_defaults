@@ -5,7 +5,7 @@ set VEHICLE_TYPE mc
 if [ $DO_AUTOCONFIG == yes ]
 then
 	# AirDog board rotation
-	param set SENS_BOARD_ROT   2
+	param set SENS_BOARD_ROT   6
 	param set SEND_BOARD_Z_OFF 180
 
 	param set MC_ROLL_P 7.0

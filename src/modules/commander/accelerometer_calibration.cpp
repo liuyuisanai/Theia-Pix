@@ -198,6 +198,18 @@ int do_accel_calibration(int mavlink_fd)
 		enum Rotation board_rotation_id = (enum Rotation)board_rotation_int;
 		math::Matrix<3, 3> board_rotation;
 		get_rot_matrix(board_rotation_id, &board_rotation);
+
+		// Applying fine offsets
+		math::Matrix<3, 3> board_rotation_offset;
+		float board_offset[3];
+		param_get(param_find("SENS_BOARD_X_OFF"), &(board_offset[0]));
+		param_get(param_find("SENS_BOARD_Y_OFF"), &(board_offset[1]));
+		param_get(param_find("SENS_BOARD_Z_OFF"), &(board_offset[2]));
+		board_rotation_offset.from_euler( M_DEG_TO_RAD_F * board_offset[0],
+								 M_DEG_TO_RAD_F * board_offset[1],
+								 M_DEG_TO_RAD_F * board_offset[2]);
+		board_rotation = board_rotation * board_rotation_offset;
+
 		math::Matrix<3, 3> board_rotation_t = board_rotation.transposed();
 		math::Vector<3> accel_offs_vec(&accel_offs[0]);
 		math::Vector<3> accel_offs_rotated = board_rotation_t *accel_offs_vec;

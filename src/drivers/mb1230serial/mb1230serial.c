@@ -34,7 +34,7 @@
  * http://www.maxbotix.com/documents/XL-MaxSonar-EZ_Datasheet.pdf
  * Measure unit: METER
  */
-__EXPORT const float MINIMAL_DISTANCE = 0.2f;
+__EXPORT const float MINIMAL_DISTANCE = 1.25; // It realy is 0.2 but due to lags on land increased
 __EXPORT const float MAXIMAL_DISTANCE = 7.0f;
 
 /**
@@ -202,12 +202,12 @@ int mb1230serial_thread_main(int argc, char *argv[])
 								(raw_data[1] - '0') * 10 +
 								(raw_data[2] - '0');
 
-						if (distance >= (MINIMAL_DISTANCE * 100) && distance <= (MAXIMAL_DISTANCE * 100)) {
-							data.timestamp = hrt_absolute_time();
+                        data.timestamp = hrt_absolute_time();
+						if (distance > (MINIMAL_DISTANCE * 100) && distance < (MAXIMAL_DISTANCE * 100)) {
 							data.distance = (float)distance * DISTANCE_SCALE;
+                            data.valid = 1;
                             
-                             //printf("Sonar %s %s %s: %.3fcm\n", raw_data[0], raw_data[1], raw_data[2], (double)data.distance);
-
+                            //printf("Sonar %s %s %s: %.3fcm\n", raw_data[0], raw_data[1], raw_data[2], (double)data.distance);
 
 							if (range_finder_pub > 0) {
 								orb_publish(ORB_ID(sensor_range_finder), range_finder_pub, &data);
@@ -215,6 +215,12 @@ int mb1230serial_thread_main(int argc, char *argv[])
 								range_finder_pub = orb_advertise(ORB_ID(sensor_range_finder), &data);
 							}
 						}
+                        else {
+                            // Sonar is invalid, send 0xFFFF as data and invalid state
+                            data.distance = 0xFFFF;
+                            data.valid = 0;
+                        }
+                        //fprintf(stderr, "Sonar distance: %.3f, valid: %d\n",(double)data.distance, data.valid);
 					}
 				}
 			}
