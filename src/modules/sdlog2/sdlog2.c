@@ -1151,6 +1151,8 @@ int sdlog2_thread_main(int argc, char *argv[])
 			log_msg.body.log_STAT.battery_remaining = buf_status.battery_remaining;
 			log_msg.body.log_STAT.battery_warning = (uint8_t) buf_status.battery_warning;
 			log_msg.body.log_STAT.landed = (uint8_t) buf_status.condition_landed;
+			log_msg.body.log_STAT.load = buf_status.load;
+			log_msg.body.log_STAT.aird_state = buf_status.airdog_state;
 			LOGBUFFER_WRITE_AND_COUNT(STAT);
 		}
 
