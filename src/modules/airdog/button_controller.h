@@ -75,7 +75,7 @@
  * Measured in microseconds
  */
 #define PRESSED_BUTTON_RESEND_CYCLE 500000
-#define LONG_PRESS_LENGTH 500000
+#define LONG_PRESS_LENGTH 1000000
 
 #define BUTTON_HANDLED true
 #define BUTTON_IGNORED false

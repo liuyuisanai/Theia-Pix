@@ -1766,17 +1766,13 @@ int commander_thread_main(int argc, char *argv[])
 			switch(commander_request.request_type) {
 			case V_MAIN_STATE_CHANGE:
 			{
-
-
 				if (main_state_transition(&status, commander_request.main_state)) {
 					status_changed = true;
 				}
-
 				break;
 			}
 			case V_DISARM:
 			{
-
                 arm_disarm(false, mavlink_fd, "Commander request.");
 				break;
 			}
