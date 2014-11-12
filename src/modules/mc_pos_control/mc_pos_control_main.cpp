@@ -252,6 +252,7 @@ private:
 	float _ground_position_available_drop = 0;
 
 	struct vehicle_command_s _vcommand;
+    struct vehicle_status_s _vstatus;
 
 	/**
 	 * Update our local parameter cache.
@@ -346,6 +347,11 @@ private:
      * Change setpoint Z coordinate according to sonar measurements
      */
     bool       ground_dist_correction(); 
+
+    /*
+     * Check vehicle_status topic and update _vstatus if it's updated
+     */
+    bool       update_vehicle_status();
 
     /*
      *  Check vehicle_command topic and update _vcommand if it's updated
@@ -640,6 +646,12 @@ MulticopterPositionControl::poll_subscriptions()
 	if (updated) {
 		orb_copy(ORB_ID(target_global_position), _target_pos_sub, &_target_pos);
 	}
+
+    orb_check(_vehicle_status_sub, &updated);
+
+    if (updated) {
+        orb_copy(ORB_ID(vehicle_status), _vehicle_status_sub, &_vstatus);
+    }
 }
 
 float
@@ -726,6 +738,21 @@ MulticopterPositionControl::reset_follow_offset()
 		mavlink_log_info(_mavlink_fd, "[mpc] reset follow offs: %.2f, %.2f, %.2f",
 				(double)_follow_offset(0), (double)_follow_offset(1), (double)_follow_offset(2));
 	}
+}
+
+bool
+MulticopterPositionControl::update_vehicle_status()
+{
+    bool vehicle_status_updated = false;
+    orb_check(_vehicle_status_sub, &vehicle_status_updated);
+
+    if (vehicle_status_updated) {
+        if (orb_copy(ORB_ID(vehicle_status), _vehicle_status_sub, &_vstatus) == OK)
+            return true;
+        else
+            return false;
+    }
+    return false;
 }
 
 bool
@@ -1357,6 +1384,7 @@ MulticopterPositionControl::task_main()
 	_global_vel_sp_sub = orb_subscribe(ORB_ID(vehicle_global_velocity_setpoint));
 	_target_pos_sub = orb_subscribe(ORB_ID(target_global_position));
 	_vcommand_sub = orb_subscribe(ORB_ID(vehicle_command));
+    _vehicle_status_sub = orb_subscribe(ORB_ID(vehicle_status));
 
 
 	parameters_update(true);
@@ -1503,26 +1531,28 @@ MulticopterPositionControl::task_main()
 				}
 			}
 
-			if  (
-                (_control_mode.flag_control_position_enabled || _control_mode.flag_control_follow_target) && 
-                _pos_sp_triplet.current.type != SETPOINT_TYPE_LAND && _pos_sp_triplet.current.type != SETPOINT_TYPE_TAKEOFF &&
-                _pos_sp_triplet.current.type != SETPOINT_TYPE_IDLE
-                ) {
-				/* try to correct this altitude with sonar */
-			    ground_dist_correction();
+			if (    (_control_mode.flag_control_position_enabled || _control_mode.flag_control_follow_target)&&
+                    (_vstatus.airdog_state == AIRD_STATE_IN_AIR)    ) {
+				/*
+                 * Try to correct this altitude with sonar
+                 * Only if we are flying or landing
+                 */
+                    ground_dist_correction();
+                    if (_ground_setpoint_corrected) {
+                        //correct altitude velocity
+                        _vel_ff(2) = 0.0f;
+                        //and altitude move rate
+                        _sp_move_rate(2)= 0.0f;
 
-			    if (_ground_setpoint_corrected) {
-			    	//correct altitude velocity
-			    	_vel_ff(2) = 0.0f;
-			    	//and altitude move rate
-			    	_sp_move_rate(2)= 0.0f;
-
-			    	//if (_control_mode.flag_control_follow_target && _control_mode.flag_control_manual_enabled) {
-			    	//	//stop moving offset in manual follow mode
-				    //	_follow_offset(2) = _pos_sp(2) - _tpos(2);
-			    	//}
-				}
+                        //if (_control_mode.flag_control_follow_target && _control_mode.flag_control_manual_enabled) {
+                        //	//stop moving offset in manual follow mode
+                        //	_follow_offset(2) = _pos_sp(2) - _tpos(2);
+                        //}
+                    }
 			}
+            else {
+                _ground_setpoint_corrected = false;
+            }
 
 			/* reset follow offset after non-follow modes */
 			if (!(_control_mode.flag_control_follow_target)) {
@@ -1634,6 +1664,7 @@ MulticopterPositionControl::task_main()
 						}
 				}
 				else if (_ground_setpoint_corrected && (_vel(2) > _params.vel_max(2) || _vel_sp(2) > _params.vel_max(2))) {
+
 					//_vel_sp(2) = - _params.vel_max(2);
                     _vel_sp(2) = - 2 * _params.vel_max(2);
                     //printf("[NO IDEA] vel(2) %0.3f  sp_vel(2) %.03f\n", (double)_vel(2), (double)_vel_sp(2));
