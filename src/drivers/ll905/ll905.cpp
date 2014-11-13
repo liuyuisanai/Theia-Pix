@@ -32,7 +32,7 @@
  ****************************************************************************/
 
 /**
- * @file ll40ls.cpp
+ * @file ll905.cpp
  * @author Allyson Kreft
  *
  * Driver for the PulsedLight Lidar-Lite range finders connected via I2C.
@@ -72,21 +72,21 @@
 #include <board_config.h>
 
 /* Configuration Constants */
-#define LL40LS_BUS 			PX4_I2C_BUS_EXPANSION
-#define LL40LS_BASEADDR 	0x42 /* 7-bit address */
-#define LL40LS_DEVICE_PATH 	"/dev/ll40ls"
+#define LL905_BUS 			PX4_I2C_BUS_EXPANSION
+#define LL905_BASEADDR 	0x62 /* 7-bit address */
+#define LL905_DEVICE_PATH 	"/dev/ll905"
 
-/* LL40LS Registers addresses */
+/* LL905 Registers addresses */
 
-#define LL40LS_MEASURE_REG		0x00		/* Measure range register */
-#define LL40LS_MSRREG_ACQUIRE	0x04		/* Value to initiate a measurement, varies based on sensor revision */
-#define LL40LS_DISTHIGH_REG		0x8F		/* High byte of distance register, auto increment */
+#define LL905_MEASURE_REG		0x00		/* Measure range register */
+#define LL905_MSRREG_ACQUIRE	0x04		/* Value to initiate a measurement, varies based on sensor revision */
+#define LL905_DISTHIGH_REG		0x8F		/* High byte of distance register, auto increment */
 
 /* Device limits */
-#define LL40LS_MIN_DISTANCE (0.00f)
-#define LL40LS_MAX_DISTANCE (14.00f)
+#define LL905_MIN_DISTANCE (0.00f)
+#define LL905_MAX_DISTANCE (60.00f)
 
-#define LL40LS_CONVERSION_INTERVAL 100000 /* 100ms */
+#define LL905_CONVERSION_INTERVAL 100000 /* 100ms */
 
 /* oddly, ERROR is not defined for c++ */
 #ifdef ERROR
@@ -98,11 +98,11 @@ static const int ERROR = -1;
 # error This requires CONFIG_SCHED_WORKQUEUE.
 #endif
 
-class LL40LS : public device::I2C
+class LL905 : public device::I2C
 {
 public:
-	LL40LS(int bus = LL40LS_BUS, int address = LL40LS_BASEADDR);
-	virtual ~LL40LS();
+	LL905(int bus = LL905_BUS, int address = LL905_BASEADDR);
+	virtual ~LL905();
 
 	virtual int 		init();
 
@@ -157,8 +157,8 @@ private:
 
 	/**
 	* Set the min and max distance thresholds if you want the end points of the sensors
-	* range to be brought in at all, otherwise it will use the defaults LL40LS_MIN_DISTANCE
-	* and LL40LS_MAX_DISTANCE
+	* range to be brought in at all, otherwise it will use the defaults LL905_MIN_DISTANCE
+	* and LL905_MAX_DISTANCE
 	*/
 	void				set_minimum_distance(float min);
 	void				set_maximum_distance(float max);
@@ -186,21 +186,21 @@ private:
 /*
  * Driver 'main' command.
  */
-extern "C" __EXPORT int ll40ls_main(int argc, char *argv[]);
+extern "C" __EXPORT int ll905_main(int argc, char *argv[]);
 
-LL40LS::LL40LS(int bus, int address) :
-	I2C("LL40LS", LL40LS_DEVICE_PATH, bus, address, 100000),
-	_min_distance(LL40LS_MIN_DISTANCE),
-	_max_distance(LL40LS_MAX_DISTANCE),
+LL905::LL905(int bus, int address) :
+	I2C("LL905", LL905_DEVICE_PATH, bus, address, 100000),
+	_min_distance(LL905_MIN_DISTANCE),
+	_max_distance(LL905_MAX_DISTANCE),
 	_reports(nullptr),
 	_sensor_ok(false),
 	_measure_ticks(0),
 	_collect_phase(false),
 	_class_instance(-1),
 	_range_finder_topic(-1),
-	_sample_perf(perf_alloc(PC_ELAPSED, "ll40ls_read")),
-	_comms_errors(perf_alloc(PC_COUNT, "ll40ls_comms_errors")),
-	_buffer_overflows(perf_alloc(PC_COUNT, "ll40ls_buffer_overflows"))
+	_sample_perf(perf_alloc(PC_ELAPSED, "ll905_read")),
+	_comms_errors(perf_alloc(PC_COUNT, "ll905_comms_errors")),
+	_buffer_overflows(perf_alloc(PC_COUNT, "ll905_buffer_overflows"))
 {
 	// up the retries since the device misses the first measure attempts
 	I2C::_retries = 3;
@@ -212,7 +212,7 @@ LL40LS::LL40LS(int bus, int address) :
 	memset(&_work, 0, sizeof(_work));
 }
 
-LL40LS::~LL40LS()
+LL905::~LL905()
 {
 	/* make sure we are truly inactive */
 	stop();
@@ -233,7 +233,7 @@ LL40LS::~LL40LS()
 }
 
 int
-LL40LS::init()
+LL905::init()
 {
 	int ret = ERROR;
 
@@ -271,37 +271,37 @@ out:
 }
 
 int
-LL40LS::probe()
+LL905::probe()
 {
 	return measure();
 }
 
 void
-LL40LS::set_minimum_distance(float min)
+LL905::set_minimum_distance(float min)
 {
 	_min_distance = min;
 }
 
 void
-LL40LS::set_maximum_distance(float max)
+LL905::set_maximum_distance(float max)
 {
 	_max_distance = max;
 }
 
 float
-LL40LS::get_minimum_distance()
+LL905::get_minimum_distance()
 {
 	return _min_distance;
 }
 
 float
-LL40LS::get_maximum_distance()
+LL905::get_maximum_distance()
 {
 	return _max_distance;
 }
 
 int
-LL40LS::ioctl(struct file *filp, int cmd, unsigned long arg)
+LL905::ioctl(struct file *filp, int cmd, unsigned long arg)
 {
 	switch (cmd) {
 
@@ -328,7 +328,7 @@ LL40LS::ioctl(struct file *filp, int cmd, unsigned long arg)
 					bool want_start = (_measure_ticks == 0);
 
 					/* set interval for next measurement to minimum legal value */
-					_measure_ticks = USEC2TICK(LL40LS_CONVERSION_INTERVAL);
+					_measure_ticks = USEC2TICK(LL905_CONVERSION_INTERVAL);
 
 					/* if we need to start the poll state machine, do it */
 					if (want_start) {
@@ -347,7 +347,7 @@ LL40LS::ioctl(struct file *filp, int cmd, unsigned long arg)
 					unsigned ticks = USEC2TICK(1000000 / arg);
 
 					/* check against maximum rate */
-					if (ticks < USEC2TICK(LL40LS_CONVERSION_INTERVAL)) {
+					if (ticks < USEC2TICK(LL905_CONVERSION_INTERVAL)) {
 						return -EINVAL;
 					}
 
@@ -415,7 +415,7 @@ LL40LS::ioctl(struct file *filp, int cmd, unsigned long arg)
 }
 
 ssize_t
-LL40LS::read(struct file *filp, char *buffer, size_t buflen)
+LL905::read(struct file *filp, char *buffer, size_t buflen)
 {
 	unsigned count = buflen / sizeof(struct range_finder_report);
 	struct range_finder_report *rbuf = reinterpret_cast<struct range_finder_report *>(buffer);
@@ -456,7 +456,7 @@ LL40LS::read(struct file *filp, char *buffer, size_t buflen)
 		}
 
 		/* wait for it to complete */
-		usleep(LL40LS_CONVERSION_INTERVAL);
+		usleep(LL905_CONVERSION_INTERVAL);
 
 		/* run the collection phase */
 		if (OK != collect()) {
@@ -475,14 +475,14 @@ LL40LS::read(struct file *filp, char *buffer, size_t buflen)
 }
 
 int
-LL40LS::measure()
+LL905::measure()
 {
 	int ret;
 
 	/*
 	 * Send the command to begin a measurement.
 	 */
-	const uint8_t cmd[2] = { LL40LS_MEASURE_REG, LL40LS_MSRREG_ACQUIRE };
+	const uint8_t cmd[2] = { LL905_MEASURE_REG, LL905_MSRREG_ACQUIRE };
 	ret = transfer(cmd, sizeof(cmd), nullptr, 0);
 
 	if (OK != ret) {
@@ -497,7 +497,7 @@ LL40LS::measure()
 }
 
 int
-LL40LS::collect()
+LL905::collect()
 {
 	int	ret = -EIO;
 
@@ -507,7 +507,7 @@ LL40LS::collect()
 	perf_begin(_sample_perf);
 
 	// read the high and low byte distance registers
-	uint8_t distance_reg = LL40LS_DISTHIGH_REG;
+	uint8_t distance_reg = LL905_DISTHIGH_REG;
 	ret = transfer(&distance_reg, 1, &val[0], sizeof(val));
 
 	if (ret < 0) {
@@ -551,14 +551,14 @@ LL40LS::collect()
 }
 
 void
-LL40LS::start()
+LL905::start()
 {
 	/* reset the report ring and state machine */
 	_collect_phase = false;
 	_reports->flush();
 
 	/* schedule a cycle to start things */
-	work_queue(HPWORK, &_work, (worker_t)&LL40LS::cycle_trampoline, this, 1);
+	work_queue(HPWORK, &_work, (worker_t)&LL905::cycle_trampoline, this, 1);
 
 	/* notify about state change */
 	struct subsystem_info_s info = {
@@ -578,21 +578,21 @@ LL40LS::start()
 }
 
 void
-LL40LS::stop()
+LL905::stop()
 {
 	work_cancel(HPWORK, &_work);
 }
 
 void
-LL40LS::cycle_trampoline(void *arg)
+LL905::cycle_trampoline(void *arg)
 {
-	LL40LS *dev = (LL40LS *)arg;
+	LL905 *dev = (LL905 *)arg;
 
 	dev->cycle();
 }
 
 void
-LL40LS::cycle()
+LL905::cycle()
 {
 	/* collection phase? */
 	if (_collect_phase) {
@@ -611,14 +611,14 @@ LL40LS::cycle()
 		/*
 		 * Is there a collect->measure gap?
 		 */
-		if (_measure_ticks > USEC2TICK(LL40LS_CONVERSION_INTERVAL)) {
+		if (_measure_ticks > USEC2TICK(LL905_CONVERSION_INTERVAL)) {
 
 			/* schedule a fresh cycle call when we are ready to measure again */
 			work_queue(HPWORK,
 				   &_work,
-				   (worker_t)&LL40LS::cycle_trampoline,
+				   (worker_t)&LL905::cycle_trampoline,
 				   this,
-				   _measure_ticks - USEC2TICK(LL40LS_CONVERSION_INTERVAL));
+				   _measure_ticks - USEC2TICK(LL905_CONVERSION_INTERVAL));
 
 			return;
 		}
@@ -635,13 +635,13 @@ LL40LS::cycle()
 	/* schedule a fresh cycle call when the measurement is done */
 	work_queue(HPWORK,
 		   &_work,
-		   (worker_t)&LL40LS::cycle_trampoline,
+		   (worker_t)&LL905::cycle_trampoline,
 		   this,
-		   USEC2TICK(LL40LS_CONVERSION_INTERVAL));
+		   USEC2TICK(LL905_CONVERSION_INTERVAL));
 }
 
 void
-LL40LS::print_info()
+LL905::print_info()
 {
 	perf_print_counter(_sample_perf);
 	perf_print_counter(_comms_errors);
@@ -653,7 +653,7 @@ LL40LS::print_info()
 /**
  * Local functions in support of the shell command.
  */
-namespace ll40ls
+namespace ll905
 {
 
 /* oddly, ERROR is not defined for c++ */
@@ -662,7 +662,7 @@ namespace ll40ls
 #endif
 const int ERROR = -1;
 
-LL40LS	*g_dev;
+LL905	*g_dev;
 
 void	start();
 void	stop();
@@ -683,7 +683,7 @@ start()
 	}
 
 	/* create the driver */
-	g_dev = new LL40LS(LL40LS_BUS);
+	g_dev = new LL905(LL905_BUS);
 
 	if (g_dev == nullptr) {
 		goto fail;
@@ -694,7 +694,7 @@ start()
 	}
 
 	/* set the poll rate to default, starts automatic data collection */
-	fd = open(LL40LS_DEVICE_PATH, O_RDONLY);
+	fd = open(LL905_DEVICE_PATH, O_RDONLY);
 
 	if (fd < 0) {
 		goto fail;
@@ -744,10 +744,10 @@ test()
 	ssize_t sz;
 	int ret;
 
-	int fd = open(LL40LS_DEVICE_PATH, O_RDONLY);
+	int fd = open(LL905_DEVICE_PATH, O_RDONLY);
 
 	if (fd < 0) {
-		err(1, "%s open failed (try 'll40ls start' if the driver is not running", LL40LS_DEVICE_PATH);
+		err(1, "%s open failed (try 'll905 start' if the driver is not running", LL905_DEVICE_PATH);
 	}
 
 	/* do a simple demand read */
@@ -805,7 +805,7 @@ test()
 void
 reset()
 {
-	int fd = open(LL40LS_DEVICE_PATH, O_RDONLY);
+	int fd = open(LL905_DEVICE_PATH, O_RDONLY);
 
 	if (fd < 0) {
 		err(1, "failed ");
@@ -841,41 +841,41 @@ info()
 } // namespace
 
 int
-ll40ls_main(int argc, char *argv[])
+ll905_main(int argc, char *argv[])
 {
 	/*
 	 * Start/load the driver.
 	 */
 	if (!strcmp(argv[1], "start")) {
-		ll40ls::start();
+		ll905::start();
 	}
 
 	/*
 	 * Stop the driver
 	 */
 	if (!strcmp(argv[1], "stop")) {
-		ll40ls::stop();
+		ll905::stop();
 	}
 
 	/*
 	 * Test the driver/device.
 	 */
 	if (!strcmp(argv[1], "test")) {
-		ll40ls::test();
+		ll905::test();
 	}
 
 	/*
 	 * Reset the driver.
 	 */
 	if (!strcmp(argv[1], "reset")) {
-		ll40ls::reset();
+		ll905::reset();
 	}
 
 	/*
 	 * Print driver information.
 	 */
 	if (!strcmp(argv[1], "info") || !strcmp(argv[1], "status")) {
-		ll40ls::info();
+		ll905::info();
 	}
 
 	errx(1, "unrecognized command, try 'start', 'test', 'reset' or 'info'");
