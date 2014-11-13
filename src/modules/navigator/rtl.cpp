@@ -195,7 +195,7 @@ RTL::set_rtl_setpoint()
             float offset_xy_len = offset_xy.length();
 
             if (offset_xy_len > 2.0f)
-                pos_sp_triplet->current.yaw = _wrap_pi(atan2f(-offset_xy(1), -offset_xy(0)));
+                pos_sp_triplet->current.yaw = _wrap_pi(atan2f(offset_xy(1), offset_xy(0)));
 
 			pos_sp_triplet->current.lat = home_pos->lat;
 			pos_sp_triplet->current.lon = home_pos->lon;

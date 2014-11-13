@@ -84,10 +84,10 @@ Loiter::on_activation()
 	_mavlink_fd = _navigator->get_mavlink_fd();
 
 	if (vstatus->condition_landed) {
-		set_sub_mode(LOITER_SUB_MODE_LANDED);
+		set_sub_mode(LOITER_SUB_MODE_LANDED, false);
 	}
 	else {
-		set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT);
+		set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, false);
 	}
 }
 
@@ -100,20 +100,23 @@ Loiter::on_active()
 
 
 	if (loiter_sub_mode == LOITER_SUB_MODE_TAKING_OFF && check_current_pos_sp_reached()) {
-		set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT);
 
-        // Send command to commander that we are in the AIR
-        //
+        set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, true);
+
+        if (_parameters.nav_def_dst_u == 1){
+            set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, false);
+            goto_default_distance(); 
+        }
 	}
 
 	if (loiter_sub_mode == LOITER_SUB_MODE_LANDING && check_current_pos_sp_reached()) {
-		set_sub_mode(LOITER_SUB_MODE_LANDED);
+		set_sub_mode(LOITER_SUB_MODE_LANDED, false);
 
 		disarm();
 	}
 
 	if (loiter_sub_mode == LOITER_SUB_MODE_COME_TO_ME && check_current_pos_sp_reached()) {
-		set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT);
+		set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, true);
 	}
 
 	if ( update_vehicle_command() )
@@ -165,7 +168,7 @@ Loiter::execute_command_in_landed(vehicle_command_s cmd){
 		int remote_cmd = cmd.param1;
 
 		if (remote_cmd == REMOTE_CMD_TAKEOFF) {
-			set_sub_mode(LOITER_SUB_MODE_TAKING_OFF);
+			set_sub_mode(LOITER_SUB_MODE_TAKING_OFF, false);
 			takeoff();
 		} else if (remote_cmd == REMOTE_CMD_LAND_DISARM) {
 			disarm();
@@ -224,9 +227,13 @@ Loiter::execute_command_in_aim_and_shoot(vehicle_command_s cmd){
 		switch(remote_cmd){
 			case  REMOTE_CMD_LAND_DISARM: {
 				land();
-				set_sub_mode(LOITER_SUB_MODE_LANDING);
+				set_sub_mode(LOITER_SUB_MODE_LANDING, false);
 				break;
 			}
+            case REMOTE_CMD_GOTO_DEFUALT_DST: {
+                goto_default_distance();
+                break;
+            }
 			case REMOTE_CMD_UP: {
 
 				pos_sp_triplet->current.alt = global_pos->alt + _parameters.loi_step_len;
@@ -378,14 +385,14 @@ Loiter::execute_command_in_aim_and_shoot(vehicle_command_s cmd){
 				pos_sp_triplet->current.lon = target_pos->lon;
 				pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
 
-				set_sub_mode(LOITER_SUB_MODE_COME_TO_ME);
+				set_sub_mode(LOITER_SUB_MODE_COME_TO_ME, false);
 
 				break;
 			}
 			case REMOTE_CMD_LOOK_DOWN: {
 
 				pos_sp_triplet->current.camera_pitch = -1.57f;
-				set_sub_mode(LOITER_SUB_MODE_LOOK_DOWN);
+				set_sub_mode(LOITER_SUB_MODE_LOOK_DOWN, false);
 				break;
 
 			}
@@ -413,7 +420,7 @@ Loiter::execute_command_in_look_down(vehicle_command_s cmd){
 	if (cmd.command == VEHICLE_CMD_NAV_REMOTE_CMD) {
 		int remote_cmd = cmd.param1;
 		if (remote_cmd == REMOTE_CMD_PLAY_PAUSE) {
-			set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT);
+			set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, true);
 		}
 	}
 }
@@ -424,7 +431,7 @@ Loiter::execute_command_in_come_to_me(vehicle_command_s cmd){
 	if (cmd.command == VEHICLE_CMD_NAV_REMOTE_CMD) {
 		int remote_cmd = cmd.param1;
 		if (remote_cmd == REMOTE_CMD_PLAY_PAUSE) {
-			set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT);
+			set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, true);
 		}
 	}
 
@@ -436,16 +443,16 @@ Loiter::execute_command_in_landing(vehicle_command_s cmd){
 	if (cmd.command == VEHICLE_CMD_NAV_REMOTE_CMD) {
 		int remote_cmd = cmd.param1;
 		if (remote_cmd == REMOTE_CMD_PLAY_PAUSE) {
-			set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT);
+			set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, true);
 			loiter_sub_mode = LOITER_SUB_MODE_AIM_AND_SHOOT;
 		}
 	}
 }
 
 void
-Loiter::set_sub_mode(LOITER_SUB_MODE new_sub_mode){
+Loiter::set_sub_mode(LOITER_SUB_MODE new_sub_mode, bool reset_setpoint = true){
 
-	if (new_sub_mode == LOITER_SUB_MODE_AIM_AND_SHOOT) {
+	if (new_sub_mode == LOITER_SUB_MODE_AIM_AND_SHOOT && reset_setpoint) {
 
 		// Reset setpoint position to current global position
 		global_pos = _navigator->get_global_position();

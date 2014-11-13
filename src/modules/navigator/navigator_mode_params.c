@@ -74,3 +74,30 @@ PARAM_DEFINE_FLOAT(NAV_ACC_RAD, 2.00f);
  * @group Navigator
  */
 PARAM_DEFINE_FLOAT(NAV_TAKEOFF_ACR, 2.00f);
+
+
+/**
+ * Invalid drone distance.
+ *
+ * @unit meters
+ * @group Navigator
+ */
+PARAM_DEFINE_FLOAT(NAV_DST_INV, 100.00f);
+
+/**
+ * Default drone distance. Distance used for goto default drone distance command. 
+ *
+ * @unit meters
+ * @group Navigator
+ */
+PARAM_DEFINE_FLOAT(NAV_DEF_DST, 5.00f);
+
+/**
+ * Default drone distance. Distance used for goto default drone distance command. 
+ *
+ * @unit meters
+ * @min 0
+ * @max 1
+ * @group Navigator
+ */
+PARAM_DEFINE_INT32(NAV_DEF_DST_U, 1);
