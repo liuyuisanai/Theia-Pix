@@ -356,6 +356,11 @@ Navigator::task_main()
 	fds[9].fd = _target_trajectory_sub;
 	fds[9].events = POLLIN;
 
+	int _poll_cnt = sizeof(fds)/sizeof(fds[0]);
+	for (int i = 0; i < _poll_cnt; ++i) {
+		orb_set_interval(fds[i].fd, 20);
+	}
+
 	while (!_task_should_exit) {
 
 		/* wait for up to 100ms for data */

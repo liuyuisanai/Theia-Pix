@@ -27,7 +27,8 @@ PathFollow::PathFollow(Navigator *navigator, const char *name):
 		_max_distance(0.0f),
 		_ok_distance(0.0f),
 		_vertical_offset(0.0f),
-		_inited(false){
+		_inited(false),
+		_target_vel_lpf(1.0f){
 
 }
 PathFollow::~PathFollow() {
@@ -138,6 +139,7 @@ void PathFollow::on_active() {
 	}
 	else {
 	// Flying trough collected points
+		// TODO! This results in weird behavior if altitude difference is preventing the copter from reaching the setpoint
 		if (check_current_pos_sp_reached()) {
 		// We've reached the actual setpoint
 			// TODO! Temporary safety measure
@@ -280,8 +282,9 @@ void PathFollow::update_min_max_dist() {
 	if (_min_distance < _parameters.pafol_safe_dist) {
 		_min_distance = _parameters.pafol_safe_dist;
 		// TODO! Do we need this check?
-		if (_ok_distance < _min_distance) {
-			_ok_distance = _min_distance;
+		if (_ok_distance <= _min_distance) {
+			// Add 1 meter to avoid division by 0 when calculating speed
+			_ok_distance = _min_distance + 1.0f;
 		}
 	}
 	// TODO! Add max limit (as in "no signal")
@@ -299,7 +302,7 @@ float PathFollow::calculate_desired_speed(float distance) {
 	}
 	float res;
 	target_pos = _navigator->get_target_position();
-	float target_speed = float(sqrtf(target_pos->vel_n * target_pos->vel_n + target_pos->vel_e * target_pos->vel_e));
+	float target_speed = _target_vel_lpf.apply(target_pos->remote_timestamp, sqrtf(target_pos->vel_n * target_pos->vel_n + target_pos->vel_e * target_pos->vel_e));
 	if (distance >= _ok_distance) {
 		// TODO! Simplify and add precalculated values
 		res = target_speed * ((distance - _ok_distance)*(distance - _ok_distance)*4.0f/(_max_distance-_ok_distance)/(_max_distance-_ok_distance)+1.0f);
@@ -308,6 +311,7 @@ float PathFollow::calculate_desired_speed(float distance) {
 		// TODO! Simplify and add precalculated values
 		res = target_speed * ((-atanf((distance-2.5f-_min_distance)*(-20.0f)/(_ok_distance-_min_distance)))/M_PI_F+0.5f);
 	}
+	// warnx("Target speed: %9.6f, desired speed: %9.6f", (double) target_speed, (double) res);
 	if (res < 0.0f) return 0.0f;
 	if (res > _parameters.mpc_max_speed) return _parameters.mpc_max_speed;
 	return res;
@@ -320,6 +324,7 @@ float PathFollow::calculate_current_distance() {
 	// TODO! Consider returning back if res is less than min distance
 	// Will produce the speed of 0 if passed to calculate speed
 	if (res <= _min_distance) {
+		// TODO! This will produce a sudden change in speed when target is far from the last trajectory point, but drone nears it
 		return _min_distance;
 	}
 	target_pos = _navigator->get_target_position();

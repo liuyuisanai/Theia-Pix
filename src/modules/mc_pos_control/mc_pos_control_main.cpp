@@ -1053,6 +1053,9 @@ MulticopterPositionControl::simple_control_auto(float dt) {
 
 	// TODO! I'd prefer to check position_valid too, but it seems that current code does not support it
 	if (_pos_sp_triplet.current.valid) {
+		// Mark next call to reset as valid
+		_reset_pos_sp = true;
+		_reset_alt_sp = true;
 		// Project setpoint position to local position to use by default
 		map_projection_project(&_ref_pos,
 				_pos_sp_triplet.current.lat, _pos_sp_triplet.current.lon,
@@ -1065,9 +1068,14 @@ MulticopterPositionControl::simple_control_auto(float dt) {
 			_pos_sp.normalize();
 			// Scale by desired speed
 			_pos_sp *= _pos_sp_triplet.current.abs_velocity;
+
 			// TODO! Unneeded addition and later subtraction?
-			// Move back, 'cause later velocity is calculated by substracting _pos
+			// Move back, 'cause later velocity is calculated by subtracting _pos
 			_pos_sp += _pos;
+/*
+			// TODO! Raw test
+			_sp_move_rate = _pos_sp;
+			_pos_sp = _pos; */
 		}
 		// Use altitude as is in all cases
 		_pos_sp(2) = -(_pos_sp_triplet.current.alt - _ref_alt);
@@ -1077,7 +1085,8 @@ MulticopterPositionControl::simple_control_auto(float dt) {
 		if (isfinite(_att_sp.yaw_body)) {
 			_att_sp.yaw_body = _pos_sp_triplet.current.yaw;
 		}
-	} else { // TODO! Is it ok? The drone might drift away if we reset the point all the time
+	} else {
+		// Resets position only once, if reset_pos is true
 		reset_pos_sp();
 		reset_alt_sp();
 	}
@@ -1678,7 +1687,7 @@ MulticopterPositionControl::task_main()
                     {
                         float coeff = _local_pos.dist_bottom/(MAXIMAL_DISTANCE);
                         _landing_coef = (coeff * _params.land_speed) > (_params.land_speed * 0.5f) ? coeff : 0.5f;
-                        fprintf(stderr, "Landing, _landing_coef: %.3f\n", (double)_landing_coef);
+                        // fprintf(stderr, "Landing, _landing_coef: %.3f\n", (double)_landing_coef);
                     }
                     _vel_sp(2) = _params.land_speed * _landing_coef;
                     //fprintf(stderr, "Landing, sonar invalid, _vel_sp: %.3f\n", (double)_vel_sp(2));
