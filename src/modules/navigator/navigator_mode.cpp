@@ -230,7 +230,7 @@ NavigatorMode::point_camera_to_target(position_setpoint_s *sp)
 
 	float offset_xy_len = offset_xy.length();
 
-	if (offset_xy_len > 5.0f)
+	if (offset_xy_len > 2.0f)
 		sp->yaw = _wrap_pi(atan2f(-offset_xy(1), -offset_xy(0)));
 
 	sp->camera_pitch = atan2f(offset(2), offset_xy_len);
