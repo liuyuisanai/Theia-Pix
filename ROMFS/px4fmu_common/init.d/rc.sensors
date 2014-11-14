@@ -3,8 +3,13 @@
 # Standard startup script for PX4FMU onboard sensor drivers.
 #
 
-ms5611 start
-adc start
+if adc start
+then
+fi
+
+if ms5611 start
+then
+fi
 
 if [ _$MB_SONAR_TTY = _ ]
 then
