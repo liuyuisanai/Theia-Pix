@@ -109,10 +109,11 @@ NavigatorMode::updateParamHandles() {
 
 	_parameter_handles.rtl_ret_alt = param_find("RTL_RET_ALT");
 
-
     _parameter_handles.airdog_dst_inv = param_find("A_DST_INV");
     _parameter_handles.airdog_init_pos_dst = param_find("A_INIT_POS_D");
     _parameter_handles.airdog_init_pos_use = param_find("A_INIT_POS_U");
+
+    _parameter_handles.a_yaw_ignore_radius = param_find("A_YAW_IGNR_R");
 }
 
 void
@@ -133,6 +134,8 @@ NavigatorMode::updateParamValues() {
 	param_get(_parameter_handles.airdog_dst_inv, &(_parameters.airdog_dst_inv));
 	param_get(_parameter_handles.airdog_init_pos_dst, &(_parameters.airdog_init_pos_dst));
 	param_get(_parameter_handles.airdog_init_pos_use, &(_parameters.airdog_init_pos_use));
+
+    param_get(_parameter_handles.a_yaw_ignore_radius, &(_parameters.a_yaw_ignore_radius));
 
 }
 
@@ -230,7 +233,7 @@ NavigatorMode::point_camera_to_target(position_setpoint_s *sp)
 
 	float offset_xy_len = offset_xy.length();
 
-	if (offset_xy_len > 2.0f)
+	if (offset_xy_len > _parameters.a_yaw_ignore_radius)
 		sp->yaw = _wrap_pi(atan2f(-offset_xy(1), -offset_xy(0)));
 
 	sp->camera_pitch = atan2f(offset(2), offset_xy_len);

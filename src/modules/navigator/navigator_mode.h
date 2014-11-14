@@ -125,6 +125,8 @@ public:
         float airdog_init_pos_dst;
         int airdog_init_pos_use; 
 
+        float a_yaw_ignore_radius;
+
 	} _parameters;		
 
 
@@ -145,6 +147,8 @@ public:
         param_t airdog_dst_inv;
         param_t airdog_init_pos_dst; 
         param_t airdog_init_pos_use;
+
+        param_t a_yaw_ignore_radius;
 
 	} _parameter_handles;
 

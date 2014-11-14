@@ -184,6 +184,7 @@ private:
         param_t sonar_min_dist;
         param_t sonar_smooth_coef;
         param_t mc_allowed_down_sp;
+        param_t a_yaw_ignore_radius;
         
 	}		_params_handles;		/**< handles for interesting parameters */
 
@@ -214,6 +215,9 @@ private:
 		math::Vector<3> vel_ff;
 		math::Vector<3> vel_max;
 		math::Vector<3> sp_offs_max;
+
+        float a_yaw_ignore_radius;
+
 	}		_params;
 
 	struct map_projection_reference_s _ref_pos;
@@ -486,6 +490,8 @@ MulticopterPositionControl::MulticopterPositionControl() :
     _params_handles.sonar_smooth_coef       = param_find("SENS_SON_SMOT");
     _params_handles.mc_allowed_down_sp      = param_find("MPC_ALLOWED_LAND");
 
+    _params.a_yaw_ignore_radius             = param_find("A_YAW_IGNR_R");
+
 	/* fetch initial parameter values */
 	parameters_update(true);
 }
@@ -593,6 +599,10 @@ MulticopterPositionControl::parameters_update(bool force)
         _params.sonar_smooth_coef = v;
         param_get(_params_handles.mc_allowed_down_sp, &v);
         _params.mc_allowed_down_sp = v;
+
+
+        param_get(_params_handles.a_yaw_ignore_radius, &v);
+        _params.a_yaw_ignore_radius  = v;
 
 		_params.sp_offs_max = _params.vel_max.edivide(_params.pos_p) * 2.0f;
 	}
@@ -1348,7 +1358,7 @@ MulticopterPositionControl::point_to_target()
 
 	/* don't try to rotate near singularity */
 	float current_offset_xy_len = current_offset_xy.length();
-	if (current_offset_xy_len > FOLLOW_OFFS_XY_MIN) {
+	if (current_offset_xy_len > _params.a_yaw_ignore_radius) {
 		/* calculate yaw setpoint from current positions and control offset with yaw stick */
 		_att_sp.yaw_body = _wrap_pi(atan2f(-current_offset_xy(1), -current_offset_xy(0)) + _manual.r * _params.follow_yaw_off_max);
 
