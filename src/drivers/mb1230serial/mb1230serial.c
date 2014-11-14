@@ -34,7 +34,7 @@
  * http://www.maxbotix.com/documents/XL-MaxSonar-EZ_Datasheet.pdf
  * Measure unit: METER
  */
-__EXPORT const float MINIMAL_DISTANCE = 1.25; // It realy is 0.2 but due to lags on land increased
+__EXPORT const float MINIMAL_DISTANCE = 0.25f; // It realy is 0.2 but due to lags on land increased
 __EXPORT const float MAXIMAL_DISTANCE = 7.0f;
 
 /**
@@ -203,7 +203,10 @@ int mb1230serial_thread_main(int argc, char *argv[])
 								(raw_data[2] - '0');
 
                         data.timestamp = hrt_absolute_time();
-						if (distance > (MINIMAL_DISTANCE * 100) && distance < (MAXIMAL_DISTANCE * 100)) {
+                        //fprintf(stderr,"[driver] %.3f < dist:%.3f > %.3f\n", (double)(MAXIMAL_DISTANCE * 100),
+                        //        (double)distance,
+                        //        (double)(MINIMAL_DISTANCE * 100));
+                            if (distance > (MINIMAL_DISTANCE * 100) && distance < (MAXIMAL_DISTANCE * 100)) {
 							data.distance = (float)distance * DISTANCE_SCALE;
                             data.valid = 1;
                             
@@ -220,7 +223,7 @@ int mb1230serial_thread_main(int argc, char *argv[])
                             data.distance = 0xFFFF;
                             data.valid = 0;
                         }
-                        //fprintf(stderr, "Sonar distance: %.3f, valid: %d\n",(double)data.distance, data.valid);
+                        //fprintf(stderr, "[driver]Sonar distance: %.3f, valid: %d\n",(double)data.distance, data.valid);
 					}
 				}
 			}

@@ -523,6 +523,7 @@ LL905::collect()
 
 	/* this should be fairly close to the end of the measurement, so the best approximation of the time */
 	report.timestamp = hrt_absolute_time();
+    report.type = RANGE_FINDER_TYPE_LASER;
 	report.error_count = perf_event_count(_comms_errors);
 	report.distance = si_units;
 	if (si_units > get_minimum_distance() && si_units < get_maximum_distance()) {
