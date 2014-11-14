@@ -396,7 +396,7 @@ NavigatorMode::goto_default_distance(){
 
             double lat_new;
             double lon_new;
-            double alt_new = target_pos->alt + new_drone_offset(2);
+            double alt_new = target_pos->alt + _parameters.takeoff_alt;
             
             add_vector_to_global_position(
                     target_pos->lat,

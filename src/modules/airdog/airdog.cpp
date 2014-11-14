@@ -417,8 +417,8 @@ bool cAirdog::button_clicked_i2c(uint8_t button, bool long_press)
 			// UP button
             if (current_button_state == BUTTON_STATE_CHOOSE_FUNCTION){
                 send_command(REMOTE_CMD_GOTO_DEFUALT_DST); 
-            }
-            if (current_button_state == BUTTON_STATE_DEFAULT) {
+                set_current_button_state(BUTTON_STATE_DEFAULT);
+            }else if (current_button_state == BUTTON_STATE_DEFAULT) {
                 send_command(REMOTE_CMD_UP);
             }
 
