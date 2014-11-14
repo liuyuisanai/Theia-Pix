@@ -408,15 +408,16 @@ NavigatorMode::go_to_intial_position(){
                     &lon_new
             );
             
-            pos_sp_triplet->current.yaw = _wrap_pi(atan2f(-new_drone_offset(1), -new_drone_offset(0)));
-
-			pos_sp_triplet->current.lat = lat_new;
-			pos_sp_triplet->current.lon = lon_new;
-			pos_sp_triplet->current.alt = alt_new;
-			pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
-            
             float dst = sqrt( offset_x * offset_x + offset_y * offset_y);
 
-            if (dst <= _parameters.airdog_dst_inv && dst > _parameters.airdog_init_pos_dst)
+            if (dst <= _parameters.airdog_dst_inv && dst > _parameters.airdog_init_pos_dst) {
+                pos_sp_triplet->current.yaw = _wrap_pi(atan2f(-new_drone_offset(1), -new_drone_offset(0)));
+
+                pos_sp_triplet->current.lat = lat_new;
+                pos_sp_triplet->current.lon = lon_new;
+                pos_sp_triplet->current.alt = alt_new;
+                pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
+                
                 _navigator->set_position_setpoint_triplet_updated();
+            }
 }
