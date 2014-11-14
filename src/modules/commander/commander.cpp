@@ -246,9 +246,9 @@ transition_result_t arm_disarm(bool arm, const int mavlink_fd, const char *armed
  */
 void *commander_low_prio_loop(void *arg);
 
-void execute_preflight_storage_read(vehicle_command_s cmd);
+bool execute_preflight_storage_read(vehicle_command_s cmd);
 
-void execute_preflight_storage_write(vehicle_command_s cmd);
+bool execute_preflight_storage_write(vehicle_command_s cmd);
 
 void answer_command(struct vehicle_command_s &cmd, enum VEHICLE_CMD_RESULT result);
 
@@ -2634,8 +2634,10 @@ void *commander_low_prio_loop(void *arg)
             orb_copy(ORB_ID(vehicle_status), status_sub, &status);
 
             if (status.arming_state == ARMING_STATE_STANDBY && do_storage_write_when_disarm > 0 ){
-                execute_preflight_storage_write(cmd); 
-                do_storage_write_when_disarm--;
+                if (execute_preflight_storage_write(cmd)) 
+                    do_storage_write_when_disarm = 0;
+                else
+                    do_storage_write_when_disarm--;
             }
         }
         
@@ -2817,7 +2819,7 @@ void *commander_low_prio_loop(void *arg)
 	return NULL;
 }
 
-void execute_preflight_storage_write(vehicle_command_s cmd)
+bool execute_preflight_storage_write(vehicle_command_s cmd)
 {
     // Params write
     int ret = param_save_default();
@@ -2825,6 +2827,8 @@ void execute_preflight_storage_write(vehicle_command_s cmd)
     if (ret == OK) {
         mavlink_log_info(mavlink_fd, "[cmd] parameters saved");
         answer_command(cmd, VEHICLE_CMD_RESULT_ACCEPTED);
+
+        return true;
 
     } else {
         mavlink_log_critical(mavlink_fd, "#audio: parameters save error");
@@ -2840,10 +2844,12 @@ void execute_preflight_storage_write(vehicle_command_s cmd)
 
         answer_command(cmd, VEHICLE_CMD_RESULT_FAILED);
 
+        return false;
+
     }
 }
 
-void execute_preflight_storage_read(vehicle_command_s cmd)
+bool execute_preflight_storage_read(vehicle_command_s cmd)
 {
     int ret = param_load_default();
 
@@ -2851,6 +2857,7 @@ void execute_preflight_storage_read(vehicle_command_s cmd)
         mavlink_log_info(mavlink_fd, "[cmd] parameters loaded");
         answer_command(cmd, VEHICLE_CMD_RESULT_ACCEPTED);
 
+        return true;
     } else {
         mavlink_log_critical(mavlink_fd, "#audio: parameters load ERROR");
 
@@ -2864,6 +2871,7 @@ void execute_preflight_storage_read(vehicle_command_s cmd)
         }
 
         answer_command(cmd, VEHICLE_CMD_RESULT_FAILED);
+        return false;
     }
 
 }
