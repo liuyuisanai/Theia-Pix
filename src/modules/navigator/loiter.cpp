@@ -103,9 +103,9 @@ Loiter::on_active()
 
         set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, true);
 
-        if (_parameters.nav_def_dst_u == 1){
+        if (_parameters.airdog_init_pos_use == 1){
             set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, false);
-            goto_default_distance(); 
+            go_to_intial_position(); 
         }
 	}
 
@@ -231,7 +231,7 @@ Loiter::execute_command_in_aim_and_shoot(vehicle_command_s cmd){
 				break;
 			}
             case REMOTE_CMD_GOTO_DEFUALT_DST: {
-                goto_default_distance();
+                go_to_intial_position();
                 break;
             }
 			case REMOTE_CMD_UP: {

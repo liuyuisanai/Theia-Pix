@@ -121,10 +121,9 @@ public:
 
 		float rtl_ret_alt;
 
-        float nav_dst_inv; 
-        float nav_def_dst;
-        int nav_def_dst_u;
-
+        float airdog_dst_inv; 
+        float airdog_init_pos_dst;
+        int airdog_init_pos_use; 
 
 	} _parameters;		
 
@@ -143,9 +142,9 @@ public:
 
 		param_t rtl_ret_alt;
 
-        param_t nav_dst_inv; 
-        param_t nav_def_dst;
-        param_t nav_def_dst_u;
+        param_t airdog_dst_inv;
+        param_t airdog_init_pos_dst; 
+        param_t airdog_init_pos_use;
 
 	} _parameter_handles;
 
@@ -165,7 +164,7 @@ protected:
 	int		_mavlink_fd;			/**< the file descriptor to send messages over mavlink */
 
 	bool check_current_pos_sp_reached();
-    void goto_default_distance();
+    void go_to_intial_position();
 
 
 

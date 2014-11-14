@@ -109,9 +109,10 @@ NavigatorMode::updateParamHandles() {
 
 	_parameter_handles.rtl_ret_alt = param_find("RTL_RET_ALT");
 
-    _parameter_handles.nav_dst_inv = param_find("NAV_DST_INV");
-    _parameter_handles.nav_def_dst = param_find("NAV_DEF_DST");
-    _parameter_handles.nav_def_dst_u = param_find("NAV_DEF_DST_U");
+
+    _parameter_handles.airdog_dst_inv = param_find("A_DST_INV");
+    _parameter_handles.airdog_init_pos_dst = param_find("A_INIT_POS_D");
+    _parameter_handles.airdog_init_pos_use = param_find("A_INIT_POS_U");
 }
 
 void
@@ -129,9 +130,9 @@ NavigatorMode::updateParamValues() {
 	param_get(_parameter_handles.rtl_ret_alt, &(_parameters.rtl_ret_alt));
 	param_get(_parameter_handles.rtl_ret_alt, &(_parameters.rtl_ret_alt));
 
-	param_get(_parameter_handles.nav_dst_inv, &(_parameters.nav_dst_inv));
-	param_get(_parameter_handles.nav_def_dst, &(_parameters.nav_def_dst));
-	param_get(_parameter_handles.nav_def_dst_u, &(_parameters.nav_def_dst_u));
+	param_get(_parameter_handles.airdog_dst_inv, &(_parameters.airdog_dst_inv));
+	param_get(_parameter_handles.airdog_init_pos_dst, &(_parameters.airdog_init_pos_dst));
+	param_get(_parameter_handles.airdog_init_pos_use, &(_parameters.airdog_init_pos_use));
 
 }
 
@@ -368,7 +369,7 @@ NavigatorMode::disarm()
 }
 
 void
-NavigatorMode::goto_default_distance(){
+NavigatorMode::go_to_intial_position(){
 
             global_pos = _navigator->get_global_position();
             target_pos = _navigator->get_target_position();
@@ -389,8 +390,8 @@ NavigatorMode::goto_default_distance(){
             float alpha = atan2(offset_y, offset_x);
 
             math::Vector<3> new_drone_offset(
-                cosf(alpha) * _parameters.nav_def_dst,
-                sinf(alpha) * _parameters.nav_def_dst,
+                cosf(alpha) * _parameters.airdog_init_pos_dst,
+                sinf(alpha) * _parameters.airdog_init_pos_dst,
                 offset_z
                 );
 
@@ -416,6 +417,6 @@ NavigatorMode::goto_default_distance(){
             
             float dst = sqrt( offset_x * offset_x + offset_y * offset_y);
 
-            if (dst <= _parameters.nav_dst_inv && dst > _parameters.nav_def_dst)
+            if (dst <= _parameters.airdog_dst_inv && dst > _parameters.airdog_init_pos_dst)
                 _navigator->set_position_setpoint_triplet_updated();
 }
