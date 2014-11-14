@@ -27,8 +27,8 @@ MODULES		+= drivers/l3gd20
 MODULES		+= drivers/hmc5883
 MODULES		+= drivers/hmc5883spi
 MODULES		+= drivers/ms5611
-MODULES		+= drivers/mb12xx
-MODULES		+= drivers/sf0x
+#MODULES		+= drivers/mb12xx
+#MODULES		+= drivers/sf0x
 MODULES		+= drivers/ll905
 MODULES		+= drivers/gps
 #MODULES		+= drivers/hil
@@ -40,8 +40,8 @@ MODULES		+= drivers/gps
 #MODULES		+= drivers/meas_airspeed
 #MODULES		+= drivers/frsky_telemetry
 MODULES		+= modules/sensors
-MODULES		+= drivers/mkblctrl
-MODULES		+= drivers/pca8574
+#MODULES		+= drivers/mkblctrl
+#MODULES		+= drivers/pca8574
 #MODULES		+= drivers/px4flow
 
 MODULES		+= drivers/mb1230serial
@@ -78,7 +78,7 @@ MODULES		+= modules/commander
 MODULES		+= modules/navigator
 MODULES		+= modules/mavlink
 MODULES		+= modules/gpio_led
-MODULES		+= modules/uavcan
+#MODULES		+= modules/uavcan
 MODULES 	+= modules/airdog
 
 #
