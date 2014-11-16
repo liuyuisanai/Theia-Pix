@@ -133,6 +133,36 @@ PARAM_DEFINE_INT32(SDLOG_RATE, -1);
  */
 PARAM_DEFINE_INT32(SDLOG_EXT, -1);
 
+/**
+ * Following params provide support for custom update rates for each sdlog topic
+ * Negative values - don't update
+ * 0 - unlimited frequency
+ * Positive values - frequency in Hz
+ * Min -1, Max 1000
+ */
+PARAM_DEFINE_INT32(SDLOG_M_GPS, 0);
+PARAM_DEFINE_INT32(SDLOG_M_SAT, 0);
+PARAM_DEFINE_INT32(SDLOG_M_SENS, 0);
+PARAM_DEFINE_INT32(SDLOG_M_ATT, 0);
+PARAM_DEFINE_INT32(SDLOG_M_ATTSP, 0);
+PARAM_DEFINE_INT32(SDLOG_M_ROTSP, 0);
+PARAM_DEFINE_INT32(SDLOG_M_ACTOUT, 0);
+PARAM_DEFINE_INT32(SDLOG_M_ATTC, 0);
+PARAM_DEFINE_INT32(SDLOG_M_LPOS, 0);
+PARAM_DEFINE_INT32(SDLOG_M_LPSP, 0);
+PARAM_DEFINE_INT32(SDLOG_M_GPOS, 0);
+PARAM_DEFINE_INT32(SDLOG_M_GPSP, 0);
+PARAM_DEFINE_INT32(SDLOG_M_RCCH, 0);
+PARAM_DEFINE_INT32(SDLOG_M_ESC, 0);
+PARAM_DEFINE_INT32(SDLOG_M_GVELSP, 0);
+PARAM_DEFINE_INT32(SDLOG_M_BAT, 0);
+PARAM_DEFINE_INT32(SDLOG_M_TELEM, 0);
+PARAM_DEFINE_INT32(SDLOG_M_RANGE, 0);
+PARAM_DEFINE_INT32(SDLOG_M_SYSPOW, 0);
+PARAM_DEFINE_INT32(SDLOG_M_SERVO, 0);
+PARAM_DEFINE_INT32(SDLOG_M_TRGPOS, 0);
+PARAM_DEFINE_INT32(SDLOG_M_EXTRAJ, 0);
+
 #define LOGBUFFER_WRITE_AND_COUNT(_msg) if (logbuffer_write(&lb, &log_msg, LOG_PACKET_SIZE(_msg))) { \
 		log_msgs_written++; \
 	} else { \
@@ -143,6 +173,17 @@ PARAM_DEFINE_INT32(SDLOG_EXT, -1);
 	fds[fdsc_count].fd = subs.##_var##_sub; \
 	fds[fdsc_count].events = POLLIN; \
 	fdsc_count++;
+
+#define LOG_ORB_PARAM_SUBSCRIBE(_sub_var, _topic_id, _param, _freq_var) param_get(param_find(_param), &_freq_var); \
+	if (_freq_var < 0) { \
+		_sub_var = -1; \
+	} \
+	else { \
+		_sub_var = orb_subscribe(_topic_id); \
+		if (_freq_var > 0) { \
+			orb_set_interval(_sub_var, 1000 / _freq_var); \
+		} \
+	}
 
 #define MIN(X,Y) ((X) < (Y) ? (X) : (Y))
 
@@ -747,6 +788,11 @@ int write_parameters(int fd)
 
 bool copy_if_updated(orb_id_t topic, int handle, void *buffer)
 {
+	// Support for frequency params for topics
+	if (handle < 0) {
+		return false;
+	}
+
 	bool updated;
 
 	orb_check(handle, &updated);
@@ -1038,40 +1084,43 @@ int sdlog2_thread_main(int argc, char *argv[])
 		int target_pos_sub;
 	} subs;
 
+	int sub_freq;
+
+	// Don't limit status and command subs to process commands in timely manner
 	subs.cmd_sub = orb_subscribe(ORB_ID(vehicle_command));
 	subs.status_sub = orb_subscribe(ORB_ID(vehicle_status));
-	subs.gps_pos_sub = orb_subscribe(ORB_ID(vehicle_gps_position));
-	subs.sat_info_sub = orb_subscribe(ORB_ID(satellite_info));
-	subs.sensor_sub = orb_subscribe(ORB_ID(sensor_combined));
-	subs.att_sub = orb_subscribe(ORB_ID(vehicle_attitude));
-	subs.att_sp_sub = orb_subscribe(ORB_ID(vehicle_attitude_setpoint));
-	subs.rates_sp_sub = orb_subscribe(ORB_ID(vehicle_rates_setpoint));
-	subs.act_outputs_sub = orb_subscribe(ORB_ID_VEHICLE_CONTROLS);
-	subs.act_controls_sub = orb_subscribe(ORB_ID_VEHICLE_ATTITUDE_CONTROLS);
-	subs.local_pos_sub = orb_subscribe(ORB_ID(vehicle_local_position));
-	subs.local_pos_sp_sub = orb_subscribe(ORB_ID(vehicle_local_position_setpoint));
-	subs.global_pos_sub = orb_subscribe(ORB_ID(vehicle_global_position));
-	subs.triplet_sub = orb_subscribe(ORB_ID(position_setpoint_triplet));
+	LOG_ORB_PARAM_SUBSCRIBE(subs.gps_pos_sub, ORB_ID(vehicle_gps_position), "SDLOG_M_GPS", sub_freq)
+	LOG_ORB_PARAM_SUBSCRIBE(subs.sat_info_sub, ORB_ID(satellite_info), "SDLOG_M_SAT", sub_freq)
+	LOG_ORB_PARAM_SUBSCRIBE(subs.sensor_sub, ORB_ID(sensor_combined), "SDLOG_M_SENS", sub_freq)
+	LOG_ORB_PARAM_SUBSCRIBE(subs.att_sub, ORB_ID(vehicle_attitude), "SDLOG_M_ATT", sub_freq)
+	LOG_ORB_PARAM_SUBSCRIBE(subs.att_sp_sub, ORB_ID(vehicle_attitude_setpoint), "SDLOG_M_ATTSP", sub_freq)
+	LOG_ORB_PARAM_SUBSCRIBE(subs.rates_sp_sub, ORB_ID(vehicle_rates_setpoint), "SDLOG_M_ROTSP", sub_freq)
+	LOG_ORB_PARAM_SUBSCRIBE(subs.act_outputs_sub, ORB_ID_VEHICLE_CONTROLS, "SDLOG_M_ACTOUT", sub_freq)
+	LOG_ORB_PARAM_SUBSCRIBE(subs.act_controls_sub, ORB_ID_VEHICLE_ATTITUDE_CONTROLS, "SDLOG_M_ATTC", sub_freq)
+	LOG_ORB_PARAM_SUBSCRIBE(subs.local_pos_sub, ORB_ID(vehicle_local_position), "SDLOG_M_LPOS", sub_freq)
+	LOG_ORB_PARAM_SUBSCRIBE(subs.local_pos_sp_sub, ORB_ID(vehicle_local_position_setpoint), "SDLOG_M_LPSP", sub_freq)
+	LOG_ORB_PARAM_SUBSCRIBE(subs.global_pos_sub, ORB_ID(vehicle_global_position), "SDLOG_M_GPOS", sub_freq)
+	LOG_ORB_PARAM_SUBSCRIBE(subs.triplet_sub, ORB_ID(position_setpoint_triplet), "SDLOG_M_GPSP", sub_freq)
 	//subs.vicon_pos_sub = orb_subscribe(ORB_ID(vehicle_vicon_position));
 	// subs.vision_pos_sub = orb_subscribe(ORB_ID(vision_position_estimate));
 	// subs.flow_sub = orb_subscribe(ORB_ID(optical_flow));
-	subs.rc_sub = orb_subscribe(ORB_ID(rc_channels));
+	LOG_ORB_PARAM_SUBSCRIBE(subs.rc_sub, ORB_ID(rc_channels), "SDLOG_M_RCCH", sub_freq)
 	// subs.airspeed_sub = orb_subscribe(ORB_ID(airspeed));
-	subs.esc_sub = orb_subscribe(ORB_ID(esc_status));
-	subs.global_vel_sp_sub = orb_subscribe(ORB_ID(vehicle_global_velocity_setpoint));
-	subs.battery_sub = orb_subscribe(ORB_ID(battery_status));
+	LOG_ORB_PARAM_SUBSCRIBE(subs.esc_sub, ORB_ID(esc_status), "SDLOG_M_ESC", sub_freq)
+	LOG_ORB_PARAM_SUBSCRIBE(subs.global_vel_sp_sub, ORB_ID(vehicle_global_velocity_setpoint), "SDLOG_M_GVELSP", sub_freq)
+	LOG_ORB_PARAM_SUBSCRIBE(subs.battery_sub, ORB_ID(battery_status), "SDLOG_M_BAT", sub_freq)
 	for (int i = 0; i < TELEMETRY_STATUS_ORB_ID_NUM; i++) {
-		subs.telemetry_subs[i] = orb_subscribe(telemetry_status_orb_id[i]);
+		LOG_ORB_PARAM_SUBSCRIBE(subs.telemetry_subs[i], telemetry_status_orb_id[i], "SDLOG_M_TELEM", sub_freq)
 	}
-	subs.range_finder_sub = orb_subscribe(ORB_ID(sensor_range_finder));
+	LOG_ORB_PARAM_SUBSCRIBE(subs.range_finder_sub, ORB_ID(sensor_range_finder), "SDLOG_M_RANGE", sub_freq)
 	//subs.estimator_status_sub = orb_subscribe(ORB_ID(estimator_status));
 	//subs.tecs_status_sub = orb_subscribe(ORB_ID(tecs_status));
-	subs.system_power_sub = orb_subscribe(ORB_ID(system_power));
-	subs.servorail_status_sub = orb_subscribe(ORB_ID(servorail_status));
+	LOG_ORB_PARAM_SUBSCRIBE(subs.system_power_sub, ORB_ID(system_power), "SDLOG_M_SYSPOW", sub_freq)
+	LOG_ORB_PARAM_SUBSCRIBE(subs.servorail_status_sub, ORB_ID(servorail_status), "SDLOG_M_SERVO", sub_freq)
 	// subs.wind_sub = orb_subscribe(ORB_ID(wind_estimate));
 	/* we need to rate-limit wind, as we do not need the full update rate */
 	// orb_set_interval(subs.wind_sub, 90);
-	subs.target_pos_sub = orb_subscribe(ORB_ID(target_global_position));
+	LOG_ORB_PARAM_SUBSCRIBE(subs.target_pos_sub, ORB_ID(target_global_position), "SDLOG_M_TRGPOS", sub_freq)	
 
 	thread_running = true;
 
