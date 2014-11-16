@@ -1636,8 +1636,10 @@ MulticopterPositionControl::task_main()
                     if(_params.sonar_correction_on && _local_pos.dist_bottom_valid)
                     {
                         float coeff = _local_pos.dist_bottom/(MAXIMAL_DISTANCE);
-                        _landing_coef = (coeff * _params.land_speed) > (_params.land_speed * 0.5f) ? coeff : 0.5f;
-                        fprintf(stderr, "Landing, _landing_coef: %.3f\n", (double)_landing_coef);
+                        _landing_coef = (coeff * _params.land_speed) > (_params.land_speed * 0.3f) ? coeff : 0.3f;
+                        if (_landing_coef > 1.0f)
+                            _landing_coef = 1.0f;
+                        //fprintf(stderr, "Landing, _landing_coef: %.3f\n", (double)_landing_coef);
                     }
                     _vel_sp(2) = _params.land_speed * _landing_coef;
                     //fprintf(stderr, "Landing, sonar invalid, _vel_sp: %.3f\n", (double)_vel_sp(2));

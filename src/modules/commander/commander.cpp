@@ -1734,20 +1734,28 @@ int commander_thread_main(int argc, char *argv[])
 			}
 		}
         
-        /* Handle commander requests here */
-        /* This request is sent from inav while landing by sonar
-         * Author: Max Shvetsov <maxim.shvetsov@airdog.com>
+        /* Handle commander requests here
+         *
+         * Description: This request is sent from inav while landing by sonar
+         * Author:      Max Shvetsov <maxim.shvetsov@airdog.com>
          */
 		orb_check(commander_request_inav_sub, &updated);
 
 		if (updated) {
 			orb_copy(ORB_ID(commander_request_inav), commander_request_inav_sub, &commander_request_inav);
 
-			switch(commander_request.request_type) {
+			switch(commander_request_inav.request_type) {
 			case V_DISARM_INAV:
 			{
 
-                arm_disarm(false, mavlink_fd, "Commander request.");
+                transition_result_t result;
+                result = arm_disarm(false, mavlink_fd, "sonar request.");
+                if (result == TRANSITION_DENIED ) {
+                    mavlink_log_info(mavlink_fd, "[commander], disarm by Range finder DECLINED");
+                }
+                else if (result == TRANSITION_CHANGED) {
+                    mavlink_log_info(mavlink_fd, "[commander], DISARMED by Range finder");
+                }
 				break;
 			}
 			case AIRD_STATE_CHANGE_INAV:
@@ -1758,8 +1766,6 @@ int commander_thread_main(int argc, char *argv[])
 			default:
 				break;
 			}
-
-			mavlink_log_info(mavlink_fd, "Disarm request by sonar processed\n");
 		}
 
 		/* Handle commander requests here */

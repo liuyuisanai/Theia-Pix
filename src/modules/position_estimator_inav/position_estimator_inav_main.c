@@ -1134,40 +1134,55 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                     }
                     if (vehicle_status.airdog_state == AIRD_STATE_LANDING && params.sonar_on) {
                         // If we are in the landing state and we are using sonar - rely on the sonar
-                        if (range_finder.valid) {
-                            // If sonar is currently working define weather we are descending or ascending
-                            if (dist_bottom < land_sonar_last_val) 
-                                land_by_sonar ++;
-                            else
-                                land_by_sonar --;
-                            land_sonar_last_val = dist_bottom;
-                            //fprintf(stderr, "We are landing by sonar, dist_bottom: %.3f sonar_prev: %.3f land_by_sonar: %d\n",
-                            //
-                            //        (double)dist_bottom,
-                            //        (double)sonar_prev,
-                            //        land_by_sonar);
-                            //fprintf(stderr, "We are landing by sonar, land_sonar_last_val: %.3f > dist_bottom: %.3f\n", (double)land_sonar_last_val, (double)dist_bottom);
-                        }
-                        else {
-                            // If sonar is invalid - check if we WERE descending and last sonar value is low
-                            //fprintf(stderr, "Sonar not valid, dist_bottom: %.3f sonar_prev: %.3f land_by_sonar: %d\n",
-                            //        (double)dist_bottom,
-                            //        (double)sonar_prev,
-                            //        land_by_sonar);
+                        switch(range_finder.type) {
+                            case RANGE_FINDER_TYPE_ULTRASONIC: {
 
-                            if (land_by_sonar > 0 && dist_bottom < 2.5f) {
-                                if (landed_time == 0.0f) {
-                                    landed_time = t;
-                                }
-                                else if (t - landed_time > 1000000.0f) {
-                                // We are alliwing 1 more second to accend
-                                    landed = true;
-                                    land_by_sonar = 0;
-                                    landed_time = 0.0f;
-                                    commander_request.request_type = V_DISARM_INAV;
-                                    orb_publish(ORB_ID(commander_request_inav), commander_request_inav_pub, &commander_request);
-                                }
-                            }
+                                                                if (range_finder.valid) {
+                                                                    // If sonar is currently working define weather we are descending or ascending
+                                                                    if (dist_bottom < land_sonar_last_val) 
+                                                                        land_by_sonar ++;
+                                                                    else
+                                                                        land_by_sonar --;
+                                                                    land_sonar_last_val = dist_bottom;
+                                                                }
+                                                                else {
+                                                                    if (land_by_sonar > 0 && dist_bottom < 1.5f) {
+                                                                        if (landed_time == 0.0f) {
+                                                                            landed_time = t;
+                                                                        }
+                                                                        else if (t - landed_time > 1000000.0f) {
+                                                                        // We are allowing 1 more second to accend
+                                                                            landed = true;
+                                                                            land_by_sonar = 0;
+                                                                            landed_time = 0.0f;
+                                                                            commander_request.request_type = V_DISARM_INAV;
+                                                                            orb_publish(ORB_ID(commander_request_inav), commander_request_inav_pub, &commander_request);
+                                                                            fprintf(stderr,"[inav] Sending DISARM request from Sonar\n");
+                                                                        }
+                                                                    }
+                                                                }
+                                                               break;
+                               }
+                            case RANGE_FINDER_TYPE_LASER: {
+                                                              if (dist_bottom > 0.5f /*TODO: <-- to param */&& sonar_valid) {
+                                                                  // If we are too high to land and disarm and range finder is valid
+                                                                  // range finder timeout is already taken into account here and we can be sure
+                                                                  // range finder IS working (not was working)
+                                                                  if (dist_bottom < land_sonar_last_val) 
+                                                                      land_by_sonar ++;
+                                                                  else
+                                                                      land_by_sonar --;
+                                                                  land_sonar_last_val = dist_bottom;
+                                                              }
+                                                              else if (dist_bottom < 0.2f /*TODO: <-- to param */&& sonar_valid && land_by_sonar > 0) {
+                                                                  landed = true; 
+                                                                  land_by_sonar = 0;
+                                                                  commander_request.request_type = V_DISARM_INAV;
+                                                                  orb_publish(ORB_ID(commander_request_inav), commander_request_inav_pub, &commander_request);
+                                                                  fprintf(stderr,"[inav] Sending DISARM request from Laser\n");
+                                                              }
+                                                              break;
+                                                          }
                         }
                     }
                 }
