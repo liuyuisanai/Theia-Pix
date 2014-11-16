@@ -92,7 +92,6 @@
 extern "C" __EXPORT int mc_pos_control_main(int argc, char *argv[]);
 
 // Sonar factory maximal distance, needed in distance corretion function
-extern const float MAXIMAL_DISTANCE; 
 
 class MulticopterPositionControl
 {
@@ -169,7 +168,8 @@ private:
 		param_t xy_vel_max;
 		param_t xy_ff;
 		param_t tilt_max_air;
-		param_t land_speed;
+		param_t land_speed_max;
+        param_t land_speed_min;
 		param_t takeoff_speed;
 		param_t tilt_max_land;
 		param_t follow_vel_ff;
@@ -184,7 +184,6 @@ private:
         param_t sonar_min_dist;
         param_t sonar_smooth_coef;
         param_t mc_allowed_down_sp;
-        param_t a_yaw_ignore_radius;
         
 	}		_params_handles;		/**< handles for interesting parameters */
 
@@ -192,7 +191,8 @@ private:
 		float thr_min;
 		float thr_max;
 		float tilt_max_air;
-		float land_speed;
+		float land_speed_max;
+        float land_speed_min;
 		float takeoff_speed;
 		float tilt_max_land;
 		float follow_vel_ff;
@@ -215,9 +215,6 @@ private:
 		math::Vector<3> vel_ff;
 		math::Vector<3> vel_max;
 		math::Vector<3> sp_offs_max;
-
-        float a_yaw_ignore_radius;
-
 	}		_params;
 
 	struct map_projection_reference_s _ref_pos;
@@ -471,7 +468,8 @@ MulticopterPositionControl::MulticopterPositionControl() :
 	_params_handles.xy_vel_max	= param_find("MPC_XY_VEL_MAX");
 	_params_handles.xy_ff		= param_find("MPC_XY_FF");
 	_params_handles.tilt_max_air	= param_find("MPC_TILTMAX_AIR");
-	_params_handles.land_speed	= param_find("MPC_LAND_SPD");
+	_params_handles.land_speed_max	= param_find("A_LAND_MAX_V");
+    _params_handles.land_speed_min  = param_find("A_LAND_MIN_V");
 	_params_handles.takeoff_speed	= param_find("MPC_TAKEOFF_SPD");
 
 	_params_handles.tilt_max_land	= param_find("MPC_TILTMAX_LND");
@@ -489,8 +487,6 @@ MulticopterPositionControl::MulticopterPositionControl() :
     _params_handles.sonar_min_dist          = param_find("SENS_SON_MIN");
     _params_handles.sonar_smooth_coef       = param_find("SENS_SON_SMOT");
     _params_handles.mc_allowed_down_sp      = param_find("MPC_ALLOWED_LAND");
-
-    _params.a_yaw_ignore_radius             = param_find("A_YAW_IGNR_R");
 
 	/* fetch initial parameter values */
 	parameters_update(true);
@@ -537,7 +533,8 @@ MulticopterPositionControl::parameters_update(bool force)
 		param_get(_params_handles.thr_max, &_params.thr_max);
 		param_get(_params_handles.tilt_max_air, &_params.tilt_max_air);
 		_params.tilt_max_air = math::radians(_params.tilt_max_air);
-		param_get(_params_handles.land_speed, &_params.land_speed);
+		param_get(_params_handles.land_speed_max, &_params.land_speed_max);
+        param_get(_params_handles.land_speed_min, &_params.land_speed_min);
 		param_get(_params_handles.takeoff_speed, &_params.takeoff_speed);
 		param_get(_params_handles.tilt_max_land, &_params.tilt_max_land);
 		_params.tilt_max_land = math::radians(_params.tilt_max_land);
@@ -599,10 +596,6 @@ MulticopterPositionControl::parameters_update(bool force)
         _params.sonar_smooth_coef = v;
         param_get(_params_handles.mc_allowed_down_sp, &v);
         _params.mc_allowed_down_sp = v;
-
-
-        param_get(_params_handles.a_yaw_ignore_radius, &v);
-        _params.a_yaw_ignore_radius  = v;
 
 		_params.sp_offs_max = _params.vel_max.edivide(_params.pos_p) * 2.0f;
 	}
@@ -1358,7 +1351,7 @@ MulticopterPositionControl::point_to_target()
 
 	/* don't try to rotate near singularity */
 	float current_offset_xy_len = current_offset_xy.length();
-	if (current_offset_xy_len > _params.a_yaw_ignore_radius) {
+	if (current_offset_xy_len > FOLLOW_OFFS_XY_MIN) {
 		/* calculate yaw setpoint from current positions and control offset with yaw stick */
 		_att_sp.yaw_body = _wrap_pi(atan2f(-current_offset_xy(1), -current_offset_xy(0)) + _manual.r * _params.follow_yaw_off_max);
 
@@ -1635,13 +1628,14 @@ MulticopterPositionControl::task_main()
                     /* In case we have sonar correction - use it */
                     if(_params.sonar_correction_on && _local_pos.dist_bottom_valid)
                     {
-                        float coeff = _local_pos.dist_bottom/(MAXIMAL_DISTANCE);
-                        _landing_coef = (coeff * _params.land_speed) > (_params.land_speed * 0.3f) ? coeff : 0.3f;
+                        float coeff = _local_pos.dist_bottom/(_local_pos.dist_bottom_max);
+                        _landing_coef = (coeff * _params.land_speed_max) > (_params.land_speed_min) ? coeff : _params.land_speed_min/_params.land_speed_min;
+                        /* If resulting coefficient is too little for minimal speed - adjust it for speed to be land_min_speed */
                         if (_landing_coef > 1.0f)
                             _landing_coef = 1.0f;
                         //fprintf(stderr, "Landing, _landing_coef: %.3f\n", (double)_landing_coef);
                     }
-                    _vel_sp(2) = _params.land_speed * _landing_coef;
+                    _vel_sp(2) = _params.land_speed_max * _landing_coef;
                     //fprintf(stderr, "Landing, sonar invalid, _vel_sp: %.3f\n", (double)_vel_sp(2));
 				}
 
@@ -1677,25 +1671,22 @@ MulticopterPositionControl::task_main()
 				}
 				else if (_ground_setpoint_corrected && (_vel(2) > _params.vel_max(2) || _vel_sp(2) > _params.vel_max(2))) {
 
-					//_vel_sp(2) = - _params.vel_max(2);
                     _vel_sp(2) = - 2 * _params.vel_max(2);
-                    //printf("[NO IDEA] vel(2) %0.3f  sp_vel(2) %.03f\n", (double)_vel(2), (double)_vel_sp(2));
 					_sp_move_rate(2)= 0.0f;
 				}
 				else if (_local_pos.dist_bottom_valid && _params.sonar_correction_on){
 					if (_ground_position_available_drop > 0.0f && _vel_sp(2) > 0){
-                    float range = MAXIMAL_DISTANCE - _params.sonar_min_dist;
+                    float range = _local_pos.dist_bottom_max - _params.sonar_min_dist;
                     // Used when we are above allowed limit
                     float max_vel_z = _params.vel_max(2) * (float)pow(_ground_position_available_drop/range, 2.0);
+
+                    // If resulted max speed is higher than allowed by parameters - limit it with parameter defined
+                    // TODO [Max]: There should be universal way for all range finders, not limited to Ultrasound sonar maximal distance
+                    max_vel_z = max_vel_z > _params.vel_max(2) ? _params.vel_max(2) : max_vel_z;
                     
                         //limit down speed
 						if (_vel_sp(2) > max_vel_z) {
 							_vel_sp(2) = max_vel_z;
-                            //printf("[LIMIT] vel(2) %0.3f  sp_vel(2) %.03f\n max_vel_z %.3f", 
-                            //        (double)_vel(2),
-                            //        (double)_vel_sp(2),
-                            //        (double)max_vel_z);
-							
 						}
 						else {
 						}

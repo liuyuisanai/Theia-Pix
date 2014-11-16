@@ -1252,7 +1252,9 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 			local_pos.yaw = att.yaw;
 			local_pos.dist_bottom = dist_bottom;
 			local_pos.dist_bottom_valid = dist_bottom_valid;
-			local_pos.eph = eph;
+            local_pos.dist_bottom_min = range_finder.minimum_distance;
+            local_pos.dist_bottom_max = range_finder.maximum_distance;
+            local_pos.eph = eph;
 			local_pos.epv = epv;
 			local_pos.timestamp = t;
 
