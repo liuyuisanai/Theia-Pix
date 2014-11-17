@@ -1137,7 +1137,7 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                         switch(range_finder.type) {
                             case RANGE_FINDER_TYPE_ULTRASONIC: {
 
-                                                                if (range_finder.valid) {
+                                                                if (range_finder.valid && dist_bottom > 0.5f) {
                                                                     // If sonar is currently working define weather we are descending or ascending
                                                                     if (dist_bottom < land_sonar_last_val) 
                                                                         land_by_sonar ++;
@@ -1145,8 +1145,8 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                                                                         land_by_sonar --;
                                                                     land_sonar_last_val = dist_bottom;
                                                                 }
-                                                                else {
-                                                                    if (land_by_sonar > 0 && dist_bottom < 1.5f) {
+                                                                else if (land_by_sonar > 0 && dist_bottom <= 0.5f) {
+                                                                     {
                                                                         if (landed_time == 0.0f) {
                                                                             landed_time = t;
                                                                         }
