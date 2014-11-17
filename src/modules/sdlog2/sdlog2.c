@@ -145,7 +145,7 @@ PARAM_DEFINE_INT32(SDLOG_M_SAT, 0);
 PARAM_DEFINE_INT32(SDLOG_M_SENS, 0);
 PARAM_DEFINE_INT32(SDLOG_M_ATT, 0);
 PARAM_DEFINE_INT32(SDLOG_M_ATTSP, 0);
-PARAM_DEFINE_INT32(SDLOG_M_ROTSP, 0);
+PARAM_DEFINE_INT32(SDLOG_M_RSPRATE, 0);
 PARAM_DEFINE_INT32(SDLOG_M_ACTOUT, 0);
 PARAM_DEFINE_INT32(SDLOG_M_ATTC, 0);
 PARAM_DEFINE_INT32(SDLOG_M_LPOS, 0);
@@ -1094,7 +1094,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 	LOG_ORB_PARAM_SUBSCRIBE(subs.sensor_sub, ORB_ID(sensor_combined), "SDLOG_M_SENS", sub_freq)
 	LOG_ORB_PARAM_SUBSCRIBE(subs.att_sub, ORB_ID(vehicle_attitude), "SDLOG_M_ATT", sub_freq)
 	LOG_ORB_PARAM_SUBSCRIBE(subs.att_sp_sub, ORB_ID(vehicle_attitude_setpoint), "SDLOG_M_ATTSP", sub_freq)
-	LOG_ORB_PARAM_SUBSCRIBE(subs.rates_sp_sub, ORB_ID(vehicle_rates_setpoint), "SDLOG_M_ROTSP", sub_freq)
+	LOG_ORB_PARAM_SUBSCRIBE(subs.rates_sp_sub, ORB_ID(vehicle_rates_setpoint), "SDLOG_M_RSPRATE", sub_freq)
 	LOG_ORB_PARAM_SUBSCRIBE(subs.act_outputs_sub, ORB_ID_VEHICLE_CONTROLS, "SDLOG_M_ACTOUT", sub_freq)
 	LOG_ORB_PARAM_SUBSCRIBE(subs.act_controls_sub, ORB_ID_VEHICLE_ATTITUDE_CONTROLS, "SDLOG_M_ATTC", sub_freq)
 	LOG_ORB_PARAM_SUBSCRIBE(subs.local_pos_sub, ORB_ID(vehicle_local_position), "SDLOG_M_LPOS", sub_freq)
