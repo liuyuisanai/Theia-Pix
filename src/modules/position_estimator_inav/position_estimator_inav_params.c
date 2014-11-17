@@ -275,6 +275,7 @@ int parameters_init(struct position_estimator_inav_param_handles *h)
     h->sonar_on = param_find("SENS_SON_ON");
 	h->land_t = param_find("INAV_LAND_T");
 	h->land_disp = param_find("INAV_LAND_DISP");
+    h->land_min_h = param_find("A_LAND_SAFE_H");
 	h->land_thr = param_find("INAV_LAND_THR");
 	h->no_vision = param_find("CBRK_NO_VISION");
 	h->delay_gps = param_find("INAV_DELAY_GPS");
@@ -303,6 +304,7 @@ int parameters_update(const struct position_estimator_inav_param_handles *h, str
     param_get(h->sonar_on, &(p->sonar_on));
 	param_get(h->land_t, &(p->land_t));
 	param_get(h->land_disp, &(p->land_disp));
+    param_get(h->land_min_h, &(p->land_min_h));
 	param_get(h->land_thr, &(p->land_thr));
 	param_get(h->no_vision, &(p->no_vision));
 	param_get(h->delay_gps, &(p->delay_gps));

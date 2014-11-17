@@ -1137,7 +1137,7 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                         switch(range_finder.type) {
                             case RANGE_FINDER_TYPE_ULTRASONIC: {
 
-                                                                if (range_finder.valid && dist_bottom > 0.5f) {
+                                                                if (range_finder.valid && dist_bottom > params.land_min_h) {
                                                                     // If sonar is currently working define weather we are descending or ascending
                                                                     if (dist_bottom < land_sonar_last_val) 
                                                                         land_by_sonar ++;
@@ -1145,7 +1145,7 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                                                                         land_by_sonar --;
                                                                     land_sonar_last_val = dist_bottom;
                                                                 }
-                                                                else if (land_by_sonar > 0 && dist_bottom <= 0.5f) {
+                                                                else if (land_by_sonar > 0 && dist_bottom <= params.land_min_h) {
                                                                      {
                                                                         if (landed_time == 0.0f) {
                                                                             landed_time = t;
@@ -1164,7 +1164,7 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                                                                break;
                                }
                             case RANGE_FINDER_TYPE_LASER: {
-                                                              if (dist_bottom > 0.5f /*TODO: <-- to param */&& sonar_valid) {
+                                                              if (dist_bottom > params.land_min_h && sonar_valid) {
                                                                   // If we are too high to land and disarm and range finder is valid
                                                                   // range finder timeout is already taken into account here and we can be sure
                                                                   // range finder IS working (not was working)
@@ -1174,7 +1174,7 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                                                                       land_by_sonar --;
                                                                   land_sonar_last_val = dist_bottom;
                                                               }
-                                                              else if (dist_bottom < 0.2f /*TODO: <-- to param */&& sonar_valid && land_by_sonar > 0) {
+                                                              else if (dist_bottom < params.land_min_h && sonar_valid && land_by_sonar > 0) {
                                                                   landed = true; 
                                                                   land_by_sonar = 0;
                                                                   commander_request.request_type = V_DISARM_INAV;
