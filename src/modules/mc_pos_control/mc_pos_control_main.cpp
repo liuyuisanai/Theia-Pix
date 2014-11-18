@@ -226,8 +226,9 @@ private:
 	struct map_projection_reference_s _ref_pos;
 	float _ref_alt;
 	hrt_abstime _ref_timestamp;
-	float _target_alt_offs;		/**< target altitude offset, add this value to target altitude */
 	float _alt_start;			/**< start altitude, i.e. when vehicle was armed */
+	float _target_alt_start;	/**< target start altitude, i.e. when vehicle was armed or target was found first time (if vehicle was already armed) */
+	bool _target_alt_start_valid;	/**< target start altitude valid flag */
 
 	bool _reset_pos_sp;
 	bool _reset_alt_sp;
@@ -413,8 +414,9 @@ MulticopterPositionControl::MulticopterPositionControl() :
 
 	_ref_alt(0.0f),
 	_ref_timestamp(0),
-	_target_alt_offs(0.0f),
 	_alt_start(0.0f),
+	_target_alt_start(0.0f),
+	_target_alt_start_valid(false),
 
 	_reset_pos_sp(true),
 	_reset_alt_sp(true),
@@ -1223,6 +1225,12 @@ MulticopterPositionControl::update_target_pos()
 	if (_ref_timestamp != 0) {
 		/* check if target position updated */
 		if (_target_pos.timestamp != _tpos_predictor.get_time_recv_last()) {
+			if (!_target_alt_start_valid && _control_mode.flag_armed) {
+				/* initialize target start altitude in flight if target was not available on arming */
+				_target_alt_start = _target_pos.alt;
+				_target_alt_start_valid = true;
+			}
+
 			/* project target position to local frame */
 			math::Vector<3> tpos;
 			map_projection_project(&_ref_pos, _target_pos.lat, _target_pos.lon, &tpos.data[0], &tpos.data[1]);
@@ -1233,7 +1241,7 @@ MulticopterPositionControl::update_target_pos()
 
 			if (_params.follow_use_alt) {
 				/* use real target altitude */
-				tpos(2) = -(_target_pos.alt + _target_alt_offs - _ref_alt);
+				tpos(2) = -(_target_pos.alt - _target_alt_start + _alt_start - _ref_alt + _params.follow_talt_offs);
 				tvel_current(2) = _target_pos.vel_d;
 
 			} else {
@@ -1476,12 +1484,12 @@ MulticopterPositionControl::task_main()
 			}
 
 			/* init target altitude offset */
-			if (_target_pos.timestamp < hrt_absolute_time() + TARGET_POSITION_TIMEOUT &&
-					_local_pos.timestamp < hrt_absolute_time() + TARGET_POSITION_TIMEOUT && _local_pos.ref_timestamp > 0) {
-				_target_alt_offs = _alt_start - _target_pos.alt + _params.follow_talt_offs;
+			if (_target_pos.timestamp < hrt_absolute_time() + TARGET_POSITION_TIMEOUT) {
+				_target_alt_start = _target_pos.alt;
+				_target_alt_start_valid = true;
 
 			} else {
-				_target_alt_offs = 0.0f;
+				_target_alt_start_valid = false;
 			}
 		}
 
