@@ -1641,11 +1641,12 @@ MulticopterPositionControl::task_main()
 
 				/* use constant ascend rate during take off */
 				if (!_control_mode.flag_control_manual_enabled && _pos_sp_triplet.current.valid && _pos_sp_triplet.current.type == SETPOINT_TYPE_TAKEOFF) {
-					_vel_sp.zero();
                     // Resetting landing coefficient
                     _landing_coef = 1.0f;
 					if (_pos(2) - _pos_sp(2) > 0) {
-						_vel_sp.data[2] = -_params.takeoff_speed;
+						if (_vel_sp.data[2] < -_params.takeoff_speed){
+							_vel_sp.data[2] = -_params.takeoff_speed;
+						}
 					}
 				}
 
