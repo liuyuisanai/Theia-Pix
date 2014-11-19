@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (C) 2013 PX4 Development Team. All rights reserved.
+ *   Copyright (c) 2014 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -32,68 +32,78 @@
  ****************************************************************************/
 
 /**
- * @file Rangefinder driver interface.
- */
-
-#ifndef _DRV_RANGEFINDER_H
-#define _DRV_RANGEFINDER_H
-
-#include <stdint.h>
-#include <sys/ioctl.h>
-
-#include "drv_sensor.h"
-#include "drv_orb_dev.h"
-
-#define RANGE_FINDER_DEVICE_PATH	"/dev/range_finder"
-
-enum RANGE_FINDER_TYPE {
-	RANGE_FINDER_TYPE_LASER = 0,
-	RANGE_FINDER_TYPE_ULTRASONIC = 1
-};
-
-/**
- * @addtogroup topics
- * @{
- */
-
-/**
- * range finder report structure.  Reads from the device must be in multiples of this
- * structure.
- */
-struct range_finder_report {
-	uint64_t timestamp;
-	uint64_t error_count;
-	unsigned type;				/**< type, following RANGE_FINDER_TYPE enum */
-	float distance; 			/**< in meters */
-	float minimum_distance;			/**< minimum distance the sensor can measure */
-	float maximum_distance;			/**< maximum distance the sensor can measure */
-	uint8_t valid;				/**< 1 == within sensor range, 0 = outside sensor range */
-};
-
-/**
- * @}
- */
-
-/*
- * ObjDev tag for raw range finder data.
- */
-ORB_DECLARE(sensor_range_finder);
-
-/*
- * ioctl() definitions
+ * @file mcu_version.c
+ * 
+ * Read out the microcontroller version from the board
  *
- * Rangefinder drivers also implement the generic sensor driver
- * interfaces from drv_sensor.h
+ * @author Lorenz Meier <lorenz@px4.io>
+ *
  */
 
-#define _RANGEFINDERIOCBASE			(0x7900)
-#define __RANGEFINDERIOC(_n)		(_IOC(_RANGEFINDERIOCBASE, _n))
+#include "mcu_version.h"
 
-/** set the minimum effective distance of the device */
-#define RANGEFINDERIOCSETMINIUMDISTANCE	__RANGEFINDERIOC(1)
+#include <nuttx/config.h>
 
-/** set the maximum effective distance of the device */
-#define RANGEFINDERIOCSETMAXIUMDISTANCE	__RANGEFINDERIOC(2)
+#ifdef CONFIG_ARCH_CHIP_STM32
+#include <up_arch.h>
+
+#define DBGMCU_IDCODE	0xE0042000
+
+#define STM32F40x_41x	0x413
+#define STM32F42x_43x	0x419
+
+#define REVID_MASK	0xFFFF0000
+#define DEVID_MASK	0xFFF
+
+#endif
 
 
-#endif /* _DRV_RANGEFINDER_H */
+
+int mcu_version(char* rev, char** revstr)
+{
+#ifdef CONFIG_ARCH_CHIP_STM32
+	uint32_t abc = getreg32(DBGMCU_IDCODE);
+
+	int32_t chip_version = abc & DEVID_MASK;
+	enum MCU_REV revid = (abc & REVID_MASK) >> 16;
+
+	switch (chip_version) {
+	case STM32F40x_41x:
+		*revstr = "STM32F40x";
+		break;
+	case STM32F42x_43x:
+		*revstr = "STM32F42x";
+		break;
+	default:
+		*revstr = "STM32F???";
+		break;
+	}
+
+	switch (revid) {
+
+		case MCU_REV_STM32F4_REV_A:
+			*rev = 'A';
+			break;
+		case MCU_REV_STM32F4_REV_Z:
+			*rev = 'Z';
+			break;
+		case MCU_REV_STM32F4_REV_Y:
+			*rev = 'Y';
+			break;
+		case MCU_REV_STM32F4_REV_1:
+			*rev = '1';
+			break;
+		case MCU_REV_STM32F4_REV_3:
+			*rev = '3';
+			break;
+		default:
+			*rev = '?';
+			revid = -1;
+			break;
+	}
+
+	return revid;
+#else
+	return -1;
+#endif
+}

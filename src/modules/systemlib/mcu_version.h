@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (C) 2013 PX4 Development Team. All rights reserved.
+ *   Copyright (c) 2014 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,69 +31,22 @@
  *
  ****************************************************************************/
 
-/**
- * @file Rangefinder driver interface.
- */
+#pragma once
 
-#ifndef _DRV_RANGEFINDER_H
-#define _DRV_RANGEFINDER_H
-
-#include <stdint.h>
-#include <sys/ioctl.h>
-
-#include "drv_sensor.h"
-#include "drv_orb_dev.h"
-
-#define RANGE_FINDER_DEVICE_PATH	"/dev/range_finder"
-
-enum RANGE_FINDER_TYPE {
-	RANGE_FINDER_TYPE_LASER = 0,
-	RANGE_FINDER_TYPE_ULTRASONIC = 1
+/* magic numbers from reference manual */
+enum MCU_REV {
+	MCU_REV_STM32F4_REV_A = 0x1000,
+	MCU_REV_STM32F4_REV_Z = 0x1001,
+	MCU_REV_STM32F4_REV_Y = 0x1003,
+	MCU_REV_STM32F4_REV_1 = 0x1007,
+	MCU_REV_STM32F4_REV_3 = 0x2001
 };
 
 /**
- * @addtogroup topics
- * @{
- */
-
-/**
- * range finder report structure.  Reads from the device must be in multiples of this
- * structure.
- */
-struct range_finder_report {
-	uint64_t timestamp;
-	uint64_t error_count;
-	unsigned type;				/**< type, following RANGE_FINDER_TYPE enum */
-	float distance; 			/**< in meters */
-	float minimum_distance;			/**< minimum distance the sensor can measure */
-	float maximum_distance;			/**< maximum distance the sensor can measure */
-	uint8_t valid;				/**< 1 == within sensor range, 0 = outside sensor range */
-};
-
-/**
- * @}
- */
-
-/*
- * ObjDev tag for raw range finder data.
- */
-ORB_DECLARE(sensor_range_finder);
-
-/*
- * ioctl() definitions
+ * Reports the microcontroller version of the main CPU.
  *
- * Rangefinder drivers also implement the generic sensor driver
- * interfaces from drv_sensor.h
+ * @param rev The silicon revision character
+ * @param revstr The full chip name string
+ * @return The silicon revision / version number as integer
  */
-
-#define _RANGEFINDERIOCBASE			(0x7900)
-#define __RANGEFINDERIOC(_n)		(_IOC(_RANGEFINDERIOCBASE, _n))
-
-/** set the minimum effective distance of the device */
-#define RANGEFINDERIOCSETMINIUMDISTANCE	__RANGEFINDERIOC(1)
-
-/** set the maximum effective distance of the device */
-#define RANGEFINDERIOCSETMAXIUMDISTANCE	__RANGEFINDERIOC(2)
-
-
-#endif /* _DRV_RANGEFINDER_H */
+__EXPORT int mcu_version(char* rev, char** revstr);

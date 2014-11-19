@@ -68,3 +68,39 @@ PARAM_DEFINE_FLOAT(AIRD_TRAJ_CUT, 0.2f);
 
 /*Trajectory calculator stillness radius (meters) */
 PARAM_DEFINE_FLOAT(AIRD_TRAJ_RAD, 5);
+
+/**
+ * @descr:  Airdog param for custom landing with range finders
+ *          Safe distance to trigger disarm while landing using
+ *          range finder
+ *
+ * @author: Max Shvetsov <maxim.shvetsov@airdog.com>
+ * @unit:   Meters
+ * @min:    0.0f <- We can only disarm when sensors show 0.0 which is practically not measurable
+ * @max     1.0f <- Note that vehicle should be able to survive safely drop from this distance
+ */
+PARAM_DEFINE_FLOAT(A_LAND_SAFE_H, 0.3f);
+
+/**
+ * @descr:  Airdog param for custom landing with range finders
+ *          Max landing speed which will be held from the start of landing
+ *          and then lowered by range finder down to A_LAND_MIN_V
+ *          
+ * @author: Max Shvetsov <maxim.shvetsov@airdog.com>
+ * @unit:   Meters/seconds
+ * @min:    0.5f <- Practically should be higher. The minimum should be configured in A_LAND_MIN_V
+ * @max     4.0f <- Unlimited, but HIGHLY not recommended to increase more than that
+ */
+PARAM_DEFINE_FLOAT(A_LAND_MAX_V, 2.0f);
+
+/**
+ * @descr:  Airdog param for custom landing with range finders
+ *          Minimal landing speed which vehicle will achieve when close to the ground and about to
+ *          disarm and land.
+ *          
+ * @author: Max Shvetsov <maxim.shvetsov@airdog.com>
+ * @unit:   Meters/seconds
+ * @min:    0.1f 
+ * @max     1.0f
+ */
+PARAM_DEFINE_FLOAT(A_LAND_MIN_V, 0.3f);

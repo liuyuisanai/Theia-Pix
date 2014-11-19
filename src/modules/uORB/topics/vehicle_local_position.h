@@ -81,6 +81,8 @@ struct vehicle_local_position_s {
 	/* Distance to surface */
 	float dist_bottom;		/**< Distance to bottom surface (ground) */
 	float dist_bottom_rate;		/**< Distance to bottom surface (ground) change rate */
+    float dist_bottom_min;      /**< Minimal hardware-allowed distance to bottom */
+    float dist_bottom_max;      /**< Maximal hardware-allowed distance to bottom */
 	uint64_t surface_bottom_timestamp;		/**< Time when new bottom surface found */
 	bool dist_bottom_valid;	/**< true if distance to bottom surface is valid */
 	float eph;

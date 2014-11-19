@@ -93,7 +93,6 @@
 extern "C" __EXPORT int mc_pos_control_main(int argc, char *argv[]);
 
 // Sonar factory maximal distance, needed in distance corretion function
-extern const float MAXIMAL_DISTANCE; 
 
 class MulticopterPositionControl
 {
@@ -170,7 +169,8 @@ private:
 		param_t xy_vel_max;
 		param_t xy_ff;
 		param_t tilt_max_air;
-		param_t land_speed;
+		param_t land_speed_max;
+        param_t land_speed_min;
 		param_t takeoff_speed;
 		param_t tilt_max_land;
 		param_t follow_vel_ff;
@@ -192,7 +192,8 @@ private:
 		float thr_min;
 		float thr_max;
 		float tilt_max_air;
-		float land_speed;
+		float land_speed_max;
+        float land_speed_min;
 		float takeoff_speed;
 		float tilt_max_land;
 		float follow_vel_ff;
@@ -254,6 +255,7 @@ private:
 	float _ground_position_available_drop = 0;
 
 	struct vehicle_command_s _vcommand;
+    struct vehicle_status_s _vstatus;
 
 	perf_counter_t _loop_perf;
 
@@ -355,6 +357,11 @@ private:
      * Change setpoint Z coordinate according to sonar measurements
      */
     bool       ground_dist_correction(); 
+
+    /*
+     * Check vehicle_status topic and update _vstatus if it's updated
+     */
+    bool       update_vehicle_status();
 
     /*
      *  Check vehicle_command topic and update _vcommand if it's updated
@@ -471,7 +478,8 @@ MulticopterPositionControl::MulticopterPositionControl() :
 	_params_handles.xy_vel_max	= param_find("MPC_XY_VEL_MAX");
 	_params_handles.xy_ff		= param_find("MPC_XY_FF");
 	_params_handles.tilt_max_air	= param_find("MPC_TILTMAX_AIR");
-	_params_handles.land_speed	= param_find("MPC_LAND_SPD");
+	_params_handles.land_speed_max	= param_find("A_LAND_MAX_V");
+    _params_handles.land_speed_min  = param_find("A_LAND_MIN_V");
 	_params_handles.takeoff_speed	= param_find("MPC_TAKEOFF_SPD");
 
 	_params_handles.tilt_max_land	= param_find("MPC_TILTMAX_LND");
@@ -536,7 +544,8 @@ MulticopterPositionControl::parameters_update(bool force)
 		param_get(_params_handles.thr_max, &_params.thr_max);
 		param_get(_params_handles.tilt_max_air, &_params.tilt_max_air);
 		_params.tilt_max_air = math::radians(_params.tilt_max_air);
-		param_get(_params_handles.land_speed, &_params.land_speed);
+		param_get(_params_handles.land_speed_max, &_params.land_speed_max);
+        param_get(_params_handles.land_speed_min, &_params.land_speed_min);
 		param_get(_params_handles.takeoff_speed, &_params.takeoff_speed);
 		param_get(_params_handles.tilt_max_land, &_params.tilt_max_land);
 		_params.tilt_max_land = math::radians(_params.tilt_max_land);
@@ -653,6 +662,12 @@ MulticopterPositionControl::poll_subscriptions()
 	if (updated) {
 		orb_copy(ORB_ID(target_global_position), _target_pos_sub, &_target_pos);
 	}
+
+    orb_check(_vehicle_status_sub, &updated);
+
+    if (updated) {
+        orb_copy(ORB_ID(vehicle_status), _vehicle_status_sub, &_vstatus);
+    }
 }
 
 float
@@ -739,6 +754,21 @@ MulticopterPositionControl::reset_follow_offset()
 		mavlink_log_info(_mavlink_fd, "[mpc] reset follow offs: %.2f, %.2f, %.2f",
 				(double)_follow_offset(0), (double)_follow_offset(1), (double)_follow_offset(2));
 	}
+}
+
+bool
+MulticopterPositionControl::update_vehicle_status()
+{
+    bool vehicle_status_updated = false;
+    orb_check(_vehicle_status_sub, &vehicle_status_updated);
+
+    if (vehicle_status_updated) {
+        if (orb_copy(ORB_ID(vehicle_status), _vehicle_status_sub, &_vstatus) == OK)
+            return true;
+        else
+            return false;
+    }
+    return false;
 }
 
 bool
@@ -1441,6 +1471,7 @@ MulticopterPositionControl::task_main()
 	_global_vel_sp_sub = orb_subscribe(ORB_ID(vehicle_global_velocity_setpoint));
 	_target_pos_sub = orb_subscribe(ORB_ID(target_global_position));
 	_vcommand_sub = orb_subscribe(ORB_ID(vehicle_command));
+    _vehicle_status_sub = orb_subscribe(ORB_ID(vehicle_status));
 
 
 	parameters_update(true);
@@ -1593,26 +1624,28 @@ MulticopterPositionControl::task_main()
 				}
 			}
 
-			if  (
-                (_control_mode.flag_control_position_enabled || _control_mode.flag_control_follow_target) && 
-                _pos_sp_triplet.current.type != SETPOINT_TYPE_LAND && _pos_sp_triplet.current.type != SETPOINT_TYPE_TAKEOFF &&
-                _pos_sp_triplet.current.type != SETPOINT_TYPE_IDLE
-                ) {
-				/* try to correct this altitude with sonar */
-			    ground_dist_correction();
+			if (    (_control_mode.flag_control_position_enabled || _control_mode.flag_control_follow_target)&&
+                    (_vstatus.airdog_state == AIRD_STATE_IN_AIR)    ) {
+				/*
+                 * Try to correct this altitude with sonar
+                 * Only if we are flying or landing
+                 */
+                    ground_dist_correction();
+                    if (_ground_setpoint_corrected) {
+                        //correct altitude velocity
+                        _vel_ff(2) = 0.0f;
+                        //and altitude move rate
+                        _sp_move_rate(2)= 0.0f;
 
-			    if (_ground_setpoint_corrected) {
-			    	//correct altitude velocity
-			    	_vel_ff(2) = 0.0f;
-			    	//and altitude move rate
-			    	_sp_move_rate(2)= 0.0f;
-
-			    	//if (_control_mode.flag_control_follow_target && _control_mode.flag_control_manual_enabled) {
-			    	//	//stop moving offset in manual follow mode
-				    //	_follow_offset(2) = _pos_sp(2) - _tpos(2);
-			    	//}
-				}
+                        //if (_control_mode.flag_control_follow_target && _control_mode.flag_control_manual_enabled) {
+                        //	//stop moving offset in manual follow mode
+                        //	_follow_offset(2) = _pos_sp(2) - _tpos(2);
+                        //}
+                    }
 			}
+            else {
+                _ground_setpoint_corrected = false;
+            }
 
 			/* reset follow offset after non-follow modes */
 			if (!(_control_mode.flag_control_follow_target)) {
@@ -1685,21 +1718,25 @@ MulticopterPositionControl::task_main()
                     /* In case we have sonar correction - use it */
                     if(_params.sonar_correction_on && _local_pos.dist_bottom_valid)
                     {
-                        float coeff = _local_pos.dist_bottom/(MAXIMAL_DISTANCE);
-                        _landing_coef = (coeff * _params.land_speed) > (_params.land_speed * 0.5f) ? coeff : 0.5f;
-                        // fprintf(stderr, "Landing, _landing_coef: %.3f\n", (double)_landing_coef);
+                        float coeff = _local_pos.dist_bottom/(_local_pos.dist_bottom_max);
+                        _landing_coef = (coeff * _params.land_speed_max) > (_params.land_speed_min) ? coeff : _params.land_speed_min/_params.land_speed_min;
+                        /* If resulting coefficient is too little for minimal speed - adjust it for speed to be land_min_speed */
+                        if (_landing_coef > 1.0f)
+                            _landing_coef = 1.0f;
+                        //fprintf(stderr, "Landing, _landing_coef: %.3f\n", (double)_landing_coef);
                     }
-                    _vel_sp(2) = _params.land_speed * _landing_coef;
+                    _vel_sp(2) = _params.land_speed_max * _landing_coef;
                     //fprintf(stderr, "Landing, sonar invalid, _vel_sp: %.3f\n", (double)_vel_sp(2));
 				}
 
 				/* use constant ascend rate during take off */
 				if (!_control_mode.flag_control_manual_enabled && _pos_sp_triplet.current.valid && _pos_sp_triplet.current.type == SETPOINT_TYPE_TAKEOFF) {
-					_vel_sp.zero();
                     // Resetting landing coefficient
                     _landing_coef = 1.0f;
 					if (_pos(2) - _pos_sp(2) > 0) {
-						_vel_sp.data[2] = -_params.takeoff_speed;
+						if (_vel_sp.data[2] < -_params.takeoff_speed){
+							_vel_sp.data[2] = -_params.takeoff_speed;
+						}
 					}
 				}
 
@@ -1724,24 +1761,23 @@ MulticopterPositionControl::task_main()
 						}
 				}
 				else if (_ground_setpoint_corrected && (_vel(2) > _params.vel_max(2) || _vel_sp(2) > _params.vel_max(2))) {
-					//_vel_sp(2) = - _params.vel_max(2);
+
                     _vel_sp(2) = - 2 * _params.vel_max(2);
-                    //printf("[NO IDEA] vel(2) %0.3f  sp_vel(2) %.03f\n", (double)_vel(2), (double)_vel_sp(2));
 					_sp_move_rate(2)= 0.0f;
 				}
 				else if (_local_pos.dist_bottom_valid && _params.sonar_correction_on){
 					if (_ground_position_available_drop > 0.0f && _vel_sp(2) > 0){
-                    float range = MAXIMAL_DISTANCE - _params.sonar_min_dist;
+                    float range = _local_pos.dist_bottom_max - _params.sonar_min_dist;
                     // Used when we are above allowed limit
                     float max_vel_z = _params.vel_max(2) * (float)pow(_ground_position_available_drop/range, 2.0);
+
+                    // If resulted max speed is higher than allowed by parameters - limit it with parameter defined
+                    // TODO [Max]: There should be universal way for all range finders, not limited to Ultrasound sonar maximal distance
+                    max_vel_z = max_vel_z > _params.vel_max(2) ? _params.vel_max(2) : max_vel_z;
                     
                         //limit down speed
 						if (_vel_sp(2) > max_vel_z) {
 							_vel_sp(2) = max_vel_z;
-                            //printf("[LIMIT] vel(2) %0.3f  sp_vel(2) %.03f\n max_vel_z %.3f", 
-                            //        (double)_vel(2),
-                            //        (double)_vel_sp(2),
-                            //        (double)max_vel_z);
 						}
 						else {
 						}

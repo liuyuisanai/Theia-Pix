@@ -127,6 +127,12 @@ public:
 		float pafol_safe_dist;
 
 		float mpc_max_speed;
+
+        float airdog_dst_inv; 
+        float airdog_init_pos_dst;
+        int airdog_init_pos_use; 
+
+        float a_yaw_ignore_radius;
 	} _parameters;		
 
 
@@ -151,6 +157,12 @@ public:
 		param_t pafol_safe_dist;
 
 		param_t mpc_max_speed;
+
+        param_t airdog_dst_inv;
+        param_t airdog_init_pos_dst; 
+        param_t airdog_init_pos_use;
+
+        param_t a_yaw_ignore_radius;
 	} _parameter_handles;
 
 
@@ -169,6 +181,7 @@ protected:
 	int		_mavlink_fd;			/**< the file descriptor to send messages over mavlink */
 
 	bool check_current_pos_sp_reached();
+    void go_to_intial_position();
 
 
 

@@ -109,8 +109,8 @@ all:			checksubmodules $(DESIRED_FIRMWARES)
 #
 # Copy FIRMWARES into the image directory.
 #
-# XXX copying the .bin files is a hack to work around the PX4IO uploader 
-#     not supporting .px4 files, and it should be deprecated onced that 
+# XXX copying the .bin files is a hack to work around the PX4IO uploader
+#     not supporting .px4 files, and it should be deprecated onced that
 #     is taken care of.
 #
 $(STAGED_FIRMWARES): $(IMAGE_DIR)%.px4: $(BUILD_DIR)%.build/firmware.px4
@@ -148,11 +148,14 @@ endef
 FMU_CONFIGS		:= $(filter px4fmu%,$(CONFIGS))
 $(foreach config,$(FMU_CONFIGS),$(eval $(call FMU_DEP,$(config))))
 
+# Explicit AirDogFMU dependency on px4io-v2.
+$(BUILD_DIR)AirDogFMU_default.build/firmware.px4: $(IMAGE_DIR)px4io-v2_default.px4
+
 #
 # Build the NuttX export archives.
 #
 # Note that there are no explicit dependencies extended from these
-# archives. If NuttX is updated, the user is expected to rebuild the 
+# archives. If NuttX is updated, the user is expected to rebuild the
 # archives/build area manually. Likewise, when the 'archives' target is
 # invoked, all archives are always rebuilt.
 #
@@ -232,7 +235,7 @@ testbuild:
 
 #
 # Cleanup targets.  'clean' should remove all built products and force
-# a complete re-compilation, 'distclean' should remove everything 
+# a complete re-compilation, 'distclean' should remove everything
 # that's generated leaving only files that are in source control.
 #
 .PHONY:	clean

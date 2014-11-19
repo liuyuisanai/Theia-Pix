@@ -14,6 +14,15 @@ set EXTRAS_FILE /fs/microsd/etc/extras.txt
 set TUNE_OUT_ERROR ML<<CP4CP4CP4CP4CP4
 
 #
+# Always start CDC/ACM serial driver
+# and try to get an USB console
+#
+if sercon
+then
+	nshterm /dev/ttyACM0 &
+fi
+
+#
 # Try to mount the microSD card.
 #
 echo "[init] Looking for microSD..."
@@ -43,31 +52,23 @@ else
 	echo "[init] Init script not found: $RC_FILE"
 fi
 
-# if this is an APM build then there will be a rc.APM script
-# from an EXTERNAL_SCRIPTS build option
-if [ -f /etc/init.d/rc.APM ]
-then
-	if sercon
-	then
-		echo "[init] USB interface connected"
-	fi
-
-	echo "[init] Running rc.APM"
-	# if APM startup is successful then nsh will exit
-	sh /etc/init.d/rc.APM
-fi
+## if this is an APM build then there will be a rc.APM script
+## from an EXTERNAL_SCRIPTS build option
+#if [ -f /etc/init.d/rc.APM ]
+#then
+#	if sercon
+#	then
+#		echo "[init] USB interface connected"
+#	fi
+#
+#	echo "[init] Running rc.APM"
+#	# if APM startup is successful then nsh will exit
+#	sh /etc/init.d/rc.APM
+#fi
 
 if [ $MODE == autostart ]
 then
 	echo "[init] AUTOSTART mode"
-
-	#
-	# Start CDC/ACM serial driver
-	#
-	sercon
-
-	# Try to get an USB console
-	nshterm /dev/ttyACM0 &
 
 	#
 	# Start the ORB (first app to start)

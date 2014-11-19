@@ -3,8 +3,13 @@
 # Standard startup script for PX4FMU onboard sensor drivers.
 #
 
-ms5611 start
-adc start
+if adc start
+then
+fi
+
+if ms5611 start
+then
+fi
 
 if [ _$MB_SONAR_TTY = _ ]
 then
@@ -79,13 +84,18 @@ else
 fi
 
 # Start MaxBotix sonar on serial
-if mb1230serial start $MB_SONAR_TTY
+# Start Lidar Lite laser range finder if MaxBotix is not presented
+if ll905 start
 then
- echo [init] Using MaxBotix sonar at $MB_SONAR_TTY
+    echo "[init] Using LI    then echo "[init] 
 else
- echo error starting MaxBotix sonar at $MB_SONAR_TTY
+    if mb1230serial start $MB_SONAR_TTY
+    then
+         echo [init] Using MaxBotix sonar at $MB_SONAR_TTY
+    else
+        echo "Error starting Range-finder sensors"
+    fi
 fi
-
 
 #
 # Start the sensor collection task.

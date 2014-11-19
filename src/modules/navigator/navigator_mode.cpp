@@ -120,6 +120,11 @@ NavigatorMode::updateParamHandles() {
 	_parameter_handles.pafol_safe_dist = param_find("PAFOL_SAFE_DIST");
 
 	_parameter_handles.mpc_max_speed = param_find("MPC_XY_VEL_MAX");
+    _parameter_handles.airdog_dst_inv = param_find("A_DST_INV");
+    _parameter_handles.airdog_init_pos_dst = param_find("A_INIT_POS_D");
+    _parameter_handles.airdog_init_pos_use = param_find("A_INIT_POS_U");
+
+    _parameter_handles.a_yaw_ignore_radius = param_find("A_YAW_IGNR_R");
 }
 
 void
@@ -144,6 +149,13 @@ NavigatorMode::updateParamValues() {
 	param_get(_parameter_handles.pafol_safe_dist, &(_parameters.pafol_safe_dist));
 
 	param_get(_parameter_handles.mpc_max_speed, &(_parameters.mpc_max_speed));
+	param_get(_parameter_handles.rtl_ret_alt, &(_parameters.rtl_ret_alt));
+
+	param_get(_parameter_handles.airdog_dst_inv, &(_parameters.airdog_dst_inv));
+	param_get(_parameter_handles.airdog_init_pos_dst, &(_parameters.airdog_init_pos_dst));
+	param_get(_parameter_handles.airdog_init_pos_use, &(_parameters.airdog_init_pos_use));
+
+    param_get(_parameter_handles.a_yaw_ignore_radius, &(_parameters.a_yaw_ignore_radius));
 }
 
 
@@ -240,7 +252,7 @@ NavigatorMode::point_camera_to_target(position_setpoint_s *sp)
 
 	float offset_xy_len = offset_xy.length();
 
-	if (offset_xy_len > 5.0f)
+	if (offset_xy_len > _parameters.a_yaw_ignore_radius)
 		sp->yaw = _wrap_pi(atan2f(-offset_xy(1), -offset_xy(0)));
 
 	sp->camera_pitch = atan2f(offset(2), offset_xy_len);
@@ -250,8 +262,8 @@ bool
 NavigatorMode::check_current_pos_sp_reached()
 {
 	struct vehicle_status_s *vstatus = _navigator->get_vstatus();
-	struct position_setpoint_triplet_s 	*pos_sp_triplet = _navigator->get_position_setpoint_triplet();
-	struct vehicle_global_position_s 	*global_pos = _navigator->get_global_position();;
+	pos_sp_triplet = _navigator->get_position_setpoint_triplet();
+	global_pos = _navigator->get_global_position();;
 
 	switch (pos_sp_triplet->current.type)
 	{
@@ -285,6 +297,7 @@ NavigatorMode::check_current_pos_sp_reached()
             commander_request->request_type = AIRD_STATE_CHANGE;
             commander_request->airdog_state = AIRD_STATE_IN_AIR;
             _navigator->set_commander_request_updated();
+
             return true;
 
         }
@@ -375,4 +388,58 @@ NavigatorMode::disarm()
 	commander_request_s *commander_request = _navigator->get_commander_request();
 	commander_request->request_type = V_DISARM;
 	_navigator->set_commander_request_updated();
+}
+
+void
+NavigatorMode::go_to_intial_position(){
+
+            global_pos = _navigator->get_global_position();
+            target_pos = _navigator->get_target_position();
+
+            float offset_x;
+            float offset_y;
+            float offset_z = global_pos->alt - target_pos->alt;
+
+            get_vector_to_next_waypoint(
+                    target_pos->lat,
+                    target_pos->lon,
+                    global_pos->lat,
+                    global_pos->lon,
+                    &offset_x,
+                    &offset_y
+            );
+
+            float alpha = atan2(offset_y, offset_x);
+
+            math::Vector<3> new_drone_offset(
+                cosf(alpha) * _parameters.airdog_init_pos_dst,
+                sinf(alpha) * _parameters.airdog_init_pos_dst,
+                offset_z
+                );
+
+            double lat_new;
+            double lon_new;
+            double alt_new = target_pos->alt + _parameters.takeoff_alt;
+            
+            add_vector_to_global_position(
+                    target_pos->lat,
+                    target_pos->lon,
+                    new_drone_offset(0),
+                    new_drone_offset(1),
+                    &lat_new,
+                    &lon_new
+            );
+            
+            float dst = sqrt( offset_x * offset_x + offset_y * offset_y);
+
+            if (dst <= _parameters.airdog_dst_inv && dst > _parameters.airdog_init_pos_dst) {
+                pos_sp_triplet->current.yaw = _wrap_pi(atan2f(-new_drone_offset(1), -new_drone_offset(0)));
+
+                pos_sp_triplet->current.lat = lat_new;
+                pos_sp_triplet->current.lon = lon_new;
+                pos_sp_triplet->current.alt = alt_new;
+                pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
+                
+                _navigator->set_position_setpoint_triplet_updated();
+            }
 }

@@ -1439,13 +1439,16 @@ FixedwingEstimator::task_main()
 						/* crude land detector for fixedwing only,
 						* TODO: adapt so that it works for both, maybe move to another location
 						*/
-						if (_velocity_xy_filtered < 5
-							&& _velocity_z_filtered < 10
-							&& _airspeed_filtered < 10) {
-							_local_pos.landed = true;
-						} else {
-							_local_pos.landed = false;
-						}
+                                /* commented out by Max Shvetsov <maxim.shvetsov@airdog.com> 
+                                 * airdog is not a fixedwing, no need in this thing
+                                 */
+						//if (_velocity_xy_filtered < 5
+						//	&& _velocity_z_filtered < 10
+						//	&& _airspeed_filtered < 10) {
+						//	_local_pos.landed = true;
+						//} else {
+						//	_local_pos.landed = false;
+						//}
 
 						_local_pos.z_global = false;
 						_local_pos.yaw = _att.yaw;

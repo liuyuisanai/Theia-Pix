@@ -86,3 +86,30 @@ PARAM_DEFINE_FLOAT(NAV_TAKEOFF_ACR, 2.00f);
  *
  */
 PARAM_DEFINE_INT32(NAV_AFOL_MODE, 0);
+
+/**
+ * Distance longer than this is considered invalid
+ *
+ * @unit meters
+ * @group Navigator
+ */
+PARAM_DEFINE_FLOAT(A_DST_INV, 100.00f);
+
+/**
+ * Initial drone distance.
+ *
+ * @unit meters
+ * @min 2
+ * @max 100
+ * @group Airdog
+ */
+PARAM_DEFINE_FLOAT(A_INIT_POS_D, 5.00f);
+
+/**
+ * Use initial drone distance on takeoff
+ *
+ * @min 0
+ * @max 1
+ * @group Airdog
+ */
+PARAM_DEFINE_INT32(A_INIT_POS_U, 1);

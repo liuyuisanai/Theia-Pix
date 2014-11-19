@@ -176,6 +176,7 @@ static struct safety_s safety;
 static struct vehicle_control_mode_s control_mode;
 static struct offboard_control_setpoint_s sp_offboard;
 
+
 int mode_switch_state = -1;
 
 /* tasks waiting for low prio thread */
@@ -244,6 +245,10 @@ transition_result_t arm_disarm(bool arm, const int mavlink_fd, const char *armed
  * Loop that runs at a lower rate and priority for calibration and parameter tasks.
  */
 void *commander_low_prio_loop(void *arg);
+
+bool execute_preflight_storage_read(vehicle_command_s cmd);
+
+bool execute_preflight_storage_write(vehicle_command_s cmd);
 
 void answer_command(struct vehicle_command_s &cmd, enum VEHICLE_CMD_RESULT result);
 
@@ -1729,20 +1734,28 @@ int commander_thread_main(int argc, char *argv[])
 			}
 		}
         
-        /* Handle commander requests here */
-        /* This request is sent from inav while landing by sonar
-         * Author: Max Shvetsov <maxim.shvetsov@airdog.com>
+        /* Handle commander requests here
+         *
+         * Description: This request is sent from inav while landing by sonar
+         * Author:      Max Shvetsov <maxim.shvetsov@airdog.com>
          */
 		orb_check(commander_request_inav_sub, &updated);
 
 		if (updated) {
 			orb_copy(ORB_ID(commander_request_inav), commander_request_inav_sub, &commander_request_inav);
 
-			switch(commander_request.request_type) {
+			switch(commander_request_inav.request_type) {
 			case V_DISARM_INAV:
 			{
 
-                arm_disarm(false, mavlink_fd, "Commander request.");
+                transition_result_t result;
+                result = arm_disarm(false, mavlink_fd, "sonar request.");
+                if (result == TRANSITION_DENIED ) {
+                    mavlink_log_info(mavlink_fd, "[commander], disarm by Range finder DECLINED");
+                }
+                else if (result == TRANSITION_CHANGED) {
+                    mavlink_log_info(mavlink_fd, "[commander], DISARMED by Range finder");
+                }
 				break;
 			}
 			case AIRD_STATE_CHANGE_INAV:
@@ -1753,8 +1766,6 @@ int commander_thread_main(int argc, char *argv[])
 			default:
 				break;
 			}
-
-			mavlink_log_info(mavlink_fd, "Disarm request by sonar processed\n");
 		}
 
 		/* Handle commander requests here */
@@ -1766,17 +1777,13 @@ int commander_thread_main(int argc, char *argv[])
 			switch(commander_request.request_type) {
 			case V_MAIN_STATE_CHANGE:
 			{
-
-
 				if (main_state_transition(&status, commander_request.main_state)) {
 					status_changed = true;
 				}
-
 				break;
 			}
 			case V_DISARM:
 			{
-
                 arm_disarm(false, mavlink_fd, "Commander request.");
 				break;
 			}
@@ -2625,6 +2632,13 @@ void *commander_low_prio_loop(void *arg)
 	struct vehicle_command_s cmd;
 	memset(&cmd, 0, sizeof(cmd));
 
+    int do_storage_write_when_disarm = 0;
+
+    /* Subscribe to vehicle status */
+	int status_sub = orb_subscribe(ORB_ID(vehicle_status));
+	struct vehicle_status_s status;
+	orb_copy(ORB_ID(vehicle_status), status_sub, &status);
+
 	/* wakeup source(s) */
 	struct pollfd fds[1];
 
@@ -2633,6 +2647,23 @@ void *commander_low_prio_loop(void *arg)
 	fds[0].events = POLLIN;
 
 	while (!thread_should_exit) {
+
+        bool status_updated = false;
+
+        orb_check( status_sub , &status_updated );
+
+        if (status_updated){
+            orb_copy(ORB_ID(vehicle_status), status_sub, &status);
+
+            if (status.arming_state == ARMING_STATE_STANDBY && do_storage_write_when_disarm > 0 ){
+                if (execute_preflight_storage_write(cmd)) 
+                    do_storage_write_when_disarm = 0;
+                else
+                    do_storage_write_when_disarm--;
+            }
+        }
+        
+
 		/* wait for up to 200ms for data */
 		int pret = poll(&fds[0], (sizeof(fds) / sizeof(fds[0])), 200);
 
@@ -2763,48 +2794,26 @@ void *commander_low_prio_loop(void *arg)
 		case VEHICLE_CMD_PREFLIGHT_STORAGE: {
 
 				if (((int)(cmd.param1)) == 0) {
-					int ret = param_load_default();
+                    
+                    if (status.arming_state == ARMING_STATE_STANDBY) {
 
-					if (ret == OK) {
-						mavlink_log_info(mavlink_fd, "[cmd] parameters loaded");
-						answer_command(cmd, VEHICLE_CMD_RESULT_ACCEPTED);
+                        execute_preflight_storage_read(cmd);
 
-					} else {
-						mavlink_log_critical(mavlink_fd, "#audio: parameters load ERROR");
+                    } else {
 
-						/* convenience as many parts of NuttX use negative errno */
-						if (ret < 0) {
-							ret = -ret;
-						}
-
-						if (ret < 1000) {
-							mavlink_log_critical(mavlink_fd, "#audio: %s", strerror(ret));
-						}
-
-						answer_command(cmd, VEHICLE_CMD_RESULT_FAILED);
-					}
+                        mavlink_log_critical(mavlink_fd, "#audio: parameters load ERROR");
+                        answer_command(cmd, VEHICLE_CMD_RESULT_FAILED);
+                    }
 
 				} else if (((int)(cmd.param1)) == 1) {
-					int ret = param_save_default();
+                    
+                    if (status.arming_state == ARMING_STATE_STANDBY) {
+                        execute_preflight_storage_write(cmd);
+                    } else {
 
-					if (ret == OK) {
-						mavlink_log_info(mavlink_fd, "[cmd] parameters saved");
-						answer_command(cmd, VEHICLE_CMD_RESULT_ACCEPTED);
+                        do_storage_write_when_disarm = 3;    
 
-					} else {
-						mavlink_log_critical(mavlink_fd, "#audio: parameters save error");
-
-						/* convenience as many parts of NuttX use negative errno */
-						if (ret < 0) {
-							ret = -ret;
-						}
-
-						if (ret < 1000) {
-							mavlink_log_critical(mavlink_fd, "#audio: %s", strerror(ret));
-						}
-
-						answer_command(cmd, VEHICLE_CMD_RESULT_FAILED);
-					}
+                    }
 				}
 
 				break;
@@ -2830,4 +2839,61 @@ void *commander_low_prio_loop(void *arg)
 	close(cmd_sub);
 
 	return NULL;
+}
+
+bool execute_preflight_storage_write(vehicle_command_s cmd)
+{
+    // Params write
+    int ret = param_save_default();
+
+    if (ret == OK) {
+        mavlink_log_info(mavlink_fd, "[cmd] parameters saved");
+        answer_command(cmd, VEHICLE_CMD_RESULT_ACCEPTED);
+
+        return true;
+
+    } else {
+        mavlink_log_critical(mavlink_fd, "#audio: parameters save error");
+
+        /* convenience as many parts of NuttX use negative errno */
+        if (ret < 0) {
+            ret = -ret;
+        }
+
+        if (ret < 1000) {
+            mavlink_log_critical(mavlink_fd, "#audio: %s", strerror(ret));
+        }
+
+        answer_command(cmd, VEHICLE_CMD_RESULT_FAILED);
+
+        return false;
+
+    }
+}
+
+bool execute_preflight_storage_read(vehicle_command_s cmd)
+{
+    int ret = param_load_default();
+
+    if (ret == OK) {
+        mavlink_log_info(mavlink_fd, "[cmd] parameters loaded");
+        answer_command(cmd, VEHICLE_CMD_RESULT_ACCEPTED);
+
+        return true;
+    } else {
+        mavlink_log_critical(mavlink_fd, "#audio: parameters load ERROR");
+
+        /* convenience as many parts of NuttX use negative errno */
+        if (ret < 0) {
+            ret = -ret;
+        }
+
+        if (ret < 1000) {
+            mavlink_log_critical(mavlink_fd, "#audio: %s", strerror(ret));
+        }
+
+        answer_command(cmd, VEHICLE_CMD_RESULT_FAILED);
+        return false;
+    }
+
 }

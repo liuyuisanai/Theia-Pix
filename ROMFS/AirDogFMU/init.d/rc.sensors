@@ -15,34 +15,50 @@ then
 fi
 
 # MAG selection
+set MAG_started no
 if hmc5883spi start
 # Prever SPI over I2C.
 then
+	set MAG_started yes
 else
 	if hmc5883 start
 	then
+		set MAG_started yes
 	fi
 fi
 
-#if lsm303d start
-#then
-#fi
+if [ $DEBUG_MODE = yes -a $MAG_started = no ]
+then
+	if lsm303d start
+	then
+		set MAG_started yes
+	fi
+fi
+
+if [ $MAG_started = no ]
+then
+	echo "[error] There is NO MAGnetometer!"
+fi
 
 # Sonar share tty with console
-if [ $DEBUG_MODE = no ]
+if ll905 start
 then
-	if [ notset$MB_SONAR_TTY = notset ]
-	then
-		set MB_SONAR_TTY /dev/ttyS6
-	fi
-	if mb1230serial start $MB_SONAR_TTY
-	then
-		echo [init] Using MaxBotix sonar at $MB_SONAR_TTY
-	else
-		echo error starting MaxBotix sonar at $MB_SONAR_TTY
-	fi
+    echo "[init] Using LIDAR-Lite Laser Ranging Module"
+else
+    if [ $DEBUG_MODE = no ]
+    then
+        if [ notset$MB_SONAR_TTY = notset ]
+        then
+            set MB_SONAR_TTY /dev/ttyS6
+        fi
+        if mb1230serial start $MB_SONAR_TTY
+        then
+            echo [init] Using MaxBotix sonar at $MB_SONAR_TTY
+        else
+            echo "Error starting range finders"
+        fi
+    fi
 fi
-
 #
 # Start the sensor collection task.
 # IMPORTANT: this also loads param offsets

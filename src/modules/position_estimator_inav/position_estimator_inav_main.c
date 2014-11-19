@@ -526,7 +526,7 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                         case RANGE_FINDER_TYPE_ULTRASONIC: {
                             
                                     float angle_correction = 1;
-                                    if (att.R[2][2] < 0.85f){
+                                    if (att.R[2][2] < 0.85f) {
                                         angle_correction = 0.95; //cos(15) <- maximal correction if we are flying with pi/4 angle
                                         range_finder.distance *= angle_correction;
                                     }
@@ -571,7 +571,53 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                                     }
                                     break;
                            }
+                        case RANGE_FINDER_TYPE_LASER: {
+                                //fprintf(stderr, "This is laser publishing %.3f\n", (double)range_finder.distance);
+
+                                    sonar_time = t;
+                                    /* hack by max */
+
+                                    if (fabsf(range_finder.distance - sonar_prev) < params.sonar_err) {
+                                        // Accepted difference - enabling LPF and stuff
+                                        
+                                        //if (fabsf(corr_sonar_filtered - range_finder.distance) > params.sonar_err)
+                                        //    mavlink_log_info(mavlink_fd, "New ground: val%.3f corr: %.3f", (double)range_finder.distance, (double)corr_sonar_filtered);
+                                        corr_sonar_filtered += (range_finder.distance - corr_sonar_filtered) * params.sonar_filt;
+                                        // sonar_filt could have high tolerance for row value now
+                                        sonar_valid = true;
+                                        sonar_valid_time = t;
+                                        dist_bottom = corr_sonar_filtered;
+                                        sonar_prev = range_finder.distance;
+                                        //mavlink_log_info(mavlink_fd, "Sonar: %.3f", (double)dist_bottom);
+                                    }
+                                    else {
+                                        // This difference in not accepted, considering as a spike for now
+                                        if (fabsf(corr_sonar_filtered - range_finder.distance) < params.sonar_err) {
+                                            // No, this is not spike, the spike was last time!
+                                            corr_sonar_filtered += (range_finder.distance - corr_sonar_filtered) * params.sonar_filt;
+                                            dist_bottom = corr_sonar_filtered;
+                                            sonar_valid = true;
+                                            sonar_valid_time = t;
+                                            //mavlink_log_info(mavlink_fd,"Lat time spike: %.3f filt: %.3f", 
+                                            //        (double)sonar_prev,
+                                            //        (double)corr_sonar_filtered);
+                                        }
+                                        else {
+                                            // This is spike! Busted!
+                                            // BUT if it is the new ground level it will pass the IF on the next read
+                                            //mavlink_log_info(mavlink_fd, "Spike! filt: %.3f, son: %.3f", 
+                                            //        (double)corr_sonar_filtered, 
+                                            //        (double)range_finder.distance);
+                                            sonar_valid = true;
+                                            dist_bottom = corr_sonar_filtered;
+                                        }
+                                        sonar_prev = range_finder.distance;
+                                    }
+                                    break;
+                           }
                       }
+                //mavlink_log_info(mavlink_fd, "[INAV] dist: %.3f, sonar?:%d",(double)dist_bottom, range_finder.type);
+                //fprintf(stderr, "[INAV] dist: %.3f, sonar?:%d\n",(double)dist_bottom, range_finder.type);
                 }
 
 			/* home position */
@@ -1088,40 +1134,55 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                     }
                     if (vehicle_status.airdog_state == AIRD_STATE_LANDING && params.sonar_on) {
                         // If we are in the landing state and we are using sonar - rely on the sonar
-                        if (range_finder.valid) {
-                            // If sonar is currently working define weather we are descending or ascending
-                            if (dist_bottom < land_sonar_last_val) 
-                                land_by_sonar ++;
-                            else
-                                land_by_sonar --;
-                            land_sonar_last_val = dist_bottom;
-                            //fprintf(stderr, "We are landing by sonar, dist_bottom: %.3f sonar_prev: %.3f land_by_sonar: %d\n",
-                            //
-                            //        (double)dist_bottom,
-                            //        (double)sonar_prev,
-                            //        land_by_sonar);
-                            //fprintf(stderr, "We are landing by sonar, land_sonar_last_val: %.3f > dist_bottom: %.3f\n", (double)land_sonar_last_val, (double)dist_bottom);
-                        }
-                        else {
-                            // If sonar is invalid - check if we WERE descending and last sonar value is low
-                            //fprintf(stderr, "Sonar not valid, dist_bottom: %.3f sonar_prev: %.3f land_by_sonar: %d\n",
-                            //        (double)dist_bottom,
-                            //        (double)sonar_prev,
-                            //        land_by_sonar);
+                        switch(range_finder.type) {
+                            case RANGE_FINDER_TYPE_ULTRASONIC: {
 
-                            if (land_by_sonar > 0 && dist_bottom < 2.5f) {
-                                if (landed_time == 0.0f) {
-                                    landed_time = t;
-                                }
-                                else if (t - landed_time > 1000000.0f) {
-                                // We are alliwing 1 more second to accend
-                                    landed = true;
-                                    land_by_sonar = 0;
-                                    landed_time = 0.0f;
-                                    commander_request.request_type = V_DISARM_INAV;
-                                    orb_publish(ORB_ID(commander_request_inav), commander_request_inav_pub, &commander_request);
-                                }
-                            }
+                                                                if (range_finder.valid) {
+                                                                    // If sonar is currently working define weather we are descending or ascending
+                                                                    if (dist_bottom < land_sonar_last_val) 
+                                                                        land_by_sonar ++;
+                                                                    else
+                                                                        land_by_sonar --;
+                                                                    land_sonar_last_val = dist_bottom;
+                                                                }
+                                                                else {
+                                                                    if (land_by_sonar > 0 && dist_bottom < 1.5f) {
+                                                                        if (landed_time == 0.0f) {
+                                                                            landed_time = t;
+                                                                        }
+                                                                        else if (t - landed_time > 1000000.0f) {
+                                                                        // We are allowing 1 more second to accend
+                                                                            landed = true;
+                                                                            land_by_sonar = 0;
+                                                                            landed_time = 0.0f;
+                                                                            commander_request.request_type = V_DISARM_INAV;
+                                                                            orb_publish(ORB_ID(commander_request_inav), commander_request_inav_pub, &commander_request);
+                                                                            fprintf(stderr,"[inav] Sending DISARM request from Sonar\n");
+                                                                        }
+                                                                    }
+                                                                }
+                                                               break;
+                               }
+                            case RANGE_FINDER_TYPE_LASER: {
+                                                              if (dist_bottom > 0.5f /*TODO: <-- to param */&& sonar_valid) {
+                                                                  // If we are too high to land and disarm and range finder is valid
+                                                                  // range finder timeout is already taken into account here and we can be sure
+                                                                  // range finder IS working (not was working)
+                                                                  if (dist_bottom < land_sonar_last_val) 
+                                                                      land_by_sonar ++;
+                                                                  else
+                                                                      land_by_sonar --;
+                                                                  land_sonar_last_val = dist_bottom;
+                                                              }
+                                                              else if (dist_bottom < 0.2f /*TODO: <-- to param */&& sonar_valid && land_by_sonar > 0) {
+                                                                  landed = true; 
+                                                                  land_by_sonar = 0;
+                                                                  commander_request.request_type = V_DISARM_INAV;
+                                                                  orb_publish(ORB_ID(commander_request_inav), commander_request_inav_pub, &commander_request);
+                                                                  fprintf(stderr,"[inav] Sending DISARM request from Laser\n");
+                                                              }
+                                                              break;
+                                                          }
                         }
                     }
                 }
@@ -1191,17 +1252,10 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 			local_pos.yaw = att.yaw;
 			local_pos.dist_bottom = dist_bottom;
 			local_pos.dist_bottom_valid = dist_bottom_valid;
-			local_pos.eph = eph;
+            local_pos.dist_bottom_min = range_finder.minimum_distance;
+            local_pos.dist_bottom_max = range_finder.maximum_distance;
+            local_pos.eph = eph;
 			local_pos.epv = epv;
-
-			//mavlink_log_info(mavlink_fd, "[inav] Local pos sonar alt = % 9.6f", (double)local_pos.dist_bottom);
-            //local_pos.dist_bottom_rate = 10; // For now this is equal to installed sonar data output rate
-
-			//if (local_pos.dist_bottom_valid) {
-			//	local_pos.dist_bottom = -z_est[0] - surface_offset;
-			//	local_pos.dist_bottom_rate = -z_est[1] - surface_offset_rate;
-			//}
-
 			local_pos.timestamp = t;
 
 			orb_publish(ORB_ID(vehicle_local_position), vehicle_local_position_pub, &local_pos);

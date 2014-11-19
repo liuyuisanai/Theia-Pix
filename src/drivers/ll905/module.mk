@@ -35,8 +35,8 @@
 # Makefile to build the PulsedLight Lidar-Lite driver.
 #
 
-MODULE_COMMAND	= ll40ls
+MODULE_COMMAND	= ll905
 
-SRCS		= ll40ls.cpp
+SRCS		= ll905.cpp
 
 MAXOPTIMIZATION	 = -Os

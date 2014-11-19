@@ -12,7 +12,23 @@
  */
 
 #define PARAM_LIST \
-	X(0,	/* FTO */				FOL_TALT_OFF,		0, 0, 1.0f,		PTYPE_INT,		0,		1,		1,		"FTO" ) \
+	X(0,ATT_MAG_DECL,		0, 0, 1.0f,		PTYPE_FLOAT,	    -30.0f,		30.0f,		0.5f,		"DEC" ) \
+	X(1,BAT_WARN_LVL,		0, 0, 1.0f,		PTYPE_FLOAT,		0.0f,	    1.0f,		0.02f,		"BT1" ) \
+	X(2,BAT_CRIT_LVL,		0, 0, 1.0f,		PTYPE_FLOAT,		0.0f,	    1.0f,		0.02f,		"BT2" ) \
+	X(3,BAT_FLAT_LVL,		0, 0, 1.0f,		PTYPE_FLOAT,		0.0f,	    1.0f,		0.02f,		"BT3" ) \
+	X(4,FOL_LPF,		    0, 0, 1.0f,		PTYPE_FLOAT,		0.0f,	    1.0f,		0.05f,		"LPF" ) \
+	X(5,FOL_RPT_ALT,		0, 0, 1.0f,		PTYPE_INT,		    0,	        1,		    1,		    "RPT" ) \
+	X(6,FOL_VEL_FF,		    0, 0, 1.0f,		PTYPE_FLOAT,	    0.0f,       1.0f,	    0.05f,	    " FF" ) \
+	X(7,LOI_STEP_LEN,	    0, 0, 1.0f,		PTYPE_FLOAT,	    1.0f,       15.0f,	    1.00f,	    "5TP" ) \
+	X(8,MPC_LAND_SPD,	    0, 0, 1.0f,		PTYPE_FLOAT,	    1.0f,       8.0f,	    1.00f,	    "LD5" ) \
+	X(9,MPC_TAKEOFF_SPD,    0, 0, 1.0f,		PTYPE_FLOAT,	    1.0f,       8.0f,	    1.00f,	    "T05" ) \
+	X(10,NAV_TAKEOFF_ALT,   0, 0, 1.0f,	    PTYPE_FLOAT,	    3.0f,       30.0f,	    1.00f,	    "T0A" ) \
+	X(11,RTL_RET_ALT,       0, 0, 1.0f,	    PTYPE_FLOAT,	    5.0f,       40.0f,	    1.00f,	    "RTA" ) \
+	X(12,SENS_SON_MIN,		0, 0, 1.0f,		PTYPE_FLOAT,	    0.5f,       4.0f,		0.5f,	    "50A" ) \
+	X(13,SENS_SON_ON,		0, 0, 1.0f,		PTYPE_INT,		    0,	        1,		    1,		    " 50" ) \
+	X(14,MPC_Z_VEL_MAX,		0, 0, 1.0f,		PTYPE_FLOAT,	    1.0f,       20.0f,	    1.0f,	    "UUE" ) \
+	X(15,MPC_XY_VEL_MAX,	0, 0, 1.0f,		PTYPE_FLOAT,	    1.0f,       10.0f,	    1.0f,	    "HUE" ) 
+//	X(0,	/* FTO */				FOL_TALT_OFF,		0, 0, 1.0f,		PTYPE_INT,		0,		1,		1,		"FTO" ) \
 	X(1,	/* FRA */				FOL_RPT_ALT,		0, 0, 1.0f,		PTYPE_INT,		0,		1,		1,		"FRA" ) \
 	X(2,	/* FUA */				FOL_USE_ALT,		0, 0, 1.0f,		PTYPE_INT,		0,		1,		1,		"FUA" ) \
 	X(3,	/* FF */				FOL_VEL_FF,			0, 0, 1.0f,		PTYPE_FLOAT,	0.0f,	1.0f,	0.05f,	" FF" ) \
@@ -36,11 +52,11 @@
 	X(14,	/* MPC_XY_VEL_MAX */	MPC_XY_VEL_MAX,		0, 0, 1.0f,		PTYPE_FLOAT,	1.0f,	50.0f,	1.0f,	"YUE" ) \
 	X(15,	/* NAV_ACCEPT_RAD */	NAV_ACCEPT_RAD,		0, 0, 1.0f,		PTYPE_FLOAT,	1.0f,	100.0f,	5.0f,	"RAD" ) \
 	X(16,	/* NAV_FOL_RTL_TO */	NAV_FOL_RTL_TO,		0, 0, 1.0f,		PTYPE_FLOAT,	5.0f,	50.0f,	1.0f,	"RT0" ) \
-	X(17,	/* NAV_TAKEOFF_ALT */	NAV_TAKEOFF_ALT,	0, 0, 1.0f,		PTYPE_FLOAT, 	3.0f,	50.0f,	1.0f,	"TAL" ) \
+	X(17,	/* ALTNAV_TAKEOFF_ALT */	NAV_TAKEOFF_ALT,	0, 0, 1.0f,		PTYPE_FLOAT, 	3.0f,	50.0f,	1.0f,	"TAL" ) \
 	X(18,	/* NAV_RTL_ALT */		NAV_RTL_ALT,		0, 0, 1.0f,		PTYPE_FLOAT,	3.0f,	50.0f,	1.0f,	"RAL" ) \
 	X(19,	/* NAV_LAND_HOME */		NAV_LAND_HOME,		0, 0, 1.0f,		PTYPE_INT,		0,		1,		1,		"LAH" )
 
-#define PARAM_COUNT 5
+#define PARAM_COUNT 16
 
 #define X(n, id, cv, ev, mul, type, min, max, step, dsym) PARAM_##id = n,
 enum param_id {
