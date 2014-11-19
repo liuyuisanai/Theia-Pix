@@ -1120,7 +1120,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 	// subs.wind_sub = orb_subscribe(ORB_ID(wind_estimate));
 	/* we need to rate-limit wind, as we do not need the full update rate */
 	// orb_set_interval(subs.wind_sub, 90);
-	LOG_ORB_PARAM_SUBSCRIBE(subs.target_pos_sub, ORB_ID(target_global_position), "SDLOG_M_TRGPOS", sub_freq)	
+	LOG_ORB_PARAM_SUBSCRIBE(subs.target_pos_sub, ORB_ID(target_global_position), "SDLOG_M_TRGPOS", sub_freq)
 
 	thread_running = true;
 
