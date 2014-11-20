@@ -84,7 +84,6 @@
 #include <uORB/topics/mission_result.h>
 #include <uORB/topics/telemetry_status.h>
 #include <uORB/topics/commander_request.h>
-#include <uORB/topics/commander_request_inav.h>
 
 
 #include <drivers/drv_led.h>
@@ -1052,12 +1051,6 @@ int commander_thread_main(int argc, char *argv[])
 	struct commander_request_s commander_request;
 	memset(&commander_request, 0, sizeof(commander_request));
 
-    /* Subscribe to commander requests - requests made for commander to process */
-	int commander_request_inav_sub = orb_subscribe(ORB_ID(commander_request_inav));
-	struct commander_request_inav_s commander_request_inav;
-	memset(&commander_request_inav, 0, sizeof(commander_request_inav));
-
-
 	control_status_leds(&status, &armed, true);
 
 	/* now initialized */
@@ -1731,40 +1724,6 @@ int commander_thread_main(int argc, char *argv[])
 				status.data_link_lost = true;
 				status.data_link_lost_counter++;
 				status_changed = true;
-			}
-		}
-        
-        /* Handle commander requests here
-         *
-         * Description: This request is sent from inav while landing by sonar
-         * Author:      Max Shvetsov <maxim.shvetsov@airdog.com>
-         */
-		orb_check(commander_request_inav_sub, &updated);
-
-		if (updated) {
-			orb_copy(ORB_ID(commander_request_inav), commander_request_inav_sub, &commander_request_inav);
-
-			switch(commander_request_inav.request_type) {
-			case V_DISARM_INAV:
-			{
-
-                transition_result_t result;
-                result = arm_disarm(false, mavlink_fd, "sonar request.");
-                if (result == TRANSITION_DENIED ) {
-                    mavlink_log_info(mavlink_fd, "[commander], disarm by Range finder DECLINED");
-                }
-                else if (result == TRANSITION_CHANGED) {
-                    mavlink_log_info(mavlink_fd, "[commander], DISARMED by Range finder");
-                }
-				break;
-			}
-			case AIRD_STATE_CHANGE_INAV:
-            {
-                airdog_state_transition(&status, commander_request_inav.airdog_state, mavlink_fd);
-				break;
-            }
-			default:
-				break;
 			}
 		}
 
