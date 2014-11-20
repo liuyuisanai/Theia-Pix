@@ -427,13 +427,16 @@ bool cAirdog::button_clicked_i2c(uint8_t button, bool long_press)
 			// CENTER button
             if (current_button_state == BUTTON_STATE_CONFIRM_TAKEOFF){
 
-                set_current_button_state(BUTTON_STATE_DEFAULT);
+                if (vehicle_status.condition_global_position_valid) {
+                    set_current_button_state(BUTTON_STATE_DEFAULT);
 
-                uint8_t base_mode = MAV_MODE_FLAG_SAFETY_ARMED | MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
-                if (hil) base_mode |= MAV_MODE_FLAG_HIL_ENABLED;
-				send_set_mode(base_mode, PX4_CUSTOM_MAIN_MODE_LOITER);
-                usleep(100000);
-                send_command(REMOTE_CMD_TAKEOFF);
+                    uint8_t base_mode = MAV_MODE_FLAG_SAFETY_ARMED | MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
+                    if (hil) base_mode |= MAV_MODE_FLAG_HIL_ENABLED;
+                    send_set_mode(base_mode, PX4_CUSTOM_MAIN_MODE_LOITER);
+                    usleep(1000000);
+                    send_command(REMOTE_CMD_TAKEOFF);
+                }
+                
             
             } else if (current_button_state == BUTTON_STATE_DEFAULT) {
                 set_current_button_state(BUTTON_STATE_CHOOSE_FUNCTION);

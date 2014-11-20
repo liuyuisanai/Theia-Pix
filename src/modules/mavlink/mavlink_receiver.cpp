@@ -187,7 +187,7 @@ MavlinkReceiver::handle_message(mavlink_message_t *msg)
 
 	case MAVLINK_MSG_ID_HEARTBEAT:
 		handle_message_heartbeat(msg);
-		handle_message_drone_heartbeat(msg);
+		//handle_message_drone_heartbeat(msg);
 		break;
 
 	case MAVLINK_MSG_ID_REQUEST_DATA_STREAM:
@@ -827,6 +827,7 @@ void
 MavlinkReceiver::handle_message_radio_status(mavlink_message_t *msg)
 {
 	/* telemetry status supported only on first TELEMETRY_STATUS_ORB_ID_NUM mavlink channels */
+    
 	if (_mavlink->get_channel() < TELEMETRY_STATUS_ORB_ID_NUM) {
 		mavlink_radio_status_t rstatus;
 		mavlink_msg_radio_status_decode(msg, &rstatus);
@@ -890,6 +891,7 @@ MavlinkReceiver::handle_message_global_position_int(mavlink_message_t *msg)
 	struct target_global_position_s target_pos;
 	memset(&target_pos, 0, sizeof(target_pos));
 
+
 	target_pos.timestamp = hrt_absolute_time();
 	target_pos.sysid = msg->sysid;
 	target_pos.remote_timestamp = ((uint64_t) pos.time_boot_ms) * 1000;
@@ -900,6 +902,13 @@ MavlinkReceiver::handle_message_global_position_int(mavlink_message_t *msg)
 	target_pos.vel_e = pos.vy * 1.0e-2f;
 	target_pos.vel_d = pos.vz * 1.0e-2f;
 	target_pos.yaw = _wrap_pi(pos.hdg / 100.0f * M_DEG_TO_RAD_F);
+
+/*    
+    FILE * fh = fopen("/fs/microsd/log/m256", "a");
+    uint64_t tmp = target_pos.timestamp;
+    fprintf(fh, "Receiving target pos mavlink msg. Timestamp: %u\n", tmp);
+    fclose(fh);
+    */
 
 	if (_target_pos_pub < 0) {
 		_target_pos_pub = orb_advertise(ORB_ID(target_global_position), &target_pos);
@@ -912,30 +921,77 @@ MavlinkReceiver::handle_message_global_position_int(mavlink_message_t *msg)
 void
 MavlinkReceiver::handle_message_heartbeat(mavlink_message_t *msg)
 {
-	/* telemetry status supported only on first TELEMETRY_STATUS_ORB_ID_NUM mavlink channels */
-	if (_mavlink->get_channel() < TELEMETRY_STATUS_ORB_ID_NUM) {
-		mavlink_heartbeat_t hb;
-		mavlink_msg_heartbeat_decode(msg, &hb);
+    FILE * fh = fopen("/fs/microsd/log/m256", "a");
 
-		/* ignore own heartbeats, accept only heartbeats from GCS */
-		if (msg->sysid != mavlink_system.sysid && hb.type == MAV_TYPE_GCS) {
+    int s1 = msg->sysid;
+    int s2 = mavlink_system.sysid;
+    fprintf(fh, "sysid is %d and mavlink_sys_id is %d", s1, s2);
+    fclose(fh);
 
-			struct telemetry_status_s &tstatus = _mavlink->get_rx_status();
+    // Ignore own heartbeat
+    //
+    //
+    if (msg->sysid != mavlink_system.sysid) {
 
-			/* set heartbeat time and topic time and publish -
-			 * the telem status also gets updated on telemetry events
-			 */
-			tstatus.timestamp = hrt_absolute_time();
-			tstatus.heartbeat_time = tstatus.timestamp;
 
-			if (_telemetry_status_pub < 0) {
-				_telemetry_status_pub = orb_advertise(telemetry_status_orb_id[_mavlink->get_channel()], &tstatus);
+        mavlink_heartbeat_t hb;
+        mavlink_msg_heartbeat_decode(msg, &hb);
 
-			} else {
-				orb_publish(telemetry_status_orb_id[_mavlink->get_channel()], _telemetry_status_pub, &tstatus);
-			}
-		}
-	}
+        /*
+        FILE * fh = fopen("/fs/microsd/log/m256", "a");
+
+        fprintf(fh, "Handle heartbeat message and channel is:%d and msg id is: %d\n", _mavlink->get_channel(), msg->sysid);
+        fprintf(fh, "%d", (int)hb.type);
+
+        fclose(fh);
+        */
+
+        switch (hb.type){
+            case MAV_TYPE_GCS:
+                /* telemetry status supported only on first TELEMETRY_STATUS_ORB_ID_NUM mavlink channels */
+                if (_mavlink->get_channel() < TELEMETRY_STATUS_ORB_ID_NUM) {
+                        struct telemetry_status_s &tstatus = _mavlink->get_rx_status();
+                        /* set heartbeat time and topic time and publish -
+                         * the telem status also gets updated on telemetry events
+                         */
+                        tstatus.timestamp = hrt_absolute_time();
+                        tstatus.heartbeat_time = tstatus.timestamp;
+                        if (_telemetry_status_pub < 0) {
+                            _telemetry_status_pub = orb_advertise(telemetry_status_orb_id[_mavlink->get_channel()], &tstatus);
+                        } else {
+                            orb_publish(telemetry_status_orb_id[_mavlink->get_channel()], _telemetry_status_pub, &tstatus);
+                        }
+                    }
+                
+
+                break;
+
+            case MAV_TYPE_QUADROTOR:
+
+                if(msg->sysid == 1) { //SIMIS TODO get sysid from linked airdog
+                    mavlink_heartbeat_t heartbeat;
+                    mavlink_msg_heartbeat_decode(msg, &heartbeat);
+
+                    union px4_custom_mode custom_mode;
+                    custom_mode.data = heartbeat.custom_mode;
+
+                    _airdog_status.main_mode = custom_mode.main_mode;
+                    _airdog_status.sub_mode = custom_mode.sub_mode;
+                    _airdog_status.base_mode = heartbeat.base_mode;
+                    _airdog_status.system_status = heartbeat.system_status;
+                    _airdog_status.timestamp = hrt_absolute_time();
+
+                    if (_airdog_status_pub < 0) {
+                        _airdog_status_pub = orb_advertise(ORB_ID(airdog_status), &_airdog_status);
+
+                    } else {
+                        orb_publish(ORB_ID(airdog_status), _airdog_status_pub, &_airdog_status);
+                    }
+                }
+
+            break;
+        }
+    }
 }
 
 void

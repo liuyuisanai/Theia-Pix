@@ -328,6 +328,16 @@ main_state_transition(struct vehicle_status_s *status, main_state_t new_main_sta
 		}
 		break;
 
+    case MAIN_STATE_EMERGENCY_RTL:
+        if (status->condition_global_position_valid && status->condition_home_position_valid) {
+            ret = TRANSITION_CHANGED; 
+        }
+        break;
+
+    case MAIN_STATE_EMERGENCY_LAND:
+        ret = TRANSITION_CHANGED; 
+        break;
+
 	case MAIN_STATE_ABS_FOLLOW:
 		/* need global position estimate */
 		if (status->condition_global_position_valid && status->condition_target_position_valid) {
@@ -639,20 +649,6 @@ bool set_nav_state(struct vehicle_status_s *status, const bool data_link_loss_en
 				status->nav_state = NAVIGATION_STATE_TERMINATION;
 			}
 
-		/* go into failsafe if RC is lost and datalink loss is not set up */
-		// } else if (status->rc_signal_lost && !data_link_loss_enabled) {
-		// 	status->failsafe = true;
-
-		// 	if (status->condition_global_position_valid && status->condition_home_position_valid) {
-		// 		status->nav_state = NAVIGATION_STATE_AUTO_RTGS;
-		// 	} else if (status->condition_local_position_valid) {
-		// 		status->nav_state = NAVIGATION_STATE_LAND;
-		// 	} else if (status->condition_local_altitude_valid) {
-		// 		status->nav_state = NAVIGATION_STATE_DESCEND;
-		// 	} else {
-		// 		status->nav_state = NAVIGATION_STATE_TERMINATION;
-		// 	}
-
 		/* don't bother if RC is lost if datalink is connected */
 		} else if (status->rc_signal_lost) {
 
@@ -684,7 +680,28 @@ bool set_nav_state(struct vehicle_status_s *status, const bool data_link_loss_en
 			status->nav_state = NAVIGATION_STATE_RTL;
 		}
 		break;
-		
+
+    case MAIN_STATE_EMERGENCY_RTL:
+		if (status->engine_failure) {
+			status->nav_state = NAVIGATION_STATE_AUTO_LANDENGFAIL;
+		} else if ((!status->condition_global_position_valid ||
+					!status->condition_home_position_valid)) {
+			status->failsafe = true;
+
+			if (status->condition_local_position_valid) {
+				status->nav_state = NAVIGATION_STATE_LAND;
+			} else if (status->condition_local_altitude_valid) {
+				status->nav_state = NAVIGATION_STATE_DESCEND;
+			} else {
+				status->nav_state = NAVIGATION_STATE_TERMINATION;
+			}
+		} else {
+			status->nav_state = NAVIGATION_STATE_RTL;
+		}
+        break;
+    case MAIN_STATE_EMERGENCY_LAND:
+        status->nav_state = NAVIGATION_STATE_LAND;
+        break;
 	case MAIN_STATE_ABS_FOLLOW:
 		/* require target position*/
 		if ((!status->condition_target_position_valid)) {

@@ -318,6 +318,7 @@ void
 NavigatorMode::land()
 {
     pos_sp_triplet = _navigator->get_position_setpoint_triplet();
+    global_pos = _navigator->get_global_position();
 
 	pos_sp_triplet->previous.valid = false;
 	pos_sp_triplet->current.valid = true;
@@ -341,6 +342,7 @@ void
 NavigatorMode::takeoff()
 {
     pos_sp_triplet = _navigator->get_position_setpoint_triplet();
+    global_pos = _navigator->get_global_position();
 
 	pos_sp_triplet->previous.valid = false;
 	pos_sp_triplet->current.valid = true;

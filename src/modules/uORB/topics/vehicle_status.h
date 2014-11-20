@@ -74,6 +74,8 @@ typedef enum {
 	MAIN_STATE_OFFBOARD,
 	MAIN_STATE_FOLLOW,
 	MAIN_STATE_MAX,
+    MAIN_STATE_EMERGENCY_RTL,
+    MAIN_STATE_EMERGENCY_LAND,
 } main_state_t;
 
 typedef enum {
@@ -110,11 +112,11 @@ typedef enum {
 	NAVIGATION_STATE_ALTCTL,			/**< Altitude control mode */
 	NAVIGATION_STATE_POSCTL,			/**< Position control mode */
 	NAVIGATION_STATE_AUTO_MISSION,		/**< Auto mission mode */
-	NAVIGATION_STATE_LOITER,		/**< Auto loiter mode */
-	NAVIGATION_STATE_RTL,			/**< Auto return to launch mode */
+	NAVIGATION_STATE_LOITER,		    /**< Auto loiter mode */
+	NAVIGATION_STATE_RTL,			    /**< Auto return to launch mode */
 	NAVIGATION_STATE_AUTO_RCRECOVER,	/**< RC recover mode */
 	NAVIGATION_STATE_AUTO_RTGS,			/**< Auto return to groundstation on data link loss */
-	NAVIGATION_STATE_ABS_FOLLOW,   /**< AUTO Abs Follow mode */
+	NAVIGATION_STATE_ABS_FOLLOW,        /**< AUTO Abs Follow mode */
 	NAVIGATION_STATE_AUTO_LANDENGFAIL,	/**< Auto land on engine failure */
 	NAVIGATION_STATE_AUTO_LANDGPSFAIL,	/**< Auto land on gps failure (e.g. open loop loiter down) */
 	NAVIGATION_STATE_ACRO,				/**< Acro mode */

@@ -1507,9 +1507,7 @@ MulticopterPositionControl::task_main()
                 if (_control_mode.flag_control_follow_target && _control_mode.flag_control_leash_control_offset){
                     vcommand_modify_follow_offset();
                 }
-
             }
-
 
 			/* select control source */
 			if (_control_mode.flag_control_manual_enabled) {

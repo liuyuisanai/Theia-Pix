@@ -199,3 +199,20 @@ PARAM_DEFINE_FLOAT(BAT_CRIT_LVL, 0.09f);
  */
 PARAM_DEFINE_FLOAT(BAT_FLAT_LVL, 0.02f);
 
+/**
+ * Target visibility timeout 1. Length of time when no data from target received visibility will be considered lost. 
+ *
+ * @group Airdog
+ * @min 0.1f 
+ * @max 30.0f 
+ */
+PARAM_DEFINE_FLOAT(A_TRGT_VSB_TO_1, 1.0f);
+
+/**
+ * Target visibility timeout 2. Length of time when no data from target received visibility will be considered lost to long and action should be taken.  
+ *
+ * @group Airdog
+ * @min 0.1f 
+ * @max 30.0f 
+ */
+PARAM_DEFINE_FLOAT(A_TRGT_VSB_TO_2, 5.0f);

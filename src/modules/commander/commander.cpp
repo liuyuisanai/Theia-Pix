@@ -764,6 +764,15 @@ int commander_thread_main(int argc, char *argv[])
 	param_get(_param_battery_critical_level, &battery_critical_level);
 	param_get(_param_battery_flat_level, &battery_flat_level);
 
+    float target_visibility_timeout_1;
+    float target_visibility_timeout_2;
+
+	param_t _param_target_visibility_timeout_1 = param_find("A_TRGT_VSB_TO_1");
+	param_t _param_target_visibility_timeout_2 = param_find("A_TRGT_VSB_TO_2");
+
+	param_get(_param_target_visibility_timeout_1, &target_visibility_timeout_1);
+	param_get(_param_target_visibility_timeout_2, &target_visibility_timeout_2);
+
 	/* welcome user */
 	warnx("starting");
 
@@ -1180,7 +1189,9 @@ int commander_thread_main(int argc, char *argv[])
 		for (int i = 0; i < TELEMETRY_STATUS_ORB_ID_NUM; i++) {
 			orb_check(telemetry_subs[i], &updated);
 
+
 			if (updated) {
+
 				struct telemetry_status_s telemetry;
 				memset(&telemetry, 0, sizeof(telemetry));
 
@@ -1191,6 +1202,7 @@ int commander_thread_main(int argc, char *argv[])
 					telemetry_last_heartbeat[i] == 0 &&
 					telemetry.heartbeat_time > 0 &&
 					hrt_elapsed_time(&telemetry.heartbeat_time) < datalink_loss_timeout * 1e6) {
+
 
 					(void)rc_calibration_check(mavlink_fd);
 				}
@@ -1356,7 +1368,10 @@ int commander_thread_main(int argc, char *argv[])
 				local_eph_good = false;
 			}
 		}
+
 		check_valid(local_position.timestamp, POSITION_TIMEOUT, local_position.xy_valid && local_eph_good, &(status.condition_local_position_valid), &status_changed);
+
+
 		check_valid(local_position.timestamp, POSITION_TIMEOUT, local_position.z_valid, &(status.condition_local_altitude_valid), &status_changed);
 
 		if (status.condition_local_altitude_valid) {
@@ -1381,8 +1396,40 @@ int commander_thread_main(int argc, char *argv[])
 			orb_copy(ORB_ID(target_global_position), target_position_sub, &target_position);
 		}
 
-		check_valid(target_position.timestamp, TARGET_POSITION_TIMEOUT, true, &(status.condition_target_position_valid), &status_changed);
 
+
+		check_valid(target_position.timestamp, target_visibility_timeout_1 * 1000 * 1000, status.condition_target_position_valid, &(status.condition_target_position_valid), &status_changed);
+
+
+        if (!status.condition_target_position_valid){
+
+            if (!control_mode.flag_control_manual_enabled && control_mode.flag_control_auto_enabled){
+
+                hrt_abstime t = hrt_absolute_time() ;
+
+                if (status.main_state!=MAIN_STATE_EMERGENCY_RTL && status.main_state!=MAIN_STATE_EMERGENCY_LAND) {
+                    if (t - target_position.timestamp > target_visibility_timeout_2 * 1000 * 1000) {
+                        mavlink_log_info(mavlink_fd, "Target signal lost for to long, EMERGENCY RTL");
+                        if (main_state_transition(&status, MAIN_STATE_EMERGENCY_RTL)) {
+                            status_changed = true;
+                        } else if (main_state_transition(&status, MAIN_STATE_EMERGENCY_LAND)) {
+                            status_changed = true;
+                        }
+                    }
+                }
+
+                //go into aim-and-shoot if not in it already            
+                if (status.main_state != MAIN_STATE_LOITER && status.main_state!=MAIN_STATE_EMERGENCY_RTL && status.main_state!=MAIN_STATE_EMERGENCY_LAND) {
+                    mavlink_log_info(mavlink_fd, "Target signal time-out, switching to Aim-and-shoot.");
+				    if (!main_state_transition(&status, MAIN_STATE_LOITER)) {
+                        status_changed = true; 
+                    } else {
+                        status_changed = false; 
+                    }
+                } 
+            }
+        }
+        
 		/* update battery status */
 		orb_check(battery_sub, &updated);
 
@@ -1461,43 +1508,46 @@ int commander_thread_main(int argc, char *argv[])
 
 		/* if battery voltage is getting lower, warn using buzzer, etc. */
 		if (status.condition_battery_voltage_valid && status.battery_remaining < battery_warning_level && !low_battery_voltage_actions_done) {
+
 			low_battery_voltage_actions_done = true;
 			mavlink_log_critical(mavlink_fd, "LOW BATTERY, RETURN TO LAND ADVISED");
 			status.battery_warning = VEHICLE_BATTERY_WARNING_LOW;
 
-			if (! control_mode.flag_control_manual_enabled) {
-				if (main_state_transition(&status, MAIN_STATE_RTL)) {
-					status_changed = true;
-				}
-			}
 		} else if (status.condition_battery_voltage_valid && status.battery_remaining < battery_critical_level && !critical_battery_voltage_actions_done && low_battery_voltage_actions_done) {
+
 			/* critical battery voltage, this is rather an emergency, change state machine */
+
 			critical_battery_voltage_actions_done = true;
-			mavlink_log_emergency(mavlink_fd, "CRITICAL BATTERY, LAND IMMEDIATELY");
+			mavlink_log_emergency(mavlink_fd, "CRITICAL BATTERY, LAND ASAP, RTL TRIGGERED");
 			status.battery_warning = VEHICLE_BATTERY_WARNING_CRITICAL;
 
-			if (armed.armed) {
-				arming_ret = arming_state_transition(&status, &safety, ARMING_STATE_ARMED_ERROR, &armed, true /* fRunPreArmChecks */, mavlink_fd);
+			if (control_mode.flag_control_auto_enabled) {
 
-				if (arming_ret == TRANSITION_CHANGED) {
-					arming_state_changed = true;
-				}
-
-			} else {
-				arming_ret = arming_state_transition(&status, &safety, ARMING_STATE_STANDBY_ERROR, &armed, true /* fRunPreArmChecks */, mavlink_fd);
-
-				if (arming_ret == TRANSITION_CHANGED) {
-					arming_state_changed = true;
-				}
+                if (status.main_state!=MAIN_STATE_EMERGENCY_RTL && status.main_state!=MAIN_STATE_EMERGENCY_LAND) {
+                    if (main_state_transition(&status, MAIN_STATE_EMERGENCY_RTL)) {
+                        status_changed = true;
+                    } else if (main_state_transition(&status, MAIN_STATE_EMERGENCY_LAND)) {
+                        status_changed = true;
+                    }
+                }
 			}
-			status_changed = true;
+
 		} else if (status.condition_battery_voltage_valid && status.battery_remaining < battery_flat_level && !flat_battery_voltage_actions_done){
+
 			flat_battery_voltage_actions_done = true;
 			status.battery_warning = VEHICLE_BATTERY_WARNING_FLAT;
-			// TODO urgent land
+            
+			if (control_mode.flag_control_auto_enabled) {
+
+                if (status.main_state!=MAIN_STATE_EMERGENCY_LAND) {
+                    if (main_state_transition(&status, MAIN_STATE_EMERGENCY_LAND)) {
+                        status_changed = true;
+                    }
+                }
+			}
+
 		}
 
-		/* End battery voltage check */
 
 		/* If in INIT state, try to proceed to STANDBY state */
 		if (status.arming_state == ARMING_STATE_INIT && low_prio_task == LOW_PRIO_TASK_NONE) {
