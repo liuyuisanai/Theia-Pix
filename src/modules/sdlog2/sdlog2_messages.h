@@ -421,6 +421,25 @@ struct log_TPOS_s {
 	float vel_d;
 };
 
+/* --- GPRE - PREVIOUS GLOBAL SETPOINT --- */
+#define LOG_GPRE_MSG 67
+struct log_GPRE_s {
+	uint8_t nav_state;
+	int32_t lat;
+	int32_t lon;
+	float alt;
+	uint8_t type;
+};
+
+#define LOG_GNEX_MSG 68
+struct log_GNEX_s {
+	uint8_t nav_state;
+	int32_t lat;
+	int32_t lon;
+	float alt;
+	uint8_t type;
+};
+
 /********** SYSTEM MESSAGES, ID > 0x80 **********/
 
 /* --- TIME - TIME STAMP --- */
@@ -486,6 +505,8 @@ static const struct log_format_s log_formats[] = {
 	LOG_FORMAT(TECS, "fffffffffffffB",	"ASP,AF,FSP,F,FF,AsSP,AsF,AsDSP,AsD,TERSP,TER,EDRSP,EDR,M"),
 	LOG_FORMAT(WIND, "ffff",	"X,Y,CovX,CovY"),
 	LOG_FORMAT(TPOS, "BQLLffff", "SysID,Time,Lat,Lon,Alt,VelN,VelE,VelD"),
+	LOG_FORMAT(GPRE, "BLLfB",		"NavState,Lat,Lon,Alt,Type"),
+	LOG_FORMAT(GNEX, "BLLfB",		"NavState,Lat,Lon,Alt,Type"),
 
 	/* system-level messages, ID >= 0x80 */
 	/* FMT: don't write format of format message, it's useless */

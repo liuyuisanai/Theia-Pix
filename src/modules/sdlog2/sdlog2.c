@@ -1044,6 +1044,8 @@ int sdlog2_thread_main(int argc, char *argv[])
 			struct log_TECS_s log_TECS;
 			struct log_WIND_s log_WIND;
 			struct log_TPOS_s log_TPOS;
+			struct log_GPRE_s log_GPRE;
+			struct log_GNEX_s log_GNEX;
 		} body;
 	} log_msg = {
 		LOG_PACKET_HEADER_INIT(0)
@@ -1513,6 +1515,24 @@ int sdlog2_thread_main(int argc, char *argv[])
 				log_msg.body.log_GPSP.loiter_direction = buf.triplet.current.loiter_direction;
 				log_msg.body.log_GPSP.pitch_min = buf.triplet.current.pitch_min;
 				LOGBUFFER_WRITE_AND_COUNT(GPSP);
+			}
+			if (buf.triplet.previous.valid) {
+				log_msg.msg_type = LOG_GPRE_MSG;
+				log_msg.body.log_GPRE.nav_state = buf.triplet.nav_state;
+				log_msg.body.log_GPRE.lat = (int32_t)(buf.triplet.previous.lat * 1e7d);
+				log_msg.body.log_GPRE.lon = (int32_t)(buf.triplet.previous.lon * 1e7d);
+				log_msg.body.log_GPRE.alt = buf.triplet.previous.alt;
+				log_msg.body.log_GPRE.type = buf.triplet.previous.type;
+				LOGBUFFER_WRITE_AND_COUNT(GPRE);
+			}
+			if (buf.triplet.next.valid) {
+				log_msg.msg_type = LOG_GNEX_MSG;
+				log_msg.body.log_GNEX.nav_state = buf.triplet.nav_state;
+				log_msg.body.log_GNEX.lat = (int32_t)(buf.triplet.next.lat * 1e7d);
+				log_msg.body.log_GNEX.lon = (int32_t)(buf.triplet.next.lon * 1e7d);
+				log_msg.body.log_GNEX.alt = buf.triplet.next.alt;
+				log_msg.body.log_GNEX.type = buf.triplet.next.type;
+				LOGBUFFER_WRITE_AND_COUNT(GNEX);
 			}
 		}
 
