@@ -1083,7 +1083,6 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                     // Get actual thrust we are already armed
                     if (actuator.control[3] > params.land_thr) {
                         //fprintf(stdout, "Thrust: %.3f, is greater than: %.3f\n", (double)actuator.control[3], (double)params.land_thr);
-                        mavlink_log_info(mavlink_fd, "Thrust %.3f > %.3f",(double)actuator.control[3], (double)params.land_thr);
                         landed = false;
                     }
                 }
@@ -1099,7 +1098,6 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 
                     /*==regular landing==*/
                     if (thrust <= params.land_thr) {
-                        mavlink_log_info(mavlink_fd,"landing: %.3f < %.3f", (double)thrust, (double)params.land_thr);
                         /* If thrust is less or equal to landed thrust 
                          * than we are either on the ground or falling down
                          */
@@ -1141,17 +1139,20 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                                                                         landed_time = 0;
                                                                         land_sonar_last_val = 0.0f;
                                                                         mavlink_log_info(mavlink_fd, "[inav] Landed by range-finder");
+                                                                        mavlink_log_info(mavlink_fd, "[inav] %.3f, %.3f",
+                                                                                (double)dist_bottom,
+                                                                                (double)land_sonar_last_val);
                                                                     }
 
                                                                     land_sonar_last_val = dist_bottom; 
                                                                     landed_time = t;
-                                                                    mavlink_log_info(mavlink_fd,"Landing %.3f", (double)land_sonar_last_val);
+                                                                    //mavlink_log_info(mavlink_fd,"Landing %.3f", (double)land_sonar_last_val);
 
                                                                 }
                                                                 else if ( !sonar_valid && land_sonar_last_val == 0.0f ) {
                                                                     // We haven't yet reached valid range finder hight
-                                                                    mavlink_log_info(mavlink_fd, "ignoring: %.3f",
-                                                                            (double)land_sonar_last_val);
+                                                                    //mavlink_log_info(mavlink_fd, "ignoring: %.3f",
+                                                                    //        (double)land_sonar_last_val);
                                                                     break;
                                                                 }
                                                                 else if (land_sonar_last_val < range_finder.minimum_distance + 0.1f ||
@@ -1165,11 +1166,11 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                                                                             land_sonar_last_val = 0.0f;
                                                                             mavlink_log_info(mavlink_fd, "[inav] Landed by range-finder");
                                                                 }
-                                                                else {
-                                                                    mavlink_log_info(mavlink_fd, "Else %.3f ,%.3f , %d", (double)land_sonar_last_val,
-                                                                            (double)dist_bottom,
-                                                                            sonar_valid)
-                                                                }
+                                                                //else {
+                                                                //    mavlink_log_info(mavlink_fd, "Else %.3f ,%.3f , %d", (double)land_sonar_last_val,
+                                                                //            (double)dist_bottom,
+                                                                //            sonar_valid)
+                                                                //}
                                                                break;
                                }
                             //case RANGE_FINDER_TYPE_LASER: {
