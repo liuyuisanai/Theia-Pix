@@ -227,7 +227,7 @@ Loiter::execute_command_in_aim_and_shoot(vehicle_command_s cmd){
                 mavlink_log_info(_navigator->get_mavlink_fd(), "Land disarm command");
 
 				land();
-				set_sub_mode(LOITER_SUB_MODE_LANDING, false);
+				set_sub_mode(LOITER_SUB_MODE_LANDING, 0);
 				break;
 			}
             case REMOTE_CMD_GOTO_DEFUALT_DST: {
