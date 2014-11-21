@@ -1,0 +1,24 @@
+if adc start
+then
+fi
+
+if ms5611 start
+then
+fi
+
+if mpu6000 start
+then
+fi
+
+if l3gd20 start
+then
+fi
+
+if lsm303d start
+then
+fi
+
+if sensors start
+then
+	preflight_check &
+fi

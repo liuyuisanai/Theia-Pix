@@ -1,0 +1,184 @@
+#!nsh
+#
+# PX4FMU startup script.
+
+#
+# Default to auto-start mode.
+#
+set MODE autostart
+
+set RC_FILE /fs/microsd/etc/rc.txt
+set CONFIG_FILE /fs/microsd/etc/config.txt
+set EXTRAS_FILE /fs/microsd/etc/extras.txt
+
+set TUNE_OUT_ERROR ML<<CP4CP4CP4CP4CP4
+
+set GPS yes
+set GPS_FAKE no
+set MAVLINK_FLAGS "-r 1000"
+
+#
+# Try to mount the microSD card.
+#
+echo "[init] Looking for microSD..."
+if mount -t vfat /dev/mmcsd0 /fs/microsd
+then
+	set LOG_FILE /fs/microsd/bootlog.txt
+	echo "[init] microSD mounted: /fs/microsd"
+	# Start playing the startup tune
+	tone_alarm start
+else
+	set LOG_FILE /dev/null
+	echo "[init] No microSD card found"
+	# Play SOS
+	tone_alarm error
+fi
+
+#
+# Look for an init script on the microSD card.
+# Disable autostart if the script found.
+#
+if [ -f $RC_FILE ]
+then
+	echo "[init] Executing init script: $RC_FILE"
+	sh $RC_FILE
+	set MODE custom
+else
+	echo "[init] Init script not found: $RC_FILE"
+fi
+
+if [ $MODE == autostart ]
+then
+	echo "[init] AUTOSTART mode"
+
+	#
+	# Start CDC/ACM serial driver
+	#
+	if sercon
+	then
+		echo "[init] USB interface connected"
+
+		# Try to get an USB console
+		nshterm /dev/ttyACM0 &
+	else
+		echo "Failed to start usb sercon."
+	fi
+
+	#
+	# Start the ORB (first app to start)
+	#
+	uorb start
+
+	#
+	# Load parameters
+	#
+	set PARAM_FILE /fs/microsd/params
+	if mtd start
+	then
+		set PARAM_FILE /fs/mtd_params
+	fi
+
+	param select $PARAM_FILE
+	if param load
+	then
+		echo "[param] Loaded: $PARAM_FILE"
+	else
+		echo "[param] FAILED loading $PARAM_FILE"
+		if param reset
+		then
+		fi
+	fi
+
+	#
+	# Set DO_AUTOCONFIG flag to use it in AUTOSTART scripts
+	#
+	if param compare SYS_AUTOCONFIG 1
+	then
+		# We can't be sure the defaults haven't changed, so
+		# if someone requests a re-configuration, we do it
+		# cleanly from scratch (except autostart / autoconfig)
+		param reset_nostart
+		set DO_AUTOCONFIG yes
+	else
+		set DO_AUTOCONFIG no
+	fi
+
+	#
+	# Set parameters and env variables for selected AUTOSTART
+	#
+	if param compare SYS_AUTOSTART 0
+	then
+		echo "[init] No autostart"
+	else
+		sh /etc/init.d/rc.autostart
+	fi
+
+	#
+	# Override parameters from user configuration file
+	#
+	if [ -f $CONFIG_FILE ]
+	then
+		echo "[init] Config: $CONFIG_FILE"
+		sh $CONFIG_FILE
+	else
+		echo "[init] Config not found: $CONFIG_FILE"
+	fi
+
+	#
+	# If autoconfig parameter was set, reset it and save parameters
+	#
+	if [ $DO_AUTOCONFIG == yes ]
+	then
+		param set SYS_AUTOCONFIG 0
+		param save
+	fi
+
+	#
+	# MAVLink
+	#
+	if [ $MAVLINK_FLAGS == default ]
+	then
+		# Start MAVLink on default port: ttyS1
+		set MAVLINK_FLAGS "-r 1000"
+	fi
+
+	mavlink start $MAVLINK_FLAGS
+
+	#
+	# Sensors, GPS
+	#
+	sh /etc/init.d/rc.sensors
+
+
+	if [ $GPS == yes ]
+	then
+		echo "[init] Start GPS"
+		if [ $GPS_FAKE == yes ]
+		then
+			echo "[init] Faking GPS"
+			gps start -f
+		else
+			gps start
+		fi
+	fi
+
+	attitude_estimator_ekf start
+	position_estimator_inav start
+
+	# Start any custom addons
+	if [ -f $EXTRAS_FILE ]
+	then
+		echo "[init] Starting addons script: $EXTRAS_FILE"
+		sh $EXTRAS_FILE
+	else
+		echo "[init] No addons script: $EXTRAS_FILE"
+	fi
+
+	if [ $EXIT_ON_END == yes ]
+	then
+		echo "[init] Exit from nsh"
+		exit
+	fi
+
+# End of autostart
+fi

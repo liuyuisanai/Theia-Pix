@@ -1,0 +1,16 @@
+#!nsh
+#
+# USB MAVLink start
+#
+
+mavlink start -r 20000 -d /dev/ttyACM0 -x
+
+# Enable a number of interesting streams we want via USB
+mavlink stream -d /dev/ttyACM0 -s PARAM_VALUE -r 200
+usleep 100000
+mavlink stream -d /dev/ttyACM0 -s VFR_HUD -r 20
+usleep 100000
+mavlink stream -d /dev/ttyACM0 -s ATTITUDE -r 20
+
+# Exit shell to make it available to MAVLink
+exit

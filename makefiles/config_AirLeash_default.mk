@@ -7,7 +7,7 @@
 # the ROMFS if it's available
 #
 # TODO: crete clean airleash romfs root
-ROMFS_ROOT	 = $(PX4_BASE)/ROMFS/px4fmu_common
+ROMFS_ROOT	 = $(PX4_BASE)/ROMFS/AirLeash
 
 # With custom SiK firmware
 #ROMFS_OPTIONAL_FILES += $(wildcard $(PX4_BASE)/ROMFS/FW/*)
