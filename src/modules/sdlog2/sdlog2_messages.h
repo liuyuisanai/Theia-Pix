@@ -449,6 +449,24 @@ struct log_LOTJ_s {
 	float vel_d;		/**< Ground downside velocity, m/s */
 	float heading;   	/**< Compass heading in radians [0..2PI) */
 };
+/* --- GPRE - PREVIOUS GLOBAL SETPOINT --- */
+#define LOG_GPRE_MSG 67
+struct log_GPRE_s {
+	uint8_t nav_state;
+	int32_t lat;
+	int32_t lon;
+	float alt;
+	uint8_t type;
+};
+
+#define LOG_GNEX_MSG 68
+struct log_GNEX_s {
+	uint8_t nav_state;
+	int32_t lat;
+	int32_t lon;
+	float alt;
+	uint8_t type;
+};
 
 /********** SYSTEM MESSAGES, ID > 0x80 **********/
 
@@ -517,6 +535,8 @@ static const struct log_format_s log_formats[] = {
 	LOG_FORMAT(TPOS, "BQLLffff", "SysID,Time,Lat,Lon,Alt,VelN,VelE,VelD"),
 	LOG_FORMAT(EXTJ, "BBQLLffffff", "Type,SysID,Time,Lat,Lon,Alt,RAlt,VelN,VelE,VelD,Head"),
 	LOG_FORMAT(LOTJ, "BQLLffffff", "Type,Time,Lat,Lon,Alt,RAlt,VelN,VelE,VelD,Head"),
+	LOG_FORMAT(GPRE, "BLLfB",		"NavState,Lat,Lon,Alt,Type"),
+	LOG_FORMAT(GNEX, "BLLfB",		"NavState,Lat,Lon,Alt,Type"),
 
 	/* system-level messages, ID >= 0x80 */
 	/* FMT: don't write format of format message, it's useless */
