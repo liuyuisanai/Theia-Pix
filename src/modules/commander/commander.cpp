@@ -432,6 +432,7 @@ bool handle_command(struct vehicle_status_s *status_local, const struct safety_s
 	case VEHICLE_CMD_DO_SET_MODE: {
 			uint8_t base_mode = (uint8_t)cmd->param1;
 			uint8_t custom_main_mode = (uint8_t)cmd->param2;
+			uint8_t custom_sub_mode = (uint8_t)cmd->param3;
 
 			int bm = base_mode;
 			int cm = custom_main_mode;
@@ -447,6 +448,7 @@ bool handle_command(struct vehicle_status_s *status_local, const struct safety_s
 			transition_result_t hil_ret = hil_state_transition(new_hil_state, status_pub, status_local, mavlink_fd);
 
 			// Transition the arming state
+			//TODO: [INE] check if AIRDOG can arm and takeoff
 			arming_ret = arm_disarm(base_mode & MAV_MODE_FLAG_SAFETY_ARMED, mavlink_fd, "set mode command");
 
 			if (base_mode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED) {
@@ -464,8 +466,12 @@ bool handle_command(struct vehicle_status_s *status_local, const struct safety_s
 					main_ret = main_state_transition(status_local, MAIN_STATE_POSCTL);
 
 				} else if (custom_main_mode == PX4_CUSTOM_MAIN_MODE_LOITER) {
-					//* AUTO */
+					//* AIRDOG AUTO */
 					main_ret = main_state_transition(status_local, MAIN_STATE_LOITER);
+					if (main_ret != TRANSITION_DENIED && custom_sub_mode == 1) {
+						//Switch to Ready state to takeoff
+						airdog_state_transition(status_local, AIRD_STATE_READY, mavlink_fd);
+					}
 
 				} else if (custom_main_mode == PX4_CUSTOM_MAIN_MODE_ACRO) {
 					/* ACRO */

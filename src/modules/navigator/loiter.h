@@ -86,6 +86,8 @@ private:
 
 	void set_sub_mode(LOITER_SUB_MODE new_sub_mode, uint8_t reset_setpoint);
 
+	void reset_state();
+
 	bool flag_sub_mode_goal_reached;
 };
 

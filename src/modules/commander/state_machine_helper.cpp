@@ -379,6 +379,9 @@ airdog_state_transition(struct vehicle_status_s *status, airdog_state_t new_aird
     char * str;
 
     switch (new_airdog_state){
+    	case AIRD_STATE_READY:
+            str = "ready to fly";
+            break;
         case AIRD_STATE_DISARMED:
             str = "disarmed";
             break;

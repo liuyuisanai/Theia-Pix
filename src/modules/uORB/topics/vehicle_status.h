@@ -83,7 +83,9 @@ typedef enum {
     AIRD_STATE_LANDED,
     AIRD_STATE_TAKING_OFF,
     AIRD_STATE_LANDING,
-    AIRD_STATE_IN_AIR
+    AIRD_STATE_IN_AIR,
+    AIRD_STATE_READY, //Ready to take-off
+    AIRD_STATE_MAX,
 } airdog_state_t;
 
 // If you change the order, add or remove arming_state_t states make sure to update the arrays
