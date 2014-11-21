@@ -195,10 +195,7 @@ Loiter::execute_command_in_aim_and_shoot(vehicle_command_s cmd){
 			&offset_y
 	);
 
-
-
 	math::Vector<3> offset(offset_x, offset_y, offset_z);
-
 
 	if (cmd.command == VEHICLE_CMD_DO_SET_MODE){
 
@@ -206,10 +203,10 @@ Loiter::execute_command_in_aim_and_shoot(vehicle_command_s cmd){
 		uint8_t main_mode = (uint8_t)cmd.param2;
 
 		if (main_mode == PX4_CUSTOM_SUB_MODE_AUTO_RTL) {
-			// Make request to COMMANDER do change state to RTL
+
 			commander_request_s *commander_request = _navigator->get_commander_request();
 			commander_request->request_type = V_MAIN_STATE_CHANGE;
-			commander_request->main_state = MAIN_STATE_EMERGENCY_RTL; // TODO change to RTL
+			commander_request->main_state = MAIN_STATE_RTL;
 			_navigator->set_commander_request_updated();
 
 		}
@@ -228,16 +225,10 @@ Loiter::execute_command_in_aim_and_shoot(vehicle_command_s cmd){
 			case  REMOTE_CMD_LAND_DISARM: {
 
                 mavlink_log_info(_navigator->get_mavlink_fd(), "Land disarm command");
-            
-                commander_request_s *commander_request = _navigator->get_commander_request();
-                commander_request->request_type = V_MAIN_STATE_CHANGE;
-                commander_request->main_state = MAIN_STATE_EMERGENCY_LAND;
-                _navigator->set_commander_request_updated();
 
-                /*
 				land();
 				set_sub_mode(LOITER_SUB_MODE_LANDING, false);
-                */
+
 				break;
 			}
             case REMOTE_CMD_GOTO_DEFUALT_DST: {

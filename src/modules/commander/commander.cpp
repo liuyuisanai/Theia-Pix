@@ -732,6 +732,7 @@ bool handle_command(struct vehicle_status_s *status_local, const struct safety_s
 
 int commander_thread_main(int argc, char *argv[])
 {
+
 	/* not yet initialized */
 	commander_initialized = false;
 
@@ -786,6 +787,8 @@ int commander_thread_main(int argc, char *argv[])
 	main_states_str[MAIN_STATE_ACRO]			= "ACRO";
 	main_states_str[MAIN_STATE_OFFBOARD]			= "OFFBOARD";
 	main_states_str[MAIN_STATE_FOLLOW]			= "FOLLOW";
+	main_states_str[MAIN_STATE_EMERGENCY_RTL]			= "EMERGENCY_RTL";
+	main_states_str[MAIN_STATE_EMERGENCY_LAND]			= "EMERGENCY_LAND";
 
 	const char *arming_states_str[ARMING_STATE_MAX];
 	arming_states_str[ARMING_STATE_INIT]			= "INIT";
@@ -1397,16 +1400,15 @@ int commander_thread_main(int argc, char *argv[])
 		}
 
 
-
-		check_valid(target_position.timestamp, target_visibility_timeout_1 * 1000 * 1000, status.condition_target_position_valid, &(status.condition_target_position_valid), &status_changed);
-
+		check_valid(target_position.timestamp, target_visibility_timeout_1 * 1000 * 1000, true, &(status.condition_target_position_valid), &status_changed);
 
         if (!status.condition_target_position_valid){
 
             if (!control_mode.flag_control_manual_enabled && control_mode.flag_control_auto_enabled){
 
                 hrt_abstime t = hrt_absolute_time() ;
-
+ 
+                // On second timeout - go into EMERGENCY RTL
                 if (status.main_state!=MAIN_STATE_EMERGENCY_RTL && status.main_state!=MAIN_STATE_EMERGENCY_LAND) {
                     if (t - target_position.timestamp > target_visibility_timeout_2 * 1000 * 1000) {
                         mavlink_log_info(mavlink_fd, "Target signal lost for to long, EMERGENCY RTL");
@@ -1418,7 +1420,7 @@ int commander_thread_main(int argc, char *argv[])
                     }
                 }
 
-                //go into aim-and-shoot if not in it already            
+                // On first timeout when status.condition_target_position_valid is false go into aim-and-shoot
                 if (status.main_state != MAIN_STATE_LOITER && status.main_state!=MAIN_STATE_EMERGENCY_RTL && status.main_state!=MAIN_STATE_EMERGENCY_LAND) {
                     mavlink_log_info(mavlink_fd, "Target signal time-out, switching to Aim-and-shoot.");
 				    if (!main_state_transition(&status, MAIN_STATE_LOITER)) {
@@ -1818,12 +1820,19 @@ int commander_thread_main(int argc, char *argv[])
 		if (updated) {
 			orb_copy(ORB_ID(commander_request), commander_request_sub, &commander_request);
 
+            mavlink_log_info(mavlink_fd, "Commnander request processing.\n");
 			switch(commander_request.request_type) {
 			case V_MAIN_STATE_CHANGE:
 			{
+
+                int main_st = commander_request.main_state;
+                mavlink_log_info(mavlink_fd, "Main state change. %d\n", main_st);
+
 				if (main_state_transition(&status, commander_request.main_state)) {
 					status_changed = true;
-				}
+				} else {
+                    mavlink_log_info(mavlink_fd, "State rejected\n");
+                }
 				break;
 			}
 			case V_DISARM:
@@ -1840,7 +1849,6 @@ int commander_thread_main(int argc, char *argv[])
 				break;
 			}
 
-			mavlink_log_info(mavlink_fd, "Commnander request processed\n");
 
 		}
 
@@ -2000,6 +2008,8 @@ int commander_thread_main(int argc, char *argv[])
 		bool nav_state_changed = set_nav_state(&status, (bool)datalink_loss_enabled,
 						       mission_result.finished, mission_result.stay_in_failsafe, mavlink_fd);
 
+
+
 		// TODO handle mode changes by commands
 		if (main_state_changed) {
 			status_changed = true;
@@ -2112,7 +2122,9 @@ int commander_thread_main(int argc, char *argv[])
 void
 check_valid(hrt_abstime timestamp, hrt_abstime timeout, bool valid_in, bool *valid_out, bool *changed)
 {
+
 	hrt_abstime t = hrt_absolute_time();
+
 	bool valid_new = (t < timestamp + timeout && t > timeout && valid_in);
 
 	if (*valid_out != valid_new) {

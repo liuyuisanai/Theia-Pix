@@ -903,13 +903,6 @@ MavlinkReceiver::handle_message_global_position_int(mavlink_message_t *msg)
 	target_pos.vel_d = pos.vz * 1.0e-2f;
 	target_pos.yaw = _wrap_pi(pos.hdg / 100.0f * M_DEG_TO_RAD_F);
 
-/*    
-    FILE * fh = fopen("/fs/microsd/log/m256", "a");
-    uint64_t tmp = target_pos.timestamp;
-    fprintf(fh, "Receiving target pos mavlink msg. Timestamp: %u\n", tmp);
-    fclose(fh);
-    */
-
 	if (_target_pos_pub < 0) {
 		_target_pos_pub = orb_advertise(ORB_ID(target_global_position), &target_pos);
 
@@ -921,30 +914,11 @@ MavlinkReceiver::handle_message_global_position_int(mavlink_message_t *msg)
 void
 MavlinkReceiver::handle_message_heartbeat(mavlink_message_t *msg)
 {
-    FILE * fh = fopen("/fs/microsd/log/m256", "a");
-
-    int s1 = msg->sysid;
-    int s2 = mavlink_system.sysid;
-    fprintf(fh, "sysid is %d and mavlink_sys_id is %d", s1, s2);
-    fclose(fh);
-
-    // Ignore own heartbeat
-    //
-    //
     if (msg->sysid != mavlink_system.sysid) {
 
 
         mavlink_heartbeat_t hb;
         mavlink_msg_heartbeat_decode(msg, &hb);
-
-        /*
-        FILE * fh = fopen("/fs/microsd/log/m256", "a");
-
-        fprintf(fh, "Handle heartbeat message and channel is:%d and msg id is: %d\n", _mavlink->get_channel(), msg->sysid);
-        fprintf(fh, "%d", (int)hb.type);
-
-        fclose(fh);
-        */
 
         switch (hb.type){
             case MAV_TYPE_GCS:

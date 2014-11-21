@@ -48,6 +48,7 @@
 #include <string.h>
 #include <math.h>
 
+
 #include <uORB/uORB.h>
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/actuator_controls.h>
@@ -339,11 +340,13 @@ main_state_transition(struct vehicle_status_s *status, main_state_t new_main_sta
         break;
 
 	case MAIN_STATE_ABS_FOLLOW:
-		/* need global position estimate */
-		if (status->condition_global_position_valid && status->condition_target_position_valid) {
-			ret = TRANSITION_CHANGED;
-		}
-		break;
+        {
+            /* need global position estimate */
+            if (status->condition_global_position_valid && status->condition_target_position_valid) {
+                ret = TRANSITION_CHANGED;
+            }
+            break;
+        }
 
 	case MAIN_STATE_OFFBOARD:
 
@@ -703,6 +706,7 @@ bool set_nav_state(struct vehicle_status_s *status, const bool data_link_loss_en
         status->nav_state = NAVIGATION_STATE_LAND;
         break;
 	case MAIN_STATE_ABS_FOLLOW:
+
 		/* require target position*/
 		if ((!status->condition_target_position_valid)) {
 
