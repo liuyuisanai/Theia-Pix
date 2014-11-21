@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (C) 2012 - 2014 PX4 Development Team. All rights reserved.
+ *   Copyright (c) 2014 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,54 +31,22 @@
  *
  ****************************************************************************/
 
-/**
- * @file commander_request_inav.h
- * Definition of the commander_request_inav uORB topic.
- *
- * Commander_requests_inav are requests to commander for vehicle status changes.
- *
- * Commander is the responsible app for managing system related tasks
- * and setting vehicle statuses other apps must make request for commander
- * if system related task or system state change is needed.
- *
- * Commander will process this request and decide what to do with it.
- *
- * @author Maxims Shvetsov <maxim.shvetsov@airdog.com>
- */
+#pragma once
 
-#ifndef COMMANDER_REQUEST_INAV_H_
-#define COMMANDER_REQUEST_INAV_H_
-
-#include <stdint.h>
-#include <stdbool.h>
-#include "../uORB.h"
-#include "vehicle_status.h"
-
-/**
- * @addtogroup topics @{
- */
-
-/**
- * Request type.
- */
-typedef enum {
-	V_DISARM_INAV = 0,                   // Request to disarm vehicle
-    AIRD_STATE_CHANGE_INAV           // Request to change airdog_state
-} request_type_inav_t;
-
-struct commander_request_inav_s {
-	request_type_inav_t request_type;
-
-	main_state_t main_state;
-    airdog_state_t airdog_state;
-
+/* magic numbers from reference manual */
+enum MCU_REV {
+	MCU_REV_STM32F4_REV_A = 0x1000,
+	MCU_REV_STM32F4_REV_Z = 0x1001,
+	MCU_REV_STM32F4_REV_Y = 0x1003,
+	MCU_REV_STM32F4_REV_1 = 0x1007,
+	MCU_REV_STM32F4_REV_3 = 0x2001
 };
 
 /**
- * @}
+ * Reports the microcontroller version of the main CPU.
+ *
+ * @param rev The silicon revision character
+ * @param revstr The full chip name string
+ * @return The silicon revision / version number as integer
  */
-
-/* register this as object request broker structure */
-ORB_DECLARE(commander_request_inav);
-
-#endif
+__EXPORT int mcu_version(char* rev, char** revstr);

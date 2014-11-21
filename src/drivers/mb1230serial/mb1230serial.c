@@ -48,6 +48,7 @@ int mb1230serial_thread_main(int argc, char *argv[]);
 
 static bool thread_should_run = true;	 /**< Daemon running flag */
 static bool thread_running = false;	 /**< Daemon status flag */
+static bool test_sonar = false; /**< Output to console flag */
 static int daemon_task;			 /**< Handle of daemon task / thread */
 
 /**
@@ -58,7 +59,7 @@ usage(const char *reason)
 {
 	if (reason)
 		fprintf(stderr, "%s\n", reason);
-	fprintf(stderr, "usage: mb1230serial {start device_path | stop}\n\n");
+	fprintf(stderr, "usage: mb1230serial {start device_path | stop | info}\n\n");
 	exit(1);
 }
 
@@ -96,6 +97,24 @@ int mb1230serial_main(int argc, char *argv[])
 		thread_should_run = false;
 		exit(0);
 	}
+
+    if (!strcmp(argv[1], "info"))
+    {
+        fprintf(stdout, "mb1230serial_main status: %s\n", thread_running ? "running" : "not running");
+        exit(0);
+    }
+
+    if (!strcmp(argv[1], "test"))
+    {
+        if (!thread_running) {
+            usage("thread not running yet");
+            exit(1);
+        }
+        else {
+            test_sonar = true;
+            exit(0);
+        }
+    }
 
 	usage("unrecognized command");
 	exit(1);
@@ -149,6 +168,7 @@ int mb1230serial_thread_main(int argc, char *argv[])
 	char raw_data[3];
 	int nread = 0;
 	int distance;
+    int number_of_test_outputs = 100;
 
 	struct range_finder_report data = {
 		.error_count = 0,
@@ -223,7 +243,17 @@ int mb1230serial_thread_main(int argc, char *argv[])
                             data.distance = 0xFFFF;
                             data.valid = 0;
                         }
-                        //fprintf(stderr, "[driver]Sonar distance: %.3f, valid: %d\n",(double)data.distance, data.valid);
+                        // Test output
+                        if (test_sonar) {
+                            if (number_of_test_outputs > 0 ) {
+                                fprintf(stdout, "[driver]Sonar distance: %.3f, valid: %d\n",(double)data.distance, data.valid);
+                                number_of_test_outputs--;
+                            }
+                            else {
+                                test_sonar = false;
+                                number_of_test_outputs = 100;
+                            }
+                        }
 					}
 				}
 			}

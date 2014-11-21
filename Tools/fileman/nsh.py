@@ -78,7 +78,8 @@ class NSH:
 		# ver hw
 		#PX4FMU_V2 or Airdog
 		_hw_version = self.exec_cmd("ver hw", 1.0)
-		return (_hw_version.startswith("PX4FMU_V2") | _hw_version.startswith("AIRDOG_FMU"))
+		print(_hw_version)
+		return (_hw_version.find("PX4FMU_V2") >= 0 or _hw_version.find("AIRDOG_FMU") >= 0)
 
 
 	def ls_dir(self, dir, timeout=1.0):

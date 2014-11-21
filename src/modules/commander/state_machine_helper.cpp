@@ -140,7 +140,6 @@ arming_state_transition(struct vehicle_status_s *status,		///< current vehicle s
 		/* enforce lockdown in HIL */
 		if (status->hil_state == HIL_STATE_ON) {
 			armed->lockdown = true;
-			armed->lockdown = false; // TODO remove line
 
 		} else {
 			armed->lockdown = false;

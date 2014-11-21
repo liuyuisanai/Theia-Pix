@@ -1,4 +1,4 @@
-/***************************************************************************
+/****************************************************************************
  *
  *   Copyright (c) 2014 PX4 Development Team. All rights reserved.
  *
@@ -30,63 +30,80 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
+
 /**
- * @file loiter.h
+ * @file mcu_version.c
+ * 
+ * Read out the microcontroller version from the board
  *
- * Helper class to loiter
+ * @author Lorenz Meier <lorenz@px4.io>
  *
- * @author Julian Oes <julian@oes.ch>
  */
 
-#ifndef NAVIGATOR_LOITER_H
-#define NAVIGATOR_LOITER_H
+#include "mcu_version.h"
 
-#include <mathlib/mathlib.h>
-#include <geo/geo.h>
-#include <controllib/blocks.hpp>
-#include <controllib/block/BlockParam.hpp>
-#include <uORB/topics/vehicle_command.h>
+#include <nuttx/config.h>
 
-#include "navigator_mode.h"
-#include "mission_block.h"
+#ifdef CONFIG_ARCH_CHIP_STM32
+#include <up_arch.h>
 
-class Loiter : public MissionBlock
-{
-public:
-	Loiter(Navigator *navigator, const char *name);
+#define DBGMCU_IDCODE	0xE0042000
 
-	~Loiter();
+#define STM32F40x_41x	0x413
+#define STM32F42x_43x	0x419
 
-	virtual void on_inactive();
-
-	virtual void on_activation();
-
-	virtual void on_active();
-
-	virtual void execute_vehicle_command();
-
-private:
-
-	enum LOITER_SUB_MODE {
-		LOITER_SUB_MODE_LANDED = 0, 		// vehicle on ground
-		LOITER_SUB_MODE_AIM_AND_SHOOT,		// aim and shoot
-		LOITER_SUB_MODE_LOOK_DOWN, 			// look down
-		LOITER_SUB_MODE_COME_TO_ME, 		// come to me
-		LOITER_SUB_MODE_LANDING, 			// vehicle is landing
-		LOITER_SUB_MODE_TAKING_OFF,			// vehicle is taking off
-
-	} loiter_sub_mode;
-
-	void execute_command_in_landed(vehicle_command_s cmd);
-	void execute_command_in_aim_and_shoot(vehicle_command_s cmd);
-	void execute_command_in_look_down(vehicle_command_s cmd);
-	void execute_command_in_come_to_me(vehicle_command_s cmd);
-	void execute_command_in_landing(vehicle_command_s cmd);
-	void execute_command_in_taking_off(vehicle_command_s cmd);
-
-	void set_sub_mode(LOITER_SUB_MODE new_sub_mode, uint8_t reset_setpoint);
-
-	bool flag_sub_mode_goal_reached;
-};
+#define REVID_MASK	0xFFFF0000
+#define DEVID_MASK	0xFFF
 
 #endif
+
+
+
+int mcu_version(char* rev, char** revstr)
+{
+#ifdef CONFIG_ARCH_CHIP_STM32
+	uint32_t abc = getreg32(DBGMCU_IDCODE);
+
+	int32_t chip_version = abc & DEVID_MASK;
+	enum MCU_REV revid = (abc & REVID_MASK) >> 16;
+
+	switch (chip_version) {
+	case STM32F40x_41x:
+		*revstr = "STM32F40x";
+		break;
+	case STM32F42x_43x:
+		*revstr = "STM32F42x";
+		break;
+	default:
+		*revstr = "STM32F???";
+		break;
+	}
+
+	switch (revid) {
+
+		case MCU_REV_STM32F4_REV_A:
+			*rev = 'A';
+			break;
+		case MCU_REV_STM32F4_REV_Z:
+			*rev = 'Z';
+			break;
+		case MCU_REV_STM32F4_REV_Y:
+			*rev = 'Y';
+			break;
+		case MCU_REV_STM32F4_REV_1:
+			*rev = '1';
+			break;
+		case MCU_REV_STM32F4_REV_3:
+			*rev = '3';
+			break;
+		default:
+			*rev = '?';
+			revid = -1;
+			break;
+	}
+
+	return revid;
+#else
+	return -1;
+#endif
+}

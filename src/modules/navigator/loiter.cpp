@@ -84,10 +84,10 @@ Loiter::on_activation()
 	_mavlink_fd = _navigator->get_mavlink_fd();
 
 	if (vstatus->condition_landed) {
-		set_sub_mode(LOITER_SUB_MODE_LANDED, false);
+		set_sub_mode(LOITER_SUB_MODE_LANDED, 0);
 	}
 	else {
-		set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, false);
+		set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, 0);
 	}
 }
 
@@ -101,22 +101,22 @@ Loiter::on_active()
 
 	if (loiter_sub_mode == LOITER_SUB_MODE_TAKING_OFF && check_current_pos_sp_reached()) {
 
-        set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, true);
+        set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, 2);
 
         if (_parameters.airdog_init_pos_use == 1){
-            set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, false);
+            set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, 2);
             go_to_intial_position(); 
         }
 	}
 
 	if (loiter_sub_mode == LOITER_SUB_MODE_LANDING && check_current_pos_sp_reached()) {
-		set_sub_mode(LOITER_SUB_MODE_LANDED, false);
+		set_sub_mode(LOITER_SUB_MODE_LANDED, 0);
 
 		disarm();
 	}
 
 	if (loiter_sub_mode == LOITER_SUB_MODE_COME_TO_ME && check_current_pos_sp_reached()) {
-		set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, true);
+		set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, 1);
 	}
 
 	if ( update_vehicle_command() )
@@ -168,7 +168,7 @@ Loiter::execute_command_in_landed(vehicle_command_s cmd){
 		int remote_cmd = cmd.param1;
 
 		if (remote_cmd == REMOTE_CMD_TAKEOFF) {
-			set_sub_mode(LOITER_SUB_MODE_TAKING_OFF, false);
+			set_sub_mode(LOITER_SUB_MODE_TAKING_OFF, 0);
 			takeoff();
 		} else if (remote_cmd == REMOTE_CMD_LAND_DISARM) {
 			disarm();
@@ -228,7 +228,6 @@ Loiter::execute_command_in_aim_and_shoot(vehicle_command_s cmd){
 
 				land();
 				set_sub_mode(LOITER_SUB_MODE_LANDING, false);
-
 				break;
 			}
             case REMOTE_CMD_GOTO_DEFUALT_DST: {
@@ -386,14 +385,14 @@ Loiter::execute_command_in_aim_and_shoot(vehicle_command_s cmd){
 				pos_sp_triplet->current.lon = target_pos->lon;
 				pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
 
-				set_sub_mode(LOITER_SUB_MODE_COME_TO_ME, false);
+				set_sub_mode(LOITER_SUB_MODE_COME_TO_ME, 0);
 
 				break;
 			}
 			case REMOTE_CMD_LOOK_DOWN: {
 
 				pos_sp_triplet->current.camera_pitch = -1.57f;
-				set_sub_mode(LOITER_SUB_MODE_LOOK_DOWN, false);
+				set_sub_mode(LOITER_SUB_MODE_LOOK_DOWN, 0);
 				break;
 
 			}
@@ -421,7 +420,7 @@ Loiter::execute_command_in_look_down(vehicle_command_s cmd){
 	if (cmd.command == VEHICLE_CMD_NAV_REMOTE_CMD) {
 		int remote_cmd = cmd.param1;
 		if (remote_cmd == REMOTE_CMD_PLAY_PAUSE) {
-			set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, true);
+			set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, 1);
 		}
 	}
 }
@@ -432,7 +431,7 @@ Loiter::execute_command_in_come_to_me(vehicle_command_s cmd){
 	if (cmd.command == VEHICLE_CMD_NAV_REMOTE_CMD) {
 		int remote_cmd = cmd.param1;
 		if (remote_cmd == REMOTE_CMD_PLAY_PAUSE) {
-			set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, true);
+			set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, 1);
 		}
 	}
 
@@ -444,31 +443,36 @@ Loiter::execute_command_in_landing(vehicle_command_s cmd){
 	if (cmd.command == VEHICLE_CMD_NAV_REMOTE_CMD) {
 		int remote_cmd = cmd.param1;
 		if (remote_cmd == REMOTE_CMD_PLAY_PAUSE) {
-			set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, true);
+			set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, 1);
 			loiter_sub_mode = LOITER_SUB_MODE_AIM_AND_SHOOT;
 		}
 	}
 }
 
+// @param reset_setpoint: 0 = false; 1 = reset position and type; 2 = reset type only
 void
-Loiter::set_sub_mode(LOITER_SUB_MODE new_sub_mode, bool reset_setpoint = true){
+Loiter::set_sub_mode(LOITER_SUB_MODE new_sub_mode, uint8_t reset_setpoint = 1) {
 
-	if (new_sub_mode == LOITER_SUB_MODE_AIM_AND_SHOOT && reset_setpoint) {
+	if (new_sub_mode == LOITER_SUB_MODE_AIM_AND_SHOOT) {
 
-		// Reset setpoint position to current global position
-		global_pos = _navigator->get_global_position();
+		if (reset_setpoint > 0) {
+			pos_sp_triplet->previous.valid = false;
+			pos_sp_triplet->current.valid = true;
+			pos_sp_triplet->next.valid = false;
 
-		pos_sp_triplet->previous.valid = false;
-		pos_sp_triplet->current.valid = true;
-		pos_sp_triplet->next.valid = false;
+			pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
+			
+			if (reset_setpoint == 1) {
+				// Reset setpoint position to current global position
+				global_pos = _navigator->get_global_position();
+				
+				pos_sp_triplet->current.alt = global_pos->alt;
+				pos_sp_triplet->current.lon = global_pos->lon;
+				pos_sp_triplet->current.lat = global_pos->lat;
+			}
 
-		pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
-		pos_sp_triplet->current.alt = global_pos->alt;
-		pos_sp_triplet->current.lon = global_pos->lon;
-		pos_sp_triplet->current.lat = global_pos->lat;
-
-		_navigator->set_position_setpoint_triplet_updated();
-
+			_navigator->set_position_setpoint_triplet_updated();
+		}
 	}
 
 	loiter_sub_mode = new_sub_mode;
