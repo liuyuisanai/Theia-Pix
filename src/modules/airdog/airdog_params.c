@@ -70,6 +70,14 @@ PARAM_DEFINE_FLOAT(AIRD_TRAJ_CUT, 0.2f);
 PARAM_DEFINE_FLOAT(AIRD_TRAJ_RAD, 5);
 
 /**
+ * @descr:  Airdog parameter to turn landing speed correction on or off
+ *
+ * @author: Max Shvetsov <maxim.shvetsov@airdog.com>
+ * @unit:   1 - on, 0 - off
+ */
+PARAM_DEFINE_INT32(A_LAND_CORR_ON, 1);
+
+/**
  * @descr:  Airdog param for custom landing with range finders
  *          Safe distance to trigger disarm while landing using
  *          range finder

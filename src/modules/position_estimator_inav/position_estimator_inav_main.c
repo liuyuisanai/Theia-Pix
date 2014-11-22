@@ -251,7 +251,6 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 	//float surface_offset_rate = 0.0f;	// surface offset change rate
 	//float alt_avg = 0.0f;
     float accel_filt = 0.0f;
-    float land_sonar_last_val = 0.0f;
 	bool landed = true;
 	hrt_abstime landed_time = 0;
 
@@ -1111,7 +1110,7 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                         }
                         else {
                             if(t - landed_time < params.land_t * 1000000.0f) {
-                                // We had detected a possible landing and this is the process of confirming it over time
+                                // We had detected a possible landing and this is the process of confirming it over time (1 sec = 1000000)
                                if (fabsf(acc[2]) > accepted_accel_rate) {
                                        landed_time = 0.0f;
                                }
@@ -1120,84 +1119,13 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                             // Sufficient time has passed and within this time range our velocity change is negligible 
                                 landed = true;
                                 landed_time = 0.0f;
-                                //fprintf(stderr, "We are happily landed\n");
                             }
-                        }
-                    }
-                    else if (vehicle_status.airdog_state == AIRD_STATE_LANDING && params.sonar_on) {
-                        // If we are in the landing state and we are using sonar - rely on the sonar
-                        //mavlink_log_info(mavlink_fd,"finder: %d, %.3f, val:%d", range_finder.type, (double)dist_bottom, sonar_valid);
-                        switch(1) {   //This switch is leaved for ruture use in case we will have more range-finder types
-                            case 1: { //(RANGE_FINDER_TYPE_ULTRASONIC || RANGE_FINDER_TYPE_LASER)
-
-                                                                if (sonar_valid) {
-                                                                    // If sonar is currently working define weather we are descending or ascending 
-
-                                                                    if (dist_bottom < params.land_min_h && land_sonar_last_val != 0.0f && dist_bottom != 0.0f)
-                                                                    {
-                                                                        landed = true;
-                                                                        landed_time = 0;
-                                                                        land_sonar_last_val = 0.0f;
-                                                                        mavlink_log_info(mavlink_fd, "[inav] Landed by range-finder");
-                                                                        mavlink_log_info(mavlink_fd, "[inav] %.3f, %.3f",
-                                                                                (double)dist_bottom,
-                                                                                (double)land_sonar_last_val);
-                                                                    }
-
-                                                                    land_sonar_last_val = dist_bottom; 
-                                                                    landed_time = t;
-                                                                    //mavlink_log_info(mavlink_fd,"Landing %.3f", (double)land_sonar_last_val);
-
-                                                                }
-                                                                else if ( !sonar_valid && land_sonar_last_val == 0.0f ) {
-                                                                    // We haven't yet reached valid range finder hight
-                                                                    //mavlink_log_info(mavlink_fd, "ignoring: %.3f",
-                                                                    //        (double)land_sonar_last_val);
-                                                                    break;
-                                                                }
-                                                                else if (land_sonar_last_val < range_finder.minimum_distance + 0.1f ||
-                                                                         land_sonar_last_val < params.land_min_h) {
-                                                                            if (t - landed_time > 2000000) {
-                                                                                mavlink_log_info(mavlink_fd,"Last range finder not valid!");
-                                                                                break;
-                                                                            }
-                                                                            landed = true;
-                                                                            landed_time = 0;
-                                                                            land_sonar_last_val = 0.0f;
-                                                                            mavlink_log_info(mavlink_fd, "[inav] Landed by range-finder");
-                                                                }
-                                                                //else {
-                                                                //    mavlink_log_info(mavlink_fd, "Else %.3f ,%.3f , %d", (double)land_sonar_last_val,
-                                                                //            (double)dist_bottom,
-                                                                //            sonar_valid)
-                                                                //}
-                                                               break;
-                               }
-                            //case RANGE_FINDER_TYPE_LASER: {
-                                                              //if (dist_bottom > params.land_min_h && sonar_valid) {
-                                                              //    // If we are too high to land and disarm and range finder is valid
-                                                              //    // range finder timeout is already taken into account here and we can be sure
-                                                              //    // range finder IS working (not was working)
-                                                              //    if (dist_bottom < land_sonar_last_val) 
-                                                              //        land_by_sonar ++;
-                                                              //    else
-                                                              //        land_by_sonar --;
-                                                              //    land_sonar_last_val = dist_bottom;
-                                                              //}
-                                                              //else if (dist_bottom < params.land_min_h && sonar_valid && land_by_sonar > 0) {
-                                                              //    landed = true; 
-                                                              //    land_by_sonar = 0;
-                                                              //    fprintf(stderr,"[inav] Sending DISARM request from Laser\n");
-                                                              //}
-                                                              //break;
-                                                          //}
                         }
                     }
                 }
                 else if (vehicle_status.arming_state == ARMING_STATE_STANDBY) {
                     if (thrust <= params.land_thr) {
                         landed = true;
-                        //fprintf(stdout, "Landed in standby state, thrust: %.3f\n", (double)thrust);
                     }
                 }
             }
