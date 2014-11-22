@@ -20,5 +20,8 @@ fi
 
 if sensors start
 then
+	set SENSORS_OK yes
 	preflight_check &
+else
+	set SENSORS_OK no
 fi
