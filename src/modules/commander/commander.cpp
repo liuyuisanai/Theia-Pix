@@ -762,7 +762,7 @@ int commander_thread_main(int argc, char *argv[])
 	float battery_critical_level;
 	float battery_flat_level;
 
-	param_t _param_battery_warning_level = param_find("BAT_WATN_LVL");
+	param_t _param_battery_warning_level = param_find("BAT_WARN_LVL");
 	param_t _param_battery_critical_level = param_find("BAT_CRIT_LVL");
 	param_t _param_battery_flat_level = param_find("BAT_FLAT_LVL");
 
@@ -1507,6 +1507,7 @@ int commander_thread_main(int argc, char *argv[])
 			//on_usb_power = (stat("/dev/ttyACM0", &statbuf) == 0);
 		}
 
+
 		/* if battery voltage is getting lower, warn using buzzer, etc. */
 		if (status.condition_battery_voltage_valid && status.battery_remaining < battery_warning_level && !low_battery_voltage_actions_done) {
 
@@ -1533,9 +1534,10 @@ int commander_thread_main(int argc, char *argv[])
                 }
 			}
 
-		} else if (status.condition_battery_voltage_valid && status.battery_remaining < battery_flat_level && !flat_battery_voltage_actions_done){
+		} else if (status.condition_battery_voltage_valid && status.battery_remaining < battery_flat_level && !flat_battery_voltage_actions_done  && low_battery_voltage_actions_done && critical_battery_voltage_actions_done){
 
 			flat_battery_voltage_actions_done = true;
+			mavlink_log_emergency(mavlink_fd, "CRITICAL FLAT, EMERGENCY LANDING");
 			status.battery_warning = VEHICLE_BATTERY_WARNING_FLAT;
             
 			if (control_mode.flag_control_auto_enabled && status.airdog_state == AIRD_STATE_IN_AIR) {
@@ -1546,7 +1548,6 @@ int commander_thread_main(int argc, char *argv[])
                     }
                 }
 			}
-
 		}
 
 
