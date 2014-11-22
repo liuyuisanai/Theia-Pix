@@ -762,13 +762,25 @@ int commander_thread_main(int argc, char *argv[])
 	float battery_critical_level;
 	float battery_flat_level;
 
+    int battery_critical_use;
+    int battery_flat_use;
+
 	param_t _param_battery_warning_level = param_find("BAT_WARN_LVL");
 	param_t _param_battery_critical_level = param_find("BAT_CRIT_LVL");
 	param_t _param_battery_flat_level = param_find("BAT_FLAT_LVL");
 
+	param_t _param_battery_critical_use = param_find("BAT_CRIT_USE");
+	param_t _param_battery_flat_use = param_find("BAT_FLAT_USE");
+
+
+
 	param_get(_param_battery_warning_level, &battery_warning_level);
 	param_get(_param_battery_critical_level, &battery_critical_level);
 	param_get(_param_battery_flat_level, &battery_flat_level);
+
+	param_get(_param_battery_critical_use, &battery_critical_use);
+	param_get(_param_battery_flat_use, &battery_flat_use);
+
 
     float target_visibility_timeout_1;
     float target_visibility_timeout_2;
@@ -1520,16 +1532,18 @@ int commander_thread_main(int argc, char *argv[])
 			/* critical battery voltage, this is rather an emergency, change state machine */
 
 			critical_battery_voltage_actions_done = true;
-			mavlink_log_emergency(mavlink_fd, "CRITICAL BATTERY, LAND ASAP, RTL TRIGGERED");
+			mavlink_log_emergency(mavlink_fd, "CRITICAL BATTERY, EMERGENCY RTL");
 			status.battery_warning = VEHICLE_BATTERY_WARNING_CRITICAL;
 
-			if (control_mode.flag_control_auto_enabled && status.airdog_state == AIRD_STATE_IN_AIR) {
-
-                if (status.main_state!=MAIN_STATE_EMERGENCY_RTL && status.main_state!=MAIN_STATE_EMERGENCY_LAND) {
-                    if (main_state_transition(&status, MAIN_STATE_EMERGENCY_RTL)) {
-                        status_changed = true;
-                    } else if (main_state_transition(&status, MAIN_STATE_EMERGENCY_LAND)) {
-                        status_changed = true;
+            if (battery_critical_use) {
+                mavlink_log_emergency(mavlink_fd, "BATTERY CRITICAL ACTIONS");
+                if (control_mode.flag_control_auto_enabled && status.airdog_state == AIRD_STATE_IN_AIR) {
+                    if (status.main_state!=MAIN_STATE_EMERGENCY_RTL && status.main_state!=MAIN_STATE_EMERGENCY_LAND) {
+                        if (main_state_transition(&status, MAIN_STATE_EMERGENCY_RTL)) {
+                            status_changed = true;
+                        } else if (main_state_transition(&status, MAIN_STATE_EMERGENCY_LAND)) {
+                            status_changed = true;
+                        }
                     }
                 }
 			}
@@ -1537,17 +1551,19 @@ int commander_thread_main(int argc, char *argv[])
 		} else if (status.condition_battery_voltage_valid && status.battery_remaining < battery_flat_level && !flat_battery_voltage_actions_done  && low_battery_voltage_actions_done && critical_battery_voltage_actions_done){
 
 			flat_battery_voltage_actions_done = true;
-			mavlink_log_emergency(mavlink_fd, "CRITICAL FLAT, EMERGENCY LANDING");
+			mavlink_log_emergency(mavlink_fd, "FLAT BATTERY, EMERGENCY LAND");
 			status.battery_warning = VEHICLE_BATTERY_WARNING_FLAT;
             
-			if (control_mode.flag_control_auto_enabled && status.airdog_state == AIRD_STATE_IN_AIR) {
-
-                if (status.main_state!=MAIN_STATE_EMERGENCY_LAND) {
-                    if (main_state_transition(&status, MAIN_STATE_EMERGENCY_LAND)) {
-                        status_changed = true;
+            if (battery_flat_use){
+                mavlink_log_emergency(mavlink_fd, "BATTERY FLAT ACTIONS");
+                if (control_mode.flag_control_auto_enabled && status.airdog_state == AIRD_STATE_IN_AIR) {
+                    if (status.main_state!=MAIN_STATE_EMERGENCY_LAND) {
+                        if (main_state_transition(&status, MAIN_STATE_EMERGENCY_LAND)) {
+                            status_changed = true;
+                        }
                     }
                 }
-			}
+            }
 		}
 
 
