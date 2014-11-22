@@ -827,7 +827,7 @@ MulticopterPositionControl::vcommand_modify_follow_offset() {
 				double alpha = (double)_params.loi_step_len / radius;
 
 				// vector yaw rotation +alpha or -alpha depending on left or right
-				R_phi.from_euler(0.0f, 0.0f, alpha);
+				R_phi.from_euler(0.0f, 0.0f, -alpha);
 				math::Vector<3> offset_new  = R_phi * offset;
 
 				_follow_offset = offset_new;
@@ -848,7 +848,7 @@ MulticopterPositionControl::vcommand_modify_follow_offset() {
 				double alpha = (double)_params.loi_step_len / radius;
 
 				// vector yaw rotation +alpha or -alpha depending on left or right
-				R_phi.from_euler(0.0f, 0.0f, -alpha);
+				R_phi.from_euler(0.0f, 0.0f, +alpha);
 				math::Vector<3> offset_new  = R_phi * offset;
 
 				_follow_offset = offset_new;
