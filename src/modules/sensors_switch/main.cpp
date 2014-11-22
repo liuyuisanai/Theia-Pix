@@ -34,6 +34,8 @@ report_system_voltage()
 	orb_copy(ORB_ID(system_power), sub, &system_power);
 	orb_unsubscribe(sub);
 	printf("System voltage: %.2f\n", (double)system_power.voltage5V_v);
+	printf("Servo valid: %d, brick valid: %d, usb conncted: %d\n", system_power.servo_valid,
+		system_power.brick_valid, system_power.usb_connected);
 }
 
 void
