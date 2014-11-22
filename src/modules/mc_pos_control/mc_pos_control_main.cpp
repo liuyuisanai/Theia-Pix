@@ -170,7 +170,7 @@ private:
 		param_t tilt_max_air;
 		param_t land_speed_max;
         param_t land_speed_min;
-        param_t save_land_h;
+        param_t safe_land_h;
         param_t regular_land_speed;
         param_t land_correction_on;
 		param_t takeoff_speed;
@@ -196,7 +196,7 @@ private:
 		float tilt_max_air;
 		float land_speed_max;
         float land_speed_min;
-        float save_land_h;
+        float safe_land_h;
         float regular_land_speed;
 		float takeoff_speed;
 		float tilt_max_land;
@@ -233,7 +233,6 @@ private:
 	bool _reset_alt_sp;
 	bool _mode_auto;
 	bool _reset_follow_offset;
-    float _landing_coef;
     hrt_abstime landed_time = 0;
 
 	math::Vector<3> _pos;
@@ -356,6 +355,11 @@ private:
      */
     bool       ground_dist_correction(); 
 
+    /**
+     * Calculate landing coefficient if needed
+     */
+    float      landing_speed_correction();
+
     /*
      * Check vehicle_status topic and update _vstatus if it's updated
      */
@@ -477,7 +481,7 @@ MulticopterPositionControl::MulticopterPositionControl() :
 	_params_handles.tilt_max_air	= param_find("MPC_TILTMAX_AIR");
 	_params_handles.land_speed_max	= param_find("A_LAND_MAX_V");
     _params_handles.land_speed_min  = param_find("A_LAND_MIN_V");
-    _params_handles.save_land_h     = param_find("A_LAND_SAFE_H");
+    _params_handles.safe_land_h     = param_find("A_LAND_SAFE_H");
     _params_handles.regular_land_speed = param_find("MPC_LAND_SPD");
     _params_handles.land_correction_on = param_find("A_LAND_CORR_ON");
 	_params_handles.takeoff_speed	= param_find("MPC_TAKEOFF_SPD");
@@ -545,7 +549,7 @@ MulticopterPositionControl::parameters_update(bool force)
 		_params.tilt_max_air = math::radians(_params.tilt_max_air);
 		param_get(_params_handles.land_speed_max, &_params.land_speed_max);
         param_get(_params_handles.land_speed_min, &_params.land_speed_min);
-        param_get(_params_handles.save_land_h, &_params.save_land_h);
+        param_get(_params_handles.safe_land_h, &_params.safe_land_h);
         param_get(_params_handles.regular_land_speed, &_params.regular_land_speed);
         param_get(_params_handles.land_correction_on, &_params.land_correction_on);
 		param_get(_params_handles.takeoff_speed, &_params.takeoff_speed);
@@ -1638,60 +1642,16 @@ MulticopterPositionControl::task_main()
 				if (!_control_mode.flag_control_manual_enabled && _pos_sp_triplet.current.valid && _pos_sp_triplet.current.type == SETPOINT_TYPE_LAND) {
                     /* In case we have sonar correction - use it */
                     if(_params.land_correction_on) {
-                        if(_local_pos.dist_bottom_valid) {
-                            /* If range finder is valid - correct landing speed */
-                            //float coeff = (_params.land_speed_max/_params.land_speed_min)*(_local_pos.dist_bottom/5.0);
-                            float tan_of_angle = ((_params.land_speed_max/_params.land_speed_min)-1)/(6.0f - _params.save_land_h);
-                            _landing_coef = tan_of_angle * _local_pos.dist_bottom + (1 - tan_of_angle * _params.save_land_h);
-                            if (_landing_coef > _params.land_speed_max/_params.land_speed_min) {
-                                _landing_coef = _params.land_speed_max/_params.land_speed_min;
-                            }
-                            else if(_landing_coef < 1.0f) {
-                                _landing_coef = 1.0f;
-                            }
-
-                            if (_landing_coef == 1.0f) {
-                                /*
-                                 * This section waits 1 second after sonar lowered speed to minimal
-                                 * and then triggeres max landing speed back to stop motors faster
-                                 */
-                                if (landed_time == 0)
-                                    landed_time = t;
-                                else if (t - landed_time > 1000000) {
-                                    _landing_coef = _params.land_speed_max/_params.land_speed_min;
-                                }
-                            }
-                            //fprintf(stderr, "Landing, _landing_coef: %.3f\n", (double)_landing_coef);
-                        }
-                        else {
-                            if (_landing_coef < 1.3f) {
-                                /*
-                                 * This section waits 1 second after sonar lowered speed to minimal
-                                 * and then triggeres max landing speed back to stop motors faster
-                                 */
-                                if (landed_time == 0)
-                                    landed_time = t;
-                                else if (t - landed_time > 1000000) {
-                                    _landing_coef = _params.land_speed_max/_params.land_speed_min;
-                                }
-                            }
-                        }
-                        _vel_sp(2) = _params.land_speed_min * _landing_coef;
-                        //fprintf(stderr, "Landing, _vel_sp: %.3f coeff: %.3f\n", (double)_vel_sp(2), (double)_landing_coef);
+                        _vel_sp(2) = _params.land_speed_min * landing_speed_correction();
                     }
                     else {
                         /* No range finder correction applied */
-                        //_vel_sp(2) = _params.land_speed_regular;
-                        //TODO [max]: Make param
                         _vel_sp(2) = _params.regular_land_speed;
-                        //fprintf(stderr, "Landing with no correction, _vel_sp: %.3f\n", (double)_vel_sp(2));
                     }
 				}
 
 				/* use constant ascend rate during take off */
 				if (!_control_mode.flag_control_manual_enabled && _pos_sp_triplet.current.valid && _pos_sp_triplet.current.type == SETPOINT_TYPE_TAKEOFF) {
-                    // Resetting landing coefficient
-                    _landing_coef = 1.0f;
 					if (_pos(2) - _pos_sp(2) > 0) {
 						if (_vel_sp.data[2] < -_params.takeoff_speed){
 							_vel_sp.data[2] = -_params.takeoff_speed;
@@ -2082,6 +2042,79 @@ MulticopterPositionControl::start()
 
 	return OK;
 }
+
+/* @Author: Max Shvetsov
+ * @Name:   landing_speed_correction
+ *
+ * @descr:  This function calculates coefficient for landing speed based on range finder data
+ *          It is assumed that the resulted coefficient is applied to
+ *          minimal allowed landing speed
+ *          It is assumed that correction by range finder is on
+ *
+ * @out:    (float) multiplying coefficient
+ */
+float MulticopterPositionControl::landing_speed_correction() {
+    float landing_coeff = _params.regular_land_speed/_params.land_speed_min;
+    if(_local_pos.dist_bottom_valid) {
+        /* -- MATH MAGIC --
+         * We use linear function for speed correction
+         * represented by
+         *      f(x) = A*x + B
+         * math knows that A is tangent of angle between oX and function line
+         * and -B is offset
+         * Function constructed returns 1.0 when dist_bottom == safe_land_h
+         * and max/min when dist_bottom == 6.0
+         * DO NOT modify this thing unless you are sure what you are doing.
+         *
+         * To change start height of speed correction - modify 6.0f value (hard-coded)
+         * To change end height of speed correction - modify safe_land_h in A_SAFE_LAND_H
+         */
+        // A
+        float tan_of_angle = ((_params.land_speed_max/_params.land_speed_min)-1)/(6.0f - _params.safe_land_h);
+        // f(dist_bottom)
+        landing_coeff = tan_of_angle * _local_pos.dist_bottom + (1 - tan_of_angle * _params.safe_land_h);
+        /* -- END OF MATH MAGIC -- */
+
+        // Don't increase speed more than land_speed_max
+        if (landing_coeff > _params.land_speed_max/_params.land_speed_min) {
+            landing_coeff = _params.land_speed_max/_params.land_speed_min;
+        }
+        // Don't decrease speed more than land_speed_min
+        else if(landing_coeff < 1.0f) {
+            landing_coeff = 1.0f;
+        }
+
+        if (landing_coeff == 1.0f) {
+            /*
+             * This section waits 1 second after sonar lowered speed to minimal
+             * and then triggers max landing speed back to stop motors faster
+             */
+            if (landed_time == 0)
+                landed_time = hrt_absolute_time();
+            else if (hrt_absolute_time() - landed_time > 1000000) {
+                landing_coeff = _params.land_speed_max/_params.land_speed_min;
+            }
+        }
+    }
+    else {
+       /*
+        * This section waits 1 second after sonar lowered speed to minimal
+        * and then triggers max landing speed back to stop motors faster
+        * If landing_coeff is equal to initial value, we are assuming sonar was never valid yet
+        * and regular_land_speed is close to land_speed_max
+        */
+        // 1.3 is accepted error for sonar invalidation
+        if (landing_coeff < 1.3f && landing_coeff != _params.regular_land_speed/_params.land_speed_min) {
+            if (landed_time == 0)
+                landed_time = hrt_absolute_time();
+            else if (hrt_absolute_time() - landed_time > 1000000) {
+                landing_coeff = _params.land_speed_max/_params.land_speed_min;
+            }
+        }
+    }
+    return landing_coeff;
+}
+
 
 /* @Author: Max Shvetsov, Ilja Nevdahs
  * @Name:   ground_dist_correction
