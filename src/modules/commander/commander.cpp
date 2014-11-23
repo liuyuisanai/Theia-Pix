@@ -449,7 +449,7 @@ bool handle_command(struct vehicle_status_s *status_local, const struct safety_s
 
 			// Transition the arming state
 			//TODO: [INE] check if AIRDOG can arm and takeoff
-			if (status_local->main_state == MAIN_STATE_MANUAL && status_local->arming_state != ARMING_STATE_ARMED 
+			if (status_local->main_state != MAIN_STATE_AUTO_STANDBY && status_local->arming_state != ARMING_STATE_ARMED 
 				&& (base_mode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED && custom_main_mode != PX4_CUSTOM_MAIN_MODE_MANUAL)) 
 			{
 				mavlink_log_info(mavlink_fd,"Arming command rejected.");

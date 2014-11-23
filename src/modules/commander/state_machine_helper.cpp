@@ -367,11 +367,9 @@ main_state_transition(struct vehicle_status_s *status, main_state_t new_main_sta
 		break;
 	}
 
-	warnx("----- Requested state: %d", new_main_state);
 	if (ret == TRANSITION_CHANGED) {
 		if (status->main_state != new_main_state) {
 			mavlink_log_info(mavlink_fd, "[Main State Transition] Success: state %d to %d!", status->main_state, new_main_state);
-			warnx("----- Main State Transition Success: state %d to %d!", status->main_state, new_main_state);
 			status->main_state = new_main_state;
 		} else {
 			ret = TRANSITION_NOT_CHANGED;
