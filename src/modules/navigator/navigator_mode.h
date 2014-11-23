@@ -51,6 +51,7 @@
 
 #include <uORB/topics/position_setpoint_triplet.h>
 #include <uORB/topics/vehicle_command.h>
+#include <uORB/topics/vehicle_status.h>
 
 class Navigator;
 
@@ -105,6 +106,7 @@ public:
     void land();
     void takeoff();
     void disarm();
+    void resetModeArguments(main_state_t main_state);
 
 	struct {
 		float takeoff_alt;

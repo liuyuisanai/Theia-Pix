@@ -75,16 +75,16 @@ typedef enum {
 	MAIN_STATE_FOLLOW,
     MAIN_STATE_EMERGENCY_RTL,
     MAIN_STATE_EMERGENCY_LAND,
+	MAIN_STATE_AUTO_STANDBY,
 	MAIN_STATE_MAX,
 } main_state_t;
 
 typedef enum {
-    AIRD_STATE_DISARMED = 0,
+    AIRD_STATE_STANDBY = 0,
     AIRD_STATE_LANDED,
     AIRD_STATE_TAKING_OFF,
     AIRD_STATE_LANDING,
     AIRD_STATE_IN_AIR,
-    AIRD_STATE_READY, //Ready to take-off
     AIRD_STATE_MAX,
 } airdog_state_t;
 
@@ -127,6 +127,7 @@ typedef enum {
 	NAVIGATION_STATE_TERMINATION,		/**< Termination mode */
 	NAVIGATION_STATE_OFFBOARD,
 	NAVIGATION_STATE_FOLLOW,			/**< Manual-controlled follow mode */
+	NAVIGATION_STATE_AUTO_STANDBY,		/**< Auto Stand-By mode.*/
 	NAVIGATION_STATE_MAX,
 } navigation_state_t;
 
@@ -262,6 +263,8 @@ struct vehicle_status_s {
 	bool circuit_breaker_engaged_airspd_check;
 	bool circuit_breaker_engaged_enginefailure_check;
 	bool circuit_breaker_engaged_gpsfailure_check;
+
+	bool auto_takeoff_cmd;
 };
 
 /**

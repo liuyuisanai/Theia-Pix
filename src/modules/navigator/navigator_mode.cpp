@@ -372,6 +372,14 @@ NavigatorMode::disarm()
 	commander_request->request_type = V_DISARM;
 	_navigator->set_commander_request_updated();
 }
+void
+NavigatorMode::resetModeArguments(main_state_t main_state)
+{
+	commander_request_s *commander_request = _navigator->get_commander_request();
+	commander_request->request_type = V_RESET_MODE_ARGS;
+	commander_request->main_state = main_state;
+	_navigator->set_commander_request_updated();
+}
 
 void
 NavigatorMode::go_to_intial_position(){

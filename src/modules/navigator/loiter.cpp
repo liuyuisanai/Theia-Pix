@@ -81,15 +81,15 @@ Loiter::on_activation()
 
     _mavlink_fd = _navigator->get_mavlink_fd();
 
-    if (vstatus->airdog_state == AIRD_STATE_READY) {
+    if (vstatus->auto_takeoff_cmd) {
 		set_sub_mode(LOITER_SUB_MODE_TAKING_OFF, 1);
 		takeoff();
-	} else if (vstatus->airdog_state == AIRD_STATE_LANDED || vstatus->airdog_state == AIRD_STATE_DISARMED) {
+		resetModeArguments(MAIN_STATE_LOITER);
+	} else if (vstatus->airdog_state == AIRD_STATE_LANDED || vstatus->airdog_state == AIRD_STATE_STANDBY) {
 		set_sub_mode(LOITER_SUB_MODE_LANDED, 1);
 	} else {
 		set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, 1); 
 	}
-
 }
 
 void
@@ -112,8 +112,6 @@ Loiter::on_active()
 		set_sub_mode(LOITER_SUB_MODE_LANDED, 0);
 
 		disarm();
-
-		reset_state();
 	}
 
 	if (loiter_sub_mode == LOITER_SUB_MODE_COME_TO_ME && check_current_pos_sp_reached()) {
@@ -508,13 +506,4 @@ Loiter::set_sub_mode(LOITER_SUB_MODE new_sub_mode, uint8_t reset_setpoint = 1) {
 
 void
 Loiter::execute_command_in_taking_off(vehicle_command_s cmd) {
-}
-
-void
-Loiter::reset_state() {
-	/* Turn off Auto Loiter mode */
-	commander_request_s *commander_request = _navigator->get_commander_request();
-	commander_request->request_type = V_MAIN_STATE_CHANGE;
-	commander_request->main_state = MAIN_STATE_MANUAL;
-	_navigator->set_commander_request_updated();
 }

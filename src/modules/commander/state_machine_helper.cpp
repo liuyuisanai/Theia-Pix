@@ -276,7 +276,7 @@ bool is_safe(const struct vehicle_status_s *status, const struct safety_s *safet
 }
 
 transition_result_t
-main_state_transition(struct vehicle_status_s *status, main_state_t new_main_state)
+main_state_transition(struct vehicle_status_s *status, main_state_t new_main_state, const int mavlink_fd)
 {
 	transition_result_t ret = TRANSITION_DENIED;
 
@@ -313,9 +313,15 @@ main_state_transition(struct vehicle_status_s *status, main_state_t new_main_sta
 		}
 		break;
 
+	case MAIN_STATE_AUTO_STANDBY:
+		/* need global position and home position */
+		if (status->arming_state == ARMING_STATE_STANDBY || status->arming_state == ARMING_STATE_ARMED)
+			ret = TRANSITION_CHANGED;
+		break;
+
 	case MAIN_STATE_LOITER:
-		/* need global position estimate */
-		if (status->condition_global_position_valid) {
+		/* need global position estimate, home and target position */
+		if (status->condition_global_position_valid && status->condition_home_position_valid && status->condition_target_position_valid) {
 			ret = TRANSITION_CHANGED;
 		}
 		break;
@@ -361,8 +367,11 @@ main_state_transition(struct vehicle_status_s *status, main_state_t new_main_sta
 		break;
 	}
 
+	warnx("----- Requested state: %d", new_main_state);
 	if (ret == TRANSITION_CHANGED) {
 		if (status->main_state != new_main_state) {
+			mavlink_log_info(mavlink_fd, "[Main State Transition] Success: state %d to %d!", status->main_state, new_main_state);
+			warnx("----- Main State Transition Success: state %d to %d!", status->main_state, new_main_state);
 			status->main_state = new_main_state;
 		} else {
 			ret = TRANSITION_NOT_CHANGED;
@@ -379,11 +388,8 @@ airdog_state_transition(struct vehicle_status_s *status, airdog_state_t new_aird
     char * str;
 
     switch (new_airdog_state){
-    	case AIRD_STATE_READY:
-            str = "ready to fly";
-            break;
-        case AIRD_STATE_DISARMED:
-            str = "disarmed";
+    	case AIRD_STATE_STANDBY:
+            str = "standby";
             break;
         case AIRD_STATE_LANDED:
             str = "landed";
@@ -399,7 +405,7 @@ airdog_state_transition(struct vehicle_status_s *status, airdog_state_t new_aird
             break;
     }
 
-    mavlink_log_info(mavlink_fd, "Airdog state machine state:%s", str);
+    mavlink_log_info(mavlink_fd, "Airdog state machine state: %s", str);
 }
 
 /**
@@ -577,7 +583,9 @@ bool set_nav_state(struct vehicle_status_s *status, const bool data_link_loss_en
 			}
 		}
 		break;
-
+	case MAIN_STATE_AUTO_STANDBY:
+		status->nav_state = NAVIGATION_STATE_AUTO_STANDBY;
+		break;
 	case MAIN_STATE_AUTO_MISSION:
 		/* go into failsafe
 		 * - if commanded to do so
