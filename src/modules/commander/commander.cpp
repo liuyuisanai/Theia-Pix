@@ -2567,11 +2567,11 @@ set_control_mode()
 		break;
 
 	case NAVIGATION_STATE_AUTO_STANDBY:
-		control_mode.flag_control_manual_enabled = false;
+		control_mode.flag_control_manual_enabled = true;
 		control_mode.flag_control_auto_enabled = true;
 		control_mode.flag_control_offboard_enabled = false;
-		control_mode.flag_control_rates_enabled = false;
-		control_mode.flag_control_attitude_enabled = false;
+		control_mode.flag_control_rates_enabled = true;
+		control_mode.flag_control_attitude_enabled = true;
 		control_mode.flag_control_force_enabled = false;
 		control_mode.flag_control_altitude_enabled = false;
 		control_mode.flag_control_climb_rate_enabled = false;
