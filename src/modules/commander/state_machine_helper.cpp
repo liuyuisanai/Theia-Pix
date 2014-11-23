@@ -327,11 +327,14 @@ main_state_transition(struct vehicle_status_s *status, main_state_t new_main_sta
 		break;
 
 	case MAIN_STATE_AUTO_MISSION:
-	case MAIN_STATE_RTL:
-		/* need global position and home position */
+	    /* need global position and home position */
 		if (status->condition_global_position_valid && status->condition_home_position_valid) {
 			ret = TRANSITION_CHANGED;
 		}
+		break;
+	case MAIN_STATE_RTL:
+		/* Currently RTL is used as default failsafe mode thus all validations to be done in navigation state transition */
+		ret = TRANSITION_CHANGED;
 		break;
 
     case MAIN_STATE_EMERGENCY_RTL:

@@ -455,6 +455,10 @@ Navigator::task_main()
 			case NAVIGATION_STATE_LAND:
                 _navigation_mode = &_land;
                 break;
+			case NAVIGATION_STATE_DESCEND:
+			//TODO: [INE] create custom mode for safe descending without valid local position
+                _navigation_mode = &_land;
+                break;
 			case NAVIGATION_STATE_AUTO_MISSION:
 				_navigation_mode = &_mission;
 				break;

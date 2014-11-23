@@ -449,9 +449,16 @@ bool handle_command(struct vehicle_status_s *status_local, const struct safety_s
 
 			// Transition the arming state
 			//TODO: [INE] check if AIRDOG can arm and takeoff
-			if (status_local->main_state != MAIN_STATE_AUTO_STANDBY && status_local->arming_state != ARMING_STATE_ARMED 
-				&& (base_mode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED && custom_main_mode != PX4_CUSTOM_MAIN_MODE_MANUAL)) 
+			if (
+				// if system is not in AUTO_STANDBY (e.g. is in manual or assisted modes or active auto)
+				status_local->main_state != MAIN_STATE_AUTO_STANDBY 
+				// and is disarmed
+				&& status_local->arming_state != ARMING_STATE_ARMED
+				// and requested mode is not MANUAL
+				&& (base_mode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED && custom_main_mode != PX4_CUSTOM_MAIN_MODE_MANUAL) 
+				) 
 			{
+				//Reject arming and main state transition
 				mavlink_log_info(mavlink_fd,"Arming command rejected.");
 				cmd_result = VEHICLE_CMD_RESULT_TEMPORARILY_REJECTED;
 				break;
@@ -1776,10 +1783,17 @@ int commander_thread_main(int argc, char *argv[])
 				status_changed = true;
 				transition_result_t main_res = TRANSITION_NOT_CHANGED;
 				if (status.arming_state == ARMING_STATE_STANDBY) {
+					warnx("---- Transition to AUTO_STANDBY -----");
 					main_res = main_state_transition(&status, MAIN_STATE_AUTO_STANDBY, mavlink_fd);
 				}
 				else if (status.arming_state == ARMING_STATE_ARMED) {
+					warnx ("---- Transition to LOITER -----");
 					main_res = main_state_transition(&status, MAIN_STATE_LOITER, mavlink_fd);
+					if (main_res == TRANSITION_DENIED) {
+						//switch to main failsafe mode
+						warnx ("---- Transition to RTL -----");
+						main_res = main_state_transition(&status, MAIN_STATE_RTL, mavlink_fd);
+					}
 				}
 				if (main_res == TRANSITION_DENIED) {
 					mavlink_log_critical(mavlink_fd, "Transition to Auto denied");

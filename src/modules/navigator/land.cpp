@@ -55,7 +55,7 @@ Land::on_active(){
         landing_finished = true;
 
         mavlink_log_info(_navigator->get_mavlink_fd(), "Setpoint reached !");
-
+        warnx("---- Landed, disarming... ----");
         disarm();
     }
 
