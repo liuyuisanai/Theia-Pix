@@ -439,6 +439,10 @@ bool cAirdog::button_clicked_i2c(uint8_t button, bool long_press)
                     // usleep(1000000);
                     // send_command(REMOTE_CMD_TAKEOFF);
                 }
+                else {
+                	set_current_button_state(BUTTON_STATE_DEFAULT);
+                	ioctl(buzzer, TONE_SET_ALARM, TONE_NOTIFY_NEGATIVE_TUNE);
+                }
                 
             
             } else if (current_button_state == BUTTON_STATE_DEFAULT) {
