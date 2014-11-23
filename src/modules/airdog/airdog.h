@@ -88,7 +88,7 @@ private:
     } current_button_state;
 
 
-	void send_set_mode(uint8_t base_mode, enum PX4_CUSTOM_MAIN_MODE custom_main_mode);
+	void send_set_mode(uint8_t base_mode, enum PX4_CUSTOM_MAIN_MODE custom_main_mode, int mode_args = 0);
 	void send_set_auto_mode(uint8_t base_mode, enum PX4_CUSTOM_SUB_MODE_AUTO custom_sub_mode_auto);
 	void send_command(enum REMOTE_CMD command);
 	// void send_set_state(enum NAV_STATE state, enum AUTO_MOVE_DIRECTION direction);
