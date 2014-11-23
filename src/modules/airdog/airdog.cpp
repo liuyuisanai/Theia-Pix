@@ -150,6 +150,8 @@ void cAirdog::cycle()
 	if (updated) {
 		pparam_handler->loadCycle();
 
+		orb_copy(ORB_ID(vehicle_status), vehicle_status_sub, &vehicle_status);
+
 		orb_copy(ORB_ID(airdog_status), airdog_status_sub, &airdog_status);
 		hil = airdog_status.base_mode & MAV_MODE_FLAG_HIL_ENABLED;
 		armed = airdog_status.base_mode & MAV_MODE_FLAG_SAFETY_ARMED;
