@@ -1562,10 +1562,10 @@ MulticopterPositionControl::task_main()
                         //and altitude move rate
                         _sp_move_rate(2)= 0.0f;
 
-                        //if (_control_mode.flag_control_follow_target && _control_mode.flag_control_manual_enabled) {
-                        //	//stop moving offset in manual follow mode
-                        //	_follow_offset(2) = _pos_sp(2) - _tpos(2);
-                        //}
+                        if (_control_mode.flag_control_follow_target && _control_mode.flag_control_manual_enabled) {
+                        	//stop moving offset in manual follow mode
+                        	_follow_offset(2) = _pos_sp(2) - _tpos(2);
+                        }
                     }
 			}
             else {
