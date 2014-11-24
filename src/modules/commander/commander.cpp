@@ -465,8 +465,6 @@ bool handle_command(struct vehicle_status_s *status_local, const struct safety_s
 			}
 			else 
 			{
-				arming_ret = arm_disarm(base_mode & MAV_MODE_FLAG_SAFETY_ARMED, mavlink_fd, "set mode command");
-			
 
 				if (base_mode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED) {
 					/* use autopilot-specific mode */
@@ -520,6 +518,11 @@ bool handle_command(struct vehicle_status_s *status_local, const struct safety_s
 							main_ret = main_state_transition(status_local, MAIN_STATE_MANUAL, mavlink_fd);
 						}
 					}
+				}
+
+				if (main_ret != TRANSITION_DENIED) {
+					//Arm/Disarm only when main state transition is not rejected
+					arming_ret = arm_disarm(base_mode & MAV_MODE_FLAG_SAFETY_ARMED, mavlink_fd, "set mode command");
 				}
 
 				if (hil_ret != TRANSITION_DENIED && arming_ret != TRANSITION_DENIED && main_ret != TRANSITION_DENIED) {
@@ -1454,10 +1457,8 @@ int commander_thread_main(int argc, char *argv[])
                 // On first timeout when status.condition_target_position_valid is false go into aim-and-shoot
                 if (status.main_state != MAIN_STATE_LOITER && status.main_state!=MAIN_STATE_EMERGENCY_RTL && status.main_state!=MAIN_STATE_EMERGENCY_LAND) {
                     mavlink_log_info(mavlink_fd, "Target signal time-out, switching to Aim-and-shoot.");
-				    if (!main_state_transition(&status, MAIN_STATE_LOITER, mavlink_fd)) {
+				    if (main_state_transition(&status, MAIN_STATE_LOITER, mavlink_fd) == TRANSITION_CHANGED) {
                         status_changed = true; 
-                    } else {
-                        status_changed = false; 
                     }
                 } 
             }
@@ -1786,7 +1787,7 @@ int commander_thread_main(int argc, char *argv[])
 					warnx("---- Transition to AUTO_STANDBY -----");
 					main_res = main_state_transition(&status, MAIN_STATE_AUTO_STANDBY, mavlink_fd);
 				}
-				else if (status.arming_state == ARMING_STATE_ARMED) {
+				else if (control_mode.flag_control_manual_enabled == true && status.arming_state == ARMING_STATE_ARMED && !status.condition_landed) {
 					warnx ("---- Transition to LOITER -----");
 					main_res = main_state_transition(&status, MAIN_STATE_LOITER, mavlink_fd);
 					if (main_res == TRANSITION_DENIED) {

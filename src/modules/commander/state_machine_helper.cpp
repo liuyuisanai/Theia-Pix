@@ -108,6 +108,7 @@ arming_state_transition(struct vehicle_status_s *status,		///< current vehicle s
 			bool			fRunPreArmChecks,	///< true: run the pre-arm checks, false: no pre-arm checks, for unit testing
 			const int               mavlink_fd)		///< mavlink fd for error reporting, 0 for none
 {
+
 	// Double check that our static arrays are still valid
 	ASSERT(ARMING_STATE_INIT == 0);
 	ASSERT(ARMING_STATE_IN_AIR_RESTORE == ARMING_STATE_MAX - 1);
@@ -116,6 +117,11 @@ arming_state_transition(struct vehicle_status_s *status,		///< current vehicle s
 	arming_state_t current_arming_state = status->arming_state;
 	bool feedback_provided = false;
 
+	//Arm only if have valid GPS position
+	if (new_arming_state == ARMING_STATE_ARMED && !status->condition_global_position_valid){
+		ret = TRANSITION_DENIED;
+	}
+	else 
 	/* only check transition if the new state is actually different from the current one */
 	if (new_arming_state == current_arming_state) {
 		ret = TRANSITION_NOT_CHANGED;
@@ -314,7 +320,7 @@ main_state_transition(struct vehicle_status_s *status, main_state_t new_main_sta
 		break;
 
 	case MAIN_STATE_AUTO_STANDBY:
-		/* need global position and home position */
+		/* need valid arming state */
 		if (status->arming_state == ARMING_STATE_STANDBY || status->arming_state == ARMING_STATE_ARMED)
 			ret = TRANSITION_CHANGED;
 		break;

@@ -76,6 +76,9 @@ Loiter::on_activation()
 {
 	updateParameters();
 
+	//Ignore all commands received from target so far
+	update_vehicle_command();
+
 	// Determine current loiter sub mode
 	struct vehicle_status_s *vstatus = _navigator->get_vstatus();
 
