@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <math.h>
 #include <mavlink/mavlink_log.h>
+#include <time.h>
 #include <stdio.h>
 #include <sys/ioctl.h>
 #include <systemlib/err.h>
@@ -15,6 +16,9 @@
 
 #include "navigator.h"
 #include "path_follow.hpp"
+
+// TODO! Unify velocity/speed naming convention... at least in the scope of a single mode. Duh...
+// TODO! Add target signal monitoring
 
 PathFollow::PathFollow(Navigator *navigator, const char *name):
 		NavigatorMode(navigator, name),
@@ -28,7 +32,8 @@ PathFollow::PathFollow(Navigator *navigator, const char *name):
 		_ok_distance(0.0f),
 		_vertical_offset(0.0f),
 		_inited(false),
-		_target_vel_lpf(1.0f){
+		_target_vel_lpf(1.0f),
+		_target_velocity(0.0f){
 
 }
 PathFollow::~PathFollow() {
@@ -110,6 +115,7 @@ void PathFollow::on_active() {
 	}
 
 	update_saved_trajectory();
+	update_target_velocity();
 	pos_sp_triplet = _navigator->get_position_setpoint_triplet();
 
 	if (!_has_valid_setpoint) {
@@ -277,6 +283,12 @@ void PathFollow::update_setpoint(const buffer_point_s &desired_point, position_s
 	destination.valid = true;
 }
 
+void PathFollow::update_target_velocity() {
+	target_pos = _navigator->get_target_position();
+	// warnx("Raw target velocity: %9.6f", (double) sqrtf(target_pos->vel_n * target_pos->vel_n + target_pos->vel_e * target_pos->vel_e));
+	_target_velocity = _target_vel_lpf.apply(target_pos->remote_timestamp, sqrtf(target_pos->vel_n * target_pos->vel_n + target_pos->vel_e * target_pos->vel_e));
+}
+
 void PathFollow::update_min_max_dist() {
 	_min_distance = _ok_distance - _parameters.pafol_min_ok_diff;
 	if (_min_distance < _parameters.pafol_safe_dist) {
@@ -301,17 +313,15 @@ float PathFollow::calculate_desired_speed(float distance) {
 		return _parameters.mpc_max_speed;
 	}
 	float res;
-	target_pos = _navigator->get_target_position();
-	float target_speed = _target_vel_lpf.apply(target_pos->remote_timestamp, sqrtf(target_pos->vel_n * target_pos->vel_n + target_pos->vel_e * target_pos->vel_e));
 	if (distance >= _ok_distance) {
 		// TODO! Simplify and add precalculated values
-		res = target_speed * ((distance - _ok_distance)*(distance - _ok_distance)*4.0f/(_max_distance-_ok_distance)/(_max_distance-_ok_distance)+1.0f);
+		res = _target_velocity * ((distance - _ok_distance)*(distance - _ok_distance)*4.0f/(_max_distance-_ok_distance)/(_max_distance-_ok_distance)+1.0f);
 	}
 	else {
 		// TODO! Simplify and add precalculated values
-		res = target_speed * ((-atanf((distance-2.5f-_min_distance)*(-20.0f)/(_ok_distance-_min_distance)))/M_PI_F+0.5f);
+		res = _target_velocity * ((-atanf((distance-2.5f-_min_distance)*(-20.0f)/(_ok_distance-_min_distance)))/M_PI_F+0.5f);
 	}
-	// warnx("Target speed: %9.6f, desired speed: %9.6f", (double) target_speed, (double) res);
+	// warnx("Target speed: %9.6f, desired speed: %9.6f", (double) _target_velocity, (double) res);
 	if (res < 0.0f) return 0.0f;
 	if (res > _parameters.mpc_max_speed) return _parameters.mpc_max_speed;
 	return res;
@@ -329,7 +339,9 @@ float PathFollow::calculate_current_distance() {
 	}
 	target_pos = _navigator->get_target_position();
 	res += get_distance_to_next_waypoint(_last_point.lat, _last_point.lon, target_pos->lat, target_pos->lon);
-	// warnx("Current distance: %9.6f", (double) res);
+	// Add target movement prediction to avoid drone velocity swings
+	// res += (hrt_absolute_time() - target_pos->timestamp) / 1000000 * _target_velocity;
+	// warnx("Total distance: %9.6f", (double) res);
 	return res;
 }
 

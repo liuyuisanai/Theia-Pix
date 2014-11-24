@@ -43,12 +43,15 @@ private:
 	float _vertical_offset; // Vertical offset off the trajectory
 	bool _inited; // Indicates if the mode was inited successfully
 	math::LowPassFilter<float> _target_vel_lpf; // Filter for target velocity
+	float _target_velocity; // LPFed target velocity
 
 
 	// Updates saved trajectory and trajectory distance with a new point
 	void update_saved_trajectory();
 	// Update position setpoint to desired values
 	inline void update_setpoint(const buffer_point_s &desired_point, position_setpoint_s &destination);
+	// Update target velocity with a new value
+	inline void update_target_velocity();
 	// Updates minimum and maximum distance based on ok distance
 	inline void update_min_max_dist();
 	// Calculates desired speed in m/s based on current distance and target's speed

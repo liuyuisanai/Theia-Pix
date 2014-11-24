@@ -1098,14 +1098,18 @@ MulticopterPositionControl::simple_control_auto(float dt) {
 			_pos_sp.normalize();
 			// Scale by desired speed
 			_pos_sp *= _pos_sp_triplet.current.abs_velocity;
+			// _pos_sp(0) /= _params.pos_p(0);
+			// _pos_sp(1) /= _params.pos_p(1);
 
 			// TODO! Unneeded addition and later subtraction?
 			// Move back, 'cause later velocity is calculated by subtracting _pos
 			_pos_sp += _pos;
-/*
+
 			// TODO! Raw test
-			_sp_move_rate = _pos_sp;
-			_pos_sp = _pos; */
+			/* _sp_move_rate = _pos_sp;
+			_pos_sp = _pos;
+			// feed forward target velocity
+			_vel_ff += _sp_move_rate * _params.follow_vel_ff; */
 		}
 		// Use altitude as is in all cases
 		_pos_sp(2) = -(_pos_sp_triplet.current.alt - _ref_alt);
