@@ -1,6 +1,6 @@
-/****************************************************************************
+/***************************************************************************
  *
- *   Copyright (C) 2012 - 2014 PX4 Development Team. All rights reserved.
+ *   Copyright (c) 2014 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -30,55 +30,42 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-
 /**
- * @file commander_request_inav.h
- * Definition of the commander_request_inav uORB topic.
+ * @file land.h
  *
- * Commander_requests_inav are requests to commander for vehicle status changes.
- *
- * Commander is the responsible app for managing system related tasks
- * and setting vehicle statuses other apps must make request for commander
- * if system related task or system state change is needed.
- *
- * Commander will process this request and decide what to do with it.
- *
- * @author Maxims Shvetsov <maxim.shvetsov@airdog.com>
+ * @author Martins Frolovs <martins.f@airdog.com>
  */
 
-#ifndef COMMANDER_REQUEST_INAV_H_
-#define COMMANDER_REQUEST_INAV_H_
+#ifndef NAVIGATOR_LAND_H
+#define NAVIGATOR_LAND_H
 
-#include <stdint.h>
-#include <stdbool.h>
-#include "../uORB.h"
-#include "vehicle_status.h"
+#include <mathlib/mathlib.h>
+#include <geo/geo.h>
+#include <controllib/blocks.hpp>
+#include <controllib/block/BlockParam.hpp>
+#include <uORB/topics/vehicle_command.h>
 
-/**
- * @addtogroup topics @{
- */
+#include "navigator_mode.h"
+#include "mission_block.h"
 
-/**
- * Request type.
- */
-typedef enum {
-	V_DISARM_INAV = 0,                   // Request to disarm vehicle
-    AIRD_STATE_CHANGE_INAV           // Request to change airdog_state
-} request_type_inav_t;
+class Land : public MissionBlock
+{
+public:
+	Land(Navigator *navigator, const char *name);
 
-struct commander_request_inav_s {
-	request_type_inav_t request_type;
+	~Land();
 
-	main_state_t main_state;
-    airdog_state_t airdog_state;
+	virtual void on_inactive();
 
+	virtual void on_activation();
+
+	virtual void on_active();
+
+	virtual void execute_vehicle_command();
+
+private:
+
+	bool landing_finished;
 };
-
-/**
- * @}
- */
-
-/* register this as object request broker structure */
-ORB_DECLARE(commander_request_inav);
 
 #endif

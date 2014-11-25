@@ -142,6 +142,7 @@ Navigator::Navigator() :
 	_gpsFailure(this, "GPSF"),
 	_abs_follow(this, "FOL"),
 	_path_follow(this, "PAT"),
+    _land(this, "LND"),
 	_can_loiter_at_sp(false),
 	_pos_sp_triplet_updated(false),
 	_commander_request_updated(false),
@@ -160,6 +161,7 @@ Navigator::Navigator() :
 	_navigation_mode_array[6] = &_rcLoss;
 	_navigation_mode_array[7] = &_abs_follow;
 	_navigation_mode_array[8] = &_path_follow;
+	_navigation_mode_array[9] = &_land;
 
 	updateParams();
 }
@@ -477,13 +479,19 @@ Navigator::task_main()
 			case NAVIGATION_STATE_ACRO:
 			case NAVIGATION_STATE_ALTCTL:
 			case NAVIGATION_STATE_POSCTL:
-			case NAVIGATION_STATE_LAND:
 			case NAVIGATION_STATE_TERMINATION:
 			case NAVIGATION_STATE_OFFBOARD:
 			case NAVIGATION_STATE_FOLLOW:
 				_navigation_mode = nullptr;
 				_can_loiter_at_sp = false;
 				break;
+			case NAVIGATION_STATE_LAND:
+                _navigation_mode = &_land;
+                break;
+			case NAVIGATION_STATE_DESCEND:
+			//TODO: [INE] create custom mode for safe descending without valid local position
+                _navigation_mode = &_land;
+                break;
 			case NAVIGATION_STATE_AUTO_MISSION:
 				_navigation_mode = &_mission;
 				break;

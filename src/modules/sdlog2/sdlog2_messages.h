@@ -449,6 +449,7 @@ struct log_LOTJ_s {
 	float vel_d;		/**< Ground downside velocity, m/s */
 	float heading;   	/**< Compass heading in radians [0..2PI) */
 };
+
 /* --- GPRE - PREVIOUS GLOBAL SETPOINT --- */
 #define LOG_GPRE_MSG 67
 struct log_GPRE_s {

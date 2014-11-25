@@ -190,6 +190,8 @@ PARAM_DEFINE_FLOAT(BAT_WARN_LVL, 0.18f);
  */
 PARAM_DEFINE_FLOAT(BAT_CRIT_LVL, 0.09f);
 
+
+
 /**
 * Voltage when battery level is considered flat.
  *
@@ -199,3 +201,38 @@ PARAM_DEFINE_FLOAT(BAT_CRIT_LVL, 0.09f);
  */
 PARAM_DEFINE_FLOAT(BAT_FLAT_LVL, 0.02f);
 
+/**
+ * Do the emergency actions when battery level is considered CRITIAL
+ *
+ * @group Battery Calibration
+ * @min 0
+ * @max 1
+ */
+PARAM_DEFINE_INT32(BAT_CRIT_USE, 1);
+
+/**
+* Do the emergency actions when battery level is considered FLAT.
+ *
+ * @group Battery Calibration
+ * @min 0
+ * @max 1
+ */
+PARAM_DEFINE_INT32(BAT_FLAT_USE, 1);
+
+/**
+ * Target visibility timeout 1. Length of time when no data from target received visibility will be considered lost. 
+ *
+ * @group Airdog
+ * @min 0.1f 
+ * @max 30.0f 
+ */
+PARAM_DEFINE_FLOAT(A_TRGT_VSB_TO_1, 1.0f);
+
+/**
+ * Target visibility timeout 2. Length of time when no data from target received visibility will be considered lost to long and action should be taken.  
+ *
+ * @group Airdog
+ * @min 0.1f 
+ * @max 30.0f 
+ */
+PARAM_DEFINE_FLOAT(A_TRGT_VSB_TO_2, 5.0f);

@@ -74,15 +74,19 @@ typedef enum {
 	MAIN_STATE_ACRO,
 	MAIN_STATE_OFFBOARD,
 	MAIN_STATE_FOLLOW,
+    MAIN_STATE_EMERGENCY_RTL,
+    MAIN_STATE_EMERGENCY_LAND,
+	MAIN_STATE_AUTO_STANDBY,
 	MAIN_STATE_MAX,
 } main_state_t;
 
 typedef enum {
-    AIRD_STATE_DISARMED = 0,
+    AIRD_STATE_STANDBY = 0,
     AIRD_STATE_LANDED,
     AIRD_STATE_TAKING_OFF,
     AIRD_STATE_LANDING,
-    AIRD_STATE_IN_AIR
+    AIRD_STATE_IN_AIR,
+    AIRD_STATE_MAX,
 } airdog_state_t;
 
 // If you change the order, add or remove arming_state_t states make sure to update the arrays
@@ -111,11 +115,11 @@ typedef enum {
 	NAVIGATION_STATE_ALTCTL,			/**< Altitude control mode */
 	NAVIGATION_STATE_POSCTL,			/**< Position control mode */
 	NAVIGATION_STATE_AUTO_MISSION,		/**< Auto mission mode */
-	NAVIGATION_STATE_LOITER,		/**< Auto loiter mode */
-	NAVIGATION_STATE_RTL,			/**< Auto return to launch mode */
+	NAVIGATION_STATE_LOITER,		    /**< Auto loiter mode */
+	NAVIGATION_STATE_RTL,			    /**< Auto return to launch mode */
 	NAVIGATION_STATE_AUTO_RCRECOVER,	/**< RC recover mode */
 	NAVIGATION_STATE_AUTO_RTGS,			/**< Auto return to groundstation on data link loss */
-	NAVIGATION_STATE_ABS_FOLLOW,   /**< AUTO Abs Follow mode */
+	NAVIGATION_STATE_ABS_FOLLOW,        /**< AUTO Abs Follow mode */
 	NAVIGATION_STATE_AUTO_LANDENGFAIL,	/**< Auto land on engine failure */
 	NAVIGATION_STATE_AUTO_LANDGPSFAIL,	/**< Auto land on gps failure (e.g. open loop loiter down) */
     NAVIGATION_STATE_AUTO_PATH_FOLLOW,  /**< AUTO Path Follow mode */
@@ -125,6 +129,7 @@ typedef enum {
 	NAVIGATION_STATE_TERMINATION,		/**< Termination mode */
 	NAVIGATION_STATE_OFFBOARD,
 	NAVIGATION_STATE_FOLLOW,			/**< Manual-controlled follow mode */
+	NAVIGATION_STATE_AUTO_STANDBY,		/**< Auto Stand-By mode.*/
 	NAVIGATION_STATE_MAX,
 } navigation_state_t;
 
@@ -260,6 +265,8 @@ struct vehicle_status_s {
 	bool circuit_breaker_engaged_airspd_check;
 	bool circuit_breaker_engaged_enginefailure_check;
 	bool circuit_breaker_engaged_gpsfailure_check;
+
+	bool auto_takeoff_cmd;
 };
 
 /**

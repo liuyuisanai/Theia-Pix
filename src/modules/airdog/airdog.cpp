@@ -150,6 +150,8 @@ void cAirdog::cycle()
 	if (updated) {
 		pparam_handler->loadCycle();
 
+		orb_copy(ORB_ID(vehicle_status), vehicle_status_sub, &vehicle_status);
+
 		orb_copy(ORB_ID(airdog_status), airdog_status_sub, &airdog_status);
 		hil = airdog_status.base_mode & MAV_MODE_FLAG_HIL_ENABLED;
 		armed = airdog_status.base_mode & MAV_MODE_FLAG_SAFETY_ARMED;
@@ -209,7 +211,7 @@ void cAirdog::cycle()
 	}
 }
 
-void cAirdog::send_set_mode(uint8_t base_mode, enum PX4_CUSTOM_MAIN_MODE custom_main_mode)
+void cAirdog::send_set_mode(uint8_t base_mode, enum PX4_CUSTOM_MAIN_MODE custom_main_mode, int mode_args)
 {
 	struct vehicle_command_s cmd;
 	memset(&cmd, 0, sizeof(cmd));
@@ -219,6 +221,7 @@ void cAirdog::send_set_mode(uint8_t base_mode, enum PX4_CUSTOM_MAIN_MODE custom_
 	cmd.confirmation = false;
 	cmd.param1 = base_mode;
 	cmd.param2 = custom_main_mode;
+	cmd.param3 = mode_args;
 	cmd.source_system = vehicle_status.system_id;
 	cmd.source_component = vehicle_status.component_id;
 	// TODO add parameters AD_VEH_SYSID, AD_VEH_COMP to set target id
@@ -427,13 +430,20 @@ bool cAirdog::button_clicked_i2c(uint8_t button, bool long_press)
 			// CENTER button
             if (current_button_state == BUTTON_STATE_CONFIRM_TAKEOFF){
 
-                set_current_button_state(BUTTON_STATE_DEFAULT);
+                if (vehicle_status.condition_global_position_valid) {
+                    set_current_button_state(BUTTON_STATE_DEFAULT);
 
-                uint8_t base_mode = MAV_MODE_FLAG_SAFETY_ARMED | MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
-                if (hil) base_mode |= MAV_MODE_FLAG_HIL_ENABLED;
-				send_set_mode(base_mode, PX4_CUSTOM_MAIN_MODE_LOITER);
-                usleep(100000);
-                send_command(REMOTE_CMD_TAKEOFF);
+                    uint8_t base_mode = MAV_MODE_FLAG_SAFETY_ARMED | MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
+                    if (hil) base_mode |= MAV_MODE_FLAG_HIL_ENABLED;
+                    send_set_mode(base_mode, PX4_CUSTOM_MAIN_MODE_LOITER, 1);
+                    // usleep(1000000);
+                    // send_command(REMOTE_CMD_TAKEOFF);
+                }
+                else {
+                	set_current_button_state(BUTTON_STATE_DEFAULT);
+                	ioctl(buzzer, TONE_SET_ALARM, TONE_NOTIFY_NEGATIVE_TUNE);
+                }
+                
             
             } else if (current_button_state == BUTTON_STATE_DEFAULT) {
                 set_current_button_state(BUTTON_STATE_CHOOSE_FUNCTION);

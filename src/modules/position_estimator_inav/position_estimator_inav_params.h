@@ -61,6 +61,7 @@ struct position_estimator_inav_params {
     int32_t sonar_on;
 	float land_t;
 	float land_disp;
+    float land_min_h;
 	float land_thr;
 	int32_t no_vision;
 	float delay_gps;
@@ -86,6 +87,7 @@ struct position_estimator_inav_param_handles {
     param_t sonar_on;
 	param_t land_t;
 	param_t land_disp;
+    param_t land_min_h;
 	param_t land_thr;
 	param_t no_vision;
 	param_t delay_gps;

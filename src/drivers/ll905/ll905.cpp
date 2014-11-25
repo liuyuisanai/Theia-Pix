@@ -83,7 +83,7 @@
 #define LL905_DISTHIGH_REG		0x8F		/* High byte of distance register, auto increment */
 
 /* Device limits */
-#define LL905_MIN_DISTANCE (0.00f)
+#define LL905_MIN_DISTANCE (0.10f)
 #define LL905_MAX_DISTANCE (60.00f)
 
 #define LL905_CONVERSION_INTERVAL 100000 /* 100ms */

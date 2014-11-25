@@ -186,7 +186,7 @@ AbsFollow::execute_vehicle_command() {
 				double alpha = (double)_parameters.loi_step_len / radius;
 
 				// vector yaw rotation +alpha or -alpha depending on left or right
-				R_phi.from_euler(0.0f, 0.0f, alpha);
+				R_phi.from_euler(0.0f, 0.0f, -alpha);
 				math::Vector<3> offset_new  = R_phi * offset;
 
 				_afollow_offset = offset_new;
@@ -207,7 +207,7 @@ AbsFollow::execute_vehicle_command() {
 				double alpha = (double)_parameters.loi_step_len / radius;
 
 				// vector yaw rotation +alpha or -alpha depending on left or right
-				R_phi.from_euler(0.0f, 0.0f, -alpha);
+				R_phi.from_euler(0.0f, 0.0f, alpha);
 				math::Vector<3> offset_new  = R_phi * offset;
 
 				_afollow_offset = offset_new;

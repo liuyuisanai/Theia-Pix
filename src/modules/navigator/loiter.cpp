@@ -76,18 +76,22 @@ Loiter::on_activation()
 {
 	updateParameters();
 
+	//Ignore all commands received from target so far
+	update_vehicle_command();
+
 	// Determine current loiter sub mode
 	struct vehicle_status_s *vstatus = _navigator->get_vstatus();
 
-    pos_sp_triplet = _navigator->get_position_setpoint_triplet();
+    _mavlink_fd = _navigator->get_mavlink_fd();
 
-	_mavlink_fd = _navigator->get_mavlink_fd();
-
-	if (vstatus->condition_landed) {
-		set_sub_mode(LOITER_SUB_MODE_LANDED, 0);
-	}
-	else {
-		set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, 0);
+    if (vstatus->auto_takeoff_cmd) {
+		set_sub_mode(LOITER_SUB_MODE_TAKING_OFF, 1);
+		takeoff();
+		resetModeArguments(MAIN_STATE_LOITER);
+	} else if (vstatus->airdog_state == AIRD_STATE_LANDED || vstatus->airdog_state == AIRD_STATE_STANDBY) {
+		set_sub_mode(LOITER_SUB_MODE_LANDED, 1);
+	} else {
+		set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, 1); 
 	}
 }
 
@@ -96,8 +100,6 @@ Loiter::on_active()
 {
 	target_pos = _navigator->get_target_position();
 	global_pos = _navigator->get_global_position();
-	pos_sp_triplet = _navigator->get_position_setpoint_triplet();
-
 
 	if (loiter_sub_mode == LOITER_SUB_MODE_TAKING_OFF && check_current_pos_sp_reached()) {
 
@@ -122,12 +124,12 @@ Loiter::on_active()
 	if ( update_vehicle_command() )
 			execute_vehicle_command();
 
-	pos_sp_triplet = _navigator->get_position_setpoint_triplet();
-
-	if (loiter_sub_mode == LOITER_SUB_MODE_AIM_AND_SHOOT || loiter_sub_mode == LOITER_SUB_MODE_COME_TO_ME)
+	if (loiter_sub_mode == LOITER_SUB_MODE_AIM_AND_SHOOT || loiter_sub_mode == LOITER_SUB_MODE_COME_TO_ME) {
+		pos_sp_triplet = _navigator->get_position_setpoint_triplet();
 		point_camera_to_target(&(pos_sp_triplet->current));
-
-	_navigator->set_position_setpoint_triplet_updated();
+		_navigator->set_position_setpoint_triplet_updated();
+	}
+	
 }
 
 void
@@ -195,10 +197,7 @@ Loiter::execute_command_in_aim_and_shoot(vehicle_command_s cmd){
 			&offset_y
 	);
 
-
-
 	math::Vector<3> offset(offset_x, offset_y, offset_z);
-
 
 	if (cmd.command == VEHICLE_CMD_DO_SET_MODE){
 
@@ -206,7 +205,7 @@ Loiter::execute_command_in_aim_and_shoot(vehicle_command_s cmd){
 		uint8_t main_mode = (uint8_t)cmd.param2;
 
 		if (main_mode == PX4_CUSTOM_SUB_MODE_AUTO_RTL) {
-			// Make request to COMMANDER do change state to RTL
+
 			commander_request_s *commander_request = _navigator->get_commander_request();
 			commander_request->request_type = V_MAIN_STATE_CHANGE;
 			commander_request->main_state = MAIN_STATE_RTL;
@@ -220,12 +219,17 @@ Loiter::execute_command_in_aim_and_shoot(vehicle_command_s cmd){
 
 		REMOTE_CMD remote_cmd = (REMOTE_CMD)cmd.param1;
 
+		pos_sp_triplet = _navigator->get_position_setpoint_triplet();
+
 		pos_sp_triplet->previous.valid = false;
 		pos_sp_triplet->current.valid = true;
 		pos_sp_triplet->next.valid = false;
 
-		switch(remote_cmd){
+		switch(remote_cmd) {
 			case  REMOTE_CMD_LAND_DISARM: {
+
+                mavlink_log_info(_navigator->get_mavlink_fd(), "Land disarm command");
+
 				land();
 				set_sub_mode(LOITER_SUB_MODE_LANDING, 0);
 				break;
@@ -417,9 +421,9 @@ Loiter::execute_command_in_aim_and_shoot(vehicle_command_s cmd){
 
 		}
 
-	}
+		_navigator->set_position_setpoint_triplet_updated();
 
-	_navigator->set_position_setpoint_triplet_updated();
+	}
 
 }
 
@@ -462,26 +466,25 @@ Loiter::execute_command_in_landing(vehicle_command_s cmd){
 void
 Loiter::set_sub_mode(LOITER_SUB_MODE new_sub_mode, uint8_t reset_setpoint = 1) {
 
-	if (new_sub_mode == LOITER_SUB_MODE_AIM_AND_SHOOT) {
+	if (reset_setpoint > 0) {
+		pos_sp_triplet = _navigator->get_position_setpoint_triplet();
 
-		if (reset_setpoint > 0) {
-			pos_sp_triplet->previous.valid = false;
-			pos_sp_triplet->current.valid = true;
-			pos_sp_triplet->next.valid = false;
+		pos_sp_triplet->previous.valid = false;
+		pos_sp_triplet->current.valid = true;
+		pos_sp_triplet->next.valid = false;
 
-			pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
+		pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
+		
+		if (reset_setpoint == 1) {
+			// Reset setpoint position to current global position
+			global_pos = _navigator->get_global_position();
 			
-			if (reset_setpoint == 1) {
-				// Reset setpoint position to current global position
-				global_pos = _navigator->get_global_position();
-				
-				pos_sp_triplet->current.alt = global_pos->alt;
-				pos_sp_triplet->current.lon = global_pos->lon;
-				pos_sp_triplet->current.lat = global_pos->lat;
-			}
-
-			_navigator->set_position_setpoint_triplet_updated();
+			pos_sp_triplet->current.alt = global_pos->alt;
+			pos_sp_triplet->current.lon = global_pos->lon;
+			pos_sp_triplet->current.lat = global_pos->lat;
 		}
+
+		_navigator->set_position_setpoint_triplet_updated();
 	}
 
 	loiter_sub_mode = new_sub_mode;
@@ -516,4 +519,3 @@ Loiter::set_sub_mode(LOITER_SUB_MODE new_sub_mode, uint8_t reset_setpoint = 1) {
 void
 Loiter::execute_command_in_taking_off(vehicle_command_s cmd) {
 }
-

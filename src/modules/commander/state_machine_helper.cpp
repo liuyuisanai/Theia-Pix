@@ -48,6 +48,7 @@
 #include <string.h>
 #include <math.h>
 
+
 #include <uORB/uORB.h>
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/actuator_controls.h>
@@ -107,6 +108,7 @@ arming_state_transition(struct vehicle_status_s *status,		///< current vehicle s
 			bool			fRunPreArmChecks,	///< true: run the pre-arm checks, false: no pre-arm checks, for unit testing
 			const int               mavlink_fd)		///< mavlink fd for error reporting, 0 for none
 {
+
 	// Double check that our static arrays are still valid
 	ASSERT(ARMING_STATE_INIT == 0);
 	ASSERT(ARMING_STATE_IN_AIR_RESTORE == ARMING_STATE_MAX - 1);
@@ -115,6 +117,11 @@ arming_state_transition(struct vehicle_status_s *status,		///< current vehicle s
 	arming_state_t current_arming_state = status->arming_state;
 	bool feedback_provided = false;
 
+	//Arm only if have valid GPS position
+	if (new_arming_state == ARMING_STATE_ARMED && !status->condition_global_position_valid){
+		ret = TRANSITION_DENIED;
+	}
+	else 
 	/* only check transition if the new state is actually different from the current one */
 	if (new_arming_state == current_arming_state) {
 		ret = TRANSITION_NOT_CHANGED;
@@ -275,7 +282,7 @@ bool is_safe(const struct vehicle_status_s *status, const struct safety_s *safet
 }
 
 transition_result_t
-main_state_transition(struct vehicle_status_s *status, main_state_t new_main_state)
+main_state_transition(struct vehicle_status_s *status, main_state_t new_main_state, const int mavlink_fd)
 {
 	transition_result_t ret = TRANSITION_DENIED;
 
@@ -312,27 +319,48 @@ main_state_transition(struct vehicle_status_s *status, main_state_t new_main_sta
 		}
 		break;
 
+	case MAIN_STATE_AUTO_STANDBY:
+		/* need valid arming state */
+		if (status->arming_state == ARMING_STATE_STANDBY || status->arming_state == ARMING_STATE_ARMED)
+			ret = TRANSITION_CHANGED;
+		break;
+
 	case MAIN_STATE_LOITER:
-		/* need global position estimate */
-		if (status->condition_global_position_valid) {
+		/* need global position estimate, home and target position */
+		if (status->condition_global_position_valid && status->condition_home_position_valid && status->condition_target_position_valid) {
 			ret = TRANSITION_CHANGED;
 		}
 		break;
 
 	case MAIN_STATE_AUTO_MISSION:
-	case MAIN_STATE_RTL:
-		/* need global position and home position */
+	    /* need global position and home position */
 		if (status->condition_global_position_valid && status->condition_home_position_valid) {
 			ret = TRANSITION_CHANGED;
 		}
 		break;
+	case MAIN_STATE_RTL:
+		/* Currently RTL is used as default failsafe mode thus all validations to be done in navigation state transition */
+		ret = TRANSITION_CHANGED;
+		break;
+
+    case MAIN_STATE_EMERGENCY_RTL:
+        if (status->condition_global_position_valid && status->condition_home_position_valid) {
+            ret = TRANSITION_CHANGED; 
+        }
+        break;
+
+    case MAIN_STATE_EMERGENCY_LAND:
+        ret = TRANSITION_CHANGED; 
+        break;
 
 	case MAIN_STATE_ABS_FOLLOW:
-		/* need global position estimate */
-		if (status->condition_global_position_valid && status->condition_target_position_valid) {
-			ret = TRANSITION_CHANGED;
-		}
-		break;
+        {
+            /* need global position estimate */
+            if (status->condition_global_position_valid && status->condition_target_position_valid) {
+                ret = TRANSITION_CHANGED;
+            }
+            break;
+        }
 
 	case MAIN_STATE_AUTO_PATH_FOLLOW:
 		/* need global position estimate */
@@ -357,6 +385,7 @@ main_state_transition(struct vehicle_status_s *status, main_state_t new_main_sta
 
 	if (ret == TRANSITION_CHANGED) {
 		if (status->main_state != new_main_state) {
+			mavlink_log_info(mavlink_fd, "[Main State Transition] Success: state %d to %d!", status->main_state, new_main_state);
 			status->main_state = new_main_state;
 		} else {
 			ret = TRANSITION_NOT_CHANGED;
@@ -373,8 +402,8 @@ airdog_state_transition(struct vehicle_status_s *status, airdog_state_t new_aird
     char * str;
 
     switch (new_airdog_state){
-        case AIRD_STATE_DISARMED:
-            str = "disarmed";
+    	case AIRD_STATE_STANDBY:
+            str = "standby";
             break;
         case AIRD_STATE_LANDED:
             str = "landed";
@@ -390,7 +419,7 @@ airdog_state_transition(struct vehicle_status_s *status, airdog_state_t new_aird
             break;
     }
 
-    mavlink_log_info(mavlink_fd, "Airdog state machine state:%s", str);
+    mavlink_log_info(mavlink_fd, "Airdog state machine state: %s", str);
 }
 
 /**
@@ -568,7 +597,9 @@ bool set_nav_state(struct vehicle_status_s *status, const bool data_link_loss_en
 			}
 		}
 		break;
-
+	case MAIN_STATE_AUTO_STANDBY:
+		status->nav_state = NAVIGATION_STATE_AUTO_STANDBY;
+		break;
 	case MAIN_STATE_AUTO_MISSION:
 		/* go into failsafe
 		 * - if commanded to do so
@@ -645,20 +676,6 @@ bool set_nav_state(struct vehicle_status_s *status, const bool data_link_loss_en
 				status->nav_state = NAVIGATION_STATE_TERMINATION;
 			}
 
-		/* go into failsafe if RC is lost and datalink loss is not set up */
-		// } else if (status->rc_signal_lost && !data_link_loss_enabled) {
-		// 	status->failsafe = true;
-
-		// 	if (status->condition_global_position_valid && status->condition_home_position_valid) {
-		// 		status->nav_state = NAVIGATION_STATE_AUTO_RTGS;
-		// 	} else if (status->condition_local_position_valid) {
-		// 		status->nav_state = NAVIGATION_STATE_LAND;
-		// 	} else if (status->condition_local_altitude_valid) {
-		// 		status->nav_state = NAVIGATION_STATE_DESCEND;
-		// 	} else {
-		// 		status->nav_state = NAVIGATION_STATE_TERMINATION;
-		// 	}
-
 		/* don't bother if RC is lost if datalink is connected */
 		} else if (status->rc_signal_lost) {
 
@@ -690,8 +707,30 @@ bool set_nav_state(struct vehicle_status_s *status, const bool data_link_loss_en
 			status->nav_state = NAVIGATION_STATE_RTL;
 		}
 		break;
-		
+
+    case MAIN_STATE_EMERGENCY_RTL:
+		if (status->engine_failure) {
+			status->nav_state = NAVIGATION_STATE_AUTO_LANDENGFAIL;
+		} else if ((!status->condition_global_position_valid ||
+					!status->condition_home_position_valid)) {
+			status->failsafe = true;
+
+			if (status->condition_local_position_valid) {
+				status->nav_state = NAVIGATION_STATE_LAND;
+			} else if (status->condition_local_altitude_valid) {
+				status->nav_state = NAVIGATION_STATE_DESCEND;
+			} else {
+				status->nav_state = NAVIGATION_STATE_TERMINATION;
+			}
+		} else {
+			status->nav_state = NAVIGATION_STATE_RTL;
+		}
+        break;
+    case MAIN_STATE_EMERGENCY_LAND:
+        status->nav_state = NAVIGATION_STATE_LAND;
+        break;
 	case MAIN_STATE_ABS_FOLLOW:
+
 		/* require target position*/
 		if ((!status->condition_target_position_valid)) {
 

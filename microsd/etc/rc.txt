@@ -1,0 +1,80 @@
+# rc.txt file for leash with firmwares containing e725dee001353d96c3b08c503037500282d026c4
+
+# sercon
+# Start console on USB
+# nshterm /dev/ttyACM0 &
+
+uorb start
+usleep 1000000
+
+set PARAM_FILE /fs/microsd/params
+if mtd start
+then
+	set PARAM_FILE /fs/mtd_params
+fi
+
+param select $PARAM_FILE
+if param load
+then
+	echo "[init] Parameters loaded: $PARAM_FILE"
+else
+	echo "[init] ERROR: Parameters loading failed: $PARAM_FILE"
+fi
+
+
+ sh /etc/init.d/rc.sensors
+ usleep 1000000
+ # Original gps
+ gps start
+ # Fake gps
+ # gps start -f
+ usleep 1000000
+
+ attitude_estimator_ekf start
+ usleep 1000000
+ position_estimator_inav start
+ usleep 1000000
+
+#
+# Start system state indicator
+#
+if rgbled start
+then
+	echo "[init] Using external RGB Led"
+else
+	if blinkm start
+	then
+		echo "[init] Using blinkm"
+		blinkm systemstate
+	fi
+fi
+	
+commander start
+usleep 1000000
+fmu mode_gpio
+usleep 1000000
+airdog start
+usleep 1000000
+
+ # trajectory_calculator start
+ 
+ # Original Mavlink
+ # mavlink start -d /dev/ttyS1 -m custom
+ # usleep 1000000
+ # mavlink stream -d /dev/ttyS1 -s GLOBAL_POSITION_TIME -r 10
+ 
+ # Targeter+trajectory Simulator Mavlink
+ # mavlink start -r 20000 -d /dev/ttyACM0 -m target
+
+ # New Mavlink
+ # mavlink start -d /dev/ttyS1 -m target
+ # usleep 1000000
+
+ # New Mavlink without trajectory
+   mavlink start -d /dev/ttyS1 -m custom
+   usleep 1000000
+   mavlink stream -d /dev/ttyS1 -s GLOBAL_POSITION_INT -r 10
+   usleep 1000000
+
+sdlog2_lite start -r 200 -b 22 -t
+#exit

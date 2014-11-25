@@ -324,8 +324,13 @@ ADC::update_system_power(void)
 	// publish these to the same topic
 	system_power.usb_connected = stm32_gpioread(GPIO_OTGFS_VBUS);
 
+#ifdef CONFIG_ARCH_BOARD_AIRDOG_FMU
+	// Brick valid signal is unstable on the new boards
+	system_power.brick_valid   = true;
+#else
 	// note that the valid pins are active low
 	system_power.brick_valid   = !stm32_gpioread(GPIO_VDD_BRICK_VALID);
+#endif
 #ifdef CONFIG_ARCH_BOARD_PX4FMU_V2
 	system_power.servo_valid   = !stm32_gpioread(GPIO_VDD_SERVO_VALID);
 #else

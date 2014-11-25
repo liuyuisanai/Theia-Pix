@@ -72,12 +72,13 @@
 #include "geofence.h"
 #include "abs_follow.h"
 #include "path_follow.hpp"
+#include "land.h"
 
 /**
  * Number of navigation modes that need on_active/on_inactive calls
- * Currently: mission, loiter, rtl, offboard, abs_follow, path_follow
+ * Currently: mission, loiter, rtl, offboard, abs_follow, path_follow, land
  */
-#define NAVIGATOR_MODE_ARRAY_SIZE 9
+#define NAVIGATOR_MODE_ARRAY_SIZE 10
 
 class Navigator : public control::SuperBlock
 {
@@ -223,6 +224,8 @@ private:
 	GpsFailure	_gpsFailure;			/**< class that handles the OBC gpsfailure loss mode */
 	AbsFollow 	_abs_follow;			/**< class that handles AFollow */
 	PathFollow	_path_follow;		/**< class that handles Follow Path*/
+
+    Land        _land;                  /**/
 
 	NavigatorMode *_navigation_mode_array[NAVIGATOR_MODE_ARRAY_SIZE];	/**< array of navigation modes */
 
