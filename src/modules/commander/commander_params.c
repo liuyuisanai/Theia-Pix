@@ -236,3 +236,12 @@ PARAM_DEFINE_FLOAT(A_TRGT_VSB_TO_1, 1.0f);
  * @max 30.0f 
  */
 PARAM_DEFINE_FLOAT(A_TRGT_VSB_TO_2, 5.0f);
+
+/**
+ * Valid GPS position is required to arm copter
+ *
+ * @group Airdog
+ * @min 0 
+ * @max 1 
+ */
+PARAM_DEFINE_INT32(A_REQUIRE_GPS, 1);

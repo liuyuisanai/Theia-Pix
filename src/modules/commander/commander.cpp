@@ -779,6 +779,7 @@ int commander_thread_main(int argc, char *argv[])
 	param_t _param_ef_throttle_thres = param_find("COM_EF_THROT");
 	param_t _param_ef_current2throttle_thres = param_find("COM_EF_C2T");
 	param_t _param_ef_time_thres = param_find("COM_EF_TIME");
+	
 
 	float battery_warning_level;
 	float battery_critical_level;
@@ -787,6 +788,8 @@ int commander_thread_main(int argc, char *argv[])
     int battery_critical_use;
     int battery_flat_use;
 
+    int require_gps = 1;
+
 	param_t _param_battery_warning_level = param_find("BAT_WARN_LVL");
 	param_t _param_battery_critical_level = param_find("BAT_CRIT_LVL");
 	param_t _param_battery_flat_level = param_find("BAT_FLAT_LVL");
@@ -794,6 +797,7 @@ int commander_thread_main(int argc, char *argv[])
 	param_t _param_battery_critical_use = param_find("BAT_CRIT_USE");
 	param_t _param_battery_flat_use = param_find("BAT_FLAT_USE");
 
+	param_t _param_require_gps = param_find("A_REQUIRE_GPS");
 
 
 	param_get(_param_battery_warning_level, &battery_warning_level);
@@ -803,6 +807,7 @@ int commander_thread_main(int argc, char *argv[])
 	param_get(_param_battery_critical_use, &battery_critical_use);
 	param_get(_param_battery_flat_use, &battery_flat_use);
 
+	param_get(_param_require_gps, &require_gps);
 
     float target_visibility_timeout_1;
     float target_visibility_timeout_2;
@@ -871,6 +876,8 @@ int commander_thread_main(int argc, char *argv[])
 
 	/* vehicle status topic */
 	memset(&status, 0, sizeof(status));
+	status.require_gps = require_gps;
+	
 	status.condition_landed = true;	// initialize to safe value
 	// We want to accept RC inputs as default
 	status.rc_input_blocked = false;
@@ -1196,6 +1203,12 @@ int commander_thread_main(int argc, char *argv[])
 			param_get(_param_ef_throttle_thres, &ef_throttle_thres);
 			param_get(_param_ef_current2throttle_thres, &ef_current2throttle_thres);
 			param_get(_param_ef_time_thres, &ef_time_thres);
+
+			param_get(_param_require_gps, &require_gps);
+			if (require_gps != status.require_gps) {
+				status.require_gps = require_gps;
+				status_changed = true;
+			}
 		}
 
 		orb_check(sp_man_sub, &updated);

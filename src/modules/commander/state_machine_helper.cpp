@@ -118,7 +118,7 @@ arming_state_transition(struct vehicle_status_s *status,		///< current vehicle s
 	bool feedback_provided = false;
 
 	//Arm only if have valid GPS position
-	if (new_arming_state == ARMING_STATE_ARMED && !status->condition_global_position_valid){
+	if (new_arming_state == ARMING_STATE_ARMED &&  status->require_gps && !status->condition_global_position_valid) {
 		ret = TRANSITION_DENIED;
 	}
 	else 
