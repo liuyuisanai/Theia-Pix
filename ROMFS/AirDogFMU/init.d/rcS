@@ -35,6 +35,63 @@ set MAV_TYPE 2
 
 #set ALWAYS_DEBUG_MODE yes
 
+# Do IO checks as early as possible while IO chip is in bootloader mode
+set IO_PRESENT no
+
+if [ $USE_IO == yes ]
+then
+	#
+	# Check if PX4IO present and update firmware if needed
+	#
+	if [ -f /etc/extras/px4io-v2_default.bin ]
+	then
+		set IO_FILE /etc/extras/px4io-v2_default.bin
+	else
+		set IO_FILE /etc/extras/px4io-v1_default.bin
+	fi
+
+	# usleep 2000000
+	if px4io checkcrc $IO_FILE
+	then
+		echo "[init] PX4IO CRC OK"
+		echo "PX4IO CRC OK" >> $LOG_FILE
+
+		set IO_PRESENT yes
+	else
+		echo "[init] Trying to update"
+		echo "PX4IO Trying to update" >> $LOG_FILE
+
+		tone_alarm MLL32CP8MB
+
+		if px4io forceupdate 14662 $IO_FILE
+		then
+			usleep 500000
+			if px4io checkcrc $IO_FILE
+			then
+				echo "[init] PX4IO CRC OK, update successful"
+				echo "PX4IO CRC OK after updating" >> $LOG_FILE
+				tone_alarm MLL8CDE
+
+				set IO_PRESENT yes
+			else
+				echo "[init] ERROR: PX4IO update failed"
+				echo "PX4IO update failed" >> $LOG_FILE
+				tone_alarm $TUNE_OUT_ERROR
+			fi
+		else
+			echo "[init] ERROR: PX4IO update failed"
+			echo "PX4IO update failed" >> $LOG_FILE
+			tone_alarm $TUNE_OUT_ERROR
+		fi
+	fi
+
+	if [ $IO_PRESENT == no ]
+	then
+		echo "[init] ERROR: PX4IO not found"
+		tone_alarm $TUNE_OUT_ERROR
+	fi
+fi
+
 if [ notset$ALWAYS_DEBUG_MODE = notset ]
 then
 	if debug_button_pressed
@@ -170,62 +227,6 @@ then
 		param set SYS_AUTOCONFIG 0
 		param save
 	fi
-
-	set IO_PRESENT no
-
-	if [ $USE_IO == yes ]
-	then
-		#
-		# Check if PX4IO present and update firmware if needed
-		#
-		if [ -f /etc/extras/px4io-v2_default.bin ]
-		then
-			set IO_FILE /etc/extras/px4io-v2_default.bin
-		else
-			set IO_FILE /etc/extras/px4io-v1_default.bin
-		fi
-
-		if px4io checkcrc $IO_FILE
-		then
-			echo "[init] PX4IO CRC OK"
-			echo "PX4IO CRC OK" >> $LOG_FILE
-
-			set IO_PRESENT yes
-		else
-			echo "[init] Trying to update"
-			echo "PX4IO Trying to update" >> $LOG_FILE
-
-			tone_alarm MLL32CP8MB
-
-			if px4io forceupdate 14662 $IO_FILE
-			then
-				usleep 500000
-				if px4io checkcrc $IO_FILE
-				then
-					echo "[init] PX4IO CRC OK, update successful"
-					echo "PX4IO CRC OK after updating" >> $LOG_FILE
-					tone_alarm MLL8CDE
-
-					set IO_PRESENT yes
-				else
-					echo "[init] ERROR: PX4IO update failed"
-					echo "PX4IO update failed" >> $LOG_FILE
-					tone_alarm $TUNE_OUT_ERROR
-				fi
-			else
-				echo "[init] ERROR: PX4IO update failed"
-				echo "PX4IO update failed" >> $LOG_FILE
-				tone_alarm $TUNE_OUT_ERROR
-			fi
-		fi
-
-		if [ $IO_PRESENT == no ]
-		then
-			echo "[init] ERROR: PX4IO not found"
-			tone_alarm $TUNE_OUT_ERROR
-		fi
-	fi
-
 
 	if [ $OUTPUT_MODE == io -a $IO_PRESENT != yes ]
 	then
