@@ -118,7 +118,7 @@ Loiter::on_active()
 	}
 
 	if (loiter_sub_mode == LOITER_SUB_MODE_COME_TO_ME && check_current_pos_sp_reached()) {
-		set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, 1);
+		set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, 0);
 	}
 
 	if ( update_vehicle_command() )
