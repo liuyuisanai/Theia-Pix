@@ -209,14 +209,6 @@ static struct sdio_dev_s *sdio;
 
 __EXPORT int nsh_archinitialize(void)
 {
-	/* configure power supply control/sense pins */
-	stm32_configgpio(GPIO_ADC_BATT_CURRENT);
-	stm32_configgpio(GPIO_ADC_BATT_VOLTAGE);
-	stm32_configgpio(GPIO_ADC_SENS_VOLTAGE);
-
-	stm32_configgpio(GPIO_VDD_3V3_SENSORS_EN);
-	stm32_configgpio(GPIO_VDD_BRICK_VALID);
-
 	/* configure debug button pin */
 	stm32_configgpio(GPIO_DEBUG_BTN);
 
@@ -320,4 +312,22 @@ __EXPORT int nsh_archinitialize(void)
 #endif
 
 	return OK;
+}
+
+static void
+adc_init()
+{
+#define ADC1_N_X(channel) (GPIO_ADC1_IN ## channel)
+#define ADC1_N(channel) ADC1_N_X(channel)
+
+	/* sense pins */
+	stm32_configgpio(ADC1_N(ADC_BATTERY_CURRENT_CHANNEL));
+	stm32_configgpio(ADC1_N(ADC_BATTERY_VOLTAGE_CHANNEL));
+	stm32_configgpio(ADC1_N(ADC_SENSORS_VOLTAGE_CHANNEL));
+
+	/* power supply control pins */
+	stm32_configgpio(GPIO_VDD_3V3_SENSORS_EN);
+	stm32_configgpio(GPIO_VDD_BRICK_VALID);
+#undef ADC1_N_X
+#undef ADC1_N
 }
