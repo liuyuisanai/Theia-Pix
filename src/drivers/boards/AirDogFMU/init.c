@@ -207,10 +207,14 @@ static struct spi_dev_s *spi1;
 static struct spi_dev_s *spi4;
 static struct sdio_dev_s *sdio;
 
+static void adc_init();
+
 __EXPORT int nsh_archinitialize(void)
 {
 	/* configure debug button pin */
 	stm32_configgpio(GPIO_DEBUG_BTN);
+
+	adc_init();
 
 	/* configure the high-resolution time/callout interface */
 	hrt_init();
