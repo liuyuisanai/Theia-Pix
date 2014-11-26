@@ -207,7 +207,7 @@ RTL::set_rtl_setpoint()
 			break;
 		}
 		case RTL_STATE_LAND: {
-            land();
+            land(0); //do not reset setpoint, let it be at home position
 			break;
 		}
 		case RTL_STATE_LANDED: {

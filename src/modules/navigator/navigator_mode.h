@@ -103,7 +103,7 @@ public:
 	void updateParamValues();
 	void updateParamHandles();
 
-    void land();
+    void land(uint8_t reset_setpoint = 1);
     void takeoff();
     void disarm();
     void resetModeArguments(main_state_t main_state);

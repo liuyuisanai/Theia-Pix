@@ -315,7 +315,7 @@ NavigatorMode::check_current_pos_sp_reached()
 
 
 void
-NavigatorMode::land()
+NavigatorMode::land(uint8_t reset_setpoint)
 {
     pos_sp_triplet = _navigator->get_position_setpoint_triplet();
     global_pos = _navigator->get_global_position();
@@ -324,10 +324,14 @@ NavigatorMode::land()
 	pos_sp_triplet->current.valid = true;
 	pos_sp_triplet->next.valid = false;
 
-	pos_sp_triplet->current.lat = global_pos->lat;
-	pos_sp_triplet->current.lon = global_pos->lon;
-	pos_sp_triplet->current.alt = global_pos->alt;
-	pos_sp_triplet->current.yaw = NAN;
+	if (reset_setpoint == 1) {
+
+		pos_sp_triplet->current.lat = global_pos->lat;
+		pos_sp_triplet->current.lon = global_pos->lon;
+		pos_sp_triplet->current.alt = global_pos->alt;
+		pos_sp_triplet->current.yaw = NAN;
+	}
+
 	pos_sp_triplet->current.type = SETPOINT_TYPE_LAND;
 
 	_navigator->set_position_setpoint_triplet_updated();
