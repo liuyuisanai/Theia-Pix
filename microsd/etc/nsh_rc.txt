@@ -61,7 +61,7 @@ usleep 1000000
  # Original Mavlink
  # mavlink start -d /dev/ttyS1 -m custom
  # usleep 1000000
- # mavlink stream -d /dev/ttyS1 -s GLOBAL_POSITION_TIME -r 10
+ # mavlink stream -d /dev/ttyS1 -s GLOBAL_POSITION_TIME -r 18
  
  # Targeter+trajectory Simulator Mavlink
  # mavlink start -r 20000 -d /dev/ttyACM0 -m target
@@ -73,7 +73,7 @@ usleep 1000000
  # New Mavlink without trajectory
    mavlink start -d /dev/ttyS1 -m custom
    usleep 1000000
-   mavlink stream -d /dev/ttyS1 -s GLOBAL_POSITION_INT -r 10
+   mavlink stream -d /dev/ttyS1 -s GLOBAL_POSITION_INT -r 18
    usleep 1000000
 
 sdlog2_lite start -r 200 -b 22 -t
