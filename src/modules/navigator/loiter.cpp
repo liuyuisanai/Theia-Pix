@@ -88,7 +88,7 @@ Loiter::on_activation()
 		set_sub_mode(LOITER_SUB_MODE_TAKING_OFF, 1);
 		takeoff();
 		//resetModeArguments(MAIN_STATE_LOITER); //now done in commander itself
-		
+
 	} else if (vstatus->airdog_state == AIRD_STATE_LANDED || vstatus->airdog_state == AIRD_STATE_STANDBY) {
 		set_sub_mode(LOITER_SUB_MODE_LANDED, 1);
 	} else {
@@ -112,7 +112,7 @@ Loiter::on_active()
         }
 	}
 
-	if (loiter_sub_mode == LOITER_SUB_MODE_LANDING && check_current_pos_sp_reached()) {
+	if (loiter_sub_mode == LOITER_SUB_MODE_LANDING && check_current_pos_sp_reached(SETPOINT_TYPE_LAND)) {
 		set_sub_mode(LOITER_SUB_MODE_LANDED, 0);
 
 		disarm();
@@ -230,9 +230,8 @@ Loiter::execute_command_in_aim_and_shoot(vehicle_command_s cmd){
 			case  REMOTE_CMD_LAND_DISARM: {
 
                 mavlink_log_info(_navigator->get_mavlink_fd(), "Land disarm command");
-
+                set_sub_mode(LOITER_SUB_MODE_LANDING, 0);
 				land();
-				set_sub_mode(LOITER_SUB_MODE_LANDING, 0);
 				break;
 			}
             case REMOTE_CMD_GOTO_DEFUALT_DST: {

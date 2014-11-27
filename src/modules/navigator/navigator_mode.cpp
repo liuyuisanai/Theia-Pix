@@ -240,12 +240,16 @@ NavigatorMode::point_camera_to_target(position_setpoint_s *sp)
 }
 
 bool
-NavigatorMode::check_current_pos_sp_reached()
-{
-	struct vehicle_status_s *vstatus = _navigator->get_vstatus();
+NavigatorMode::check_current_pos_sp_reached(SETPOINT_TYPE expected_sp_type)
+{	
 	pos_sp_triplet = _navigator->get_position_setpoint_triplet();
-	global_pos = _navigator->get_global_position();;
+	if (expected_sp_type != SETPOINT_TYPE_UNDEFINED && pos_sp_triplet->current.type != expected_sp_type) {
+		return false;
+	}
 
+	struct vehicle_status_s *vstatus = _navigator->get_vstatus();	
+	global_pos = _navigator->get_global_position();;
+	
 	switch (pos_sp_triplet->current.type)
 	{
 	case SETPOINT_TYPE_IDLE:
@@ -414,7 +418,7 @@ NavigatorMode::go_to_intial_position(){
 
             double lat_new;
             double lon_new;
-            double alt_new = target_pos->alt + _parameters.takeoff_alt;
+            //double alt_new = target_pos->alt + _parameters.takeoff_alt;
             
             add_vector_to_global_position(
                     target_pos->lat,
@@ -432,7 +436,7 @@ NavigatorMode::go_to_intial_position(){
 
                 pos_sp_triplet->current.lat = lat_new;
                 pos_sp_triplet->current.lon = lon_new;
-                pos_sp_triplet->current.alt = alt_new;
+                //pos_sp_triplet->current.alt = alt_new;
                 pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
                 
                 _navigator->set_position_setpoint_triplet_updated();

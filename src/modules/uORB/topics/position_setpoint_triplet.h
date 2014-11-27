@@ -62,6 +62,7 @@ enum SETPOINT_TYPE
 	SETPOINT_TYPE_IDLE,		/**< do nothing, switch off motors or keep at idle speed (MC) */
 	SETPOINT_TYPE_OFFBOARD, 	/**< setpoint in NED frame (x, y, z, vx, vy, vz) set by offboard */
 	SETPOINT_TYPE_MOVING,		/**< moving setpoint, current velocity of the setpoint set */
+	SETPOINT_TYPE_UNDEFINED
 };
 
 struct position_setpoint_s
