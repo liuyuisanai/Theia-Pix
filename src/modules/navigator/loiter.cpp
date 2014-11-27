@@ -87,7 +87,8 @@ Loiter::on_activation()
     if (vstatus->auto_takeoff_cmd) {
 		set_sub_mode(LOITER_SUB_MODE_TAKING_OFF, 1);
 		takeoff();
-		resetModeArguments(MAIN_STATE_LOITER);
+		//resetModeArguments(MAIN_STATE_LOITER); //now done in commander itself
+		
 	} else if (vstatus->airdog_state == AIRD_STATE_LANDED || vstatus->airdog_state == AIRD_STATE_STANDBY) {
 		set_sub_mode(LOITER_SUB_MODE_LANDED, 1);
 	} else {
