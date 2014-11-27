@@ -1161,6 +1161,10 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 					}
                 }
             }
+            else {
+                /* reseting landing time if we are out of boundaries */
+                landed_time = 0;
+            }
         }
         /* end of hack by max */
 
