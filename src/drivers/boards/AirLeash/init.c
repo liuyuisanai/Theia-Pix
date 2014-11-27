@@ -132,7 +132,10 @@ __EXPORT int nsh_archinitialize(void)
 	adc_init();
 
 	/* configure power supply control/sense pins */
-	stm32_configgpio(GPIO_VDD_5V_PERIPH_EN);
+	stm32_configgpio(GPIO_VDD_3V3_SENSORS_EN);
+	stm32_configgpio(GPIO_VDD_SYSPOWER_OFF);
+	stm32_configgpio(GPIO_VDD_BT_PWR_EN);
+	stm32_gpiowrite(GPIO_VDD_BT_PWR_EN, 1);
 
 	/* configure the high-resolution time/callout interface */
 	hrt_init();
