@@ -113,6 +113,8 @@
  * IN5 - analog RSSI
  */
 
+#define ADC_VOLTAGE_SCALE ((float)(3.3 / 4096))
+
 #ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
 #define ADC_BATTERY_VOLTAGE_CHANNEL	10
 #define ADC_BATTERY_CURRENT_CHANNEL	-1
@@ -134,6 +136,8 @@
 
 #ifdef CONFIG_ARCH_BOARD_AIRDOG_FMU
 # include <board_config.h>
+#undef ADC_VOLTAGE_SCALE
+#define ADC_VOLTAGE_SCALE ((float)(ADC_SYSPOWER_VOLTAGE_SCALE))
 #endif
 
 #define BATT_V_LOWPASS 0.001f
@@ -1414,7 +1418,7 @@ Sensors::adc_poll(struct sensor_combined_s &raw)
 			for (unsigned i = 0; i < ret / sizeof(buf_adc[0]); i++) {
 				/* Save raw voltage values */
 				if (i < (sizeof(raw.adc_voltage_v) / sizeof(raw.adc_voltage_v[0]))) {
-					raw.adc_voltage_v[i] = buf_adc[i].am_data / (4096.0f / 3.3f);
+					raw.adc_voltage_v[i] = buf_adc[i].am_data * ADC_VOLTAGE_SCALE;
 					raw.adc_mapping[i] = buf_adc[i].am_channel;
 				}
 
