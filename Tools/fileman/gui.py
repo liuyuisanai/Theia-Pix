@@ -34,9 +34,9 @@ class Application(tk.Frame):
                 command = self.connect)
         self.listButton = tk.Button(self, text="List logs",
                 command=self.listlog, state=DISABLED)
-        self.getButton  = tk.Button(self, text="Get selected",
+        self.getButton  = tk.Button(self, text="Download",
                 command=self.getlog, state=DISABLED)
-        self.lastButton = tk.Button(self, text="Get last log",
+        self.lastButton = tk.Button(self, text="Download last",
                 command=self.lastlog, state=DISABLED)
         self.saveDirButton = tk.Button(self, text="Select save path",
                 command=self.savedir)
@@ -47,8 +47,8 @@ class Application(tk.Frame):
         self.flashButton.grid(  row=0, column=1, sticky="nesw")
         self.listButton.grid(   row=1, column=0, sticky="nesw")
         self.getButton.grid(    row=1, column=1, sticky="nesw")
-        self.lastButton.grid(   row=2, column=0, sticky="nesw")
-        self.saveDirButton.grid(row=2, column=1, sticky="nesw")
+        self.lastButton.grid(   row=2, column=0, columnspan=2, sticky="nesw")
+        #self.saveDirButton.grid(row=2, column=1, sticky="nesw")
         self.loglist.grid(row=3, column=0, columnspan=2, sticky="nesw")
         self.grid(sticky="nesw")
         self.grid_rowconfigure(0, weight=1)
@@ -89,6 +89,7 @@ class Application(tk.Frame):
 
 
     def getlog(self):
+        self.savedir()
         selected = self.loglist.curselection()
         for i in selected:
             cur = self.logs_dir + self.loglist.get(i)
@@ -101,6 +102,7 @@ class Application(tk.Frame):
                 print("File not found")
 
     def lastlog(self):
+        self.savedir()
         dirs = self.nsh.ls_dir(self.logs_dir)
         # Keep entries only "date/" entries
         dirs = filter(lambda d: re.sub("[0-9]{4}\-[0-9]{2}\-[0-9]{2}", '', d) == "/", dirs)
