@@ -103,7 +103,7 @@ public:
 	void updateParamValues();
 	void updateParamHandles();
 
-    void land();
+    void land(uint8_t reset_setpoint = 1);
     void takeoff();
     void disarm();
     void resetModeArguments(main_state_t main_state);
@@ -182,7 +182,7 @@ protected:
 
 	int		_mavlink_fd;			/**< the file descriptor to send messages over mavlink */
 
-	bool check_current_pos_sp_reached();
+	bool check_current_pos_sp_reached(SETPOINT_TYPE expected_sp_type = SETPOINT_TYPE_UNDEFINED);
     void go_to_intial_position();
 
 

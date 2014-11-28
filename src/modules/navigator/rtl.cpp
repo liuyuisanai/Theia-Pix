@@ -129,7 +129,7 @@ RTL::on_active()
 		if (!first_rtl_setpoint_set) {
 			set_rtl_setpoint();
 			first_rtl_setpoint_set = true;
-		} else if (check_current_pos_sp_reached()) {
+		} else if (check_current_pos_sp_reached(rtl_state == RTL_STATE_LAND ? SETPOINT_TYPE_LAND : SETPOINT_TYPE_UNDEFINED)) {
 			set_next_rtl_state();
 			set_rtl_setpoint();
 		}
@@ -207,7 +207,7 @@ RTL::set_rtl_setpoint()
 			break;
 		}
 		case RTL_STATE_LAND: {
-            land();
+            land(0); //do not reset setpoint, let it be at home position
 			break;
 		}
 		case RTL_STATE_LANDED: {

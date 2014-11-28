@@ -259,12 +259,16 @@ NavigatorMode::point_camera_to_target(position_setpoint_s *sp)
 }
 
 bool
-NavigatorMode::check_current_pos_sp_reached()
-{
-	struct vehicle_status_s *vstatus = _navigator->get_vstatus();
+NavigatorMode::check_current_pos_sp_reached(SETPOINT_TYPE expected_sp_type)
+{	
 	pos_sp_triplet = _navigator->get_position_setpoint_triplet();
-	global_pos = _navigator->get_global_position();;
+	if (expected_sp_type != SETPOINT_TYPE_UNDEFINED && pos_sp_triplet->current.type != expected_sp_type) {
+		return false;
+	}
 
+	struct vehicle_status_s *vstatus = _navigator->get_vstatus();	
+	global_pos = _navigator->get_global_position();;
+	
 	switch (pos_sp_triplet->current.type)
 	{
 	case SETPOINT_TYPE_IDLE:
@@ -334,7 +338,7 @@ NavigatorMode::check_current_pos_sp_reached()
 
 
 void
-NavigatorMode::land()
+NavigatorMode::land(uint8_t reset_setpoint)
 {
     pos_sp_triplet = _navigator->get_position_setpoint_triplet();
     global_pos = _navigator->get_global_position();
@@ -343,10 +347,14 @@ NavigatorMode::land()
 	pos_sp_triplet->current.valid = true;
 	pos_sp_triplet->next.valid = false;
 
-	pos_sp_triplet->current.lat = global_pos->lat;
-	pos_sp_triplet->current.lon = global_pos->lon;
-	pos_sp_triplet->current.alt = global_pos->alt;
-	pos_sp_triplet->current.yaw = NAN;
+	if (reset_setpoint == 1) {
+
+		pos_sp_triplet->current.lat = global_pos->lat;
+		pos_sp_triplet->current.lon = global_pos->lon;
+		pos_sp_triplet->current.alt = global_pos->alt;
+		pos_sp_triplet->current.yaw = NAN;
+	}
+
 	pos_sp_triplet->current.type = SETPOINT_TYPE_LAND;
 
 	_navigator->set_position_setpoint_triplet_updated();
@@ -429,7 +437,7 @@ NavigatorMode::go_to_intial_position(){
 
             double lat_new;
             double lon_new;
-            double alt_new = target_pos->alt + _parameters.takeoff_alt;
+            //double alt_new = target_pos->alt + _parameters.takeoff_alt;
             
             add_vector_to_global_position(
                     target_pos->lat,
@@ -450,7 +458,7 @@ NavigatorMode::go_to_intial_position(){
 
                 pos_sp_triplet->current.lat = lat_new;
                 pos_sp_triplet->current.lon = lon_new;
-                pos_sp_triplet->current.alt = alt_new;
+                //pos_sp_triplet->current.alt = alt_new;
                 pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
                 
                 _navigator->set_position_setpoint_triplet_updated();

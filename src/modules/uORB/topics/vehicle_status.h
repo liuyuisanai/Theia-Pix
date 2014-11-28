@@ -205,6 +205,8 @@ struct vehicle_status_s {
 
 	bool is_rotary_wing;
 
+	bool require_gps;
+
 	bool condition_battery_voltage_valid;
 	bool condition_system_in_air_restore;	/**< true if we can restore in mid air */
 	bool condition_system_sensors_initialized;
