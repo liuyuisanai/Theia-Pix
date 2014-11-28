@@ -32,7 +32,7 @@ PathFollow::PathFollow(Navigator *navigator, const char *name):
 		_ok_distance(0.0f),
 		_vertical_offset(0.0f),
 		_inited(false),
-		_target_vel_lpf(1.0f),
+		_target_vel_lpf(2.0f),
 		_target_velocity(0.0f){
 
 }
@@ -146,7 +146,9 @@ void PathFollow::on_active() {
 	else {
 	// Flying trough collected points
 		// TODO! This results in weird behavior if altitude difference is preventing the copter from reaching the setpoint
-		if (check_current_pos_sp_reached()) {
+        
+		//if (check_current_pos_sp_reached()) {
+		if (check_current_pos_sp_reached_pf(3.00f)) {
 		// We've reached the actual setpoint
 			// TODO! Temporary safety measure
 			if (check_point_safe()) {
@@ -284,16 +286,35 @@ void PathFollow::update_setpoint(const buffer_point_s &desired_point, position_s
 }
 
 void PathFollow::update_target_velocity() {
+
 	target_pos = _navigator->get_target_position();
 	// warnx("Raw target velocity: %9.6f", (double) sqrtf(target_pos->vel_n * target_pos->vel_n + target_pos->vel_e * target_pos->vel_e));
-	_target_velocity = _target_vel_lpf.apply(target_pos->remote_timestamp, sqrtf(target_pos->vel_n * target_pos->vel_n + target_pos->vel_e * target_pos->vel_e));
+    math::Vector<3> tvel_current;
+    tvel_current(0) = target_pos->vel_n;
+    tvel_current(1) = target_pos->vel_e;
+    tvel_current(2) = 0.0f;
+
+    /*
+    FILE * fh = fopen("/fs/microsd/log/m256", "a");
+    fprintf(fh, "target_pos vel_n %.5f %.5f %.5f\n", (double)tvel_current(0), (double)tvel_current(1), (double)tvel_current.length());
+    fclose(fh);
+    */
+
+    _target_velocity_raw = tvel_current.length();
+	_target_velocity_vect = _target_vel_lpf.apply(target_pos->timestamp,tvel_current);
+    _target_velocity = _target_velocity_vect.length();
 }
 
 void PathFollow::update_min_max_dist() {
+
+    if (_ok_distance<_parameters.pafol_safe_dist + _parameters.pafol_min_ok_diff)
+        _ok_distance = _parameters.pafol_safe_dist + _parameters.pafol_min_ok_diff;
+
 	_min_distance = _ok_distance - _parameters.pafol_min_ok_diff;
+
 	if (_min_distance < _parameters.pafol_safe_dist) {
 		_min_distance = _parameters.pafol_safe_dist;
-		// TODO! Do we need this check?
+		// TODO! Do we need this check? martinsf: Nope. 
 		if (_ok_distance <= _min_distance) {
 			// Add 1 meter to avoid division by 0 when calculating speed
 			_ok_distance = _min_distance + 1.0f;
@@ -306,7 +327,7 @@ void PathFollow::update_min_max_dist() {
 
 // TODO! Parameters for speed calculation functions
 float PathFollow::calculate_desired_speed(float distance) {
-	if (distance <= _min_distance) {
+    if (distance <= _min_distance + 0.01f){
 		return 0;
 	}
 	else if (distance >= _max_distance) {
@@ -315,15 +336,48 @@ float PathFollow::calculate_desired_speed(float distance) {
 	float res;
 	if (distance >= _ok_distance) {
 		// TODO! Simplify and add precalculated values
-		res = _target_velocity * ((distance - _ok_distance)*(distance - _ok_distance)*4.0f/(_max_distance-_ok_distance)/(_max_distance-_ok_distance)+1.0f);
+		//res = _target_velocity * ((distance - _ok_distance)*(distance - _ok_distance)*4.0f/(_max_distance-_ok_distance)/(_max_distance-_ok_distance)+1.0f);
+
+        float over_ok = distance - _ok_distance;
+        float fraction = over_ok / (_max_distance-_ok_distance);
+        
+        if (_target_velocity > _parameters.mpc_max_speed)
+            res = _parameters.mpc_max_speed;
+        else 
+        //    res = _target_velocity + _target_velocity * ((_target_velocity / (_parameters.mpc_max_speed - _target_velocity)) * fraction);
+            res = _target_velocity + (_parameters.mpc_max_speed - _target_velocity) * fraction;
+            
+
 	}
 	else {
 		// TODO! Simplify and add precalculated values
-		res = _target_velocity * ((-atanf((distance-2.5f-_min_distance)*(-20.0f)/(_ok_distance-_min_distance)))/M_PI_F+0.5f);
+		//res = _target_velocity * ((-atanf((distance-2.5f-_min_distance)*(-20.0f)/(_ok_distance-_min_distance)))/M_PI_F+0.5f);
+        res =  _target_velocity * (distance - _min_distance) / (_ok_distance - _min_distance);
 	}
 	// warnx("Target speed: %9.6f, desired speed: %9.6f", (double) _target_velocity, (double) res);
 	if (res < 0.0f) return 0.0f;
 	if (res > _parameters.mpc_max_speed) return _parameters.mpc_max_speed;
+
+
+        itr=0;
+        /*
+        double min_dst = _min_distance;
+        double ok_dst = _ok_distance;
+        double max_dst = _max_distance;
+        double dst = distance;
+        double target_vel = _target_velocity;
+        double new_vel = res;
+        double traw = _target_velocity_raw;
+        */
+
+        itr=100;
+
+        /*
+        FILE * fh = fopen("/fs/microsd/log/m256", "a");
+        fprintf(fh, "min_dst: %.5f, ok_dst:%.5f, max_dst:%.5f, dst:%.5f, target_vel:%.5f, raw_target_vel:%.5f, new_vel:%.5f\n", min_dst, ok_dst, max_dst, dst, target_vel, traw, new_vel);
+        fclose(fh);
+        */
+
 	return res;
 }
 
@@ -354,4 +408,63 @@ bool PathFollow::check_point_safe() {
 	}
 	// Don't even pick a point that is closer than X meters to the target
 	return (get_distance_to_next_waypoint(proposed_point.lat, proposed_point.lon, target_pos->lat, target_pos->lon) >= _parameters.pafol_safe_dist);
+}
+
+bool PathFollow::check_current_pos_sp_reached_pf(float acceptance_dst) {
+
+	pos_sp_triplet = _navigator->get_position_setpoint_triplet();
+	global_pos = _navigator->get_global_position();
+
+	struct map_projection_reference_s _ref_pos;
+    map_projection_init(&_ref_pos, global_pos->lat, global_pos->lon);
+
+    math::Vector<2> dst_xy; 
+    
+    map_projection_project(&_ref_pos,
+				pos_sp_triplet->current.lat, pos_sp_triplet->current.lon,
+				&dst_xy.data[0], &dst_xy.data[1]);
+
+    math::Vector<2> vel_xy(global_pos->vel_n, global_pos->vel_e);  
+
+    double dst_xy_len = dst_xy.length();
+
+    //dst_xy.normalize();
+    //vel_xy.normalize();
+
+    //double dst_x = dst_xy(0);
+    //double dst_y = dst_xy(1);
+
+    //double vel_x = vel_xy(0);
+    //double vel_y = vel_xy(1);
+
+    double dot_product = vel_xy(0) * dst_xy(1) - vel_xy(1) * dst_xy(0);
+    double h = dst_xy_len / dot_product;
+    double dst_to_line;
+
+    if (h>dst_xy_len) dst_to_line = 0.0f;
+    else dst_to_line = sqrt(dst_xy_len*dst_xy_len - h*h);
+
+//    if (++iter>10){
+
+
+        /*
+        double yes ;
+        if (acceptance_dst >= (float)dst_to_line) yes = 1;
+        else yes = 0;
+
+        iter=0; 
+        FILE * fh = fopen("/fs/microsd/log/m256", "a"); 
+        fprintf(fh, "dst_xy %.5f %.5f | vel_xy %.5f %.5f\n", dst_x, dst_y, vel_x, vel_y); 
+        fprintf(fh, "h, dst_to_line: %.5f %.5f\n", h, dst_to_line); 
+        fprintf(fh, "yes %.5f\n", yes); 
+        fclose(fh);
+        */
+
+ //   }
+
+    if (acceptance_dst >= (float)dst_to_line && (float)dst_xy_len <= 3 * acceptance_dst )
+        return true;
+    else 
+        return false;
+
 }

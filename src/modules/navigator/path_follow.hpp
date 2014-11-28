@@ -31,6 +31,7 @@ public:
 	virtual void on_active();
 	virtual void execute_vehicle_command();
 private:
+    int iter = 0;
 	uint64_t _last_trajectory_time; // Timestamp of the last trajectory point
 	buffer_point_s _last_point; // Last saved point
 	Queue<buffer_point_s> _saved_trajectory; // Saved trajectory points queue
@@ -42,8 +43,11 @@ private:
 	float _min_distance, _max_distance, _ok_distance; // Distances to use when following
 	float _vertical_offset; // Vertical offset off the trajectory
 	bool _inited; // Indicates if the mode was inited successfully
-	math::LowPassFilter<float> _target_vel_lpf; // Filter for target velocity
-	float _target_velocity; // LPFed target velocity
+	math::LowPassFilter<math::Vector<3>> _target_vel_lpf; // Filter for target velocity
+    math::Vector<3> _target_velocity_vect; // LPFed target velocity
+    float _target_velocity;
+    float _target_velocity_raw;
+    int itr=0;
 
 
 	// Updates saved trajectory and trajectory distance with a new point
@@ -60,5 +64,8 @@ private:
 	inline float calculate_current_distance();
 	// Checks if the next point in the buffer is safe to use
 	inline bool check_point_safe();
+    // Setpoint reached specialized for path follow
+    inline bool check_current_pos_sp_reached_pf(float acceptance_line_dst);
+
 
 };

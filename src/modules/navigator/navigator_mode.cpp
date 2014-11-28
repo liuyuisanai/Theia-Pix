@@ -445,6 +445,9 @@ NavigatorMode::go_to_intial_position(){
             if (dst <= _parameters.airdog_dst_inv && dst > _parameters.airdog_init_pos_dst) {
                 pos_sp_triplet->current.yaw = _wrap_pi(atan2f(-new_drone_offset(1), -new_drone_offset(0)));
 
+                pos_sp_triplet->previous.valid = false;
+                pos_sp_triplet->next.valid = false;
+
                 pos_sp_triplet->current.lat = lat_new;
                 pos_sp_triplet->current.lon = lon_new;
                 pos_sp_triplet->current.alt = alt_new;

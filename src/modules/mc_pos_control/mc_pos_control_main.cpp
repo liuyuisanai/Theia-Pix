@@ -115,6 +115,8 @@ public:
 	int		start();
 
 private:
+    int iter = 0;
+
 	const float alt_ctl_dz = 0.2f;
 
 	bool	_task_should_exit;		/**< if true, task should exit */
@@ -1105,11 +1107,25 @@ MulticopterPositionControl::simple_control_auto(float dt) {
 		// Mark next call to reset as valid
 		_reset_pos_sp = true;
 		_reset_alt_sp = true;
+
 		// Project setpoint position to local position to use by default
 		map_projection_project(&_ref_pos,
 				_pos_sp_triplet.current.lat, _pos_sp_triplet.current.lon,
 				&_pos_sp.data[0], &_pos_sp.data[1]);
+
+
 		if (_control_mode.flag_control_setpoint_velocity && _pos_sp_triplet.current.abs_velocity_valid) {
+
+            math::Vector<3> direction;
+            math::Vector<3> desired_vel;
+
+            direction = (_pos_sp - _pos).normalized();
+            desired_vel = direction * _pos_sp_triplet.current.abs_velocity;
+            _pos_sp = _pos + desired_vel.edivide( _params.pos_p );
+
+            _pos_sp(2) = -(_pos_sp_triplet.current.alt - _ref_alt);
+
+            /*
 			// Scale position by desired velocity, ignore distance to the point, prioritize the velocity
 			_pos_sp = _pos_sp - _pos;
 			// Reset altitude before normalizing the vector
@@ -1125,13 +1141,13 @@ MulticopterPositionControl::simple_control_auto(float dt) {
 			_pos_sp += _pos;
 
 			// TODO! Raw test
+            */
 			/* _sp_move_rate = _pos_sp;
 			_pos_sp = _pos;
 			// feed forward target velocity
 			_vel_ff += _sp_move_rate * _params.follow_vel_ff; */
 		}
 		// Use altitude as is in all cases
-		_pos_sp(2) = -(_pos_sp_triplet.current.alt - _ref_alt);
 
 		// Update yaw
 		// TODO! Current code (at least loiter) doesn't respect yaw_valid and just sets NAN to invalidate yaw
@@ -1195,6 +1211,12 @@ MulticopterPositionControl::control_auto(float dt)
 		else {
 			scale = _params.pos_p.edivide(_params.vel_max);	// TODO add mult param here
 		}
+
+        /*
+        double cur_sp0 = curr_sp(0);
+        double cur_sp1 = curr_sp(1);
+        double cur_sp2 = curr_sp(2);
+        */
 
 		/* convert current setpoint to scaled space */
 		math::Vector<3> curr_sp_s = curr_sp.emult(scale);
@@ -1290,8 +1312,63 @@ MulticopterPositionControl::control_auto(float dt)
 			pos_sp_s = pos_sp_old_s + (d_pos_m / d_pos_m_len * dt).emult(_params.pos_p);
 		}
 
+        /*
+        double ddt = dt;
+        double p0 = _params.pos_p(0);
+        double p1 = _params.pos_p(1);
+        double p2 = _params.pos_p(2);
+
+        double sp0 = pos_sp_s(0);
+        double sp1 = pos_sp_s(1);
+        double sp2 = pos_sp_s(2);
+
+        double o_sp0 = pos_sp_old_s(0);
+        double o_sp1 = pos_sp_old_s(1);
+        double o_sp2 = pos_sp_old_s(2);
+
+        double sc0 = scale(0);
+        double sc1 = scale(1);
+        double sc2 = scale(2);
+
+        double mavel0 = _params.vel_max(0);
+        double mavel1 = _params.vel_max(1);
+        double mavel2 = _params.vel_max(2);
+        
+        double d_pos_m_len_d = d_pos_m_len;
+        */
+
+
+
 		/* scale result back to normal space */
 		_pos_sp = pos_sp_s.edivide(scale);
+
+
+        /*
+
+        double psp0 = _pos_sp(0);
+        double psp1 = _pos_sp(1);
+        double psp2 = _pos_sp(2);
+
+        iter++;
+        if (iter>100){
+            iter=-1;
+            FILE * fh = fopen("/fs/microsd/log/m256", "a");
+            fprintf(fh, "dt is %.5f\n", ddt);
+            fprintf(fh, "curr_sp %.5f %.5f %.5f\n", cur_sp0, cur_sp1, cur_sp2); 
+            fprintf(fh, "p %.5f %.5f %.5f\n", p0, p1, p2); 
+            fprintf(fh, "sp %.5f %.5f %.5f\n", sp0, sp1, sp2); 
+            fprintf(fh, "pos_sp %.5f %.5f %.5f\n", psp0, psp1, psp2); 
+            fprintf(fh, "o_sp %.5f %.5f %.5f\n", o_sp0, o_sp1, o_sp2); 
+            fprintf(fh, "scale %.5f %.5f %.5f\n", sc0, sc1, sc2); 
+            fprintf(fh, "vel %.5f %.5f %.5f\n", mavel0, mavel1, mavel2); 
+            fprintf(fh, "d_pos_m_len: %.5f\n", d_pos_m_len_d );
+            fprintf(fh, "\n"); 
+            fprintf(fh, "\n"); 
+            fprintf(fh, "\n"); 
+            fclose(fh);
+        }
+        */
+
 
 		/* update yaw setpoint if needed */
 		if (isfinite(_pos_sp_triplet.current.yaw)) {
@@ -1609,9 +1686,7 @@ MulticopterPositionControl::task_main()
 			_sp_move_rate.zero();
 			_att_rates_ff.zero();
 
-
             if (update_vehicle_command()) {
-
                 if (_control_mode.flag_control_follow_target && _control_mode.flag_control_leash_control_offset){
                     vcommand_modify_follow_offset();
                 }
@@ -1644,6 +1719,7 @@ MulticopterPositionControl::task_main()
 				// TODO! If we want to keep it, change detection to "path follow mode is active" & "simple mode"
 				else if (_control_mode.flag_control_setpoint_velocity && _params.pafol_mode == 1) {
 					simple_control_auto(dt);
+				//	control_auto(dt);
 				}
 				else {
 					/* AUTO */
@@ -1725,6 +1801,32 @@ MulticopterPositionControl::task_main()
 
 				_vel_sp = pos_err.emult(_params.pos_p) + _vel_ff;
 
+                /*
+                if (iter==-1){
+                    double vel0 = _vel_sp(0);
+                    double vel1 = _vel_sp(1);
+                    double vel2 = _vel_sp(2);
+
+                    double pos0 = _pos(0);
+                    double pos1 = _pos(1);
+                    double pos2 = _pos(2);
+
+                    double pos_sp0 = _pos_sp(0);
+                    double pos_sp1 = _pos_sp(1);
+                    double pos_sp2 = _pos_sp(2);
+
+
+                    FILE * fh = fopen("/fs/microsd/log/m256", "a");
+
+                    fprintf(fh, "velocity res: %.5f %.5f %.5f\n", vel0, vel1, vel2); 
+                    fprintf(fh, "pos: %.5f %.5f %.5f\n", pos0, pos1, pos2); 
+                    fprintf(fh, "pos_sp: %.5f %.5f %.5f\n", pos_sp0, pos_sp1, pos_sp2); 
+                    fprintf(fh, "\n"); 
+                    fclose(fh);
+
+                }
+                */
+
 				if (!_control_mode.flag_control_altitude_enabled) {
 					_reset_alt_sp = true;
 					_vel_sp(2) = 0.0f;
@@ -1763,49 +1865,51 @@ MulticopterPositionControl::task_main()
 
 
                 //Ground distance correction
-				if (_ground_position_invalid) {
-						float drop = _pos(2) - _pos_sp(2) ;
-						if (drop >= 0) {
+                if (_params.sonar_correction_on) {
+                    if (_ground_position_invalid) {
+                            float drop = _pos(2) - _pos_sp(2) ;
+                            if (drop >= 0) {
 
-                            float coef = (_params.sonar_min_dist - _local_pos.dist_bottom)/(_params.sonar_min_dist * _params.sonar_smooth_coef);
+                                float coef = (_params.sonar_min_dist - _local_pos.dist_bottom)/(_params.sonar_min_dist * _params.sonar_smooth_coef);
 
-                            coef *= coef;
-                            float max_vel_z = - _params.vel_max(2) * coef;
+                                coef *= coef;
+                                float max_vel_z = - _params.vel_max(2) * coef;
 
-                            //printf("[WARN] max_vel %.3f smooth: %.3f min-dist %.3f thing %.3f\n", 
-                            //        (double)max_vel_z, 
-                            //        (double)_params.sonar_smooth_coef, 
-                            //        (double)_params.sonar_min_dist,
-                            //        (double)(_params.sonar_min_dist - _local_pos.dist_bottom));
-                            _vel_sp(2) = max_vel_z;
-							_sp_move_rate(2)= 0.0f;
-						}
-				}
-				else if (_ground_setpoint_corrected && (_vel(2) > _params.vel_max(2) || _vel_sp(2) > _params.vel_max(2))) {
+                                //printf("[WARN] max_vel %.3f smooth: %.3f min-dist %.3f thing %.3f\n", 
+                                //        (double)max_vel_z, 
+                                //        (double)_params.sonar_smooth_coef, 
+                                //        (double)_params.sonar_min_dist,
+                                //        (double)(_params.sonar_min_dist - _local_pos.dist_bottom));
+                                _vel_sp(2) = max_vel_z;
+                                _sp_move_rate(2)= 0.0f;
+                            }
+                    }
+                    else if (_ground_setpoint_corrected && (_vel(2) > _params.vel_max(2) || _vel_sp(2) > _params.vel_max(2))) {
 
-                    _vel_sp(2) = - 2 * _params.vel_max(2);
-					_sp_move_rate(2)= 0.0f;
-				}
-				else if (_local_pos.dist_bottom_valid && _params.sonar_correction_on){
-					if (_ground_position_available_drop > 0.0f && _vel_sp(2) > 0){
-                    float range = _local_pos.dist_bottom_max - _params.sonar_min_dist;
-                    // Used when we are above allowed limit
-                    float max_vel_z = _params.vel_max(2) * (float)pow(_ground_position_available_drop/range, 2.0);
+                        _vel_sp(2) = - 2 * _params.vel_max(2);
+                        _sp_move_rate(2)= 0.0f;
+                    }
+                    else if (_local_pos.dist_bottom_valid && _params.sonar_correction_on){
+                        if (_ground_position_available_drop > 0.0f && _vel_sp(2) > 0){
+                        float range = _local_pos.dist_bottom_max - _params.sonar_min_dist;
+                        // Used when we are above allowed limit
+                        float max_vel_z = _params.vel_max(2) * (float)pow(_ground_position_available_drop/range, 2.0);
 
-                    // If resulted max speed is higher than allowed by parameters - limit it with parameter defined
-                    // TODO [Max]: There should be universal way for all range finders, not limited to Ultrasound sonar maximal distance
-                    max_vel_z = max_vel_z > _params.vel_max(2) ? _params.vel_max(2) : max_vel_z;
-                    
-                        //limit down speed
-						if (_vel_sp(2) > max_vel_z) {
-							_vel_sp(2) = max_vel_z;
-						}
-						else {
-						}
-						_sp_move_rate(2)= 0.0f;
+                        // If resulted max speed is higher than allowed by parameters - limit it with parameter defined
+                        // TODO [Max]: There should be universal way for all range finders, not limited to Ultrasound sonar maximal distance
+                        max_vel_z = max_vel_z > _params.vel_max(2) ? _params.vel_max(2) : max_vel_z;
+                        
+                            //limit down speed
+                            if (_vel_sp(2) > max_vel_z) {
+                                _vel_sp(2) = max_vel_z;
+                            }
+                            else {
+                            }
+                            _sp_move_rate(2)= 0.0f;
 
-					} 
-				}
+                        } 
+                    }
+                }
 
 				_global_vel_sp.vx = _vel_sp(0);
 				_global_vel_sp.vy = _vel_sp(1);
