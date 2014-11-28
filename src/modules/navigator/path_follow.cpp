@@ -294,12 +294,6 @@ void PathFollow::update_target_velocity() {
     tvel_current(1) = target_pos->vel_e;
     tvel_current(2) = 0.0f;
 
-    /*
-    FILE * fh = fopen("/fs/microsd/log/m256", "a");
-    fprintf(fh, "target_pos vel_n %.5f %.5f %.5f\n", (double)tvel_current(0), (double)tvel_current(1), (double)tvel_current.length());
-    fclose(fh);
-    */
-
     _target_velocity_raw = tvel_current.length();
 	_target_velocity_vect = _target_vel_lpf.apply(target_pos->timestamp,tvel_current);
     _target_velocity = _target_velocity_vect.length();
@@ -358,26 +352,6 @@ float PathFollow::calculate_desired_speed(float distance) {
 	if (res < 0.0f) return 0.0f;
 	if (res > _parameters.mpc_max_speed) return _parameters.mpc_max_speed;
 
-
-        itr=0;
-        /*
-        double min_dst = _min_distance;
-        double ok_dst = _ok_distance;
-        double max_dst = _max_distance;
-        double dst = distance;
-        double target_vel = _target_velocity;
-        double new_vel = res;
-        double traw = _target_velocity_raw;
-        */
-
-        itr=100;
-
-        /*
-        FILE * fh = fopen("/fs/microsd/log/m256", "a");
-        fprintf(fh, "min_dst: %.5f, ok_dst:%.5f, max_dst:%.5f, dst:%.5f, target_vel:%.5f, raw_target_vel:%.5f, new_vel:%.5f\n", min_dst, ok_dst, max_dst, dst, target_vel, traw, new_vel);
-        fclose(fh);
-        */
-
 	return res;
 }
 
@@ -427,40 +401,12 @@ bool PathFollow::check_current_pos_sp_reached_pf(float acceptance_dst) {
     math::Vector<2> vel_xy(global_pos->vel_n, global_pos->vel_e);  
 
     double dst_xy_len = dst_xy.length();
-
-    //dst_xy.normalize();
-    //vel_xy.normalize();
-
-    //double dst_x = dst_xy(0);
-    //double dst_y = dst_xy(1);
-
-    //double vel_x = vel_xy(0);
-    //double vel_y = vel_xy(1);
-
     double dot_product = vel_xy(0) * dst_xy(1) - vel_xy(1) * dst_xy(0);
     double h = dst_xy_len / dot_product;
     double dst_to_line;
 
     if (h>dst_xy_len) dst_to_line = 0.0f;
     else dst_to_line = sqrt(dst_xy_len*dst_xy_len - h*h);
-
-//    if (++iter>10){
-
-
-        /*
-        double yes ;
-        if (acceptance_dst >= (float)dst_to_line) yes = 1;
-        else yes = 0;
-
-        iter=0; 
-        FILE * fh = fopen("/fs/microsd/log/m256", "a"); 
-        fprintf(fh, "dst_xy %.5f %.5f | vel_xy %.5f %.5f\n", dst_x, dst_y, vel_x, vel_y); 
-        fprintf(fh, "h, dst_to_line: %.5f %.5f\n", h, dst_to_line); 
-        fprintf(fh, "yes %.5f\n", yes); 
-        fclose(fh);
-        */
-
- //   }
 
     if (acceptance_dst >= (float)dst_to_line && (float)dst_xy_len <= 3 * acceptance_dst )
         return true;
