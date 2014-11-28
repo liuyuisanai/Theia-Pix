@@ -33,7 +33,7 @@ set MIXER FMU_quad_x
 set VEHICLE_TYPE mc
 set MAV_TYPE 2
 
-set ALWAYS_DEBUG_MODE yes
+#set ALWAYS_DEBUG_MODE yes
 
 # Do IO checks as early as possible while IO chip is in bootloader mode
 set IO_PRESENT no
