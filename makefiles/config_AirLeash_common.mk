@@ -23,6 +23,7 @@ MODULES		+= drivers/calibration
 MODULES		+= drivers/device
 MODULES		+= drivers/gps
 MODULES		+= drivers/l3gd20
+MODULES		+= drivers/lcd_st7565r_fsmc
 MODULES		+= drivers/led
 MODULES		+= drivers/lsm303d
 MODULES		+= drivers/mpu6000
@@ -32,6 +33,7 @@ MODULES		+= drivers/stm32/adc
 MODULES		+= drivers/stm32/tone_alarm
 MODULES		+= modules/airdog  # AIRD_LEASH_MODE parameter
 MODULES		+= modules/airdog/trajectory_calculator
+MODULES		+= modules/display_tool
 MODULES		+= modules/fs_test
 MODULES		+= modules/gpio_tool
 MODULES		+= modules/indication
@@ -162,6 +164,9 @@ MODULES			+= modules/bt_cfg
 #MODULES			+= modules/serial_echo
 #MODULES			+= modules/serial_measure_latency
 #MODULES			+= modules/SiKUploader
+
+# Examples
+#MODULES			+= examples/nx
 
 #
 # Transitional support - add commands from the NuttX export archive.

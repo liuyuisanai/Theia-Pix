@@ -73,6 +73,7 @@
 #include <systemlib/perf_counter.h>
 
 #include "../kbd/driver.h"
+#include "display.h"
 
 /****************************************************************************
  * Pre-Processor Definitions
@@ -177,12 +178,9 @@ fat_dma_free(FAR void *memory, size_t size)
 __EXPORT void
 stm32_boardinitialize(void)
 {
-	/* configure SPI interfaces */
 	stm32_spiinitialize();
-
-	/* configure LEDs */
-	up_ledinit();
-
+	led_init();
+	up_display_mcu_setup();
 	airleash_kbd_gpioconfig();
 }
 
@@ -305,6 +303,7 @@ __EXPORT int nsh_archinitialize(void)
 	message("[boot] Initialized SDIO\n");
 #endif
 	airleash_kbd_start();
+	//display_init();
 
 	return OK;
 }
