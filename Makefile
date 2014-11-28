@@ -149,7 +149,9 @@ FMU_CONFIGS		:= $(filter px4fmu%,$(CONFIGS))
 $(foreach config,$(FMU_CONFIGS),$(eval $(call FMU_DEP,$(config))))
 
 # Explicit AirDogFMU dependency on px4io-v2.
-$(BUILD_DIR)AirDogFMU_default.build/firmware.px4: $(IMAGE_DIR)AirDogIO_default.px4
+$(BUILD_DIR)AirDogFMU_default.build/firmware.px4: $(IMAGE_DIR)px4io-v2_default.px4
+# Depend on custom AirDogIO firmware. Unstable.
+#$(BUILD_DIR)AirDogFMU_default.build/firmware.px4: $(IMAGE_DIR)AirDogIO_default.px4
 
 #
 # Build the NuttX export archives.
