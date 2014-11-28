@@ -1,0 +1,31 @@
+echo "Test system power (sensors power should be about 3V, system power - about 5V)"
+sensors_switch status
+echo "------------------------CONTINUING--------------------------"
+echo "Test if external mag is connected (reports status if ok)"
+hmc5883spi status
+echo "------------------------CONTINUING--------------------------"
+echo "Test if accel/gyro combo is running (reports status if ok)"
+mpu6000 info
+echo "------------------------CONTINUING--------------------------"
+echo "Test if baro sensor is working (reports status if ok)"
+ms5611 info
+echo "------------------------CONTINUING--------------------------"
+echo "Test calibration of different sensors (should say that test is ok)"
+config mag check
+echo "------------------------CONTINUING--------------------------"
+config accel check
+echo "------------------------CONTINUING--------------------------"
+config gyro check
+echo "------------------------CONTINUING--------------------------"
+echo "Preflight check (no output is ok)"
+preflight_check
+echo "------------------------CONTINUING--------------------------"
+echo "Test if IO chip is responding (reports lots of stuff if ok)"
+px4io status
+echo "------------------------CONTINUING--------------------------"
+echo "Test extreme PWM values (reports fail = 900, disarm = 910, min = 1075, max = 2000)"
+pwm info
+echo "------------------------CONTINUING--------------------------"
+echo "You should also check sensor data in QGround control by rotating the board"
+echo "Other things to check - if PX4IO chip updates on each startup if sonar is connected (BAD)"
+echo "Another thing - try setting a parameter via param set, then save via param save, reboot, check if value is changed"
