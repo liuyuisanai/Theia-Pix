@@ -20,7 +20,7 @@ SRCS		= adc.c \
 ifeq ($(BOARD),px4io-v1)
 SRCS		+= i2c.c
 endif
-ifeq ($(BOARD),px4io-v2)
+ifneq ($(filter $(BOARD),px4io-v2 AirDogIO),)
 SRCS		+= serial.c \
 		   ../systemlib/hx_stream.c
 endif
