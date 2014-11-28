@@ -327,7 +327,9 @@ adc_init()
 	/* sense pins */
 	stm32_configgpio(ADC1_N(ADC_BATTERY_CURRENT_CHANNEL));
 	stm32_configgpio(ADC1_N(ADC_BATTERY_VOLTAGE_CHANNEL));
+	stm32_configgpio(ADC1_N(ADC_IO_CHIP_VOLTAGE_CHANNEL));
 	stm32_configgpio(ADC1_N(ADC_SENSORS_VOLTAGE_CHANNEL));
+	stm32_configgpio(ADC1_N(ADC_SYSPOWER_VOLTAGE_CHANNEL));
 
 	/* power supply control pins */
 	stm32_configgpio(GPIO_VDD_3V3_SENSORS_EN);
