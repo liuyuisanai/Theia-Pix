@@ -74,8 +74,7 @@ CONFIG_ARCH_ARM=y
 CONFIG_ARCH_CORTEXM3=y
 CONFIG_ARCH_CHIP="stm32"
 CONFIG_ARCH_CHIP_STM32F100C8=y
-CONFIG_ARCH_BOARD="px4io-v2"
-CONFIG_ARCH_BOARD_PX4IO_V2=y
+CONFIG_ARCH_BOARD="AirDogIO"
 CONFIG_BOARD_LOOPSPERMSEC=2000
 CONFIG_DRAM_SIZE=0x00002000
 CONFIG_DRAM_START=0x20000000
@@ -110,7 +109,7 @@ CONFIG_STM32_JTAG_SW_ENABLE=y
 #
 # Individual subsystems can be enabled:
 #
-# AHB: 
+# AHB:
 CONFIG_STM32_DMA1=y
 CONFIG_STM32_DMA2=n
 CONFIG_STM32_CRC=n
@@ -265,7 +264,7 @@ CONFIG_HAVE_LIBM=n
 # CONFIG_RR_INTERVAL - The round robin timeslice will be set
 #   this number of milliseconds;  Round robin scheduling can
 #   be disabled by setting this value to zero.
-# CONFIG_SCHED_INSTRUMENTATION - enables instrumentation in 
+# CONFIG_SCHED_INSTRUMENTATION - enables instrumentation in
 #   scheduler to monitor system performance
 # CONFIG_TASK_NAME_SIZE - Spcifies that maximum size of a
 #   task name to save in the TCB.  Useful if scheduler
@@ -286,11 +285,11 @@ CONFIG_HAVE_LIBM=n
 # CONFIG_MUTEX_TYPES: Set to enable support for recursive and
 #   errorcheck mutexes. Enables pthread_mutexattr_settype().
 # CONFIG_PRIORITY_INHERITANCE : Set to enable support for priority
-#   inheritance on mutexes and semaphores. 
+#   inheritance on mutexes and semaphores.
 # CONFIG_SEM_PREALLOCHOLDERS: This setting is only used if priority
 #   inheritance is enabled.  It defines the maximum number of
 #   different threads (minus one) that can take counts on a
-#   semaphore with priority inheritance support.  This may be 
+#   semaphore with priority inheritance support.  This may be
 #   set to zero if priority inheritance is disabled OR if you
 #   are only using semaphores as mutexes (only one holder) OR
 #   if no more than two threads participate using a counting

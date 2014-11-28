@@ -250,7 +250,9 @@ dsm_init(const char *device)
 void
 dsm_bind(uint16_t cmd, int pulses)
 {
-#if !defined(CONFIG_ARCH_BOARD_PX4IO_V1) && !defined(CONFIG_ARCH_BOARD_PX4IO_V2)
+#if !defined(CONFIG_ARCH_BOARD_PX4IO_V1) \
+ && !defined(CONFIG_ARCH_BOARD_PX4IO_V2) \
+ && !defined(CONFIG_ARCH_BOARD_AIRDOG_IO)
 	#warning DSM BIND NOT IMPLEMENTED ON UNKNOWN PLATFORM
 #else
 	const uint32_t usart1RxAsOutp =

@@ -109,19 +109,12 @@ __EXPORT void stm32_boardinitialize(void)
 	stm32_configgpio(GPIO_LED2);
 	stm32_configgpio(GPIO_LED3);
 
-	stm32_configgpio(GPIO_BTN_SAFETY);
-
 	/* spektrum power enable is active high - enable it by default */
 	stm32_configgpio(GPIO_SPEKTRUM_PWR_EN);
-
-	stm32_configgpio(GPIO_SERVO_FAULT_DETECT);
 
 	/* RSSI inputs */
 	stm32_configgpio(GPIO_TIM_RSSI); /* xxx alternate function */
 	stm32_configgpio(GPIO_ADC_RSSI);
-
-	/* servo rail voltage */
-	stm32_configgpio(GPIO_ADC_VSERVO);
 
 	stm32_configgpio(GPIO_SBUS_INPUT); /* xxx alternate function */
 	stm32_configgpio(GPIO_SBUS_OUTPUT);
