@@ -54,6 +54,24 @@ then
 		if param reset
 		then
 		fi
+
+		tone_alarm $TUNE_OUT_ERROR
+		usleep 100000 # 0.1s
+		tone_alarm $TUNE_OUT_ERROR
+		usleep 100000 # 0.1s
+		tone_alarm $TUNE_OUT_ERROR
+		usleep 100000 # 0.1s
+		tone_alarm $TUNE_OUT_ERROR
+		usleep 100000 # 0.1s
+		tone_alarm $TUNE_OUT_ERROR
+		usleep 100000 # 0.1s
+		tone_alarm $TUNE_OUT_ERROR
+		usleep 100000 # 0.1s
+		tone_alarm $TUNE_OUT_ERROR
+		usleep 100000 # 0.1s
+		tone_alarm $TUNE_OUT_ERROR
+		usleep 100000 # 0.1s
+		tone_alarm $TUNE_OUT_ERROR
 	fi
 fi
 
