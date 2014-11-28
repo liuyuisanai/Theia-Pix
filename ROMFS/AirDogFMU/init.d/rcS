@@ -33,7 +33,7 @@ set MIXER FMU_quad_x
 set VEHICLE_TYPE mc
 set MAV_TYPE 2
 
-#set ALWAYS_DEBUG_MODE yes
+set ALWAYS_DEBUG_MODE yes
 
 # Do IO checks as early as possible while IO chip is in bootloader mode
 set IO_PRESENT no
@@ -42,13 +42,8 @@ if [ $USE_IO == yes ]
 then
 	#
 	# Check if PX4IO present and update firmware if needed
-	#
-	if [ -f /etc/extras/px4io-v2_default.bin ]
-	then
-		set IO_FILE /etc/extras/px4io-v2_default.bin
-	else
-		set IO_FILE /etc/extras/px4io-v1_default.bin
-	fi
+	#	
+	set IO_FILE /etc/extras/AirDogIO_default.bin	
 
 	# usleep 2000000
 	if px4io checkcrc $IO_FILE
