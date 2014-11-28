@@ -89,8 +89,8 @@ class Application(tk.Frame):
 
 
     def getlog(self):
-        self.savedir()
         selected = self.loglist.curselection()
+        self.savedir()
         for i in selected:
             cur = self.logs_dir + self.loglist.get(i)
             if self.nsh.file_exists(cur):
