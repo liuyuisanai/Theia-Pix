@@ -1357,7 +1357,7 @@ MulticopterPositionControl::control_follow(float dt)
 
 	/* update position setpoint and feed-forward velocity if not repeating target altitude */
 	if (!_params.follow_rpt_alt) {
-		_pos_sp(2) = -(_alt_start - _ref_alt + _params.follow_talt_offs) + _follow_offset(2);
+		//_pos_sp(2) = -(_alt_start - _ref_alt + _params.follow_talt_offs) + _follow_offset(2);
 		_vel_ff(2) -= _tvel(2) * _params.follow_vel_ff;
 	}
 
