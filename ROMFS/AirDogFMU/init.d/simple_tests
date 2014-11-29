@@ -30,3 +30,4 @@ echo "You should also check sensor data in QGround control by rotating the board
 echo "Other things to check - if PX4IO chip updates on each startup if sonar is connected (BAD)"
 echo "Another thing - try setting a parameter via param set, then save via param save, reboot, check if value is changed"
 echo "Oh. And you should check if SD card is mounted OK each time"
+echo "And if sonar is connected - disable debug output, connect via usual usb port, run `mb1230serial stop` then `mb1230serial start /dev/ttyS6` and then `mb1230serial test` and check output data"
