@@ -255,6 +255,9 @@ esc_calib_main(int argc, char *argv[])
 
 	warnx("Outputs armed");
 
+	// Disable pwm safety
+	ioctl(fd, PWM_SERVO_SET_FORCE_SAFETY_OFF, set_mask);
+	warnx("Safety disabled");
 
 	/* wait for user confirmation */
 	printf("\n"
