@@ -60,6 +60,7 @@
 #include "systemlib/systemlib.h"
 #include "systemlib/err.h"
 #include "drivers/drv_pwm_output.h"
+#include <drivers/drv_hrt.h>
 
 static void	usage(const char *reason);
 __EXPORT int	pwm_main(int argc, char *argv[]);
@@ -72,7 +73,7 @@ usage(const char *reason)
 		warnx("%s", reason);
 	errx(1,
 		"usage:\n"
-		"pwm arm|disarm|rate|failsafe|disarmed|min|max|test|info  ...\n"
+		"pwm arm|disarm|rate|failsafe|disarmed|min|max|test|info|steps|stress  ...\n"
 		"\n"
 		"  arm                      Arm output\n"
 		"  disarm                   Disarm output\n"
@@ -102,6 +103,16 @@ usage(const char *reason)
 		"\n"
 		"    -v                     Print verbose information\n"
 		"    -d <device>            PWM output device (defaults to " PWM_OUTPUT_DEVICE_PATH ")\n"
+		"\n"
+		"  stress ...               Stress test the motors by supplying low then high pwm\n"
+		"    [-c <channels>]        Supply channels (e.g. 1234)\n"
+		"    [-m <chanmask> ]       Directly supply channel mask (e.g. 0xF)\n"
+		"    [-a]                   Configure all outputs\n"
+		"    -l <low pwm value>     Low pwm value\n"
+		"    -h <high pwm value>    High pwm value\n"
+		"    [-n <cycles>]          Number of cycles to repeat the test (default: 2 cycles)\n"
+		"    [-t <time>]            Time for each test phase in ms (default: 5 seconds)\n"
+		"    [-r <rate>]            Rate in Hz with witch to send PWM commands to IO chip\n"
 		);
 
 }
@@ -110,7 +121,7 @@ int
 pwm_main(int argc, char *argv[])
 {
 	const char *dev = PWM_OUTPUT_DEVICE_PATH;
-	unsigned alt_rate = 0;
+	unsigned alt_rate = 400;
 	uint32_t alt_channel_groups = 0;
 	bool alt_channels_set = false;
 	bool print_verbose = false;
@@ -122,11 +133,15 @@ pwm_main(int argc, char *argv[])
 	unsigned long channels;
 	unsigned single_ch = 0;
 	unsigned pwm_value = 0;
+	unsigned low_pwm = 0;
+	unsigned high_pwm = 0;
+	unsigned cycle_count = 2;
+	unsigned phase_time = 5000;
 
 	if (argc < 1)
 		usage(NULL);
 
-	while ((ch = getopt(argc-1, &argv[1], "d:vc:g:m:ap:r:")) != EOF) {
+	while ((ch = getopt(argc-1, &argv[1], "d:vc:g:m:ap:r:l:h:n:t:")) != EOF) {
 		switch (ch) {
 
 		case 'd':
@@ -182,6 +197,30 @@ pwm_main(int argc, char *argv[])
 			alt_rate = strtoul(optarg, &ep, 0);
 			if (*ep != '\0')
 				usage("bad alternative rate provided");
+			break;
+		case 'l':
+			low_pwm = strtoul(optarg, &ep, 0);
+			if (*ep != '\0') {
+				usage("bad low pwm rate provided");
+			}
+			break;
+		case 'h':
+			high_pwm = strtoul(optarg, &ep, 0);
+			if (*ep != '\0') {
+				usage("bad high pwm rate provided");
+			}
+			break;
+		case 'n':
+			cycle_count = strtoul(optarg, &ep, 0);
+			if (*ep != '\0') {
+				usage("bad cycle count provided");
+			}
+			break;
+		case 't':
+			phase_time = strtoul(optarg, &ep, 0);
+			if (*ep != '\0') {
+				usage("bad phase time provided");
+			}
 			break;
 		default:
 			break;
@@ -676,9 +715,93 @@ pwm_main(int argc, char *argv[])
 			}
 		}
 		exit(0);
+	} else if (!strcmp(argv[1], "stress")) {
+		if (set_mask == 0) {
+			usage("no channels set");
+		}
+		if (low_pwm == 0 || high_pwm == 0)
+			usage("no low or high PWM value provided");
+
+		hrt_abstime phase_start_time;
+		bool change_pwm = true;
+		uint32_t delay_us = 1000000 / alt_rate;
+
+		/* get current servo values */
+		struct pwm_output_values last_spos;
+
+		for (unsigned i = 0; i < servo_count; i++) {
+			ret = ioctl(fd, PWM_SERVO_GET(i), (unsigned long)&last_spos.values[i]);
+			if (ret != OK)
+				err(1, "PWM_SERVO_GET(%d)", i);
+		}
+
+		/* perform PWM output */
+
+		/* Open console directly to grab CTRL-C signal */
+		struct pollfd fds;
+		fds.fd = 0; /* stdin */
+		fds.events = POLLIN;
+
+		warnx("Press Space to advance to the next phase.");
+		warnx("Press CTRL-C or 'c' to abort.");
+
+		cycle_count *= 2; // lazily trust no overflow occurs
+		phase_time *= 1000; // convert from ms to us
+
+		for (unsigned cur_cycle = 0; !change_pwm || (cur_cycle < cycle_count); ) {
+			if (change_pwm) {
+				// Alternate between low and high pwm
+				if (cur_cycle % 2 == 0) {
+					pwm_value = low_pwm;
+				}
+				else {
+					pwm_value = high_pwm;
+				}
+				++cur_cycle;
+				warnx("Using %d PWM!", pwm_value);
+				phase_start_time = hrt_absolute_time();
+				change_pwm = false;
+			}
+			for (unsigned i = 0; i < servo_count; i++) {
+				if (set_mask & 1<<i) {
+					ret = ioctl(fd, PWM_SERVO_SET(i), pwm_value);
+					if (ret != OK) {
+						err(1, "PWM_SERVO_SET(%d)", i);
+					}
+				}
+			}
+
+			char c;
+			ret = poll(&fds, 1, 0);
+			if (ret > 0) {
+				read(0, &c, 1);
+				// abort on user request
+				if (c == 0x03 || c == 0x63 || c == 'q') {
+					warnx("User abort\n");
+					break;
+				}
+				// Change phase on user request
+				else if (c == 0x20) {
+					change_pwm = true;
+				}
+			}
+			if (hrt_absolute_time() + delay_us >= phase_start_time + phase_time) {
+				change_pwm = true;
+			}
+			usleep(delay_us);
+		}
+		// Reset output to the last value
+		for (unsigned i = 0; i < servo_count; i++) {
+			if (set_mask & 1<<i) {
+				ret = ioctl(fd, PWM_SERVO_SET(i), last_spos.values[i]);
+				if (ret != OK)
+					err(1, "PWM_SERVO_SET(%d)", i);
+			}
+		}
+		exit(0);
 	}
 
-	usage("specify arm|disarm|rate|failsafe\n\t\tdisarmed|min|max|test|info|forcefail|terminatefail");
+	usage("specify arm|disarm|rate|failsafe\n\t\tdisarmed|min|max|test|info|forcefail\n\t\tterminatefail|steps|stress");
 	return 0;
 }
 
