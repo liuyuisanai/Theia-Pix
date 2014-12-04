@@ -1468,7 +1468,7 @@ int commander_thread_main(int argc, char *argv[])
                 }
 
                 // On first timeout when status.condition_target_position_valid is false go into aim-and-shoot
-                if (status.main_state != MAIN_STATE_LOITER && status.main_state!=MAIN_STATE_EMERGENCY_RTL && status.main_state!=MAIN_STATE_EMERGENCY_LAND) {
+                if (status.main_state != MAIN_STATE_LOITER && control_mode.flag_control_follow_target) {
                     mavlink_log_info(mavlink_fd, "Target signal time-out, switching to Aim-and-shoot.");
 				    if (main_state_transition(&status, MAIN_STATE_LOITER, mavlink_fd) == TRANSITION_CHANGED) {
                         status_changed = true; 
