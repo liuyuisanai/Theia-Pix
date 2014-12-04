@@ -103,12 +103,12 @@ Loiter::on_active()
 	global_pos = _navigator->get_global_position();
 
 	if (loiter_sub_mode == LOITER_SUB_MODE_TAKING_OFF && check_current_pos_sp_reached()) {
-
-        set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, 2);
-
         if (_parameters.airdog_init_pos_use == 1){
-            set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, 2);
+            set_sub_mode(LOITER_SUB_MODE_GO_TO_POSITION, 2);
             go_to_intial_position(); 
+        }
+        else {
+        	set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, 2);
         }
 	}
 
@@ -118,14 +118,14 @@ Loiter::on_active()
 		disarm();
 	}
 
-	if (loiter_sub_mode == LOITER_SUB_MODE_COME_TO_ME && check_current_pos_sp_reached()) {
+	if (loiter_sub_mode == LOITER_SUB_MODE_GO_TO_POSITION && check_current_pos_sp_reached()) {
 		set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, 0);
 	}
 
 	if ( update_vehicle_command() )
 			execute_vehicle_command();
 
-	if (loiter_sub_mode == LOITER_SUB_MODE_AIM_AND_SHOOT || loiter_sub_mode == LOITER_SUB_MODE_COME_TO_ME) {
+	if (loiter_sub_mode == LOITER_SUB_MODE_AIM_AND_SHOOT || loiter_sub_mode == LOITER_SUB_MODE_GO_TO_POSITION) {
 		pos_sp_triplet = _navigator->get_position_setpoint_triplet();
 		point_camera_to_target(&(pos_sp_triplet->current));
 		_navigator->set_position_setpoint_triplet_updated();
@@ -150,8 +150,8 @@ Loiter::execute_vehicle_command()
 		case LOITER_SUB_MODE_LOOK_DOWN:
 			execute_command_in_look_down(cmd);
 			break;
-		case LOITER_SUB_MODE_COME_TO_ME:
-			execute_command_in_come_to_me(cmd);
+		case LOITER_SUB_MODE_GO_TO_POSITION:
+			execute_command_in_go_to_position(cmd);
 			break;
 		case LOITER_SUB_MODE_LANDING:
 			execute_command_in_landing(cmd);
@@ -389,7 +389,7 @@ Loiter::execute_command_in_aim_and_shoot(vehicle_command_s cmd){
 				pos_sp_triplet->current.lon = target_pos->lon;
 				pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
 
-				set_sub_mode(LOITER_SUB_MODE_COME_TO_ME, 0);
+				set_sub_mode(LOITER_SUB_MODE_GO_TO_POSITION, 0);
 
 				break;
 			}
@@ -430,7 +430,7 @@ Loiter::execute_command_in_look_down(vehicle_command_s cmd){
 }
 
 void
-Loiter::execute_command_in_come_to_me(vehicle_command_s cmd){
+Loiter::execute_command_in_go_to_position(vehicle_command_s cmd){
 
 	if (cmd.command == VEHICLE_CMD_NAV_REMOTE_CMD) {
 		int remote_cmd = cmd.param1;
@@ -489,8 +489,8 @@ Loiter::set_sub_mode(LOITER_SUB_MODE new_sub_mode, uint8_t reset_setpoint = 1) {
 		case LOITER_SUB_MODE_LOOK_DOWN:
 			sub_mode_str = "Look down";
 			break;
-		case LOITER_SUB_MODE_COME_TO_ME:
-			sub_mode_str = "Come-to-me";
+		case LOITER_SUB_MODE_GO_TO_POSITION:
+			sub_mode_str = "Go-to-position";
 			break;
 		case LOITER_SUB_MODE_LANDING:
 			sub_mode_str = "Landing";

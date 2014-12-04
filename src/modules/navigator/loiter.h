@@ -71,7 +71,7 @@ private:
 		LOITER_SUB_MODE_LANDED = 0, 		// vehicle on ground
 		LOITER_SUB_MODE_AIM_AND_SHOOT,		// aim and shoot
 		LOITER_SUB_MODE_LOOK_DOWN, 			// look down
-		LOITER_SUB_MODE_COME_TO_ME, 		// come to me
+		LOITER_SUB_MODE_GO_TO_POSITION, 	// go to position
 		LOITER_SUB_MODE_LANDING, 			// vehicle is landing
 		LOITER_SUB_MODE_TAKING_OFF,			// vehicle is taking off
 
@@ -80,7 +80,7 @@ private:
 	void execute_command_in_landed(vehicle_command_s cmd);
 	void execute_command_in_aim_and_shoot(vehicle_command_s cmd);
 	void execute_command_in_look_down(vehicle_command_s cmd);
-	void execute_command_in_come_to_me(vehicle_command_s cmd);
+	void execute_command_in_go_to_position(vehicle_command_s cmd);
 	void execute_command_in_landing(vehicle_command_s cmd);
 	void execute_command_in_taking_off(vehicle_command_s cmd);
 
