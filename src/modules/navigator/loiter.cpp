@@ -205,7 +205,7 @@ Loiter::execute_command_in_aim_and_shoot(vehicle_command_s cmd){
 		//uint8_t base_mode = (uint8_t)cmd.param1;
 		uint8_t main_mode = (uint8_t)cmd.param2;
 
-		if (main_mode == PX4_CUSTOM_SUB_MODE_AUTO_RTL) {
+		if (main_mode == PX4_CUSTOM_MAIN_MODE_RTL) {
 
 			commander_request_s *commander_request = _navigator->get_commander_request();
 			commander_request->request_type = V_MAIN_STATE_CHANGE;

@@ -499,7 +499,11 @@ bool handle_command(struct vehicle_status_s *status_local, const struct safety_s
 
 					} else if (custom_main_mode == PX4_CUSTOM_MAIN_MODE_FOLLOW) {
 						/* FOLLOW */
-						main_ret = main_state_transition(status_local, MAIN_STATE_FOLLOW, mavlink_fd);
+						main_ret = main_state_transition(status_local, MAIN_STATE_FOLLOW, mavlink_fd);					
+					} else if (custom_main_mode == PX4_CUSTOM_MAIN_MODE_RTL) {
+						/* AUTO RTL */
+						//This mode should be processed in LOITER submodes
+						main_ret = TRANSITION_DENIED;
 					}
 
 				} else {
