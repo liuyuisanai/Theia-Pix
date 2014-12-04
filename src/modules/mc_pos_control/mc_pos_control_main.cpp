@@ -1423,11 +1423,6 @@ MulticopterPositionControl::point_to_target()
 		_att_rates_ff(2) = (current_offset_xy % offs_vel_xy) / current_offset_xy_len / current_offset_xy_len;
 	}
 
-
-    int talt = _tpos(2);
-    int alt = _pos(2);
-    int calt = current_offset(2);
-    
 	/* control camera pitch in global frame (for BL camera gimbal) */
 	_cam_control.control[1] = atan2f(current_offset(2), current_offset_xy_len) / _params.cam_pitch_max + _manual.aux2;
 }
