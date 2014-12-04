@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from Tkinter import *
 import Tkinter as tk
+import zipfile #For file zipping
 import tkFileDialog as tkFile
 import re
 import subprocess
@@ -42,14 +43,17 @@ class Application(tk.Frame):
                 command=self.savedir)
         self.flashButton = tk.Button(self, text="Flash firmware",
                 command=self.flash)
+        self.getallButton = tk.Button(self, text="Get all SD",
+                command=self.get_all_files, state=DISABLED)
         # == place objects in places ==
         self.connectButton.grid(row=0, column=0, sticky="nesw")
         self.flashButton.grid(  row=0, column=1, sticky="nesw")
         self.listButton.grid(   row=1, column=0, sticky="nesw")
         self.getButton.grid(    row=1, column=1, sticky="nesw")
         self.lastButton.grid(   row=2, column=0, columnspan=2, sticky="nesw")
+        self.getallButton.grid( row=3, column=0, columnspan=2, sticky="nesw")
         #self.saveDirButton.grid(row=2, column=1, sticky="nesw")
-        self.loglist.grid(row=3, column=0, columnspan=2, sticky="nesw")
+        self.loglist.grid(row=4, column=0, columnspan=2, sticky="nesw")
         self.grid(sticky="nesw")
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
@@ -73,6 +77,7 @@ class Application(tk.Frame):
             self.getButton.config(state=ACTIVE)
             self.lastButton.config(state=ACTIVE)
             self.flashButton.config(state=DISABLED)
+            self.getallButton.config(state=ACTIVE)
         except:
             print "Cannot connect to device"
 
@@ -86,6 +91,20 @@ class Application(tk.Frame):
             self.loglist.insert(END, file)
             self.loglist.see(END)
             self.loglist.select_anchor(END)
+
+    def get_all_files(self):
+    # Get all files from MicroSD
+        self.savedir()
+        zipf = zipfile.ZipFile(self.dir_to_save+"/SD_contents.zip", 'w');
+        #print self.nsh.get_all_files("/fs/microsd")
+        for file in self.nsh.get_all_files("/fs/microsd"):
+            if file.find("/.") == -1:
+                print file
+                #with open(file, "wb") as f:
+                data = self.nsh.download_file("/fs/microsd"+file)
+                print("Writing buffer to file..")
+                zipf.writestr(file, data)
+                print("Success.")
 
 
     def getlog(self):
