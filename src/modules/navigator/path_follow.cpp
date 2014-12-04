@@ -78,8 +78,6 @@ void PathFollow::on_activation() {
 
 	_has_valid_setpoint = false;
 
-	updateParameters();
-
 	// Reset trajectory and distance offsets
 	_saved_trajectory.do_empty();
 	update_saved_trajectory();
@@ -132,7 +130,6 @@ void PathFollow::on_active() {
 		return; // Wait for the Loiter mode to take over, but avoid pausing main navigator thread
 	}
 
-	updateParameters();
 	bool setpointChanged = false;
 
     hrt_abstime t = hrt_absolute_time();
