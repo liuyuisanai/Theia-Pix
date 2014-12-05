@@ -405,7 +405,7 @@ transition_result_t arm_disarm(bool arm, const int mavlink_fd_local, const char 
 	// output appropriate error messages if the state cannot transition.
 	arming_res = arming_state_transition(&status, &safety, arm ? ARMING_STATE_ARMED : ARMING_STATE_STANDBY, &armed, true /* fRunPreArmChecks */, mavlink_fd_local);
 
-	if (arming_res == TRANSITION_CHANGED && mavlink_fd) {
+	if (arming_res == TRANSITION_CHANGED && mavlink_fd_local) {
 		mavlink_log_info(mavlink_fd_local, "[cmd] %s by %s", arm ? "ARMED" : "DISARMED", armedBy);
 
 	} else if (arming_res == TRANSITION_DENIED) {
