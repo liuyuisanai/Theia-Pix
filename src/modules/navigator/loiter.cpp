@@ -92,6 +92,7 @@ Loiter::on_activation()
 	} else if (vstatus->airdog_state == AIRD_STATE_LANDED || vstatus->airdog_state == AIRD_STATE_STANDBY) {
 		set_sub_mode(LOITER_SUB_MODE_LANDED, 1);
 	} else {
+		_camera_mode = UNDEFINED;
 		set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, 1); 
 	}
 }
@@ -124,12 +125,6 @@ Loiter::on_active()
 
 	if ( update_vehicle_command() )
 			execute_vehicle_command();
-
-	if (loiter_sub_mode == LOITER_SUB_MODE_AIM_AND_SHOOT || loiter_sub_mode == LOITER_SUB_MODE_GO_TO_POSITION) {
-		pos_sp_triplet = _navigator->get_position_setpoint_triplet();
-		point_camera_to_target(&(pos_sp_triplet->current));
-		_navigator->set_position_setpoint_triplet_updated();
-	}
 	
 }
 
@@ -485,18 +480,23 @@ Loiter::set_sub_mode(LOITER_SUB_MODE new_sub_mode, uint8_t reset_setpoint = 1) {
 	switch(new_sub_mode){
 		case LOITER_SUB_MODE_AIM_AND_SHOOT:
 			sub_mode_str = "Aim-and-shoot";
+			set_camera_mode(AIM_TO_TARGET);
 			break;
 		case LOITER_SUB_MODE_LOOK_DOWN:
 			sub_mode_str = "Look down";
+			set_camera_mode(LOOK_DOWN);
 			break;
 		case LOITER_SUB_MODE_GO_TO_POSITION:
 			sub_mode_str = "Go-to-position";
+			set_camera_mode(AIM_TO_TARGET);
 			break;
 		case LOITER_SUB_MODE_LANDING:
 			sub_mode_str = "Landing";
+			set_camera_mode(HORIZONTAL);
 			break;
 		case LOITER_SUB_MODE_TAKING_OFF:
 			sub_mode_str = "Taking-off";
+			set_camera_mode(HORIZONTAL);
 			break;
 		case LOITER_SUB_MODE_LANDED:
 			sub_mode_str = "Landed";

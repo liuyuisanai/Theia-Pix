@@ -175,6 +175,7 @@ static struct safety_s safety;
 static struct vehicle_control_mode_s control_mode;
 static struct offboard_control_setpoint_s sp_offboard;
 
+bool _custom_flag_control_point_to_target = false;
 
 int mode_switch_state = -1;
 
@@ -1920,6 +1921,26 @@ int commander_thread_main(int argc, char *argv[])
 				}
 				break;
             }
+            case AIRD_CAMERA_MODE_CHANGE:
+            {
+            	_custom_flag_control_point_to_target = true;
+            	switch (commander_request.camera_mode) {
+            		case AIM_TO_TARGET: {
+            			mavlink_log_info(mavlink_fd, "AIMING to target\n");
+            			control_mode.flag_control_point_to_target = true;
+            			break;
+            		}
+            		case HORIZONTAL : {
+            			control_mode.flag_control_point_to_target = false;
+            			break;
+            		}
+            		case LOOK_DOWN : {
+            			control_mode.flag_control_point_to_target = false;
+            			break;
+            		}
+            	}
+            	break;
+            }
 			default:
 				break;
 			}
@@ -2100,6 +2121,7 @@ int commander_thread_main(int argc, char *argv[])
 		}
 
 		if (nav_state_changed) {
+			_custom_flag_control_point_to_target = false;
 			status_changed = true;
 			warnx("nav state: %s", nav_states_str[status.nav_state]);
 			mavlink_log_info(mavlink_fd, "[cmd] nav state: %s", nav_states_str[status.nav_state]);
@@ -2485,7 +2507,9 @@ set_control_mode()
 	control_mode.flag_system_hil_enabled = status.hil_state == HIL_STATE_ON;
 	control_mode.flag_control_offboard_enabled = false;
 	control_mode.flag_control_follow_target = false;
-	control_mode.flag_control_point_to_target = false;
+	if (!_custom_flag_control_point_to_target) {
+		control_mode.flag_control_point_to_target = false;
+	}
 	control_mode.flag_control_leash_control_offset = false;
 
 	switch (status.nav_state) {
@@ -2602,7 +2626,9 @@ set_control_mode()
 		control_mode.flag_control_position_enabled = false;
 		control_mode.flag_control_velocity_enabled = false;
 		control_mode.flag_control_termination_enabled = false;
-		control_mode.flag_control_point_to_target = false;
+		if (!_custom_flag_control_point_to_target) {
+			control_mode.flag_control_point_to_target = false;
+		}
 		control_mode.flag_control_follow_target = false;
 		control_mode.flag_control_leash_control_offset = false;
 		break;
@@ -2618,7 +2644,9 @@ set_control_mode()
 		control_mode.flag_control_velocity_enabled = true;
 		control_mode.flag_control_termination_enabled = false;
 		control_mode.flag_control_follow_target = true;
-		control_mode.flag_control_point_to_target = true;
+		if (!_custom_flag_control_point_to_target) {
+			control_mode.flag_control_point_to_target = true;
+		}
 		break;
 
 	case NAVIGATION_STATE_AUTO_MISSION:
@@ -2632,7 +2660,9 @@ set_control_mode()
 		control_mode.flag_control_position_enabled = true;
 		control_mode.flag_control_velocity_enabled = true;
 		control_mode.flag_control_termination_enabled = false;
-		control_mode.flag_control_point_to_target = false;
+		if (!_custom_flag_control_point_to_target) {
+			control_mode.flag_control_point_to_target = false;
+		}
 	case NAVIGATION_STATE_RTL:
 	case NAVIGATION_STATE_AUTO_RTGS:
 	case NAVIGATION_STATE_AUTO_LANDENGFAIL:
@@ -2670,7 +2700,9 @@ set_control_mode()
 		control_mode.flag_control_velocity_enabled = true;
 		control_mode.flag_control_termination_enabled = false;
 		control_mode.flag_control_follow_target = true;
-		control_mode.flag_control_point_to_target = true;
+		if (!_custom_flag_control_point_to_target) {
+			control_mode.flag_control_point_to_target = true;
+		}
         control_mode.flag_control_leash_control_offset = true;
 		break;
 

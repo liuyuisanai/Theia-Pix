@@ -52,6 +52,7 @@
 #include <uORB/topics/position_setpoint_triplet.h>
 #include <uORB/topics/vehicle_command.h>
 #include <uORB/topics/vehicle_status.h>
+ #include <uORB/topics/commander_request.h>
 
 class Navigator;
 
@@ -97,7 +98,7 @@ public:
 	 */
 	bool update_vehicle_command();
 
-	void point_camera_to_target(position_setpoint_s *sp);
+	void set_camera_mode(camera_mode_t camera_mode);
 
 	void updateParameters();
 	void updateParamValues();
@@ -171,12 +172,12 @@ protected:
 
 	bool check_current_pos_sp_reached(SETPOINT_TYPE expected_sp_type = SETPOINT_TYPE_UNDEFINED);
     void go_to_intial_position();
-
-
+    camera_mode_t _camera_mode;
 
 private:
 
 	bool _first_run;
+
 
 	/*
 	 * This class has ptr data members, so it should not be copied,

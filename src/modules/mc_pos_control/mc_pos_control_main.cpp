@@ -780,7 +780,7 @@ MulticopterPositionControl::reset_follow_offset()
 		_follow_offset = pos - _tpos;
 
         // If target does not repeat altitude - offset is calculated from ref_alt
-        if (!_params.follow_rpt_alt && _params.follow_use_alt){
+        if (!_params.follow_rpt_alt){
             _follow_offset(2) = _pos(2) - _ref_alt; 
         }
 
@@ -1252,6 +1252,7 @@ MulticopterPositionControl::update_target_pos()
     // If alt is not used target altitude is contsant
     if (!_params.follow_use_alt){
         _tpos(2) = -(_alt_start - _ref_alt + _params.follow_talt_offs);
+        _tvel(2) = 0.0f;
     }
 
 	if (_ref_timestamp != 0) {
@@ -1388,17 +1389,10 @@ MulticopterPositionControl::control_follow(float dt)
 	_vel_ff += _tvel * _params.follow_vel_ff;
 
 	/* update position setpoint and feed-forward velocity if not repeating target altitude */
-	if (!_params.follow_rpt_alt && _params.follow_use_alt) {
+	if (!_params.follow_rpt_alt) {
 		//_pos_sp(2) = -(_alt_start - _ref_alt + _params.follow_talt_offs) + _follow_offset(2); 
         _pos_sp(2) = _ref_alt + _follow_offset(2);
 		_vel_ff(2) -= _tvel(2) * _params.follow_vel_ff;
-	}
-
-	if (_control_mode.flag_control_point_to_target) {
-
-
-
-		point_to_target();
 	}
 }
 
@@ -1595,6 +1589,10 @@ MulticopterPositionControl::task_main()
 				}
 			}
 
+			if (_control_mode.flag_control_point_to_target) {
+				point_to_target();
+			}
+
 			if (    (_control_mode.flag_control_position_enabled || _control_mode.flag_control_follow_target)&&
                     (_vstatus.airdog_state == AIRD_STATE_IN_AIR)    ) {
 				/*
@@ -1680,9 +1678,9 @@ MulticopterPositionControl::task_main()
 					_vel_sp(1) = 0.0f;
 				}
 
-                // It makes sense to change pich trough setpoint when point_to_target is not used 
-                if (!_control_mode.flag_control_point_to_target && _pos_sp_triplet.current.valid && _pos_sp_triplet.current.camera_pitch) {
-                    _cam_control.control[1] = _pos_sp_triplet.current.camera_pitch;
+                // It makes sense to change yaw and pich trough setpoint when point_to_target is not used                 
+                if (!_control_mode.flag_control_point_to_target && _pos_sp_triplet.current.valid) {
+                	_cam_control.control[1] = _pos_sp_triplet.current.camera_pitch;
                 }
 
 				/* use constant descend rate when landing, ignore altitude setpoint */
