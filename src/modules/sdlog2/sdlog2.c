@@ -1738,6 +1738,8 @@ int sdlog2_thread_main(int argc, char *argv[])
 			log_msg.body.log_TPOS.vel_n = buf.target_pos.vel_n;
 			log_msg.body.log_TPOS.vel_e = buf.target_pos.vel_e;
 			log_msg.body.log_TPOS.vel_d = buf.target_pos.vel_d;
+			log_msg.body.log_TPOS.eph = buf.target_pos.eph;
+			log_msg.body.log_TPOS.epv = buf.target_pos.epv;
 			LOGBUFFER_WRITE_AND_COUNT(TPOS);
 		}
 
