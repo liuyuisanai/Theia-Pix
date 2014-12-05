@@ -901,6 +901,8 @@ MavlinkReceiver::handle_message_global_position_int(mavlink_message_t *msg)
 	target_pos.vel_n = pos.vx * 1.0e-2f;
 	target_pos.vel_e = pos.vy * 1.0e-2f;
 	target_pos.vel_d = pos.vz * 1.0e-2f;
+	target_pos.eph = pos.eph * 1.0e-2f;
+	target_pos.epv = pos.epv * 1.0e-2f;
 	target_pos.yaw = _wrap_pi(pos.hdg / 100.0f * M_DEG_TO_RAD_F);
 
 	if (_target_pos_pub < 0) {
