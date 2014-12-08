@@ -65,6 +65,8 @@ public:
 private:
 
 	math::Vector<3>  _afollow_offset;			/**< offset from target for AFOLLOW mode */
+    math::Vector<3>  _vector_v;                 /**< vector from start path to end path */
+    float   _v_module;
 	double	_target_lat;		/**< prediction for target latitude */
 	double	_target_lon;		/**< prediction for target longitude */
 	float	_target_alt;		/**< prediction for target altitude */

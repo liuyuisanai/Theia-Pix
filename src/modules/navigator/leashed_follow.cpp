@@ -57,11 +57,21 @@ static bool is_empty(double array[3]);
 
 Leashed::Leashed(Navigator *navigator, const char *name)
 	: MissionBlock(navigator, name)
+    , _v_module()
+    , _target_lat()	
+    , _target_lon()	
+    , _target_alt()	
+    , _vehicle_lat()	
+    , _vehicle_lon()	
+    , _vehicle_alt()
+    , _init_alt() 		
     , _ready_to_follow(false)
     , _first_leash_point{0.0,0.0,0.0}
     , _last_leash_point{0.0,0.0,0.0}
 {
-    updateParameters();
+    updateParameters();	
+    fprintf(stderr, "[leashed] Constructed ready: %d\n"
+            ,_ready_to_follow);
 }
 
 Leashed::~Leashed()
@@ -78,8 +88,20 @@ Leashed::on_activation()
 {
 	updateParameters();
 	//Ignore all commands received from target so far
-	update_vehicle_command();
-    fprintf(stderr, "[leashed] Activation\n");
+	//update_vehicle_command();
+	global_pos = _navigator->get_global_position();
+	pos_sp_triplet = _navigator->get_position_setpoint_triplet();
+	pos_sp_triplet->next.valid = false;
+	pos_sp_triplet->previous.valid = false;
+	// Reset position setpoint to shoot and loiter until we get an acceptable trajectory point
+	pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
+	pos_sp_triplet->current.lat = global_pos->lat;
+	pos_sp_triplet->current.lon = global_pos->lon;
+	pos_sp_triplet->current.alt = global_pos->alt;
+	pos_sp_triplet->current.valid = true;
+	pos_sp_triplet->current.position_valid = true;
+	pos_sp_triplet->current.abs_velocity_valid = false;
+	_navigator->set_position_setpoint_triplet_updated();
 }
 
 void
@@ -89,34 +111,18 @@ Leashed::on_active()
 	if ( update_vehicle_command() )
 			execute_vehicle_command();
 
+    target_pos = _navigator->get_target_position();
+    global_pos = _navigator->get_global_position();
     double lat_new;
     double lon_new;
 
     if (_ready_to_follow) {
         /* we have at least 2 points setted from leash */
-        global_pos = _navigator->get_global_position();
         _vehicle_lat = global_pos->lat;
         _vehicle_lon = global_pos->lon;
         _target_lat = target_pos->lat;
         _target_lon = target_pos->lon;
 
-        // Getting vector of the leashed path
-        float v_x = 0.0;
-        float v_y = 0.0;
-        float v_z = _last_leash_point[2];
-        get_vector_to_next_waypoint(
-                _first_leash_point[0]
-                , _first_leash_point[1]
-                , _last_leash_point[0]
-                , _last_leash_point[1]
-                , &v_x
-                , &v_y);
-
-        // Normiruem vektor V
-        float v_module = sqrt(v_x*v_x + v_y*v_y);
-        v_x /= v_module;
-        v_y /= v_module;
-        v_z /= v_module;
         
         // Vector from leash start path to vehicle
         float vehicle_x = 0.0;
@@ -143,21 +149,28 @@ Leashed::on_active()
                 , &target_y);
 
         // Calculating dot product of target vector and path vector
-        float dot_product = 0.0;
-        math::Vector<3> vector_v(v_x, v_y, v_z);
+        float dot_product = 0.0f;
         math::Vector<3> vector_target(target_x, target_y, target_z);
         math::Vector<3> vector_vehicle(vehicle_x, vehicle_y, vehicle_z);
-        dot_product = vector_v * vector_target;
+        dot_product = _vector_v * vector_target;
+
+        // Limiting product not to be great than module of path vector
+        if (dot_product >= _v_module) {
+            dot_product = _v_module;
+        } else if (dot_product < 0.0f) {
+            dot_product = 0.0f;
+        }
 
         // Calculating vector from path start to desired point on path
         math::Vector<3> vector_desired;
-        vector_desired = vector_v * dot_product;
+        vector_desired = _vector_v * dot_product;
 
         // ===== Resulting vector =====
         vector_desired -= vector_vehicle;
+        fprintf(stderr, "[leashed] v_x: %.3f v_y: %.3f\n"
+                ,(double) vector_desired(0)
+                ,(double) vector_desired(1));
 
-
-        /* add offset to target position */
         add_vector_to_global_position(
                 _vehicle_lat
                 , _vehicle_lon
@@ -170,7 +183,9 @@ Leashed::on_active()
         // We still don't have points to follow, continuing to ABS follow
         _target_lat = target_pos->lat;
         _target_lon = target_pos->lon;
-        fprintf(stderr, "[leashed] Flying like a ABS follow\n");
+        fprintf(stderr, "[leashed] Flying like a ABS follow %.3f %.3f\n"
+                , (double)target_pos->lat
+                , (double)target_pos->lon);
 
 
         /* add offset to target position */
@@ -189,10 +204,10 @@ Leashed::on_active()
 	pos_sp_triplet->current.lat = lat_new;
 	pos_sp_triplet->current.lon = lon_new;
 
-//	if (_parameters.afol_rep_target_alt)
-//		pos_sp_triplet->current.alt = target_pos->alt - _afollow_offset(2);
-//	else
-//		pos_sp_triplet->current.alt = _init_alt;
+	//if (_parameters.afol_rep_target_alt)
+	//	pos_sp_triplet->current.alt = target_pos->alt - _afollow_offset(2);
+	//else
+	//	pos_sp_triplet->current.alt = _init_alt;
 
 
 	/* calculate direction to target */
@@ -200,7 +215,6 @@ Leashed::on_active()
 	pos_sp_triplet->current.pitch_min = 0.0f;
 
 	_navigator->set_position_setpoint_triplet_updated();
-
 }
 
 void
@@ -236,6 +250,27 @@ Leashed::execute_vehicle_command() {
                     _last_leash_point[1] = global_pos->lon;
                     _last_leash_point[2] = global_pos->alt;
                     _ready_to_follow = true;
+
+                    // Getting vector of the leashed path
+                    float v_x = 0.0;
+                    float v_y = 0.0;
+                    float v_z = _last_leash_point[2];
+                    get_vector_to_next_waypoint(
+                            _first_leash_point[0]
+                            , _first_leash_point[1]
+                            , _last_leash_point[0]
+                            , _last_leash_point[1]
+                            , &v_x
+                            , &v_y);
+
+                    // Normiruem vektor V
+                    _v_module = sqrt(v_x*v_x + v_y*v_y);
+                    v_x /= _v_module;
+                    v_y /= _v_module;
+                    v_z /= _v_module;
+
+                    _vector_v = math::Vector<3>(v_x, v_y, v_z);
+
                     fprintf(stderr, "[leashed] Got point 2\n");
                  }
                  else {

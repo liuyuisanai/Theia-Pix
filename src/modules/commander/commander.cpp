@@ -2682,7 +2682,7 @@ set_control_mode()
 		control_mode.flag_control_position_enabled = true;
 		control_mode.flag_control_velocity_enabled = true;
 		control_mode.flag_control_termination_enabled = false;
-		control_mode.flag_control_follow_target = true;
+		control_mode.flag_control_follow_target = false;
 		control_mode.flag_control_point_to_target = true;
         control_mode.flag_control_leash_control_offset = true;
 		break;
