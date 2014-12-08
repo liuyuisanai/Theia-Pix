@@ -142,6 +142,7 @@ Navigator::Navigator() :
 	_gpsFailure(this, "GPSF"),
 	_abs_follow(this, "FOL"),
 	_path_follow(this, "PAT"),
+    _cable_path(this, "CBL"),
     _land(this, "LND"),
 	_can_loiter_at_sp(false),
 	_pos_sp_triplet_updated(false),
@@ -162,6 +163,7 @@ Navigator::Navigator() :
 	_navigation_mode_array[7] = &_abs_follow;
 	_navigation_mode_array[8] = &_path_follow;
 	_navigation_mode_array[9] = &_land;
+    _navigation_mode_array[10] = &_cable_path;
 
 	updateParams();
 }
@@ -523,6 +525,9 @@ Navigator::task_main()
 			case NAVIGATION_STATE_ABS_FOLLOW:
 				_navigation_mode = &_abs_follow;
 				break;
+            case NAVIGATION_STATE_CABLE_PARK:
+                _navigation_mode = &_cable_path;
+                break;
 			case NAVIGATION_STATE_AUTO_PATH_FOLLOW:
 				_navigation_mode = &_path_follow;
 				break;

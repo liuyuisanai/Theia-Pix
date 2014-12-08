@@ -79,6 +79,7 @@ Leashed::on_activation()
 	updateParameters();
 	//Ignore all commands received from target so far
 	update_vehicle_command();
+    fprintf(stderr, "[leashed] Activation\n");
 }
 
 void
@@ -169,6 +170,7 @@ Leashed::on_active()
         // We still don't have points to follow, continuing to ABS follow
         _target_lat = target_pos->lat;
         _target_lon = target_pos->lon;
+        fprintf(stderr, "[leashed] Flying like a ABS follow\n");
 
 
         /* add offset to target position */

@@ -852,7 +852,7 @@ int commander_thread_main(int argc, char *argv[])
 	nav_states_str[NAVIGATION_STATE_LOITER]		= "AUTO_LOITER";
 	nav_states_str[NAVIGATION_STATE_RTL]		= "AUTO_RTL";
 	nav_states_str[NAVIGATION_STATE_AUTO_RTGS]		= "AUTO_RTGS";
-    nav_states_str[MAIN_STATE_CABLE_PARK]           = "AUTO_CABLE_PARK";
+    nav_states_str[NAVIGATION_STATE_CABLE_PARK]           = "AUTO_CABLE_PARK";
 	nav_states_str[NAVIGATION_STATE_ABS_FOLLOW]    = "AUTO_ABS_FOLLOW";
 	nav_states_str[NAVIGATION_STATE_ACRO]			= "ACRO";
 	nav_states_str[NAVIGATION_STATE_LAND]			= "LAND";
