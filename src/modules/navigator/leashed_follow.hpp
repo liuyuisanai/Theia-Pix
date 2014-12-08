@@ -31,9 +31,9 @@
  *
  ****************************************************************************/
 /**
- * @file abs_follow.h
+ * @file leashed_follow.hpp
  *
- * @author Martins Frolovs <martins.f@airdog.com>
+ * @author Max Shvetsov <max@airdog.com>
  */
 
 #ifndef NAVIGATOR_LEASHED_FOLLOW_H

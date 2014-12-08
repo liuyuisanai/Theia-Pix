@@ -31,11 +31,9 @@
  *
  ****************************************************************************/
 /**
- * @file abs_follow.cpp
+ * @file leashed_follow.cpp
  *
- * @author Julian Oes <julian@oes.ch>
- * @author Anton Babushkin <anton.babushkin@me.com>
- * @author Martins Frolovs <martins.f@airdog.com>
+ * @author Max Shvetsov <max@airdog.com>
  */
 
 #include <string.h>
@@ -87,20 +85,18 @@ void
 Leashed::on_activation()
 {
 	updateParameters();
-	//Ignore all commands received from target so far
-	//update_vehicle_command();
 	global_pos = _navigator->get_global_position();
 	pos_sp_triplet = _navigator->get_position_setpoint_triplet();
 	pos_sp_triplet->next.valid = false;
 	pos_sp_triplet->previous.valid = false;
 	// Reset position setpoint to shoot and loiter until we get an acceptable trajectory point
-	pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
-	pos_sp_triplet->current.lat = global_pos->lat;
-	pos_sp_triplet->current.lon = global_pos->lon;
-	pos_sp_triplet->current.alt = global_pos->alt;
-	pos_sp_triplet->current.valid = true;
-	pos_sp_triplet->current.position_valid = true;
-	pos_sp_triplet->current.abs_velocity_valid = false;
+	//pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
+	//pos_sp_triplet->current.lat = global_pos->lat;
+	//pos_sp_triplet->current.lon = global_pos->lon;
+	//pos_sp_triplet->current.alt = global_pos->alt;
+	//pos_sp_triplet->current.valid = true;
+	//pos_sp_triplet->current.position_valid = true;
+	//pos_sp_triplet->current.abs_velocity_valid = false;
 	_navigator->set_position_setpoint_triplet_updated();
 }
 
@@ -234,7 +230,6 @@ Leashed::execute_vehicle_command() {
 				break;
 			}
             case REMOTE_CMD_COME_TO_ME: {
-                 //auto is_empty = [] (double &mass[3]) -> bool {return mass[0]==0.0 && mass[1]==0.0 && mass[2]==0.0;}
                  
                  if (is_empty(_first_leash_point)) {
                     /* setting current point as first point */
