@@ -1,4 +1,4 @@
-/****************************************************************************
+/***************************************************************************
  *
  *   Copyright (c) 2014 PX4 Development Team. All rights reserved.
  *
@@ -30,87 +30,54 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-
 /**
- * @file navigator_mode_params.c
- *
- * Parameter for all navigator modes.
+ * @file abs_follow.h
  *
  * @author Martins Frolovs <martins.f@airdog.com>
  */
 
-#include <nuttx/config.h>
-#include <systemlib/param/param.h>
+#ifndef NAVIGATOR_LEASHED_FOLLOW_H
+#define NAVIGATOR_LEASHED_FOLLOW_H
 
-/*
- * Navigator mode parameters
- */
+#include <controllib/blocks.hpp>
+#include <controllib/block/BlockParam.hpp>
 
-/**
- * Take-off altitude
- *
- *	Altitude to which vehicle will take-off.
- *
- * @unit meters
- * @min 0
- * @group Navigator
- */
-PARAM_DEFINE_FLOAT(NAV_TAKEOFF_ALT, 10.0f);
+#include <uORB/uORB.h>
 
-/**
- * Acceptance radius to determine if setpoint have been reached
- *
- * @unit meters
- * @min 1
- * @max 50
- * @group Navigator
- */
-PARAM_DEFINE_FLOAT(NAV_ACC_RAD, 2.00f);
+#include "navigator_mode.h"
+#include "mission_block.h"
 
-/**
- * Acceptance radius for takeoff setpoint
- *
- * @unit meters
- * @group Navigator
- */
-PARAM_DEFINE_FLOAT(NAV_TAKEOFF_ACR, 2.00f);
+class Leashed : public MissionBlock
+{
+public:
+	Leashed(Navigator *navigator, const char *name);
 
-/**
- * Auto follow mode: which auto follow mode to use
- *
- * 0: ABS_FOLLOW
- * 1: PATH_FOLLOW
- * 2: CABLE_PARK
- *
- * @min 0
- * @max 2
- *
- */
-PARAM_DEFINE_INT32(NAV_AFOL_MODE, 0);
+	~Leashed();
 
-/**
- * Distance longer than this is considered invalid
- *
- * @unit meters
- * @group Navigator
- */
-PARAM_DEFINE_FLOAT(A_DST_INV, 100.00f);
+	virtual void on_inactive();
 
-/**
- * Initial drone distance.
- *
- * @unit meters
- * @min 2
- * @max 100
- * @group Airdog
- */
-PARAM_DEFINE_FLOAT(A_INIT_POS_D, 5.00f);
+	virtual void on_activation();
 
-/**
- * Use initial drone distance on takeoff
- *
- * @min 0
- * @max 1
- * @group Airdog
- */
-PARAM_DEFINE_INT32(A_INIT_POS_U, 1);
+	virtual void on_active();
+
+	virtual void execute_vehicle_command();
+
+private:
+
+	math::Vector<3>  _afollow_offset;			/**< offset from target for AFOLLOW mode */
+	double	_target_lat;		/**< prediction for target latitude */
+	double	_target_lon;		/**< prediction for target longitude */
+	float	_target_alt;		/**< prediction for target altitude */
+	double	_vehicle_lat;		/**< prediction for vehicle latitude */
+	double	_vehicle_lon;		/**< prediction for vehicle longitude */
+	float	_vehicle_alt;		/**< prediction for vehicle altitude */
+	float 	_init_alt; 			/**< initial altitude on leased follow start > */
+    bool    _ready_to_follow;   /**< true if ready, false if not > */
+    double _first_leash_point[3]; /** {lat, lon, alt} of first point setted from target */
+    double _last_leash_point[3]; /** {lat, lon, alt} of last point setted from target */
+	math::Vector<3>	_target_vel;	/**< target velocity vector */
+	hrt_abstime _t_prev;
+
+};
+
+#endif

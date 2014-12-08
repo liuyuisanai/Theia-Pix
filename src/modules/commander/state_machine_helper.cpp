@@ -353,6 +353,15 @@ main_state_transition(struct vehicle_status_s *status, main_state_t new_main_sta
         ret = TRANSITION_CHANGED; 
         break;
 
+	case MAIN_STATE_CABLE_PARK:
+        {
+            /* need global position estimate */
+            if (status->condition_global_position_valid && status->condition_target_position_valid) {
+                ret = TRANSITION_CHANGED;
+            }
+            break;
+        }
+
 	case MAIN_STATE_ABS_FOLLOW:
         {
             /* need global position estimate */
@@ -729,6 +738,18 @@ bool set_nav_state(struct vehicle_status_s *status, const bool data_link_loss_en
     case MAIN_STATE_EMERGENCY_LAND:
         status->nav_state = NAVIGATION_STATE_LAND;
         break;
+
+	case MAIN_STATE_CABLE_PARK:
+
+		/* require target position*/
+		if ((!status->condition_target_position_valid)) {
+
+			status->nav_state = NAVIGATION_STATE_LOITER;
+		} else {
+			status->nav_state = NAVIGATION_STATE_CABLE_PARK;
+		}
+		break;
+
 	case MAIN_STATE_ABS_FOLLOW:
 
 		/* require target position*/

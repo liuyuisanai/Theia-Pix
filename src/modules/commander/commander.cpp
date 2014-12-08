@@ -852,6 +852,7 @@ int commander_thread_main(int argc, char *argv[])
 	nav_states_str[NAVIGATION_STATE_LOITER]		= "AUTO_LOITER";
 	nav_states_str[NAVIGATION_STATE_RTL]		= "AUTO_RTL";
 	nav_states_str[NAVIGATION_STATE_AUTO_RTGS]		= "AUTO_RTGS";
+    nav_states_str[MAIN_STATE_CABLE_PARK]           = "AUTO_CABLE_PARK";
 	nav_states_str[NAVIGATION_STATE_ABS_FOLLOW]    = "AUTO_ABS_FOLLOW";
 	nav_states_str[NAVIGATION_STATE_ACRO]			= "ACRO";
 	nav_states_str[NAVIGATION_STATE_LAND]			= "LAND";
@@ -2669,6 +2670,21 @@ set_control_mode()
 		control_mode.flag_control_follow_target = false;
 		control_mode.flag_control_point_to_target = true;
 		control_mode.flag_control_setpoint_velocity = true;
+		break;
+
+	case NAVIGATION_STATE_CABLE_PARK:
+		control_mode.flag_control_manual_enabled = false;
+		control_mode.flag_control_auto_enabled = true;
+		control_mode.flag_control_rates_enabled = true;
+		control_mode.flag_control_attitude_enabled = true;
+		control_mode.flag_control_altitude_enabled = true;
+		control_mode.flag_control_climb_rate_enabled = true;
+		control_mode.flag_control_position_enabled = true;
+		control_mode.flag_control_velocity_enabled = true;
+		control_mode.flag_control_termination_enabled = false;
+		control_mode.flag_control_follow_target = true;
+		control_mode.flag_control_point_to_target = true;
+        control_mode.flag_control_leash_control_offset = true;
 		break;
 
 	case NAVIGATION_STATE_ABS_FOLLOW:

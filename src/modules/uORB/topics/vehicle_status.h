@@ -70,6 +70,7 @@ typedef enum {
 	MAIN_STATE_LOITER,
 	MAIN_STATE_RTL,
 	MAIN_STATE_ABS_FOLLOW,
+    MAIN_STATE_CABLE_PARK,
     MAIN_STATE_AUTO_PATH_FOLLOW,
 	MAIN_STATE_ACRO,
 	MAIN_STATE_OFFBOARD,
@@ -120,6 +121,7 @@ typedef enum {
 	NAVIGATION_STATE_AUTO_RCRECOVER,	/**< RC recover mode */
 	NAVIGATION_STATE_AUTO_RTGS,			/**< Auto return to groundstation on data link loss */
 	NAVIGATION_STATE_ABS_FOLLOW,        /**< AUTO Abs Follow mode */
+    NAVIGATION_STATE_CABLE_PARK,        /**< Auto cable park mode */
 	NAVIGATION_STATE_AUTO_LANDENGFAIL,	/**< Auto land on engine failure */
 	NAVIGATION_STATE_AUTO_LANDGPSFAIL,	/**< Auto land on gps failure (e.g. open loop loiter down) */
     NAVIGATION_STATE_AUTO_PATH_FOLLOW,  /**< AUTO Path Follow mode */
