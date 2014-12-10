@@ -119,6 +119,8 @@ NavigatorMode::updateParamHandles() {
 	_parameter_handles.pafol_ok_max_coef = param_find("PAFOL_MAX_COEF");
 	_parameter_handles.pafol_safe_dist = param_find("PAFOL_SAFE_DIST");
 
+//    _parameter_handles.max_negative_accel = param_find("NAV_MAX_N_ACC");
+
 	_parameter_handles.mpc_max_speed = param_find("MPC_XY_VEL_MAX");
     _parameter_handles.airdog_dst_inv = param_find("A_DST_INV");
     _parameter_handles.airdog_init_pos_dst = param_find("A_INIT_POS_D");

@@ -91,7 +91,7 @@
 #include <uORB/topics/tecs_status.h>
 #include <uORB/topics/system_power.h>
 #include <uORB/topics/servorail_status.h>
-#include <uORB/topics/wind_estimate.h>
+#include <uORB/topics/debug_data.h>
 
 #include <systemlib/systemlib.h>
 #include <systemlib/param/param.h>
@@ -163,6 +163,7 @@ PARAM_DEFINE_INT32(SDLOG_M_SYSPOW, 0);
 PARAM_DEFINE_INT32(SDLOG_M_SERVO, 0);
 PARAM_DEFINE_INT32(SDLOG_M_TRGPOS, 0);
 PARAM_DEFINE_INT32(SDLOG_M_EXTRAJ, 0);
+PARAM_DEFINE_INT32(SDLOG_M_DEBUGD, 0);
 
 #define LOGBUFFER_WRITE_AND_COUNT(_msg) if (logbuffer_write(&lb, &log_msg, LOG_PACKET_SIZE(_msg))) { \
 		log_msgs_written++; \
@@ -1000,9 +1001,10 @@ int sdlog2_thread_main(int argc, char *argv[])
 		struct system_power_s system_power;
 		struct servorail_status_s servorail_status;
 		struct satellite_info_s sat_info;
-		struct wind_estimate_s wind_estimate;
+		//struct wind_estimate_s wind_estimate;
 		struct target_global_position_s target_pos;
 		struct external_trajectory_s ext_traj;
+        struct debug_data_s debug_data;
 	} buf;
 
 	memset(&buf, 0, sizeof(buf));
@@ -1047,6 +1049,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 			struct log_WIND_s log_WIND;
 			struct log_TPOS_s log_TPOS;
 			struct log_EXTJ_s log_EXTJ;
+            struct log_DEBUGD_s log_DEBUGD;
 			struct log_GPRE_s log_GPRE;
 			struct log_GNEX_s log_GNEX;
 		} body;
@@ -1088,6 +1091,8 @@ int sdlog2_thread_main(int argc, char *argv[])
 		// int wind_sub;
 		int target_pos_sub;
 		int external_trajectory_sub;
+
+        int debug_data_sub;
 	} subs;
 
 	int sub_freq;
@@ -1128,6 +1133,8 @@ int sdlog2_thread_main(int argc, char *argv[])
 	// orb_set_interval(subs.wind_sub, 90);
 	LOG_ORB_PARAM_SUBSCRIBE(subs.target_pos_sub, ORB_ID(target_global_position), "SDLOG_M_TRGPOS", sub_freq)
 	LOG_ORB_PARAM_SUBSCRIBE(subs.external_trajectory_sub, ORB_ID(external_trajectory), "SDLOG_M_EXTRAJ", sub_freq)
+
+	LOG_ORB_PARAM_SUBSCRIBE(subs.debug_data_sub, ORB_ID(debug_data), "SDLOG_M_DEBUGD", sub_freq)
 
 	thread_running = true;
 
@@ -1317,7 +1324,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 			if (write_IMU) {
 				log_msg.msg_type = LOG_IMU_MSG;
 				log_msg.body.log_IMU.gyro_x = buf.sensor.gyro_rad_s[0];
-				log_msg.body.log_IMU.gyro_y = buf.sensor.gyro_rad_s[1];
+                log_msg.body.log_IMU.gyro_y = buf.sensor.gyro_rad_s[1];
 				log_msg.body.log_IMU.gyro_z = buf.sensor.gyro_rad_s[2];
 				log_msg.body.log_IMU.acc_x = buf.sensor.accelerometer_m_s2[0];
 				log_msg.body.log_IMU.acc_y = buf.sensor.accelerometer_m_s2[1];
@@ -1761,6 +1768,16 @@ int sdlog2_thread_main(int argc, char *argv[])
 			log_msg.body.log_EXTJ.vel_d = buf.ext_traj.vel_d;
 			log_msg.body.log_EXTJ.heading = buf.ext_traj.heading;
 			LOGBUFFER_WRITE_AND_COUNT(EXTJ);
+		}
+
+
+		if (copy_if_updated(ORB_ID(debug_data), subs.debug_data_sub, &buf.debug_data)) {
+
+			log_msg.msg_type = LOG_DEBUGD_MSG;
+            for (int i=0;i<8;i++)
+                log_msg.body.log_DEBUGD.val[i] = buf.debug_data.val[i];
+
+            LOGBUFFER_WRITE_AND_COUNT(DEBUGD);
 		}
 
 		/* signal the other thread new data, but not yet unlock */

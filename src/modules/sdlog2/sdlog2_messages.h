@@ -469,6 +469,13 @@ struct log_GNEX_s {
 	uint8_t type;
 };
 
+
+/* --- DEBUG DATA --- */
+#define LOG_DEBUGD_MSG 69
+struct log_DEBUGD_s {
+    float val[8];
+};
+
 /********** SYSTEM MESSAGES, ID > 0x80 **********/
 
 /* --- TIME - TIME STAMP --- */
@@ -535,6 +542,7 @@ static const struct log_format_s log_formats[] = {
 	LOG_FORMAT(WIND, "ffff",	"X,Y,CovX,CovY"),
 	LOG_FORMAT(TPOS, "BQLLffff", "SysID,Time,Lat,Lon,Alt,VelN,VelE,VelD"),
 	LOG_FORMAT(EXTJ, "BBQLLffffff", "Type,SysID,Time,Lat,Lon,Alt,RAlt,VelN,VelE,VelD,Head"),
+	LOG_FORMAT(DEBUGD, "ffffffff", "val0,val1,val2,val3,val4,val5,val6,val7"),
 	LOG_FORMAT(LOTJ, "BQLLffffff", "Type,Time,Lat,Lon,Alt,RAlt,VelN,VelE,VelD,Head"),
 	LOG_FORMAT(GPRE, "BLLfB",		"NavState,Lat,Lon,Alt,Type"),
 	LOG_FORMAT(GNEX, "BLLfB",		"NavState,Lat,Lon,Alt,Type"),

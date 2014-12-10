@@ -318,9 +318,9 @@ private:
 					const math::Vector<3> line_a, const math::Vector<3> line_b, math::Vector<3>& res);
 
 	/**
-	 * Set position setpoint for AUTO dumb-level simple
+     * Calculate velocity sp from pos_sp_triplet
 	 */
-	void		simple_control_auto(float dt);
+	void		control_auto_vel(float dt);
 
 	/**
 	 * Set position setpoint for AUTO
@@ -1094,7 +1094,8 @@ MulticopterPositionControl::cross_sphere_line(const math::Vector<3>& sphere_c, f
 }
 
 void
-MulticopterPositionControl::simple_control_auto(float dt) {
+MulticopterPositionControl::control_auto_vel(float dt) {
+
 	bool updated;
 	orb_check(_pos_sp_triplet_sub, &updated);
 
@@ -1102,8 +1103,8 @@ MulticopterPositionControl::simple_control_auto(float dt) {
 		orb_copy(ORB_ID(position_setpoint_triplet), _pos_sp_triplet_sub, &_pos_sp_triplet);
 	}
 
-	// TODO! I'd prefer to check position_valid too, but it seems that current code does not support it
 	if (_pos_sp_triplet.current.valid) {
+
 		// Mark next call to reset as valid
 		_reset_pos_sp = true;
 		_reset_alt_sp = true;
@@ -1113,55 +1114,38 @@ MulticopterPositionControl::simple_control_auto(float dt) {
 				_pos_sp_triplet.current.lat, _pos_sp_triplet.current.lon,
 				&_pos_sp.data[0], &_pos_sp.data[1]);
 
+        math::Vector<3> pos_sp_delta = _pos_sp - _pos;
 
-		if (_control_mode.flag_control_setpoint_velocity && _pos_sp_triplet.current.abs_velocity_valid) {
+		if (_pos_sp_triplet.current.abs_velocity_valid) {
 
-            math::Vector<3> direction;
-            math::Vector<3> desired_vel;
+            math::Vector<2> move_direction;
+            math::Vector<2> pos_sp_delta_xy(pos_sp_delta(0), pos_sp_delta(1));
 
-            direction = (_pos_sp - _pos).normalized();
-            desired_vel = direction * _pos_sp_triplet.current.abs_velocity;
-            _pos_sp = _pos + desired_vel.edivide( _params.pos_p );
+            move_direction = pos_sp_delta_xy.normalized();
 
-            _pos_sp(2) = -(_pos_sp_triplet.current.alt - _ref_alt);
+            _vel_sp(0) = move_direction(0) * _pos_sp_triplet.current.abs_velocity;
+            _vel_sp(1) = move_direction(1) * _pos_sp_triplet.current.abs_velocity;
+            _vel_sp(2) = pos_sp_delta(2) * _params.pos_p(2);
 
-            /*
-			// Scale position by desired velocity, ignore distance to the point, prioritize the velocity
-			_pos_sp = _pos_sp - _pos;
-			// Reset altitude before normalizing the vector
-			_pos_sp(2) = 0;
-			_pos_sp.normalize();
-			// Scale by desired speed
-			_pos_sp *= _pos_sp_triplet.current.abs_velocity;
-			// _pos_sp(0) /= _params.pos_p(0);
-			// _pos_sp(1) /= _params.pos_p(1);
+            if (isfinite(_att_sp.yaw_body)) {
+                _att_sp.yaw_body = _pos_sp_triplet.current.yaw;
+            }
+            
+        } else {
+            _vel_sp.zero();
+        }
 
-			// TODO! Unneeded addition and later subtraction?
-			// Move back, 'cause later velocity is calculated by subtracting _pos
-			_pos_sp += _pos;
-
-			// TODO! Raw test
-            */
-			/* _sp_move_rate = _pos_sp;
-			_pos_sp = _pos;
-			// feed forward target velocity
-			_vel_ff += _sp_move_rate * _params.follow_vel_ff; */
-		}
-		// Use altitude as is in all cases
-
-		// Update yaw
-		// TODO! Current code (at least loiter) doesn't respect yaw_valid and just sets NAN to invalidate yaw
-		if (isfinite(_att_sp.yaw_body)) {
-			_att_sp.yaw_body = _pos_sp_triplet.current.yaw;
-		}
 	} else {
 		// Resets position only once, if reset_pos is true
 		reset_pos_sp();
 		reset_alt_sp();
+        _vel_sp.zero();
 	}
+
 	if (_control_mode.flag_control_point_to_target) {
 		point_to_target();
 	}
+
 }
 
 void
@@ -1211,12 +1195,6 @@ MulticopterPositionControl::control_auto(float dt)
 		else {
 			scale = _params.pos_p.edivide(_params.vel_max);	// TODO add mult param here
 		}
-
-        /*
-        double cur_sp0 = curr_sp(0);
-        double cur_sp1 = curr_sp(1);
-        double cur_sp2 = curr_sp(2);
-        */
 
 		/* convert current setpoint to scaled space */
 		math::Vector<3> curr_sp_s = curr_sp.emult(scale);
@@ -1457,6 +1435,7 @@ MulticopterPositionControl::control_follow(float dt)
 	_follow_offset = follow_offset_new;
 	_pos_sp = _tpos + _follow_offset;
 
+
 	/* feed forward manual setpoint move rate with weight vel_ff */
 	_vel_ff = _sp_move_rate.emult(_params.vel_ff);
 
@@ -1658,22 +1637,20 @@ MulticopterPositionControl::task_main()
 			} else {
 				/* AUTO modes*/
 
-				if (_control_mode.flag_control_follow_target) {
-					// For auto ABS Follow
-					control_follow(dt);
-				}
-				// TODO! If we want to keep it, change detection to "path follow mode is active" & "simple mode"
-				else if (_control_mode.flag_control_setpoint_velocity && _params.pafol_mode == 1) {
-					simple_control_auto(dt);
-				//	control_auto(dt);
-				}
-				else {
-					/* AUTO */
-					control_auto(dt);
-				}
+                if (_pos_sp_triplet.current.type != SETPOINT_TYPE_VELOCITY) { // control_auto_vel is used where vel_sp is set
+
+                    if (_control_mode.flag_control_follow_target) {
+                        // For auto ABS Follow
+                        control_follow(dt);
+                    } else {
+                        /* AUTO */
+                        control_auto(dt);
+                    }
+
+                }
 			}
 
-			if (    (_control_mode.flag_control_position_enabled || _control_mode.flag_control_follow_target)&&
+			if ((_control_mode.flag_control_position_enabled || _control_mode.flag_control_follow_target)&&
                     (_vstatus.airdog_state == AIRD_STATE_IN_AIR)    ) {
 				/*
                  * Try to correct this altitude with sonar
@@ -1742,10 +1719,19 @@ MulticopterPositionControl::task_main()
 				}
 
 			} else {
-				/* run position & altitude controllers, calculate velocity setpoint */
-				math::Vector<3> pos_err = _pos_sp - _pos;
 
-				_vel_sp = pos_err.emult(_params.pos_p) + _vel_ff;
+				/* run position & altitude controllers, calculate velocity setpoint */
+
+                if (_pos_sp_triplet.current.type == SETPOINT_TYPE_VELOCITY){
+
+                    control_auto_vel(dt); // calculate vel_sp
+
+                } else {
+
+                    math::Vector<3> pos_err = _pos_sp - _pos;
+                    _vel_sp = pos_err.emult(_params.pos_p) + _vel_ff;
+
+                }
 
 				if (!_control_mode.flag_control_altitude_enabled) {
 					_reset_alt_sp = true;
@@ -1759,7 +1745,7 @@ MulticopterPositionControl::task_main()
 				}
 
                 if (_pos_sp_triplet.current.valid && _pos_sp_triplet.current.camera_pitch) {
-                    _cam_control.control[1] = _pos_sp_triplet.current.camera_pitch;
+                    //_cam_control.control[1] = _pos_sp_triplet.current.camera_pitch;
                 }
 
 				/* use constant descend rate when landing, ignore altitude setpoint */
@@ -1782,7 +1768,6 @@ MulticopterPositionControl::task_main()
 						}
 					}
 				}
-
 
                 //Ground distance correction
                 if (_params.sonar_correction_on) {
@@ -1809,7 +1794,7 @@ MulticopterPositionControl::task_main()
                         _vel_sp(2) = - 2 * _params.vel_max(2);
                         _sp_move_rate(2)= 0.0f;
                     }
-                    else if (_local_pos.dist_bottom_valid && _params.sonar_correction_on){
+                    else if (_local_pos.dist_bottom_valid) {
                         if (_ground_position_available_drop > 0.0f && _vel_sp(2) > 0){
                         float range = _local_pos.dist_bottom_max - _params.sonar_min_dist;
                         // Used when we are above allowed limit
