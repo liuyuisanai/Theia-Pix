@@ -77,45 +77,9 @@ AbsFollow::on_activation()
 void
 AbsFollow::on_active()
 {
-    target_pos = _navigator->get_target_position();
-    pos_sp_triplet = _navigator->get_position_setpoint_triplet();
-    global_pos = _navigator->get_global_position();
-
-	// Execute command if receivedt
+	// Execute command if received
 	if ( update_vehicle_command() )
 			execute_vehicle_command();
-
-	_target_lat = target_pos->lat;
-	_target_lon = target_pos->lon;
-
-	double lat_new;
-	double lon_new;
-
-	/* add offset to target position */
-	add_vector_to_global_position(
-			_target_lat, _target_lon,
-			_afollow_offset(0), _afollow_offset(1),
-			&lat_new, &lon_new
-	);
-
-	pos_sp_triplet->current.valid = true;
-	pos_sp_triplet->current.type = SETPOINT_TYPE_MOVING;
-
-	pos_sp_triplet->current.lat = lat_new;
-	pos_sp_triplet->current.lon = lon_new;
-
-//	if (_parameters.afol_rep_target_alt)
-//		pos_sp_triplet->current.alt = target_pos->alt - _afollow_offset(2);
-//	else
-//		pos_sp_triplet->current.alt = _init_alt;
-
-
-	/* calculate direction to target */
-	pos_sp_triplet->current.yaw = get_bearing_to_next_waypoint(global_pos->lat, global_pos->lon, target_pos->lat, target_pos->lon);
-	pos_sp_triplet->current.pitch_min = 0.0f;
-
-	_navigator->set_position_setpoint_triplet_updated();
-
 }
 
 void
