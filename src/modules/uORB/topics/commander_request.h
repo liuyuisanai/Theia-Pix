@@ -39,14 +39,26 @@ typedef enum {
 	V_MAIN_STATE_CHANGE = 0,    // Request to main_state change
 	V_DISARM,                   // Request to disarm vehicle
     AIRD_STATE_CHANGE,           // Request to change airdog_state
-    V_RESET_MODE_ARGS			// Request to reset mode argumens 
+    V_RESET_MODE_ARGS,			// Request to reset mode argumens 
+    AIRD_CAMERA_MODE_CHANGE,	// Request to change camera mode
 } request_type_t;
+
+/**
+ * Camera mode
+ */
+typedef enum {
+	UNDEFINED = 0,
+	HORIZONTAL,
+	AIM_TO_TARGET,
+    LOOK_DOWN,
+} camera_mode_t;
+
 
 struct commander_request_s {
 	request_type_t request_type;
 	main_state_t main_state;
     airdog_state_t airdog_state;
-
+    camera_mode_t camera_mode;
 };
 
 /**

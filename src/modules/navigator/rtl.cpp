@@ -80,7 +80,6 @@ RTL::on_activation()
 	global_pos =  _navigator->get_global_position();
 	home_pos = _navigator->get_home_position();
 	pos_sp_triplet = _navigator->get_position_setpoint_triplet();
-    target_pos = _navigator->get_target_position();
 
 	first_rtl_setpoint_set = false;
 
@@ -119,7 +118,6 @@ RTL::on_active()
 	global_pos =  _navigator->get_global_position();
 	home_pos = _navigator->get_home_position();
 	pos_sp_triplet = _navigator->get_position_setpoint_triplet();
-    target_pos = _navigator->get_target_position();
 
 	if ( update_vehicle_command() )
 			execute_vehicle_command();
@@ -183,8 +181,7 @@ RTL::set_rtl_setpoint()
             // Calculate offset values for later use.
             float offset_x;
             float offset_y;
-            float offset_z = target_pos->alt - global_pos->alt;
-
+            
             get_vector_to_next_waypoint(
                     global_pos->lat,
                     global_pos->lon,
@@ -194,14 +191,14 @@ RTL::set_rtl_setpoint()
                     &offset_y
             );
 
-            math::Vector<3> offset(offset_x, offset_y, offset_z);
             math::Vector<2> offset_xy(offset_x, offset_y);
 
             pos_sp_triplet->current.yaw = _wrap_pi(atan2f(offset_xy(1), offset_xy(0)));
 
 			pos_sp_triplet->current.lat = home_pos->lat;
 			pos_sp_triplet->current.lon = home_pos->lon;
-			pos_sp_triplet->current.alt = global_pos->alt;
+			//Do not reset altitude:
+			pos_sp_triplet->current.alt = pos_sp_triplet->current.alt;
 			pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
 
 			break;

@@ -269,6 +269,7 @@ struct vehicle_status_s {
 	bool circuit_breaker_engaged_gpsfailure_check;
 
 	bool auto_takeoff_cmd;
+	bool freeze_cmd; //commands loiter mode to freeze all movements and yawing
 };
 
 /**

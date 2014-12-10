@@ -259,6 +259,9 @@ private:
 
 	LocalPositionPredictor	_tpos_predictor;
 
+    int32_t old_follow_rpt_alt = 0;
+    int32_t old_follow_use_alt = 0;
+
 	bool _ground_setpoint_corrected = false;
 	bool _ground_position_invalid = false;
 	float _ground_position_available_drop = 0;
@@ -506,6 +509,8 @@ MulticopterPositionControl::MulticopterPositionControl() :
 	_params_handles.follow_yaw_off_max	= param_find("FOL_YAW_OFF_MAX");
 	_params_handles.follow_use_alt	= param_find("FOL_USE_ALT");
 	_params_handles.follow_rpt_alt	= param_find("FOL_RPT_ALT");
+
+
 	_params_handles.follow_lpf	= param_find("FOL_LPF");
 	_params_handles.cam_pitch_max	= param_find("CAM_P_MAX");
 
@@ -581,16 +586,26 @@ MulticopterPositionControl::parameters_update(bool force)
 		_params.cam_pitch_max = math::radians(_params.cam_pitch_max);
 
 		int32_t i;
+		param_get(_params_handles.pafol_mode, &i);
+		        _params.pafol_mode = i;
+
 		param_get(_params_handles.follow_use_alt, &i);
 		_params.follow_use_alt = (i != 0);
 		param_get(_params_handles.follow_rpt_alt, &i);
 		_params.follow_rpt_alt = (i != 0);
+        int32_t new_follow_rpt_alt = _params.follow_rpt_alt;
+        int32_t new_follow_use_alt = _params.follow_use_alt;
+        // If NAV_RPT_ALT or NAV_USE_ALT changes our Z offset calculations change, so we need recalculation
+        if (old_follow_rpt_alt != new_follow_rpt_alt || old_follow_use_alt != new_follow_use_alt){
+            update_target_pos();
+            _reset_follow_offset = true; 
+            reset_follow_offset();
+        }
+        old_follow_rpt_alt = _params.follow_rpt_alt;
+        old_follow_use_alt = _params.follow_use_alt;
+
         param_get(_params_handles.sonar_correction_on, &i);
         _params.sonar_correction_on = i;
-        
-        param_get(_params_handles.pafol_mode, &i);
-        _params.pafol_mode = i;
-
 		float v;
 		param_get(_params_handles.xy_p, &v);
 		_params.pos_p(0) = v;
@@ -632,6 +647,8 @@ MulticopterPositionControl::parameters_update(bool force)
         _params.mc_allowed_down_sp = v;
 
 		_params.sp_offs_max = _params.vel_max.edivide(_params.pos_p) * 2.0f;
+
+
 	}
 
 	return OK;
@@ -770,7 +787,13 @@ MulticopterPositionControl::reset_follow_offset()
 		}
 		pos(2) = _reset_alt_sp ? _pos(2) : _pos_sp(2);
 
+
 		_follow_offset = pos - _tpos;
+
+        // If target does not repeat altitude - offset is calculated from ref_alt
+        if (!_params.follow_rpt_alt){
+            _follow_offset(2) = _pos(2) - _ref_alt; 
+        }
 
 		mavlink_log_info(_mavlink_fd, "[mpc] reset follow offs: %.2f, %.2f, %.2f",
 				(double)_follow_offset(0), (double)_follow_offset(1), (double)_follow_offset(2));
@@ -1127,9 +1150,13 @@ MulticopterPositionControl::control_auto_vel(float dt) {
             _vel_sp(1) = move_direction(1) * _pos_sp_triplet.current.abs_velocity;
             _vel_sp(2) = pos_sp_delta(2) * _params.pos_p(2);
 
-            if (isfinite(_att_sp.yaw_body)) {
+            /* XXX AK _att_sp and yaws are published before control_auto_vel is called!!!
+             * Merge with b8ac590c589aedb71f2201de9b046b390f0ad358 takes over point_to_target logic
+             * So point_to_target yaw should not be a problem, but custom setpoint yaw is unsupported for now.
+             */
+            /* if (isfinite(_att_sp.yaw_body)) {
                 _att_sp.yaw_body = _pos_sp_triplet.current.yaw;
-            }
+            } */
             
         } else {
             _vel_sp.zero();
@@ -1140,10 +1167,6 @@ MulticopterPositionControl::control_auto_vel(float dt) {
 		reset_pos_sp();
 		reset_alt_sp();
         _vel_sp.zero();
-	}
-
-	if (_control_mode.flag_control_point_to_target) {
-		point_to_target();
 	}
 
 }
@@ -1302,15 +1325,17 @@ MulticopterPositionControl::control_auto(float dt)
 	else {
 		// Reset setpoint? Or is it ok? Reset only once?
 	}
-
-	if (_control_mode.flag_control_point_to_target) {
-		point_to_target();
-	}
 }
 
 void
 MulticopterPositionControl::update_target_pos()
 {
+    // If alt is not used target altitude is contsant
+    if (!_params.follow_use_alt){
+        _tpos(2) = -(_alt_start - _ref_alt + _params.follow_talt_offs);
+        _tvel(2) = 0.0f;
+    }
+
 	if (_ref_timestamp != 0) {
 		/* check if target position updated */
 		if (_target_pos.timestamp != _tpos_predictor.get_time_recv_last()) {
@@ -1447,12 +1472,9 @@ MulticopterPositionControl::control_follow(float dt)
 
 	/* update position setpoint and feed-forward velocity if not repeating target altitude */
 	if (!_params.follow_rpt_alt) {
-		_pos_sp(2) = -(_alt_start - _ref_alt + _params.follow_talt_offs) + _follow_offset(2);
+		//_pos_sp(2) = -(_alt_start - _ref_alt + _params.follow_talt_offs) + _follow_offset(2); 
+        _pos_sp(2) = _ref_alt + _follow_offset(2);
 		_vel_ff(2) -= _tvel(2) * _params.follow_vel_ff;
-	}
-
-	if (_control_mode.flag_control_point_to_target) {
-		point_to_target();
 	}
 }
 
@@ -1463,6 +1485,8 @@ MulticopterPositionControl::point_to_target()
 	/* calculate current offset (not offset setpoint) */
 	math::Vector<3> current_offset = _pos - _tpos;
 	math::Vector<2> current_offset_xy(current_offset(0), current_offset(1));
+
+
 
 	/* don't try to rotate near singularity */
 	float current_offset_xy_len = current_offset_xy.length();
@@ -1650,6 +1674,10 @@ MulticopterPositionControl::task_main()
                 }
 			}
 
+			if (_control_mode.flag_control_point_to_target) {
+				point_to_target();
+			}
+
 			if ((_control_mode.flag_control_position_enabled || _control_mode.flag_control_follow_target)&&
                     (_vstatus.airdog_state == AIRD_STATE_IN_AIR)    ) {
 				/*
@@ -1744,8 +1772,10 @@ MulticopterPositionControl::task_main()
 					_vel_sp(1) = 0.0f;
 				}
 
-                if (_pos_sp_triplet.current.valid && _pos_sp_triplet.current.camera_pitch) {
-                    //_cam_control.control[1] = _pos_sp_triplet.current.camera_pitch;
+				// TODO! AK: Check what values can be for uninitialized camera_pitch!
+                // It makes sense to change yaw and pich trough setpoint when point_to_target is not used                 
+                if (!_control_mode.flag_control_point_to_target && _pos_sp_triplet.current.valid) {
+                	_cam_control.control[1] = _pos_sp_triplet.current.camera_pitch;
                 }
 
 				/* use constant descend rate when landing, ignore altitude setpoint */
@@ -1758,6 +1788,7 @@ MulticopterPositionControl::task_main()
                         /* No range finder correction applied */
                         _vel_sp(2) = _params.regular_land_speed;
                     }
+                    _pos_sp(2) = _pos(2);
 				}
 
 				/* use constant ascend rate during take off */

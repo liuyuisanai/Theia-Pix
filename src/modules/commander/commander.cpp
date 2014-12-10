@@ -175,6 +175,7 @@ static struct safety_s safety;
 static struct vehicle_control_mode_s control_mode;
 static struct offboard_control_setpoint_s sp_offboard;
 
+bool _custom_flag_control_point_to_target = false;
 
 int mode_switch_state = -1;
 
@@ -405,7 +406,7 @@ transition_result_t arm_disarm(bool arm, const int mavlink_fd_local, const char 
 	// output appropriate error messages if the state cannot transition.
 	arming_res = arming_state_transition(&status, &safety, arm ? ARMING_STATE_ARMED : ARMING_STATE_STANDBY, &armed, true /* fRunPreArmChecks */, mavlink_fd_local);
 
-	if (arming_res == TRANSITION_CHANGED && mavlink_fd) {
+	if (arming_res == TRANSITION_CHANGED && mavlink_fd_local) {
 		mavlink_log_info(mavlink_fd_local, "[cmd] %s by %s", arm ? "ARMED" : "DISARMED", armedBy);
 
 	} else if (arming_res == TRANSITION_DENIED) {
@@ -499,7 +500,11 @@ bool handle_command(struct vehicle_status_s *status_local, const struct safety_s
 
 					} else if (custom_main_mode == PX4_CUSTOM_MAIN_MODE_FOLLOW) {
 						/* FOLLOW */
-						main_ret = main_state_transition(status_local, MAIN_STATE_FOLLOW, mavlink_fd);
+						main_ret = main_state_transition(status_local, MAIN_STATE_FOLLOW, mavlink_fd);					
+					} else if (custom_main_mode == PX4_CUSTOM_MAIN_MODE_RTL) {
+						/* AUTO RTL */
+						//This mode should be processed in LOITER submodes
+						main_ret = TRANSITION_DENIED;
 					}
 
 				} else {
@@ -1468,7 +1473,7 @@ int commander_thread_main(int argc, char *argv[])
                 }
 
                 // On first timeout when status.condition_target_position_valid is false go into aim-and-shoot
-                if (status.main_state != MAIN_STATE_LOITER && status.main_state!=MAIN_STATE_EMERGENCY_RTL && status.main_state!=MAIN_STATE_EMERGENCY_LAND) {
+                if (status.main_state != MAIN_STATE_LOITER && control_mode.flag_control_follow_target) {
                     mavlink_log_info(mavlink_fd, "Target signal time-out, switching to Aim-and-shoot.");
 				    if (main_state_transition(&status, MAIN_STATE_LOITER, mavlink_fd) == TRANSITION_CHANGED) {
                         status_changed = true; 
@@ -1916,6 +1921,26 @@ int commander_thread_main(int argc, char *argv[])
 				}
 				break;
             }
+            case AIRD_CAMERA_MODE_CHANGE:
+            {
+            	_custom_flag_control_point_to_target = true;
+            	switch (commander_request.camera_mode) {
+            		case AIM_TO_TARGET: {
+            			mavlink_log_info(mavlink_fd, "AIMING to target\n");
+            			control_mode.flag_control_point_to_target = true;
+            			break;
+            		}
+            		case HORIZONTAL : {
+            			control_mode.flag_control_point_to_target = false;
+            			break;
+            		}
+            		case LOOK_DOWN : {
+            			control_mode.flag_control_point_to_target = false;
+            			break;
+            		}
+            	}
+            	break;
+            }
 			default:
 				break;
 			}
@@ -2096,6 +2121,7 @@ int commander_thread_main(int argc, char *argv[])
 		}
 
 		if (nav_state_changed) {
+			_custom_flag_control_point_to_target = false;
 			status_changed = true;
 			warnx("nav state: %s", nav_states_str[status.nav_state]);
 			mavlink_log_info(mavlink_fd, "[cmd] nav state: %s", nav_states_str[status.nav_state]);
@@ -2481,8 +2507,10 @@ set_control_mode()
 	control_mode.flag_system_hil_enabled = status.hil_state == HIL_STATE_ON;
 	control_mode.flag_control_offboard_enabled = false;
 	control_mode.flag_control_follow_target = false;
-	control_mode.flag_control_point_to_target = false;
 	control_mode.flag_control_setpoint_velocity = false;
+	if (!_custom_flag_control_point_to_target) {
+		control_mode.flag_control_point_to_target = false;
+	}
 	control_mode.flag_control_leash_control_offset = false;
 
 	switch (status.nav_state) {
@@ -2599,7 +2627,9 @@ set_control_mode()
 		control_mode.flag_control_position_enabled = false;
 		control_mode.flag_control_velocity_enabled = false;
 		control_mode.flag_control_termination_enabled = false;
-		control_mode.flag_control_point_to_target = false;
+		if (!_custom_flag_control_point_to_target) {
+			control_mode.flag_control_point_to_target = false;
+		}
 		control_mode.flag_control_follow_target = false;
 		control_mode.flag_control_leash_control_offset = false;
 		break;
@@ -2615,7 +2645,9 @@ set_control_mode()
 		control_mode.flag_control_velocity_enabled = true;
 		control_mode.flag_control_termination_enabled = false;
 		control_mode.flag_control_follow_target = true;
-		control_mode.flag_control_point_to_target = true;
+		if (!_custom_flag_control_point_to_target) {
+			control_mode.flag_control_point_to_target = true;
+		}
 		break;
 
 	case NAVIGATION_STATE_AUTO_MISSION:
@@ -2629,7 +2661,9 @@ set_control_mode()
 		control_mode.flag_control_position_enabled = true;
 		control_mode.flag_control_velocity_enabled = true;
 		control_mode.flag_control_termination_enabled = false;
-		control_mode.flag_control_point_to_target = false;
+		if (!_custom_flag_control_point_to_target) {
+			control_mode.flag_control_point_to_target = false;
+		}
 	case NAVIGATION_STATE_RTL:
 	case NAVIGATION_STATE_AUTO_RTGS:
 	case NAVIGATION_STATE_AUTO_LANDENGFAIL:
@@ -2682,7 +2716,9 @@ set_control_mode()
 		control_mode.flag_control_velocity_enabled = true;
 		control_mode.flag_control_termination_enabled = false;
 		control_mode.flag_control_follow_target = true;
-		control_mode.flag_control_point_to_target = true;
+		if (!_custom_flag_control_point_to_target) {
+			control_mode.flag_control_point_to_target = true;
+		}
         control_mode.flag_control_leash_control_offset = true;
 		break;
 
