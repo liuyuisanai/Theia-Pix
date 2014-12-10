@@ -160,25 +160,27 @@ void cAirdog::cycle()
 		// handle_takeoff();
 
 		if(!hil) {
-			if (airdog_status.battery_remaining < bat_warning_level && battery_warning_count < 3 && airdog_status.battery_remaining!= 0)
-			{
-				mavlink_log_info(mavlink_fd, "remaining %d", airdog_status.battery_remaining);
-				battery_warning_count++;
-				ioctl(buzzer, TONE_SET_ALARM, TONE_NOTIFY_NEGATIVE_TUNE);
-				pi2c_ctrl->start_blinking_led(I2C_LED_RED, BLINKING_RATE_SLOW);
+			//TODO: [INE] rework!!!
 
-			} else if (airdog_status.battery_remaining < bat_critical_level && airdog_status.battery_remaining!= 0)
-			{
-				if (!rtl_triggered_from_battery && airdog_status.sub_mode != PX4_CUSTOM_SUB_MODE_AUTO_RTL && airdog_status.sub_mode != PX4_CUSTOM_SUB_MODE_AUTO_LAND)
-				{
-					rtl_triggered_from_battery = true;
-					// send_set_state(NAV_STATE_RTL, MOVE_NONE);
-					pi2c_ctrl->start_blinking_led(I2C_LED_RED, BLINKING_RATE_FAST);
-				}
-			} else if (airdog_status.battery_remaining > bat_warning_level)
-			{
-				pi2c_ctrl->stop_blinking_led(I2C_LED_RED, true);
-			}
+			// if (airdog_status.battery_remaining < bat_warning_level && battery_warning_count < 3 && airdog_status.battery_remaining!= 0)
+			// {
+			// 	mavlink_log_info(mavlink_fd, "remaining %d", airdog_status.battery_remaining);
+			// 	battery_warning_count++;
+			// 	ioctl(buzzer, TONE_SET_ALARM, TONE_NOTIFY_NEGATIVE_TUNE);
+			// 	pi2c_ctrl->start_blinking_led(I2C_LED_RED, BLINKING_RATE_SLOW);
+
+			// } else if (airdog_status.battery_remaining < bat_critical_level && airdog_status.battery_remaining!= 0)
+			// {
+			// 	if (!rtl_triggered_from_battery && airdog_status.main_mode != PX4_CUSTOM_MAIN_MODE_RTL && airdog_status.sub_mode != PX4_CUSTOM_SUB_MODE_AUTO_LAND)
+			// 	{
+			// 		rtl_triggered_from_battery = true;
+			// 		// send_set_state(NAV_STATE_RTL, MOVE_NONE);
+			// 		pi2c_ctrl->start_blinking_led(I2C_LED_RED, BLINKING_RATE_FAST);
+			// 	}
+			// } else if (airdog_status.battery_remaining > bat_warning_level)
+			// {
+			// 	pi2c_ctrl->stop_blinking_led(I2C_LED_RED, true);
+			// }
 		}
 
 		if (airdog_status.timestamp > 0)
@@ -222,29 +224,6 @@ void cAirdog::send_set_mode(uint8_t base_mode, enum PX4_CUSTOM_MAIN_MODE custom_
 	cmd.param1 = base_mode;
 	cmd.param2 = custom_main_mode;
 	cmd.param3 = mode_args;
-	cmd.source_system = vehicle_status.system_id;
-	cmd.source_component = vehicle_status.component_id;
-	// TODO add parameters AD_VEH_SYSID, AD_VEH_COMP to set target id
-	cmd.target_system = 1;
-	cmd.target_component = 50;
-
-	if (cmd_pub < 0) {
-		cmd_pub = orb_advertise(ORB_ID(vehicle_command), &cmd);
-	} else {
-		orb_publish(ORB_ID(vehicle_command), cmd_pub, &cmd);
-	}
-}
-
-void cAirdog::send_set_auto_mode(uint8_t base_mode, enum PX4_CUSTOM_SUB_MODE_AUTO custom_sub_mode_auto)
-{
-	struct vehicle_command_s cmd;
-	memset(&cmd, 0, sizeof(cmd));
-
-	/* fill command */
-	cmd.command = VEHICLE_CMD_DO_SET_MODE;
-	cmd.confirmation = false;
-	cmd.param1 = base_mode;
-	cmd.param2 = custom_sub_mode_auto;
 	cmd.source_system = vehicle_status.system_id;
 	cmd.source_component = vehicle_status.component_id;
 	// TODO add parameters AD_VEH_SYSID, AD_VEH_COMP to set target id
@@ -385,10 +364,10 @@ bool cAirdog::button_clicked_i2c(uint8_t button, bool long_press)
                 send_command(REMOTE_CMD_DOWN);
             } else if (current_button_state == BUTTON_STATE_CHOOSE_FUNCTION){
 
-                uint8_t base_mode = MAV_MODE_FLAG_SAFETY_ARMED | MAV_MODE_FLAG_AUTO_ENABLED;
+                uint8_t base_mode = MAV_MODE_FLAG_SAFETY_ARMED | MAV_MODE_FLAG_AUTO_ENABLED | MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
                 if (hil) base_mode |= MAV_MODE_FLAG_HIL_ENABLED;
 
-                send_set_auto_mode(base_mode, PX4_CUSTOM_SUB_MODE_AUTO_RTL);
+                send_set_mode(base_mode, PX4_CUSTOM_MAIN_MODE_RTL);
                 set_current_button_state(BUTTON_STATE_DEFAULT);
 
                 set_current_button_state(BUTTON_STATE_DEFAULT);

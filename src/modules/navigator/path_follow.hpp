@@ -6,6 +6,7 @@
 // TODO! Consider migrating this class elsewhere
 #include <containers/Queue.hpp>
 #include <mathlib/math/filter/LowPassFilter.hpp>
+#include <sdlog2/debug_data_log.cpp>
 
 #include "navigator_mode.h"
 
@@ -44,10 +45,34 @@ private:
 	float _vertical_offset; // Vertical offset off the trajectory
 	bool _inited; // Indicates if the mode was inited successfully
 	math::LowPassFilter<math::Vector<3>> _target_vel_lpf; // Filter for target velocity
+	math::LowPassFilter<math::Vector<3>> _drone_vel_lpf; // Filter for target velocity
+    math::LowPassFilter<float> _vel_ch_rate_lpf; // drone velocity change rate[acceleration] lpf
     math::Vector<3> _target_velocity_vect; // LPFed target velocity
-    float _target_velocity;
-    float _target_velocity_raw;
+
+    debug_data_log dd_log;
+
+
+
+    float _target_velocity;   // raw target velocity
+    float _target_velocity_f; // target velocity filtered
+    float _drone_velocity;    // raw drone velocity
+    float _drone_velocity_f;    // drone velocity filtered 
+    float _last_drone_velocity_f; // drone velocity in the last iteratiovn
+    float _last_drone_velocity; // drone velocity in the last iteratiovn
+
+    float _vel_ch_rate;  // velocity change rate
+    float _vel_ch_rate_f; // velocity change rate filtered
+
+    uint64_t _global_pos_timestamp_last;
+
     int itr=0;
+
+	hrt_abstime _calc_vel_t_prev = 0;
+
+	hrt_abstime _t_prev = 0;
+	hrt_abstime _dt = 0;
+
+    bool current_point_passed = false;
 
 
 	// Updates saved trajectory and trajectory distance with a new point
@@ -56,16 +81,19 @@ private:
 	inline void update_setpoint(const buffer_point_s &desired_point, position_setpoint_s &destination);
 	// Update target velocity with a new value
 	inline void update_target_velocity();
+	// Update drone velocity with a new value
+	inline void update_drone_velocity();
 	// Updates minimum and maximum distance based on ok distance
 	inline void update_min_max_dist();
 	// Calculates desired speed in m/s based on current distance and target's speed
-	inline float calculate_desired_speed(float distance);
+	inline float calculate_desired_velocity(float distance);
 	// Calculates total current distance by trajectory + drone distance to setpoint + target distance to last point
 	inline float calculate_current_distance();
 	// Checks if the next point in the buffer is safe to use
 	inline bool check_point_safe();
     // Setpoint reached specialized for path follow
-    inline bool check_current_pos_sp_reached_pf(float acceptance_line_dst);
+    inline bool check_current_trajectory_point_passed(float acceptance_line_dst);
+    
 
 
 };

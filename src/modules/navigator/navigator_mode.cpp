@@ -119,6 +119,8 @@ NavigatorMode::updateParamHandles() {
 	_parameter_handles.pafol_ok_max_coef = param_find("PAFOL_MAX_COEF");
 	_parameter_handles.pafol_safe_dist = param_find("PAFOL_SAFE_DIST");
 
+//    _parameter_handles.max_negative_accel = param_find("NAV_MAX_N_ACC");
+
 	_parameter_handles.mpc_max_speed = param_find("MPC_XY_VEL_MAX");
     _parameter_handles.airdog_dst_inv = param_find("A_DST_INV");
     _parameter_handles.airdog_init_pos_dst = param_find("A_INIT_POS_D");
@@ -228,34 +230,64 @@ NavigatorMode::execute_vehicle_command()
 }
 
 void
-NavigatorMode::point_camera_to_target(position_setpoint_s *sp)
+NavigatorMode::set_camera_mode(camera_mode_t camera_mode)
 {
-	target_pos = _navigator->get_target_position();
-	global_pos = _navigator->get_global_position();
+	// target_pos = _navigator->get_target_position();
+	// global_pos = _navigator->get_global_position();
 
-	// Calculate offset values for later use.
-	float offset_x;
-	float offset_y;
-	float offset_z = target_pos->alt - global_pos->alt;
+	// // Calculate offset values for later use.
+	// float offset_x;
+	// float offset_y;
+	// float offset_z = target_pos->alt - global_pos->alt;
 
-	get_vector_to_next_waypoint(
-			target_pos->lat,
-			target_pos->lon,
-			global_pos->lat,
-			global_pos->lon,
-			&offset_x,
-			&offset_y
-	);
+	// get_vector_to_next_waypoint(
+	// 		target_pos->lat,
+	// 		target_pos->lon,
+	// 		global_pos->lat,
+	// 		global_pos->lon,
+	// 		&offset_x,
+	// 		&offset_y
+	// );
 
-	math::Vector<3> offset(offset_x, offset_y, offset_z);
-	math::Vector<2> offset_xy(offset_x, offset_y);
+	// math::Vector<3> offset(offset_x, offset_y, offset_z);
+	// math::Vector<2> offset_xy(offset_x, offset_y);
 
-	float offset_xy_len = offset_xy.length();
+	// float offset_xy_len = offset_xy.length();
 
-	if (offset_xy_len > _parameters.a_yaw_ignore_radius)
-		sp->yaw = _wrap_pi(atan2f(-offset_xy(1), -offset_xy(0)));
+	// if (offset_xy_len > _parameters.a_yaw_ignore_radius)
+	// 	sp->yaw = _wrap_pi(atan2f(-offset_xy(1), -offset_xy(0)));
 
-	sp->camera_pitch = atan2f(offset(2), offset_xy_len);
+	// sp->camera_pitch = atan2f(offset(2), offset_xy_len);
+
+	// pos_sp_triplet = _navigator->get_position_setpoint_triplet();
+	// pos_sp_triplet->current.aim_to_target = point_to_target;		
+	// _navigator->set_position_setpoint_triplet_updated();
+
+	if (_camera_mode != camera_mode) {
+
+		_camera_mode = camera_mode;
+
+		commander_request_s *commander_request = _navigator->get_commander_request();
+		commander_request->request_type = AIRD_CAMERA_MODE_CHANGE;
+		commander_request->camera_mode = camera_mode;
+		_navigator->set_commander_request_updated();
+
+		if (camera_mode != AIM_TO_TARGET) {
+			global_pos = _navigator->get_global_position();
+			//keep current yaw angle;
+			pos_sp_triplet = _navigator->get_position_setpoint_triplet();
+			pos_sp_triplet->current.yaw = global_pos->yaw;
+			switch (camera_mode) {
+				case HORIZONTAL :
+					pos_sp_triplet->current.camera_pitch = 0.0f;		
+					break;
+				case LOOK_DOWN :
+					pos_sp_triplet->current.camera_pitch = -1.0f;
+					break;
+			}
+			_navigator->set_position_setpoint_triplet_updated();
+		}
+	}
 }
 
 bool

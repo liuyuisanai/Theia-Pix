@@ -440,9 +440,11 @@ adc_main(int argc, char *argv[])
 		g_adc = new ADC((1 << 10) | (1 << 11) | (1 << 12) | (1 << 13));
 #elif CONFIG_ARCH_BOARD_AIRDOG_FMU
 		/* XXX this hardcodes the default channel set for AeroCore - should be configurable */
-		g_adc = new ADC((1 << ADC_BATTERY_VOLTAGE_CHANNEL)
+		g_adc = new ADC ( (1 << ADC_SYSPOWER_VOLTAGE_CHANNEL)
+				| (1 << ADC_BATTERY_VOLTAGE_CHANNEL)
 				| (1 << ADC_BATTERY_CURRENT_CHANNEL)
 				| (1 << ADC_SENSORS_VOLTAGE_CHANNEL)
+				| (1 << ADC_IO_CHIP_VOLTAGE_CHANNEL)
 		);
 #else
 # error Unsupported board.

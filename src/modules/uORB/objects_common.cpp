@@ -257,3 +257,6 @@ ORB_DEFINE(trajectory, struct trajectory_s);
 
 #include "topics/external_trajectory.h"
 ORB_DEFINE(external_trajectory, struct external_trajectory_s);
+
+#include "topics/debug_data.h"
+ORB_DEFINE(debug_data, struct debug_data_s);

@@ -8,6 +8,8 @@
 #
 ROMFS_ROOT	 = $(PX4_BASE)/ROMFS/AirDogFMU
 ROMFS_OPTIONAL_FILES = $(PX4_BASE)/Images/px4io-v2_default.bin
+# Custom AirDogIO firmware unstable
+#ROMFS_OPTIONAL_FILES = $(PX4_BASE)/Images/AirDogIO_default.bin
 
 #
 # Board support modules

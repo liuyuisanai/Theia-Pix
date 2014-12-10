@@ -419,6 +419,8 @@ struct log_TPOS_s {
 	float vel_n;
 	float vel_e;
 	float vel_d;
+	float eph;
+	float epv;
 };
 /* --- EXTJ - EXTERNAL TRAJECTORY --- */
 #define LOG_EXTJ_MSG 65
@@ -467,6 +469,13 @@ struct log_GNEX_s {
 	int32_t lon;
 	float alt;
 	uint8_t type;
+};
+
+
+/* --- DEBUG DATA --- */
+#define LOG_DEBUGD_MSG 69
+struct log_DEBUGD_s {
+    float val[8];
 };
 
 /********** SYSTEM MESSAGES, ID > 0x80 **********/
@@ -533,8 +542,9 @@ static const struct log_format_s log_formats[] = {
 	LOG_FORMAT(GS1B, "BBBBBBBBBBBBBBBB",	"s0,s1,s2,s3,s4,s5,s6,s7,s8,s9,s10,s11,s12,s13,s14,s15"),
 	LOG_FORMAT(TECS, "fffffffffffffB",	"ASP,AF,FSP,F,FF,AsSP,AsF,AsDSP,AsD,TERSP,TER,EDRSP,EDR,M"),
 	LOG_FORMAT(WIND, "ffff",	"X,Y,CovX,CovY"),
-	LOG_FORMAT(TPOS, "BQLLffff", "SysID,Time,Lat,Lon,Alt,VelN,VelE,VelD"),
+	LOG_FORMAT(TPOS, "BQLLffffff", "SysID,Time,Lat,Lon,Alt,VelN,VelE,VelD,EPH,EPV"),
 	LOG_FORMAT(EXTJ, "BBQLLffffff", "Type,SysID,Time,Lat,Lon,Alt,RAlt,VelN,VelE,VelD,Head"),
+	LOG_FORMAT(DEBUGD, "ffffffff", "val0,val1,val2,val3,val4,val5,val6,val7"),
 	LOG_FORMAT(LOTJ, "BQLLffffff", "Type,Time,Lat,Lon,Alt,RAlt,VelN,VelE,VelD,Head"),
 	LOG_FORMAT(GPRE, "BLLfB",		"NavState,Lat,Lon,Alt,Type"),
 	LOG_FORMAT(GNEX, "BLLfB",		"NavState,Lat,Lon,Alt,Type"),

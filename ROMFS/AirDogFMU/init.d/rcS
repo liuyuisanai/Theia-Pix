@@ -43,12 +43,14 @@ then
 	#
 	# Check if PX4IO present and update firmware if needed
 	#
-	if [ -f /etc/extras/px4io-v2_default.bin ]
-	then
-		set IO_FILE /etc/extras/px4io-v2_default.bin
-	else
-		set IO_FILE /etc/extras/px4io-v1_default.bin
-	fi
+
+	# Custom AirDogIO firmware unstable
+	#set IO_FILE /etc/extras/AirDogIO_default.bin
+	# Explicitly set IO_FILE to v2
+	set IO_FILE /etc/extras/px4io-v2_default.bin
+
+	# Uncomment this line to force IO update in any case
+	#px4io forceupdate 14662 $IO_FILE
 
 	# usleep 2000000
 	if px4io checkcrc $IO_FILE

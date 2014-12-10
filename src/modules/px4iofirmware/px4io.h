@@ -173,7 +173,23 @@ extern pwm_limit_t pwm_limit;
 
 #endif
 
-#define BUTTON_SAFETY		stm32_gpioread(GPIO_BTN_SAFETY)
+#ifdef CONFIG_ARCH_BOARD_AIRDOG_IO
+
+# define PX4IO_RELAY_CHANNELS		0
+# define POWER_SPEKTRUM(_s)		stm32_gpiowrite(GPIO_SPEKTRUM_PWR_EN, (_s))
+# define ENABLE_SBUS_OUT(_s)		stm32_gpiowrite(GPIO_SBUS_OENABLE, !(_s))
+
+# define PX4IO_ADC_CHANNEL_COUNT	1
+# define ADC_RSSI			5
+
+#endif
+
+#ifdef CONFIG_ARCH_BOARD_AIRDOG_IO
+# /* We assume it is always unsafe, FMU should not check the flag. */
+# define BUTTON_SAFETY		0u
+#else
+# define BUTTON_SAFETY		stm32_gpioread(GPIO_BTN_SAFETY)
+#endif
 
 #define CONTROL_PAGE_INDEX(_group, _channel) (_group * PX4IO_CONTROL_CHANNELS + _channel)
 

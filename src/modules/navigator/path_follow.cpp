@@ -14,6 +14,7 @@
 #include <systemlib/err.h>
 #include <uORB/topics/external_trajectory.h>
 
+
 #include "navigator.h"
 #include "path_follow.hpp"
 
@@ -32,8 +33,12 @@ PathFollow::PathFollow(Navigator *navigator, const char *name):
 		_ok_distance(0.0f),
 		_vertical_offset(0.0f),
 		_inited(false),
-		_target_vel_lpf(2.0f),
-		_target_velocity(0.0f){
+		_target_vel_lpf(0.5f),
+		_drone_vel_lpf(0.2f),
+        _vel_ch_rate_lpf(0.2f),
+		_target_velocity(0.5f),
+        _drone_velocity(0.0f){
+
 
 }
 PathFollow::~PathFollow() {
@@ -50,10 +55,13 @@ void PathFollow::on_inactive() {
 	// update_saved_trajectory();
 }
 void PathFollow::on_activation() {
+
+    new debug_data_log();
+
 	_mavlink_fd = _navigator->get_mavlink_fd();
 	// TODO! This message belongs elsewhere
 	mavlink_log_info(_mavlink_fd, "Activated Follow Path");
-	warnx("Follow path active! Max speed control, L1, parameters, memory check, mavlink_fd!");
+	warnx("Follow path active! Max _speed control, L1, parameters, memory check, mavlink_fd!");
 
 	if (!_inited) {
 		mavlink_log_critical(_mavlink_fd, "Follow Path mode wasn't initialized! Aborting...");
@@ -70,8 +78,6 @@ void PathFollow::on_activation() {
 
 	_has_valid_setpoint = false;
 
-	updateParameters();
-
 	// Reset trajectory and distance offsets
 	_saved_trajectory.do_empty();
 	update_saved_trajectory();
@@ -81,6 +87,8 @@ void PathFollow::on_activation() {
 	if (_ok_distance < _parameters.pafol_ok_dist) {
 		_ok_distance = _parameters.pafol_ok_dist;
 	}
+
+
 	update_min_max_dist();
 	_vertical_offset = global_pos->alt - target_pos->alt;
 	if (_vertical_offset < _parameters.pafol_min_alt_off) {
@@ -98,16 +106,37 @@ void PathFollow::on_activation() {
 	pos_sp_triplet->current.valid = true;
 	pos_sp_triplet->current.position_valid = true;
 	pos_sp_triplet->current.abs_velocity_valid = false;
-	// point_camera_to_target(&(pos_sp_triplet->current));
 	_navigator->set_position_setpoint_triplet_updated();
+
+    
+    
+	target_pos = _navigator->get_target_position();
+
+    _trajectory_distance = 0;
+    _last_trajectory_time = target_pos->timestamp;
+    _last_point.lat = target_pos->lat;
+    _last_point.lon = target_pos->lon;
+    _last_point.alt = target_pos->alt;
+
+    if (!_saved_trajectory.add(_last_point, true)) {
+        mavlink_log_critical(_mavlink_fd, "Trajectory overflow!");
+        warnx("Trajectory overflow!");
+    }
+
+
 }
 void PathFollow::on_active() {
 	if (!_inited) {
 		return; // Wait for the Loiter mode to take over, but avoid pausing main navigator thread
 	}
 
-	updateParameters();
 	bool setpointChanged = false;
+
+    hrt_abstime t = hrt_absolute_time();
+    _dt = _t_prev != 0 ? (t - _t_prev) : 0.0f;
+    _t_prev = t;
+
+    _vel_ch_rate_lpf.reset(0.0f);
 
 	// Execute command if received
 	if ( update_vehicle_command() ) {
@@ -116,6 +145,8 @@ void PathFollow::on_active() {
 
 	update_saved_trajectory();
 	update_target_velocity();
+    update_drone_velocity();
+
 	pos_sp_triplet = _navigator->get_position_setpoint_triplet();
 
 	if (!_has_valid_setpoint) {
@@ -126,7 +157,7 @@ void PathFollow::on_active() {
 			if (_has_valid_setpoint) {
 				global_pos = _navigator->get_global_position();
 				// TODO! Probably this belongs in mc_pos
-				pos_sp_triplet->previous.type = SETPOINT_TYPE_POSITION;
+				pos_sp_triplet->previous.type = SETPOINT_TYPE_VELOCITY;
 				pos_sp_triplet->previous.lat = global_pos->lat;
 				pos_sp_triplet->previous.lon = global_pos->lon;
 				pos_sp_triplet->previous.alt = global_pos->alt;
@@ -145,59 +176,50 @@ void PathFollow::on_active() {
 	}
 	else {
 	// Flying trough collected points
-		// TODO! This results in weird behavior if altitude difference is preventing the copter from reaching the setpoint
         
-		//if (check_current_pos_sp_reached()) {
-		if (check_current_pos_sp_reached_pf(3.00f)) {
-		// We've reached the actual setpoint
-			// TODO! Temporary safety measure
-			if (check_point_safe()) {
-				_has_valid_setpoint = _saved_trajectory.pop(_actual_point);
-				if (_has_valid_setpoint) {
-					// Distance between reached point and the next stops being trajectory distance
-					// and becomes "drone to setpoint" distance
-					_trajectory_distance -= get_distance_to_next_waypoint(pos_sp_triplet->current.lat,
-						pos_sp_triplet->current.lon, _actual_point.lat, _actual_point.lon);
+		if (check_current_trajectory_point_passed(3.00f) || current_point_passed) {
+            current_point_passed = true;
+                // We've passed the point, we need a new one
+            
+            _has_valid_setpoint = _saved_trajectory.pop(_actual_point);
+            if (_has_valid_setpoint) {
 
-					// Having both previous and next waypoint allows L1 algorithm
-					memcpy(&(pos_sp_triplet->previous),&(pos_sp_triplet->current),sizeof(position_setpoint_s));
-					// Trying to prevent L1 algorithm
-					// pos_sp_triplet->previous.valid = false;
 
-					update_setpoint(_actual_point, pos_sp_triplet->current);
-					if (_saved_trajectory.peek(0, _future_point)) {
-						update_setpoint(_future_point, pos_sp_triplet->next);
-					}
-					else {
-						pos_sp_triplet->next.valid = false;
-					}
-				}
-				else {
-					mavlink_log_info(_mavlink_fd, "Follow path queue empty!");
-					warnx("Follow path queue empty!");
-					// No trajectory points left
-					_trajectory_distance = 0;
-					pos_sp_triplet->current.valid = false;
-				}
-			}
-			else {
-				mavlink_log_critical(_mavlink_fd, "Safety switch!");
-				warnx("Safety switch!");
-				_trajectory_distance = 0;
-				pos_sp_triplet->current.valid = false;
-				_has_valid_setpoint = false;
-			}
-			setpointChanged = true;
+                // Distance between reached point and the next stops being trajectory distance
+                // and becomes "drone to setpoint" distance
+                _trajectory_distance -= get_distance_to_next_waypoint(pos_sp_triplet->current.lat,
+                    pos_sp_triplet->current.lon, _actual_point.lat, _actual_point.lon);
+
+                // Having both previous and next waypoint allows L1 algorithm
+                memcpy(&(pos_sp_triplet->previous),&(pos_sp_triplet->current),sizeof(position_setpoint_s));
+                // Trying to prevent L1 algorithm
+                // pos_sp_triplet->previous.valid = false;
+
+                update_setpoint(_actual_point, pos_sp_triplet->current);
+                setpointChanged = true;
+
+                current_point_passed = false;
+
+                if (_saved_trajectory.peek(0, _future_point)) {
+                    update_setpoint(_future_point, pos_sp_triplet->next);
+                }
+                else {
+                    pos_sp_triplet->next.valid = false;
+                }
+            }
+            else {
+                mavlink_log_info(_mavlink_fd, "Follow path queue empty!");
+                warnx("Follow path queue empty!");
+                // No trajectory points left
+                _trajectory_distance = 0;
+                pos_sp_triplet->current.valid = false;
+            }
 		}
 	}
 
-	// In any scenario point the camera to target
-	// point_camera_to_target(&(pos_sp_triplet->current));
-
 	// If we have a setpoint, update speed
 	if (_has_valid_setpoint) {
-		// float angle; // angle of current movement, from -pi to pi
-		_desired_speed = calculate_desired_speed(calculate_current_distance());
+		_desired_speed = calculate_desired_velocity(calculate_current_distance()-_ok_distance);
 		// warnx("Absolute desired speed: % 9.6f", double(_desired_speed));
 		// global_pos = _navigator->get_global_position();
 		// angle = get_bearing_to_next_waypoint(global_pos->lat, global_pos->lon, _actual_point.lat, _actual_point.lon);
@@ -215,6 +237,7 @@ void PathFollow::on_active() {
 		_navigator->set_position_setpoint_triplet_updated();
 	}
 }
+
 void PathFollow::execute_vehicle_command() {
 	if (_vcommand.command == VEHICLE_CMD_NAV_REMOTE_CMD) {
 		REMOTE_CMD remote_cmd = (REMOTE_CMD)_vcommand.param1;
@@ -277,7 +300,7 @@ void PathFollow::update_saved_trajectory() {
 
 // TODO! Write two separate methods, one that does copying and applying offsets, other - for prev, next, current point magic
 void PathFollow::update_setpoint(const buffer_point_s &desired_point, position_setpoint_s &destination) {
-	destination.type = SETPOINT_TYPE_POSITION;
+	destination.type = SETPOINT_TYPE_VELOCITY;
 	destination.lat = desired_point.lat;
 	destination.lon = desired_point.lon;
 	destination.alt = desired_point.alt + _vertical_offset;
@@ -288,15 +311,32 @@ void PathFollow::update_setpoint(const buffer_point_s &desired_point, position_s
 void PathFollow::update_target_velocity() {
 
 	target_pos = _navigator->get_target_position();
-	// warnx("Raw target velocity: %9.6f", (double) sqrtf(target_pos->vel_n * target_pos->vel_n + target_pos->vel_e * target_pos->vel_e));
-    math::Vector<3> tvel_current;
-    tvel_current(0) = target_pos->vel_n;
-    tvel_current(1) = target_pos->vel_e;
-    tvel_current(2) = 0.0f;
 
-    _target_velocity_raw = tvel_current.length();
-	_target_velocity_vect = _target_vel_lpf.apply(target_pos->timestamp,tvel_current);
-    _target_velocity = _target_velocity_vect.length();
+    math::Vector<3> target_velocity_vect;
+
+    target_velocity_vect(0) = target_pos->vel_n;
+    target_velocity_vect(1) = target_pos->vel_e;
+    target_velocity_vect(2) = 0.0f;
+
+    _target_velocity = target_velocity_vect.length();
+    math::Vector<3> target_velocity_f_vect = _target_vel_lpf.apply(target_pos->timestamp, target_velocity_vect);
+    _target_velocity_f = target_velocity_f_vect.length();
+}
+
+void PathFollow::update_drone_velocity() {
+
+	global_pos = _navigator->get_global_position();
+
+    math::Vector<3> global_velocity;
+
+    global_velocity(0) = global_pos->vel_n;
+    global_velocity(1) = global_pos->vel_e;
+    global_velocity(2) = 0.0f;
+
+    _drone_velocity = global_velocity.length();
+    math::Vector<3> drone_velocity_f_vect = _drone_vel_lpf.apply(global_pos->timestamp, global_velocity);
+    _drone_velocity_f = drone_velocity_f_vect.length();
+
 }
 
 void PathFollow::update_min_max_dist() {
@@ -314,63 +354,125 @@ void PathFollow::update_min_max_dist() {
 			_ok_distance = _min_distance + 1.0f;
 		}
 	}
+
+    _ok_distance = 10.0f;
+
 	// TODO! Add max limit (as in "no signal")
 	_max_distance = _ok_distance * _parameters.pafol_ok_max_coef;
 	warnx("Distances updated! Ok: %9.6f, Min: %9.6f, Max: %9.6f.", double(_ok_distance), double(_min_distance), double(_max_distance));
 }
 
-// TODO! Parameters for speed calculation functions
-float PathFollow::calculate_desired_speed(float distance) {
-    if (distance <= _min_distance + 0.01f){
-		return 0;
-	}
-	else if (distance >= _max_distance) {
-		return _parameters.mpc_max_speed;
-	}
-	float res;
-	if (distance >= _ok_distance) {
-		// TODO! Simplify and add precalculated values
-		//res = _target_velocity * ((distance - _ok_distance)*(distance - _ok_distance)*4.0f/(_max_distance-_ok_distance)/(_max_distance-_ok_distance)+1.0f);
+float PathFollow::calculate_desired_velocity(float dst_to_ok) {
 
-        float over_ok = distance - _ok_distance;
-        float fraction = over_ok / (_max_distance-_ok_distance);
+
+    // calculate drone speed change rate and filter it
+    if (_global_pos_timestamp_last != global_pos->timestamp){
+
+        float ch_rate_dt = global_pos->timestamp - _global_pos_timestamp_last;
+
+        if (_global_pos_timestamp_last == 0) {
+
+            ch_rate_dt = 0.0; 
+            _vel_ch_rate_f = 0.0;
+            _vel_ch_rate = 0.0;
+
+        } else {
+
+            ch_rate_dt /= 1000000.0f;
+
+            float dvel = _drone_velocity_f - _last_drone_velocity_f;
+
+            _vel_ch_rate = dvel / ch_rate_dt;
+
+            _vel_ch_rate_f = _vel_ch_rate_lpf.apply(global_pos->timestamp, _vel_ch_rate);
+
+        }
         
-        if (_target_velocity > _parameters.mpc_max_speed)
-            res = _parameters.mpc_max_speed;
-        else 
-        //    res = _target_velocity + _target_velocity * ((_target_velocity / (_parameters.mpc_max_speed - _target_velocity)) * fraction);
-            res = _target_velocity + (_parameters.mpc_max_speed - _target_velocity) * fraction;
-            
+        _global_pos_timestamp_last = global_pos->timestamp;
 
-	}
-	else {
-		// TODO! Simplify and add precalculated values
-		//res = _target_velocity * ((-atanf((distance-2.5f-_min_distance)*(-20.0f)/(_ok_distance-_min_distance)))/M_PI_F+0.5f);
-        res =  _target_velocity * (distance - _min_distance) / (_ok_distance - _min_distance);
-	}
-	// warnx("Target speed: %9.6f, desired speed: %9.6f", (double) _target_velocity, (double) res);
-	if (res < 0.0f) return 0.0f;
-	if (res > _parameters.mpc_max_speed) return _parameters.mpc_max_speed;
+        _last_drone_velocity_f = _drone_velocity_f ;
+        _last_drone_velocity = _drone_velocity;
 
-	return res;
+    }
+
+
+    hrt_abstime t = hrt_absolute_time();
+    float calc_vel_dt = _calc_vel_t_prev != 0 ? (t - _calc_vel_t_prev) : 0.0f;
+    _calc_vel_t_prev = t;
+
+    calc_vel_dt/= 1000000.0f;
+
+    float max_negative_accel = 0.3f;
+
+    float max_vel_err = dst_to_ok * max_negative_accel;
+
+    if (max_vel_err > _parameters.mpc_max_speed - _target_velocity)
+        max_vel_err = _parameters.mpc_max_speed - _target_velocity;
+
+    float reaction_time = 0.4f; // time in seconds when we increase speed from _target_velocity till _target_velocity + max_vel_err
+    float fraction = calc_vel_dt / reaction_time; // full increase will happen in reaction_time time, so we calculate how much we need to increase in dt time
+
+    //if (fraction > 1.0f) fraction = 1.0f;
+
+    float sp_velocity = pos_sp_triplet->current.abs_velocity;
+
+    float vel_new;
+
+    if (dst_to_ok > 0.0f) {
+        if (_vel_ch_rate_f < -0.4f ){ // negative acceleration - we need to reset sp velocity so we can grow it from there
+
+            vel_new = sp_velocity - fraction * (sp_velocity - _drone_velocity_f); // when velocity of drone is decreasing decrease setpoint velocity, so they are synced
+
+            if (vel_new < _drone_velocity)
+                vel_new = _drone_velocity;
+
+        } else {
+
+            vel_new = sp_velocity + fraction * max_vel_err;  // while speed is increasing we can smoothly increase velocity if setoibt
+
+        }
+
+        if (vel_new > _target_velocity_f + max_vel_err)  
+            vel_new = _target_velocity_f + max_vel_err;
+
+    } else {
+
+            vel_new = sp_velocity + fraction * max_vel_err; // Do the same calculation also when we are to close// maybe we should make this more smooth
+
+    }
+
+
+    dd_log.log(0,(double)_target_velocity);
+    dd_log.log(1,(double)_drone_velocity);
+    dd_log.log(2,(double)sp_velocity);
+    dd_log.log(3,(double)dst_to_ok);
+    dd_log.log(4,(double)_vel_ch_rate_f);
+    dd_log.log(5,(double)_trajectory_distance);
+
+
+	if (vel_new > _parameters.mpc_max_speed) 
+        vel_new = _parameters.mpc_max_speed;
+
+	return vel_new;
+
 }
 
 float PathFollow::calculate_current_distance() {
 	float res = _trajectory_distance;
+
 	global_pos = _navigator->get_global_position();
 	res += get_distance_to_next_waypoint(global_pos->lat, global_pos->lon, _actual_point.lat, _actual_point.lon);
-	// TODO! Consider returning back if res is less than min distance
-	// Will produce the speed of 0 if passed to calculate speed
-	if (res <= _min_distance) {
-		// TODO! This will produce a sudden change in speed when target is far from the last trajectory point, but drone nears it
-		return _min_distance;
-	}
+
 	target_pos = _navigator->get_target_position();
 	res += get_distance_to_next_waypoint(_last_point.lat, _last_point.lon, target_pos->lat, target_pos->lon);
-	// Add target movement prediction to avoid drone velocity swings
-	// res += (hrt_absolute_time() - target_pos->timestamp) / 1000000 * _target_velocity;
-	// warnx("Total distance: %9.6f", (double) res);
-	return res;
+
+    float res2 = get_distance_to_next_waypoint(global_pos->lat, global_pos->lon, target_pos->lat, target_pos->lon);
+
+    if (!_has_valid_setpoint ) {
+        return res2;
+    }
+
+	return res>res2 ? res : res2;
 }
 
 bool PathFollow::check_point_safe() {
@@ -380,11 +482,12 @@ bool PathFollow::check_point_safe() {
 		// TODO! Consider returning true to handle "Queue empty" rather than "safety switch" scenario
 		return false;
 	}
+    return true;
 	// Don't even pick a point that is closer than X meters to the target
-	return (get_distance_to_next_waypoint(proposed_point.lat, proposed_point.lon, target_pos->lat, target_pos->lon) >= _parameters.pafol_safe_dist);
+	//return (get_distance_to_next_waypoint(proposed_poinSt.lat, proposed_point.lon, target_pos->lat, target_pos->lon) >= _parameters.pafol_safe_dist);
 }
 
-bool PathFollow::check_current_pos_sp_reached_pf(float acceptance_dst) {
+bool PathFollow::check_current_trajectory_point_passed(float acceptance_dst) {
 
 	pos_sp_triplet = _navigator->get_position_setpoint_triplet();
 	global_pos = _navigator->get_global_position();
@@ -412,5 +515,6 @@ bool PathFollow::check_current_pos_sp_reached_pf(float acceptance_dst) {
         return true;
     else 
         return false;
-
 }
+
+
