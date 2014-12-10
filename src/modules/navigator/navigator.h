@@ -133,6 +133,8 @@ public:
 	void		set_can_loiter_at_sp(bool can_loiter) { _can_loiter_at_sp = can_loiter; }
 	void		set_position_setpoint_triplet_updated() { _pos_sp_triplet_updated = true; }
 	void		set_commander_request_updated() { _commander_request_updated = true; }
+    bool        set_next_path_point(double point[3]);
+    bool        get_path_points(int point_num, double point[3]);
 
 	/**
 	 * Getters
@@ -179,6 +181,8 @@ private:
 	int 	_vcommand_sub;			/**< vehicle control subscription */
 	int 	_target_pos_sub; 		/**< target position subscription */
 	int		_target_trajectory_sub;	/**< target trajectory subscription */
+    double   _first_leash_point[3];  /**< first point to draw path in cable park */
+    double   _last_leash_point[3];   /**< last point to draw path in cable park */
 
 
 	orb_advert_t	_pos_sp_triplet_pub;		/**< publish position setpoint triplet */

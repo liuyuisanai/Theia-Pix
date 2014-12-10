@@ -88,6 +88,8 @@ extern "C" __EXPORT int navigator_main(int argc, char *argv[]);
 
 #define GEOFENCE_CHECK_INTERVAL 200000
 
+static bool is_empty(double array[3]);
+
 namespace navigator
 {
 
@@ -111,6 +113,8 @@ Navigator::Navigator() :
 	_vcommand_sub(-1),
 	_target_pos_sub(-1),
 	_target_trajectory_sub(-1),
+    _first_leash_point(),
+    _last_leash_point(),
 	_pos_sp_triplet_pub(-1),
 	_mission_result_pub(-1),
 	_att_sp_pub(-1),
@@ -265,6 +269,49 @@ void
 Navigator::task_main_trampoline(int argc, char *argv[])
 {
 	navigator::g_navigator->task_main();
+}
+
+bool
+Navigator::set_next_path_point(double point[3]) {
+    if ( is_empty(_first_leash_point) ) {
+        fprintf(stderr, "[nav] Got first point on path\n");
+        _first_leash_point[0] = point[0];
+        _first_leash_point[1] = point[1];
+        _first_leash_point[2] = point[2];
+        return true;
+    } else if ( is_empty(_last_leash_point) ) {
+        fprintf(stderr, "[nav] Got second point on path\n");
+        _last_leash_point[0] = point[0];
+        _last_leash_point[1] = point[1];
+        _last_leash_point[2] = point[2];
+        return true;
+    } else {
+        fprintf(stderr, "[nav] Not setting point, already had 2\n");
+        return false;
+    }
+}
+
+bool
+Navigator::get_path_points(int point_num, double to_point[3]) {
+    switch (point_num) {
+        case 0:
+            if (is_empty(_first_leash_point))
+                return false;
+            to_point[0] = _first_leash_point[0];
+            to_point[1] = _first_leash_point[1];
+            to_point[2] = _first_leash_point[2];
+            break;
+        case 1:
+            if (is_empty(_last_leash_point))
+                return false;
+            to_point[0] = _last_leash_point[0];
+            to_point[1] = _last_leash_point[1];
+            to_point[2] = _last_leash_point[2];
+            break;
+        default:
+            return false;
+    }
+    return true;
 }
 
 void
@@ -741,4 +788,8 @@ Navigator::publish_att_sp()
 		/* advertise and publish */
 		_att_sp_pub = orb_advertise(ORB_ID(vehicle_attitude_setpoint), &_att_sp);
 	}
+}
+
+static bool is_empty(double array[3]) {
+    return (array[0] == 0.0 && array[1] == 0.0 && array[2] == 0.0);
 }

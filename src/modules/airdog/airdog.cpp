@@ -371,7 +371,10 @@ bool cAirdog::button_clicked_i2c(uint8_t button, bool long_press)
 		case 0:
 			// ON/OFF button
             
-            if (current_button_state == BUTTON_STATE_DEFAULT) {
+            if (current_button_state == BUTTON_STATE_CHOOSE_FUNCTION) {
+                send_command(REMOTE_CMD_SET_POINT);
+                set_current_button_state(BUTTON_STATE_DEFAULT);
+            } else if (current_button_state == BUTTON_STATE_DEFAULT) {
 				pmenu_ctrl->open();
             }
 
