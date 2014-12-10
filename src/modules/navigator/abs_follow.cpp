@@ -77,11 +77,7 @@ AbsFollow::on_activation()
 void
 AbsFollow::on_active()
 {
-    target_pos = _navigator->get_target_position();
-    pos_sp_triplet = _navigator->get_position_setpoint_triplet();
-    global_pos = _navigator->get_global_position();
-
-	// Execute command if receivedt
+	// Execute command if received
 	if ( update_vehicle_command() )
 			execute_vehicle_command();
 }
