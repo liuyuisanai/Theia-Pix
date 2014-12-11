@@ -315,6 +315,17 @@ Navigator::get_path_points(int point_num, double to_point[3]) {
 }
 
 void
+Navigator::clear_path_points() {
+    _first_leash_point[0] = 0.0;
+    _first_leash_point[1] = 0.0;
+    _first_leash_point[2] = 0.0;
+    _last_leash_point[0] = 0.0;
+    _last_leash_point[1] = 0.0;
+    _last_leash_point[2] = 0.0;
+    fprintf(stderr, "[nav] Path points cleared - set to 0.0\n");
+}
+
+void
 Navigator::task_main()
 {
 	/* inform about start */

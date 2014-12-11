@@ -135,6 +135,7 @@ public:
 	void		set_commander_request_updated() { _commander_request_updated = true; }
     bool        set_next_path_point(double point[3]);
     bool        get_path_points(int point_num, double point[3]);
+    void        clear_path_points();
 
 	/**
 	 * Getters
