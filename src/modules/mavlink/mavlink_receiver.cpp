@@ -953,6 +953,8 @@ MavlinkReceiver::handle_message_heartbeat(mavlink_message_t *msg)
 
                     _airdog_status.main_mode = custom_mode.main_mode;
                     _airdog_status.sub_mode = custom_mode.sub_mode;
+                    _airdog_status.state_main = custom_mode.state_main;
+                    _airdog_status.state_nav = custom_mode.state_nav;
                     _airdog_status.base_mode = heartbeat.base_mode;
                     _airdog_status.system_status = heartbeat.system_status;
                     _airdog_status.timestamp = hrt_absolute_time();
