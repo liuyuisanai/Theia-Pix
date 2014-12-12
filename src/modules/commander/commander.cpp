@@ -1477,6 +1477,7 @@ int commander_thread_main(int argc, char *argv[])
                     mavlink_log_info(mavlink_fd, "Target signal time-out, switching to Aim-and-shoot.");
 				    if (main_state_transition(&status, MAIN_STATE_LOITER, mavlink_fd) == TRANSITION_CHANGED) {
                         status_changed = true; 
+                        _custom_flag_control_point_to_target = true;
                     }
                 } 
             }
