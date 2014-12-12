@@ -40,7 +40,7 @@ typedef enum {
 	V_DISARM,                   // Request to disarm vehicle
     AIRD_STATE_CHANGE,           // Request to change airdog_state
     V_RESET_MODE_ARGS,			// Request to reset mode argumens 
-    AIRD_CAMERA_MODE_CHANGE,	// Request to change camera mode
+    OTHER,						// Other request
 } request_type_t;
 
 /**

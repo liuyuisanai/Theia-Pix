@@ -1921,7 +1921,15 @@ int commander_thread_main(int argc, char *argv[])
 				}
 				break;
             }
-            case AIRD_CAMERA_MODE_CHANGE:
+            
+			default:
+				break;
+			}
+
+			//Process OTHER requests or combined requests
+
+			//Process camera mode changes
+			if (commander_request.camera_mode_changed)
             {
             	_custom_flag_control_point_to_target = true;
             	switch (commander_request.camera_mode) {
@@ -1938,13 +1946,9 @@ int commander_thread_main(int argc, char *argv[])
             			control_mode.flag_control_point_to_target = false;
             			break;
             		}
-            	}
-            	break;
+            	}            	
+            	status_changed = true;
             }
-			default:
-				break;
-			}
-
 
 		}
 

@@ -247,7 +247,7 @@ NavigatorMode::set_camera_mode(camera_mode_t camera_mode)
 		_camera_mode = camera_mode;
 
 		commander_request_s *commander_request = _navigator->get_commander_request();
-		commander_request->request_type = AIRD_CAMERA_MODE_CHANGE;
+		commander_request->camera_mode_changed = true;
 		commander_request->camera_mode = camera_mode;
 		_navigator->set_commander_request_updated();
 
