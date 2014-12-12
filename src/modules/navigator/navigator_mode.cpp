@@ -390,7 +390,7 @@ NavigatorMode::takeoff()
 	pos_sp_triplet->current.lon = global_pos->lon;
 	pos_sp_triplet->current.alt = global_pos->alt + _parameters.takeoff_alt;
 
-	pos_sp_triplet->current.yaw = NAN;
+	pos_sp_triplet->current.yaw = global_pos->yaw;//NAN;
 	pos_sp_triplet->current.type = SETPOINT_TYPE_TAKEOFF;
 
 	_navigator->set_position_setpoint_triplet_updated();
