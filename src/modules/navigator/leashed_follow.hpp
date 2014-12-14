@@ -67,9 +67,15 @@ private:
 	math::Vector<3>  _afollow_offset;			/**< offset from target for AFOLLOW mode */
     math::Vector<3>  _vector_v;                 /**< vector from start path to end path */
     float   _v_module;
+
 	double	_target_lat;		/**< prediction for target latitude */
 	double	_target_lon;		/**< prediction for target longitude */
 	float	_target_alt;		/**< prediction for target altitude */
+
+    float _target_v_n;          /**< target north speed */
+    float _target_v_e;          /**< target east speed */
+    float _target_v_module;
+
 	double	_vehicle_lat;		/**< prediction for vehicle latitude */
 	double	_vehicle_lon;		/**< prediction for vehicle longitude */
 	float	_vehicle_alt;		/**< prediction for vehicle altitude */

@@ -58,6 +58,9 @@ Leashed::Leashed(Navigator *navigator, const char *name)
     , _target_lat()	
     , _target_lon()	
     , _target_alt()	
+    , _target_v_n()
+    , _target_v_e()
+    , _target_v_module()
     , _vehicle_lat()	
     , _vehicle_lon()	
     , _vehicle_alt()
@@ -103,7 +106,7 @@ Leashed::on_activation()
                 , &v_y);
 
         // Normiruem vektor V
-        _v_module = sqrt(v_x*v_x + v_y*v_y);
+        _v_module = sqrt(v_x*v_x + v_y*v_y + v_z*v_z);
         v_x /= _v_module;
         v_y /= _v_module;
         v_z /= _v_module;
@@ -112,16 +115,6 @@ Leashed::on_activation()
     } else
         _ready_to_follow = false;
 
-	//pos_sp_triplet->next.valid = false;
-	//pos_sp_triplet->previous.valid = false;
-	// Reset position setpoint to shoot and loiter until we get an acceptable trajectory point
-	//pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
-	//pos_sp_triplet->current.lat = global_pos->lat;
-	//pos_sp_triplet->current.lon = global_pos->lon;
-	//pos_sp_triplet->current.alt = global_pos->alt;
-	//pos_sp_triplet->current.valid = true;
-	//pos_sp_triplet->current.position_valid = true;
-	//pos_sp_triplet->current.abs_velocity_valid = false;
 	_navigator->set_position_setpoint_triplet_updated();
 }
 
@@ -143,6 +136,8 @@ Leashed::on_active()
         _vehicle_lon = global_pos->lon;
         _target_lat = target_pos->lat;
         _target_lon = target_pos->lon;
+        _target_v_n = target_pos->vel_n;
+        _target_v_e = target_pos->vel_e;
 
         
         // Vector from leash start path to vehicle
@@ -176,11 +171,18 @@ Leashed::on_active()
         dot_product = _vector_v * vector_target;
 
         // Limiting product not to be great than module of path vector
+        float velocity = 0.0f;
         if (dot_product >= _v_module) {
             dot_product = _v_module;
         } else if (dot_product < 0.0f) {
             dot_product = 0.0f;
+        } else {
+            // Calculating velocity
+            math::Vector<2> velocity_vector(_target_v_n, _target_v_e);
+            math::Vector<2> short_vector_v(_vector_v(0), _vector_v(1));
+            velocity = fabs((velocity_vector * short_vector_v));
         }
+
 
         // Calculating vector from path start to desired point on path
         math::Vector<3> vector_desired;
@@ -188,9 +190,29 @@ Leashed::on_active()
 
         // ===== Resulting vector =====
         vector_desired -= vector_vehicle;
-        //fprintf(stderr, "[leashed] v_x: %.3f v_y: %.3f\n"
-        //        ,(double) vector_desired(0)
-        //        ,(double) vector_desired(1));
+        math::Vector<2> short_vector_desired(vector_desired(0), vector_desired(1));
+        short_vector_desired(0) -= (float)_first_leash_point[0];
+        short_vector_desired(1) -= (float)_first_leash_point[1];
+
+        if (short_vector_desired.length() < 20.0f) {
+            pos_sp_triplet->current.type = SETPOINT_TYPE_VELOCITY;
+            pos_sp_triplet->current.abs_velocity = velocity;
+            pos_sp_triplet->current.abs_velocity_valid = true;
+
+            fprintf(stderr, "[Loiter] correcting speed: %.3f  vector_length: %.3f x:%.3f y:%.3f\n"
+                    , (double)velocity
+                    , (double)short_vector_desired.length()
+                    , (double)short_vector_desired(0)
+                    , (double)short_vector_desired(1)
+                    );
+        } else {
+            fprintf(stderr, "[Loiter] no speed correction vector_length: %.3f x:%.3f y:%.3f\n"
+                    , (double)short_vector_desired.length()
+                    , (double)short_vector_desired(0)
+                    , (double)short_vector_desired(1)
+                    );
+            pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
+        }
 
         add_vector_to_global_position(
                 _vehicle_lat
@@ -199,9 +221,9 @@ Leashed::on_active()
                 , vector_desired(1)
                 , &lat_new
                 , &lon_new);
+        
 
         pos_sp_triplet->current.valid = true;
-        pos_sp_triplet->current.type = SETPOINT_TYPE_MOVING;
 
         pos_sp_triplet->current.lat = lat_new;
         pos_sp_triplet->current.lon = lon_new;
