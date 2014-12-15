@@ -724,19 +724,25 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                         reset_est = true;
                         mavlink_log_info(mavlink_fd, "[inav] GPS signal found");
                         if (!mag_declination_set) {
-                            mag_declination_set = true;
+                        	mag_declination_set = true;
                             param_t param = param_find("AIRD_AUTO_MAG");
                             bool should_set_decl = false; 
                             param_get(param, &should_set_decl);
                             if (should_set_decl) {
-                                float lat = gps.lat * 1e-7;
+                            	float lat = gps.lat * 1e-7;
                                 float lon = gps.lon * 1e-7;
                                 float decl = get_mag_declination(lat, lon);
                                 param = param_find("ATT_MAG_DECL");
                                 param_set(param, &decl);
-                                // Params write
-    							param_save_default();
                                 mavlink_log_info(mavlink_fd, "Declination calculated: %4.7f", (double)decl);
+	                          	
+                            	//Write parameter to permanent memory only if gps is required to arm and thus is not in air
+                            	param = param_find("A_REQUIRE_GPS");
+                            	param_get(param, &should_set_decl);
+                            	if (should_set_decl) {
+	                                // Params write
+	    							param_save_default();
+                            	}
                             }
                         }
                     }
