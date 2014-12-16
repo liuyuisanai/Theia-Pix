@@ -221,6 +221,8 @@ struct vehicle_status_s {
 	bool condition_power_input_valid;		/**< set if input power is valid */
 	float avionics_power_rail_voltage;		/**< voltage of the avionics power rail */
 
+	uint64_t last_target_time;				/**< Last timestamp, when target position was valid */
+
 	bool rc_signal_found_once;
 	bool rc_signal_lost;				/**< true if RC reception lost */
 	bool rc_signal_lost_cmd;				/**< true if RC lost mode is commanded */

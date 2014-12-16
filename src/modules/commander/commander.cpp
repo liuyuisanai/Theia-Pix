@@ -1451,37 +1451,29 @@ int commander_thread_main(int argc, char *argv[])
 			orb_copy(ORB_ID(target_global_position), target_position_sub, &target_position);
 		}
 
+		check_valid(target_position.timestamp, 1000 * 1000, true, &(status.condition_target_position_valid), &status_changed);
+		if (status.condition_target_position_valid) {
+			status.last_target_time = hrt_absolute_time();
+		}
+		else if (status.airdog_state == AIRD_STATE_IN_AIR) {
 
-		check_valid(target_position.timestamp, target_visibility_timeout_1 * 1000 * 1000, true, &(status.condition_target_position_valid), &status_changed);
+			control_mode.flag_control_point_to_target = false;
+			_custom_flag_control_point_to_target = true;
 
-        if (!status.condition_target_position_valid && status.airdog_state == AIRD_STATE_IN_AIR){
-
-            if (!control_mode.flag_control_manual_enabled && control_mode.flag_control_auto_enabled){
-
-                hrt_abstime t = hrt_absolute_time() ;
- 
-                // On second timeout - go into EMERGENCY RTL
-                if (status.main_state != MAIN_STATE_RTL && status.main_state!=MAIN_STATE_EMERGENCY_RTL && status.main_state!=MAIN_STATE_EMERGENCY_LAND) {
-                    if (t - target_position.timestamp > target_visibility_timeout_2 * 1000 * 1000) {
-                        mavlink_log_info(mavlink_fd, "Target signal lost for to long, EMERGENCY RTL");
-                        if (main_state_transition(&status, MAIN_STATE_EMERGENCY_RTL, mavlink_fd) == TRANSITION_CHANGED) {
-                            status_changed = true;
-                        } else if (main_state_transition(&status, MAIN_STATE_EMERGENCY_LAND, mavlink_fd) == TRANSITION_CHANGED) {
-                            status_changed = true;
-                        }
-                    }
-                }
-
-                // On first timeout when status.condition_target_position_valid is false go into aim-and-shoot
-                if (status.main_state != MAIN_STATE_LOITER && control_mode.flag_control_follow_target) {
-                    mavlink_log_info(mavlink_fd, "Target signal time-out, switching to Aim-and-shoot.");
-				    if (main_state_transition(&status, MAIN_STATE_LOITER, mavlink_fd) == TRANSITION_CHANGED) {
-                        status_changed = true; 
-                        _custom_flag_control_point_to_target = true;
-                    }
-                } 
-            }
-        }
+			if (!control_mode.flag_control_manual_enabled && control_mode.flag_control_auto_enabled) {
+				// On second timeout - go into EMERGENCY RTL
+				if (status.main_state != MAIN_STATE_RTL && status.main_state!=MAIN_STATE_EMERGENCY_RTL && status.main_state!=MAIN_STATE_EMERGENCY_LAND) {
+					if (hrt_absolute_time() - status.last_target_time > target_visibility_timeout_2 * 1000 * 1000) {
+						mavlink_log_info(mavlink_fd, "Target signal lost for too long, EMERGENCY RTL");
+						if (main_state_transition(&status, MAIN_STATE_EMERGENCY_RTL, mavlink_fd) == TRANSITION_CHANGED) {
+							status_changed = true;
+						} else if (main_state_transition(&status, MAIN_STATE_EMERGENCY_LAND, mavlink_fd) == TRANSITION_CHANGED) {
+							status_changed = true;
+						}
+					}
+				}
+			}
+		}
         
 		/* update battery status */
 		orb_check(battery_sub, &updated);
