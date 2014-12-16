@@ -162,6 +162,7 @@ struct log_STAT_s {
 	uint8_t main_state;
 	uint8_t arming_state;
 	uint8_t failsafe_state;
+	uint8_t navigation_state;
 	float battery_remaining;
 	uint8_t battery_warning;
 	uint8_t landed;
@@ -479,7 +480,7 @@ static const struct log_format_s log_formats[] = {
 	LOG_FORMAT(LPSP, "ffff",		"X,Y,Z,Yaw"),
 	LOG_FORMAT(GPS, "QBffLLfffffBHHH",	"GPSTime,Fix,EPH,EPV,Lat,Lon,Alt,VelN,VelE,VelD,Cog,nSat,SNR,N,J"),
 	LOG_FORMAT(ATTC, "ffff",		"Roll,Pitch,Yaw,Thrust"),
-	LOG_FORMAT(STAT, "BBBfBBfB",		"MainSt,ArmSt,FailsafeSt,BatRem,BatWarn,Landed,Load,AirdSt"),
+	LOG_FORMAT(STAT, "BBBBfBBfB",		"MainSt,ArmSt,FailSt,NavSt,BatRem,BatWarn,Landed,Load,AirdSt"),
 	LOG_FORMAT(RC, "ffffffffBB",		"Ch0,Ch1,Ch2,Ch3,Ch4,Ch5,Ch6,Ch7,Count,SignalLost"),
 	LOG_FORMAT(OUT0, "ffffffff",		"Out0,Out1,Out2,Out3,Out4,Out5,Out6,Out7"),
 	LOG_FORMAT(AIRS, "fff",			"IndSpeed,TrueSpeed,AirTemp"),
