@@ -38,8 +38,6 @@ PathFollow::PathFollow(Navigator *navigator, const char *name):
         _vel_ch_rate_lpf(0.2f),
 		_target_velocity(0.5f),
         _drone_velocity(0.0f){
-
-
 }
 PathFollow::~PathFollow() {
 
@@ -192,7 +190,7 @@ void PathFollow::on_active() {
 	else {
 	// Flying trough collected points
         
-		if (check_current_trajectory_point_passed(3.00f)) {
+		if (check_current_trajectory_point_passed(4.00f)) {
 
             // We've passed the point, we need a new one
             _has_valid_setpoint = _saved_trajectory.pop(_actual_point);
@@ -240,23 +238,11 @@ void PathFollow::on_active() {
 		}
 	}
 
-	// If we have a setpoint, update speed
-	if (_has_valid_setpoint) {
+    _desired_speed = calculate_desired_velocity(calculate_current_distance()-_ok_distance);
+    pos_sp_triplet->current.abs_velocity = _desired_speed;
+    pos_sp_triplet->current.abs_velocity_valid = true;
+    setpointChanged = true;
 
-		_desired_speed = calculate_desired_velocity(calculate_current_distance()-_ok_distance);
-		pos_sp_triplet->current.abs_velocity = _desired_speed;
-		pos_sp_triplet->current.abs_velocity_valid = true;
-		setpointChanged = true;
-
-	} else {
-
-		_desired_speed = calculate_desired_velocity(calculate_current_distance()-_ok_distance);
-		pos_sp_triplet->current.abs_velocity = _desired_speed;
-		pos_sp_triplet->current.abs_velocity_valid = true;
-		setpointChanged = true;
-    
-    }
-	// TODO! Reconsider. Currently, if speed management is on, the only case that doesn't change setpoint is wait state
 	if (setpointChanged) {
 		_navigator->set_position_setpoint_triplet_updated();
 	}
@@ -382,8 +368,6 @@ void PathFollow::update_min_max_dist() {
 
     _ok_distance = 10.0f;
 
-	// TODO! Add max limit (as in "no signal")
-	_max_distance = _ok_distance * _parameters.pafol_ok_max_coef;
 	warnx("Distances updated! Ok: %9.6f, Min: %9.6f, Max: %9.6f.", double(_ok_distance), double(_min_distance), double(_max_distance));
 }
 
@@ -397,9 +381,9 @@ float PathFollow::calculate_desired_velocity(float dst_to_ok) {
 
         if (_global_pos_timestamp_last == 0) {
 
-            ch_rate_dt = 0.0; 
-            _vel_ch_rate_f = 0.0;
-            _vel_ch_rate = 0.0;
+            ch_rate_dt = 0.0f; 
+            _vel_ch_rate_f = 0.0f;
+            _vel_ch_rate = 0.0f;
 
         } else {
 
@@ -427,48 +411,46 @@ float PathFollow::calculate_desired_velocity(float dst_to_ok) {
 
     calc_vel_dt/= 1000000.0f;
 
-    float max_negative_accel = 0.3f;
+    float vel_err_coif = 0.5f;
+    float max_vel_err;
 
-    float max_vel_err = dst_to_ok * max_negative_accel;
+    if (dst_to_ok >= 0.0f){
+        max_vel_err = (float)pow(dst_to_ok, 1.5f) * vel_err_coif;
 
-    if (max_vel_err > _parameters.mpc_max_speed - _target_velocity)
-        max_vel_err = _parameters.mpc_max_speed - _target_velocity;
+        if (max_vel_err > _parameters.mpc_max_speed - _target_velocity)
+            max_vel_err = _parameters.mpc_max_speed - _target_velocity;
 
-    float reaction_time = 0.4f; // time in seconds when we increase speed from _target_velocity till _target_velocity + max_vel_err
+    } else {
+        max_vel_err = (float)pow(-dst_to_ok, 2.0f) * vel_err_coif;
+    }
+    
+
+    float reaction_time = 0.25f; // time in seconds when we increase speed from _target_velocity till _target_velocity + max_vel_err
     float fraction = calc_vel_dt / reaction_time; // full increase will happen in reaction_time time, so we calculate how much we need to increase in dt time
 
-    //if (fraction > 1.0f) fraction = 1.0f;
 
     float sp_velocity = pos_sp_triplet->current.abs_velocity;
 
     float vel_new = 0.0f;
 
     if (dst_to_ok > 0.0f) {
-        if (_vel_ch_rate_f < -0.4f  && sp_velocity > 0.0f){ // negative acceleration - we need to reset sp velocity so we can grow it from there
-
+        if (_vel_ch_rate_f < -0.5f  && sp_velocity > 0.0f){ // negative acceleration - we need to reset sp velocity so we can grow it from there
             vel_new = sp_velocity - fraction * (sp_velocity - _drone_velocity_f); // when velocity of drone is decreasing decrease setpoint velocity, so they are synced
-
             if (vel_new < _drone_velocity)
                 vel_new = _drone_velocity;
-
         } else {
-
             vel_new = sp_velocity + fraction * max_vel_err;  // while speed is increasing we can smoothly increase velocity if setoibt
-
         }
-
-        if (vel_new > _target_velocity_f + max_vel_err)  
-            vel_new = _target_velocity_f + max_vel_err;
-
     } else {
-
-        if (sp_velocity > 0.0f)
-            vel_new = sp_velocity + fraction * max_vel_err; // Do the same calculation also when we are to close// maybe we should make this more smooth
-        else 
-            vel_new = sp_velocity + fraction * max_vel_err / 10.0f;
-
+        vel_new = sp_velocity - fraction * max_vel_err; // Do the same calculation also when we are to close// maybe we should make this more smooth
     }
 
+    if (vel_new > _target_velocity_f + max_vel_err)  
+        vel_new = _target_velocity_f + max_vel_err;
+
+    if (vel_new < 0.0f)
+        vel_new = 0.0f;
+    
 
     dd_log.log(0,(double)_target_velocity);
     dd_log.log(1,(double)_drone_velocity);
@@ -506,15 +488,15 @@ float PathFollow::calculate_current_distance() {
 }
 
 bool PathFollow::check_point_safe() {
+
 	buffer_point_s proposed_point;
 	target_pos = _navigator->get_target_position();
+
 	if (!_saved_trajectory.peek(0, proposed_point)) {
-		// TODO! Consider returning true to handle "Queue empty" rather than "safety switch" scenario
 		return false;
 	}
     return true;
-	// Don't even pick a point that is closer than X meters to the target
-	//return (get_distance_to_next_waypoint(proposed_poinSt.lat, proposed_point.lon, target_pos->lat, target_pos->lon) >= _parameters.pafol_safe_dist);
+
 }
 
 bool PathFollow::check_current_trajectory_point_passed(float acceptance_dst) {
@@ -538,8 +520,10 @@ bool PathFollow::check_current_trajectory_point_passed(float acceptance_dst) {
     double h = dst_xy_len / dot_product;
     double dst_to_line;
 
-    if (h>dst_xy_len) dst_to_line = 0.0f;
-    else dst_to_line = sqrt(dst_xy_len*dst_xy_len - h*h);
+    if (h>dst_xy_len) 
+        dst_to_line = 0.0f;
+    else 
+        dst_to_line = sqrt(dst_xy_len*dst_xy_len - h*h);
 
     if (acceptance_dst >= (float)dst_to_line && (float)dst_xy_len <= 3 * acceptance_dst )
         return true;

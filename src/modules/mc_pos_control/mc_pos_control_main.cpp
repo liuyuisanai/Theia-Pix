@@ -1146,9 +1146,15 @@ MulticopterPositionControl::control_auto_vel(float dt) {
 
             move_direction = pos_sp_delta_xy.normalized();
 
-            _vel_sp(0) = move_direction(0) * _pos_sp_triplet.current.abs_velocity;
-            _vel_sp(1) = move_direction(1) * _pos_sp_triplet.current.abs_velocity;
-            _vel_sp(2) = pos_sp_delta(2) * _params.pos_p(2);
+            if (_pos_sp_triplet.next.valid) {
+
+            }
+            else 
+            {
+                _vel_sp(0) = move_direction(0) * _pos_sp_triplet.current.abs_velocity;
+                _vel_sp(1) = move_direction(1) * _pos_sp_triplet.current.abs_velocity;
+                _vel_sp(2) = pos_sp_delta(2) * _params.pos_p(2);
+            }
 
             /* XXX AK _att_sp and yaws are published before control_auto_vel is called!!!
              * Merge with b8ac590c589aedb71f2201de9b046b390f0ad358 takes over point_to_target logic
