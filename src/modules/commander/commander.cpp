@@ -856,14 +856,18 @@ int commander_thread_main(int argc, char *argv[])
 	nav_states_str[NAVIGATION_STATE_AUTO_MISSION]		= "AUTO_MISSION";
 	nav_states_str[NAVIGATION_STATE_LOITER]		= "AUTO_LOITER";
 	nav_states_str[NAVIGATION_STATE_RTL]		= "AUTO_RTL";
+	nav_states_str[NAVIGATION_STATE_AUTO_RCRECOVER] = "RC_RECOVER";
 	nav_states_str[NAVIGATION_STATE_AUTO_RTGS]		= "AUTO_RTGS";
 	nav_states_str[NAVIGATION_STATE_ABS_FOLLOW]    = "AUTO_ABS_FOLLOW";
+	nav_states_str[NAVIGATION_STATE_AUTO_LANDENGFAIL] = "LAND_ENGINE_FAIL";
+	nav_states_str[NAVIGATION_STATE_AUTO_LANDGPSFAIL] = "LAND_GPS_FAIL";
 	nav_states_str[NAVIGATION_STATE_ACRO]			= "ACRO";
 	nav_states_str[NAVIGATION_STATE_LAND]			= "LAND";
 	nav_states_str[NAVIGATION_STATE_DESCEND]		= "DESCEND";
 	nav_states_str[NAVIGATION_STATE_TERMINATION]		= "TERMINATION";
 	nav_states_str[NAVIGATION_STATE_OFFBOARD]		= "OFFBOARD";
 	nav_states_str[NAVIGATION_STATE_FOLLOW]			= "FOLLOW";
+	nav_states_str[NAVIGATION_STATE_AUTO_STANDBY] = "STANDBY";
 
 	/* pthread for slow low prio thread */
 	pthread_t commander_low_prio_thread;
