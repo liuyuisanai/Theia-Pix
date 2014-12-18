@@ -817,9 +817,10 @@ int commander_thread_main(int argc, char *argv[])
     float target_visibility_timeout_2;
     int32_t target_datalink_timeout;
 
-    param_get(param_find("A_TRGT_DLINK_TO"), &target_datalink_timeout);
+    param_t _param_target_datalink_timeout = param_find("A_TRGT_DLINK_TO");
 	param_t _param_target_visibility_timeout_2 = param_find("A_TRGT_VSB_TO_2");
 
+	param_get(_param_target_datalink_timeout, &target_datalink_timeout);
 	param_get(_param_target_visibility_timeout_2, &target_visibility_timeout_2);
 
 	/* welcome user */
@@ -1213,6 +1214,9 @@ int commander_thread_main(int argc, char *argv[])
 			param_get(_param_ef_throttle_thres, &ef_throttle_thres);
 			param_get(_param_ef_current2throttle_thres, &ef_current2throttle_thres);
 			param_get(_param_ef_time_thres, &ef_time_thres);
+
+			param_get(_param_target_datalink_timeout, &target_datalink_timeout);
+			param_get(_param_target_visibility_timeout_2, &target_visibility_timeout_2);
 
 			param_get(_param_require_gps, &require_gps);
 			if (require_gps != status.require_gps) {

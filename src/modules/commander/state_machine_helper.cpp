@@ -584,6 +584,7 @@ bool set_nav_state(struct vehicle_status_s *status, const bool data_link_loss_en
 				status->nav_state = NAVIGATION_STATE_POSCTL;
 				break;
 
+			// TODO! [AK] Consider falling back to Loiter in case signal is lost (might not work correctly in mc_pos)
 			case MAIN_STATE_FOLLOW:
 				status->nav_state = NAVIGATION_STATE_FOLLOW;
 				break;
@@ -662,6 +663,7 @@ bool set_nav_state(struct vehicle_status_s *status, const bool data_link_loss_en
 		/* go into failsafe on a engine failure */
 		if (status->engine_failure) {
 			status->nav_state = NAVIGATION_STATE_AUTO_LANDENGFAIL;
+		// TODO! [AK] Shouldn't it be target signal?
 		/* also go into failsafe if just datalink is lost */
 		} else if (status->data_link_lost && data_link_loss_enabled) {
 			status->failsafe = true;
