@@ -164,6 +164,8 @@ Navigator::Navigator() :
 	_navigation_mode_array[9] = &_land;
 
 	updateParams();
+
+	_commander_request.request_type = OTHER;
 }
 
 Navigator::~Navigator()
@@ -640,6 +642,9 @@ Navigator::publish_commander_request()
 	} else {
 		_commander_request_pub = orb_advertise(ORB_ID(commander_request), &_commander_request);
 	}
+	//clean up commander request fields
+	_commander_request.request_type = OTHER;
+	_commander_request.camera_mode_changed = false;
 }
 
 void Navigator::add_fence_point(int argc, char *argv[])

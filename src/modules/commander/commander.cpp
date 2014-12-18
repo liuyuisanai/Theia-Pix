@@ -175,7 +175,7 @@ static struct safety_s safety;
 static struct vehicle_control_mode_s control_mode;
 static struct offboard_control_setpoint_s sp_offboard;
 
-bool _custom_flag_control_point_to_target = false;
+static bool _custom_flag_control_point_to_target = false;
 
 int mode_switch_state = -1;
 
@@ -1477,6 +1477,7 @@ int commander_thread_main(int argc, char *argv[])
                     mavlink_log_info(mavlink_fd, "Target signal time-out, switching to Aim-and-shoot.");
 				    if (main_state_transition(&status, MAIN_STATE_LOITER, mavlink_fd) == TRANSITION_CHANGED) {
                         status_changed = true; 
+                        _custom_flag_control_point_to_target = true;
                     }
                 } 
             }
@@ -1921,7 +1922,15 @@ int commander_thread_main(int argc, char *argv[])
 				}
 				break;
             }
-            case AIRD_CAMERA_MODE_CHANGE:
+            
+			default:
+				break;
+			}
+
+			//Process OTHER requests or combined requests
+
+			//Process camera mode changes
+			if (commander_request.camera_mode_changed)
             {
             	_custom_flag_control_point_to_target = true;
             	switch (commander_request.camera_mode) {
@@ -1938,13 +1947,9 @@ int commander_thread_main(int argc, char *argv[])
             			control_mode.flag_control_point_to_target = false;
             			break;
             		}
-            	}
-            	break;
+            	}            	
+            	status_changed = true;
             }
-			default:
-				break;
-			}
-
 
 		}
 
@@ -2627,9 +2632,7 @@ set_control_mode()
 		control_mode.flag_control_position_enabled = false;
 		control_mode.flag_control_velocity_enabled = false;
 		control_mode.flag_control_termination_enabled = false;
-		if (!_custom_flag_control_point_to_target) {
-			control_mode.flag_control_point_to_target = false;
-		}
+		control_mode.flag_control_point_to_target = false;
 		control_mode.flag_control_follow_target = false;
 		control_mode.flag_control_leash_control_offset = false;
 		break;
