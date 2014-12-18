@@ -57,7 +57,8 @@
 #include "navigator.h"
 
 Loiter::Loiter(Navigator *navigator, const char *name) :
-	MissionBlock(navigator, name)
+	MissionBlock(navigator, name),
+	previous_target_valid_flag(false)
 {
     updateParameters();
 }
@@ -106,6 +107,7 @@ Loiter::on_active()
 {
 	target_pos = _navigator->get_target_position();
 	global_pos = _navigator->get_global_position();
+	vehicle_status_s *vehicle_status = _navigator->get_vstatus();
 
 	if (loiter_sub_mode == LOITER_SUB_MODE_TAKING_OFF && check_current_pos_sp_reached()) {
         if (_parameters.airdog_init_pos_use == 1){
@@ -126,6 +128,23 @@ Loiter::on_active()
 	if (loiter_sub_mode == LOITER_SUB_MODE_GO_TO_POSITION && check_current_pos_sp_reached()) {
 		set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, 0);
 	}
+
+	if (previous_target_valid_flag != vehicle_status->condition_target_position_valid) {
+		if(vehicle_status->condition_target_position_valid) {
+			// Refresh current submode if target signal regained and force camera reset
+			set_sub_mode(loiter_sub_mode, 0, true);
+		}
+		else {
+			// Reset yaw only, 'cause we might be moving to initial position or something
+			pos_sp_triplet = _navigator->get_position_setpoint_triplet();
+			if (pos_sp_triplet->current.valid) {
+				global_pos = _navigator->get_global_position();
+				pos_sp_triplet->current.yaw = global_pos->yaw;
+				_navigator->set_position_setpoint_triplet_updated();
+			}
+		}
+	}
+	previous_target_valid_flag = vehicle_status->condition_target_position_valid;
 
 	if ( update_vehicle_command() )
 			execute_vehicle_command();
@@ -454,7 +473,7 @@ Loiter::execute_command_in_landing(vehicle_command_s cmd){
 
 // @param reset_setpoint: 0 = false; 1 = reset position and type; 2 = reset type only
 void
-Loiter::set_sub_mode(LOITER_SUB_MODE new_sub_mode, uint8_t reset_setpoint = 1) {
+Loiter::set_sub_mode(LOITER_SUB_MODE new_sub_mode, uint8_t reset_setpoint, bool force_camera_reset) {
 
 	if (reset_setpoint > 0) {
 		pos_sp_triplet = _navigator->get_position_setpoint_triplet();
@@ -472,6 +491,8 @@ Loiter::set_sub_mode(LOITER_SUB_MODE new_sub_mode, uint8_t reset_setpoint = 1) {
 			pos_sp_triplet->current.alt = global_pos->alt;
 			pos_sp_triplet->current.lon = global_pos->lon;
 			pos_sp_triplet->current.lat = global_pos->lat;
+
+			pos_sp_triplet->current.yaw = global_pos->yaw;
 		}
 
 		_navigator->set_position_setpoint_triplet_updated();
@@ -484,23 +505,23 @@ Loiter::set_sub_mode(LOITER_SUB_MODE new_sub_mode, uint8_t reset_setpoint = 1) {
 	switch(new_sub_mode){
 		case LOITER_SUB_MODE_AIM_AND_SHOOT:
 			sub_mode_str = "Aim-and-shoot";
-			set_camera_mode(AIM_TO_TARGET);
+			set_camera_mode(AIM_TO_TARGET, force_camera_reset);
 			break;
 		case LOITER_SUB_MODE_LOOK_DOWN:
 			sub_mode_str = "Look down";
-			set_camera_mode(LOOK_DOWN);
+			set_camera_mode(LOOK_DOWN, force_camera_reset);
 			break;
 		case LOITER_SUB_MODE_GO_TO_POSITION:
 			sub_mode_str = "Go-to-position";
-			set_camera_mode(AIM_TO_TARGET);
+			set_camera_mode(AIM_TO_TARGET, force_camera_reset);
 			break;
 		case LOITER_SUB_MODE_LANDING:
 			sub_mode_str = "Landing";
-			set_camera_mode(HORIZONTAL);
+			set_camera_mode(HORIZONTAL, force_camera_reset);
 			break;
 		case LOITER_SUB_MODE_TAKING_OFF:
 			sub_mode_str = "Taking-off";
-			set_camera_mode(HORIZONTAL);
+			set_camera_mode(HORIZONTAL, force_camera_reset);
 			break;
 		case LOITER_SUB_MODE_LANDED:
 			sub_mode_str = "Landed";

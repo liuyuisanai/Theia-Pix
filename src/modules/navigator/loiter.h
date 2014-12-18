@@ -84,9 +84,10 @@ private:
 	void execute_command_in_landing(vehicle_command_s cmd);
 	void execute_command_in_taking_off(vehicle_command_s cmd);
 
-	void set_sub_mode(LOITER_SUB_MODE new_sub_mode, uint8_t reset_setpoint);
+	void set_sub_mode(LOITER_SUB_MODE new_sub_mode, uint8_t reset_setpoint = 1, bool force_camera_reset = false);
 
 	bool flag_sub_mode_goal_reached;
+	bool previous_target_valid_flag;
 };
 
 #endif

@@ -1145,6 +1145,7 @@ int commander_thread_main(int argc, char *argv[])
 	bool arming_state_changed = false;
 	bool main_state_changed = false;
 	bool failsafe_old = false;
+	bool target_position_was_valid = false;
 
 	while (!thread_should_exit) {
 
@@ -1458,11 +1459,13 @@ int commander_thread_main(int argc, char *argv[])
 		check_valid(target_position.timestamp, 1000 * 1000, true, &(status.condition_target_position_valid), &status_changed);
 		if (status.condition_target_position_valid) {
 			status.last_target_time = hrt_absolute_time();
+			// This check has to be done before all the mode switches, so they can override this flag!
+			if (!target_position_was_valid) {
+				_custom_flag_control_point_to_target = false;
+				status_changed = true;
+			}
 		}
 		else if (status.airdog_state == AIRD_STATE_IN_AIR) {
-
-			control_mode.flag_control_point_to_target = false;
-			_custom_flag_control_point_to_target = true;
 
 			if (!control_mode.flag_control_manual_enabled && control_mode.flag_control_auto_enabled) {
 				// On second timeout - go into EMERGENCY RTL
@@ -2124,9 +2127,19 @@ int commander_thread_main(int argc, char *argv[])
 		if (nav_state_changed) {
 			_custom_flag_control_point_to_target = false;
 			status_changed = true;
-			warnx("nav state: %s", nav_states_str[status.nav_state]);
+			warnx("nav state: %s, fallback: %d", nav_states_str[status.nav_state], status.nav_state_fallback);
 			mavlink_log_info(mavlink_fd, "[cmd] nav state: %s", nav_states_str[status.nav_state]);
 		}
+
+		// Override point_to_target flags if target signal is bad for the first time
+		if (!status.condition_target_position_valid && status.airdog_state == AIRD_STATE_IN_AIR
+				&& target_position_was_valid) {
+			status_changed = true;
+			control_mode.flag_control_point_to_target = false;
+			_custom_flag_control_point_to_target = true;
+		}
+
+		target_position_was_valid = status.condition_target_position_valid;
 
 		/* publish states (armed, control mode, vehicle status) at least with 5 Hz */
 		if (counter % (200000 / COMMANDER_MONITORING_INTERVAL) == 0 || status_changed) {
