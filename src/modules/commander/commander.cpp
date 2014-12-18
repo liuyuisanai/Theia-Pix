@@ -814,13 +814,12 @@ int commander_thread_main(int argc, char *argv[])
 
 	param_get(_param_require_gps, &require_gps);
 
-    float target_visibility_timeout_1;
     float target_visibility_timeout_2;
+    int32_t target_datalink_timeout;
 
-	param_t _param_target_visibility_timeout_1 = param_find("A_TRGT_VSB_TO_1");
+    param_get(param_find("A_TRGT_DLINK_TO"), &target_datalink_timeout);
 	param_t _param_target_visibility_timeout_2 = param_find("A_TRGT_VSB_TO_2");
 
-	param_get(_param_target_visibility_timeout_1, &target_visibility_timeout_1);
 	param_get(_param_target_visibility_timeout_2, &target_visibility_timeout_2);
 
 	/* welcome user */
@@ -1146,6 +1145,7 @@ int commander_thread_main(int argc, char *argv[])
 	bool main_state_changed = false;
 	bool failsafe_old = false;
 	bool target_position_was_valid = false;
+	bool trg_eph_epv_good;
 
 	while (!thread_should_exit) {
 
@@ -1456,7 +1456,25 @@ int commander_thread_main(int argc, char *argv[])
 			orb_copy(ORB_ID(target_global_position), target_position_sub, &target_position);
 		}
 
-		check_valid(target_position.timestamp, 1000 * 1000, true, &(status.condition_target_position_valid), &status_changed);
+		// TODO! AK: Consider checking "use_alt" parameter for epv error checking
+		/* recheck target position validity */
+		if (status.condition_target_position_valid) {
+			/* More lax threshold if position was valid before */
+			if (target_position.eph > eph_threshold * 2.0f || target_position.epv > epv_threshold * 2.0f) {
+				trg_eph_epv_good = false;
+			} else {
+				trg_eph_epv_good = true;
+			}
+		} else {
+			/* More strict threshold if position was invalid before */
+			if (target_position.eph < eph_threshold && target_position.epv < epv_threshold) {
+				trg_eph_epv_good = true;
+			} else {
+				trg_eph_epv_good = false;
+			}
+		}
+		check_valid(target_position.timestamp, target_datalink_timeout * 1000, trg_eph_epv_good, &(status.condition_target_position_valid), &status_changed);
+
 		if (status.condition_target_position_valid) {
 			status.last_target_time = hrt_absolute_time();
 			// This check has to be done before all the mode switches, so they can override this flag!
