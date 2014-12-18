@@ -65,6 +65,11 @@ then
 	echo "AirLeash does not support SYS_AUTOCONFIG."
 fi
 
+if param compare MAV_SYS_ID 1
+then
+	param set MAV_SYS_ID 4
+fi
+
 #
 # MAVLink
 #
