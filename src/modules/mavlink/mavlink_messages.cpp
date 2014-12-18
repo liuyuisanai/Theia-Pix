@@ -1370,7 +1370,7 @@ protected:
 
 						} else {
 							/* scale PWM out 900..2100 us to -1..1 for other channels */
-							out[i] = (act.output[i] - pwm_center) / ((PWM_HIGHEST_MAX - PWM_LOWEST_MIN) / 2);
+							out[i] = (act.output[i] - pwm_center) / ((2000 - 1000) / 2);
 						}
 
 					} else {
