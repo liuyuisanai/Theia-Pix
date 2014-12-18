@@ -218,6 +218,8 @@ Loiter::execute_command_in_aim_and_shoot(vehicle_command_s cmd){
 
 	math::Vector<3> offset(offset_x, offset_y, offset_z);
 
+	vehicle_status_s *vehicle_status = _navigator->get_vstatus();
+
 	if (cmd.command == VEHICLE_CMD_DO_SET_MODE){
 
 		//uint8_t base_mode = (uint8_t)cmd.param1;
@@ -247,9 +249,18 @@ Loiter::execute_command_in_aim_and_shoot(vehicle_command_s cmd){
 		switch(remote_cmd) {
 			case  REMOTE_CMD_LAND_DISARM: {
 
-                mavlink_log_info(_navigator->get_mavlink_fd(), "Land disarm command");
-                set_sub_mode(LOITER_SUB_MODE_LANDING, 0);
-				land();
+				// Switch main state in case land command was received to prevent unintended land interrupts
+				if (vehicle_status->nav_state_fallback && vehicle_status->main_state != MAIN_STATE_LOITER) {
+					commander_request_s *commander_request = _navigator->get_commander_request();
+					commander_request->request_type = V_MAIN_STATE_CHANGE;
+					commander_request->main_state = MAIN_STATE_EMERGENCY_LAND;
+					_navigator->set_commander_request_updated();
+				}
+				else {
+					mavlink_log_info(_navigator->get_mavlink_fd(), "Land disarm command");
+					set_sub_mode(LOITER_SUB_MODE_LANDING, 0);
+					land();
+				}
 				break;
 			}
             case REMOTE_CMD_GOTO_DEFUALT_DST: {
