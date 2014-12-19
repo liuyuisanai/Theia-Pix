@@ -185,7 +185,6 @@ Leashed::on_active()
         dot_product = _vector_v * vector_target;
 
         // Limiting product not to be great than module of path vector
-        float velocity = 0.0f;
         if (dot_product >= _v_module) {
             dot_product = _v_module;
         } else if (dot_product < 0.0f) {
@@ -193,8 +192,10 @@ Leashed::on_active()
         } else {
             // Calculating velocity
             math::Vector<2> velocity_vector(_target_v_n, _target_v_e);
-            math::Vector<2> short_vector_v(_vector_v(0), _vector_v(1));
-            velocity = fabs((velocity_vector * short_vector_v));
+            velocity_vector = _vector_v * fabsf(velocity_vector * _vector_v);
+            pos_sp_triplet->current.vx = velocity_vector(0);
+            pos_sp_triplet->current.vy = velocity_vector(1);
+            pos_sp_triplet->current.velocity_valid = true;
         }
 
 
@@ -206,23 +207,19 @@ Leashed::on_active()
         vector_desired -= vector_vehicle;
 
         if (vector_desired.length() < 20.0f) {
-            pos_sp_triplet->current.type = SETPOINT_TYPE_VELOCITY;
-            pos_sp_triplet->current.abs_velocity = velocity;
-            pos_sp_triplet->current.abs_velocity_valid = true;
 
-            fprintf(stderr, "[Loiter] correcting speed: %.3f  vector_length: %.3f x:%.3f y:%.3f\n"
-                    , (double)velocity
-                    , (double)vector_desired.length()
-                    , (double)vector_desired(0)
-                    , (double)vector_desired(1)
-                    );
+            //fprintf(stderr, "[Loiter] correcting speed: %.3f  vector_length: %.3f x:%.3f y:%.3f\n"
+            //        , (double)velocity
+            //        , (double)vector_desired.length()
+            //        , (double)vector_desired(0)
+            //        , (double)vector_desired(1)
+            //        );
         } else {
-            fprintf(stderr, "[Loiter] no speed correction vector_length: %.3f x:%.3f y:%.3f\n"
-                    , (double)vector_desired.length()
-                    , (double)vector_desired(0)
-                    , (double)vector_desired(1)
-                    );
-            pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
+            //fprintf(stderr, "[Loiter] no speed correction vector_length: %.3f x:%.3f y:%.3f\n"
+            //        , (double)vector_desired.length()
+            //        , (double)vector_desired(0)
+            //        , (double)vector_desired(1)
+            //        );
         }
 
         add_vector_to_global_position(
@@ -235,6 +232,7 @@ Leashed::on_active()
         
 
         pos_sp_triplet->current.valid = true;
+        pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
 
         pos_sp_triplet->current.lat = lat_new;
         pos_sp_triplet->current.lon = lon_new;
