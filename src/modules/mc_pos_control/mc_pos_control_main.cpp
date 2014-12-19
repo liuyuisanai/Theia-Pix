@@ -1201,6 +1201,13 @@ MulticopterPositionControl::control_auto(float dt)
 		_reset_pos_sp = true;
 		_reset_alt_sp = true;
 
+        /* use speeds defined in navigator if valid */
+        if (_pos_sp_triplet.current.velocity_valid) {
+           _vel_ff(0) = _pos_sp_triplet.current.vx;
+           _vel_ff(1) = _pos_sp_triplet.current.vy;
+           _vel_ff(2) = _pos_sp_triplet.current.vz;
+        } 
+
 		/* project setpoint to local frame */
 		math::Vector<3> curr_sp;
 		map_projection_project(&_ref_pos,

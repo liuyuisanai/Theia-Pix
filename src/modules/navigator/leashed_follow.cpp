@@ -66,8 +66,8 @@ Leashed::Leashed(Navigator *navigator, const char *name)
     , _vehicle_alt()
     , _init_alt() 		
     , _ready_to_follow(false)
-    , _first_leash_point{0.0,0.0,0.0}
-    , _last_leash_point{0.0,0.0,0.0}
+    , _first_leash_point{0.0,0.0}
+    , _last_leash_point{0.0,0.0}
 {
     updateParameters();	
 }
@@ -87,31 +87,41 @@ Leashed::on_activation()
 	updateParameters();
 	global_pos = _navigator->get_global_position();
 	pos_sp_triplet = _navigator->get_position_setpoint_triplet();
-    // TODO [Max]: we need to exit this thig if points are zero
+    // TODO [Max]: we need to exit this thing if points are zero
     bool ok1, ok2;
-    ok1 = _navigator->get_path_points(0, _first_leash_point); // Get first point of path obtained in Lointer
-    ok2 = _navigator->get_path_points(1, _last_leash_point); // Get last point of path obtained in Lointer
+    double first_leash_point_nav[2];
+    double last_leash_point_nav[2];
+    ok1 = _navigator->get_path_points(0, first_leash_point_nav); // Get first point of path obtained in Lointer
+    ok2 = _navigator->get_path_points(1, last_leash_point_nav); // Get last point of path obtained in Lointer
     if (ok1 && ok2) {
         _ready_to_follow = true;
-        // Getting vector of the leashed path
-        float v_x = 0.0;
-        float v_y = 0.0;
-        float v_z = _last_leash_point[2];
-        get_vector_to_next_waypoint(
-                _first_leash_point[0]
-                , _first_leash_point[1]
-                , _last_leash_point[0]
-                , _last_leash_point[1]
-                , &v_x
-                , &v_y);
+        // Getting reference point for projection
+		map_projection_init(&_ref_pos, global_pos->lat, global_pos->lon);
+        // Projecting first point to local coords
+        map_projection_project(
+                &_ref_pos
+                , first_leash_point_nav[0]
+                , first_leash_point_nav[1]
+                , &_first_leash_point[0]
+                , &_first_leash_point[1]
+                );
+        // Projecting last point to local coords
+        map_projection_project(
+                &_ref_pos
+                , last_leash_point_nav[0]
+                , last_leash_point_nav[1]
+                , &_last_leash_point[0]
+                , &_last_leash_point[1]
+                );
+        // Constructing vector from first to last point in local coords
+        _vector_v = math::Vector<2>(
+                _last_leash_point[0] - _first_leash_point[0]
+                ,_last_leash_point[1] - _first_leash_point[1]
+                );
+        _v_module = _vector_v.length();
+        // Normalizing _vector_v
+        _vector_v /= _v_module;
 
-        // Normiruem vektor V
-        _v_module = sqrt(v_x*v_x + v_y*v_y + v_z*v_z);
-        v_x /= _v_module;
-        v_y /= _v_module;
-        v_z /= _v_module;
-
-        _vector_v = math::Vector<3>(v_x, v_y, v_z);
     } else
         _ready_to_follow = false;
 
@@ -143,31 +153,35 @@ Leashed::on_active()
         // Vector from leash start path to vehicle
         float vehicle_x = 0.0;
         float vehicle_y = 0.0;
-        float vehicle_z = _last_leash_point[2];
-        get_vector_to_next_waypoint(
-                _first_leash_point[0]
-                , _first_leash_point[1]
+        map_projection_project(
+                &_ref_pos
                 , _vehicle_lat
                 , _vehicle_lon
                 , &vehicle_x
-                , &vehicle_y);
+                , &vehicle_y
+                );
+        math::Vector<2> vector_vehicle(
+                vehicle_x - _first_leash_point[0]
+                , vehicle_y - _first_leash_point[1]
+                );
 
         // Vector from start path to target
         float target_x = 0.0;
         float target_y = 0.0;
-        float target_z = _last_leash_point[2];
-        get_vector_to_next_waypoint(
-                _first_leash_point[0]
-                , _first_leash_point[1]
+        map_projection_project(
+                &_ref_pos
                 , _target_lat
                 , _target_lon
                 , &target_x
-                , &target_y);
+                , &target_y
+                );
+        math::Vector<2> vector_target(
+                target_x - _first_leash_point[0]
+                , target_y - _first_leash_point[1]
+                );
 
         // Calculating dot product of target vector and path vector
         float dot_product = 0.0f;
-        math::Vector<3> vector_target(target_x, target_y, target_z);
-        math::Vector<3> vector_vehicle(vehicle_x, vehicle_y, vehicle_z);
         dot_product = _vector_v * vector_target;
 
         // Limiting product not to be great than module of path vector
@@ -185,31 +199,28 @@ Leashed::on_active()
 
 
         // Calculating vector from path start to desired point on path
-        math::Vector<3> vector_desired;
+        math::Vector<2> vector_desired;
         vector_desired = _vector_v * dot_product;
 
         // ===== Resulting vector =====
         vector_desired -= vector_vehicle;
-        math::Vector<2> short_vector_desired(vector_desired(0), vector_desired(1));
-        short_vector_desired(0) -= (float)_first_leash_point[0];
-        short_vector_desired(1) -= (float)_first_leash_point[1];
 
-        if (short_vector_desired.length() < 20.0f) {
+        if (vector_desired.length() < 20.0f) {
             pos_sp_triplet->current.type = SETPOINT_TYPE_VELOCITY;
             pos_sp_triplet->current.abs_velocity = velocity;
             pos_sp_triplet->current.abs_velocity_valid = true;
 
             fprintf(stderr, "[Loiter] correcting speed: %.3f  vector_length: %.3f x:%.3f y:%.3f\n"
                     , (double)velocity
-                    , (double)short_vector_desired.length()
-                    , (double)short_vector_desired(0)
-                    , (double)short_vector_desired(1)
+                    , (double)vector_desired.length()
+                    , (double)vector_desired(0)
+                    , (double)vector_desired(1)
                     );
         } else {
             fprintf(stderr, "[Loiter] no speed correction vector_length: %.3f x:%.3f y:%.3f\n"
-                    , (double)short_vector_desired.length()
-                    , (double)short_vector_desired(0)
-                    , (double)short_vector_desired(1)
+                    , (double)vector_desired.length()
+                    , (double)vector_desired(0)
+                    , (double)vector_desired(1)
                     );
             pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
         }
@@ -267,7 +278,7 @@ Leashed::execute_vehicle_command() {
 	vehicle_command_s cmd = _vcommand;
 	if (cmd.command == VEHICLE_CMD_NAV_REMOTE_CMD) {
 		REMOTE_CMD remote_cmd = (REMOTE_CMD)cmd.param1;
-		math::Vector<3> offset =_afollow_offset;
+		math::Vector<2> offset =_afollow_offset;
 		switch(remote_cmd){
 			case REMOTE_CMD_PLAY_PAUSE: {
 				commander_request_s *commander_request = _navigator->get_commander_request();

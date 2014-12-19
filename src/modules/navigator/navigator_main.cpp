@@ -292,21 +292,21 @@ Navigator::set_next_path_point(double point[3]) {
 }
 
 bool
-Navigator::get_path_points(int point_num, double to_point[3]) {
+Navigator::get_path_points(int point_num, double to_point[2]) {
     switch (point_num) {
         case 0:
             if (is_empty(_first_leash_point))
                 return false;
             to_point[0] = _first_leash_point[0];
             to_point[1] = _first_leash_point[1];
-            to_point[2] = _first_leash_point[2];
+            //to_point[2] = _first_leash_point[2];
             break;
         case 1:
             if (is_empty(_last_leash_point))
                 return false;
             to_point[0] = _last_leash_point[0];
             to_point[1] = _last_leash_point[1];
-            to_point[2] = _last_leash_point[2];
+            //to_point[2] = _last_leash_point[2];
             break;
         default:
             return false;
