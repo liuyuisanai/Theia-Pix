@@ -1461,7 +1461,7 @@ int commander_thread_main(int argc, char *argv[])
                 hrt_abstime t = hrt_absolute_time() ;
  
                 // On second timeout - go into EMERGENCY RTL
-                if (status.main_state!=MAIN_STATE_EMERGENCY_RTL && status.main_state!=MAIN_STATE_EMERGENCY_LAND) {
+                if (status.main_state != MAIN_STATE_RTL && status.main_state!=MAIN_STATE_EMERGENCY_RTL && status.main_state!=MAIN_STATE_EMERGENCY_LAND) {
                     if (t - target_position.timestamp > target_visibility_timeout_2 * 1000 * 1000) {
                         mavlink_log_info(mavlink_fd, "Target signal lost for to long, EMERGENCY RTL");
                         if (main_state_transition(&status, MAIN_STATE_EMERGENCY_RTL, mavlink_fd) == TRANSITION_CHANGED) {
@@ -1811,8 +1811,8 @@ int commander_thread_main(int argc, char *argv[])
 					main_res = main_state_transition(&status, MAIN_STATE_LOITER, mavlink_fd);
 					if (main_res == TRANSITION_DENIED) {
 						//switch to main failsafe mode
-						warnx ("---- Transition to RTL -----");
-						main_res = main_state_transition(&status, MAIN_STATE_RTL, mavlink_fd);
+						warnx ("---- Transition to EMERGENCY_RTL -----");
+						main_res = main_state_transition(&status, MAIN_STATE_EMERGENCY_RTL, mavlink_fd);
 					}
 				}
 				if (main_res == TRANSITION_DENIED) {
