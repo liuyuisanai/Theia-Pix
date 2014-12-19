@@ -2150,7 +2150,8 @@ protected:
 		mavlink_trajectory_t msg;
 		trajectory_s report;
 		// TODO! Check if the messages match!
-		if (trajectory_sub->update(&trajectory_time, &report)) {
+		if (trajectory_sub->update(&trajectory_time, &report) || trajectory_time > 0
+				&& (hrt_absolute_time() - trajectory_time > 500000) ) {
 			msg.time_boot_ms = report.timestamp / 1000; // uint32_t Timestamp (milliseconds since system boot)
 			msg.lat = report.lat * 1e7; // int32_t Latitude, expressed as * 1E7
 			msg.lon = report.lon * 1e7; // int32_t Longitude, expressed as * 1E7
