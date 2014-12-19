@@ -127,6 +127,7 @@ NavigatorMode::updateParamHandles() {
     _parameter_handles.airdog_init_pos_use = param_find("A_INIT_POS_U");
 
     _parameter_handles.a_yaw_ignore_radius = param_find("A_YAW_IGNR_R");
+    _parameter_handles.proportional_gain = param_find("MPC_XY_P");
 }
 
 void
@@ -158,6 +159,7 @@ NavigatorMode::updateParamValues() {
 	param_get(_parameter_handles.airdog_init_pos_use, &(_parameters.airdog_init_pos_use));
 
     param_get(_parameter_handles.a_yaw_ignore_radius, &(_parameters.a_yaw_ignore_radius));
+    param_get(_parameter_handles.a_yaw_ignore_radius, &(_parameters.proportional_gain));
 }
 
 

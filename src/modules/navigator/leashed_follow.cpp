@@ -191,9 +191,9 @@ Leashed::on_active()
         float from_vehicle_to_path = (v_v_length * v_v_length) - (vehicle_dot_product * vehicle_dot_product);
 
         /* --- if we are outside of path - return to it first -- */
-        if ( from_vehicle_to_path > 3.0f*3.0f // TODO [Max] make this a param
-             || vehicle_dot_product >= _v_module+3.0f
-             || vehicle_dot_product < -3.0f
+        if ( from_vehicle_to_path > _parameters.acceptance_radius * _parameters.acceptance_radius
+             || vehicle_dot_product >= _v_module + _parameters.acceptance_radius
+             || vehicle_dot_product < -_parameters.acceptance_radius
            ) { 
             //fprintf(stderr, "v_dot was %.3f ", (double) vehicle_dot_product);
 
@@ -231,11 +231,35 @@ Leashed::on_active()
             } else {
                 // Calculating velocity
                 math::Vector<2> velocity_vector(_target_v_n, _target_v_e);
-                velocity_vector = _vector_v * (velocity_vector * _vector_v);
+                float current_velocity = velocity_vector * _vector_v;
+                velocity_vector = _vector_v * current_velocity;
                 //fprintf(stderr, "velocity: target {%.3f,%.3f} vehicle{%.3f,%.3f}\n"
                 //        ,(double) _target_v_n, (double) _target_v_e
                 //        ,(double) velocity_vector(0), (double) velocity_vector(1)
                 //       );
+                
+                float dist_to_max_point = _v_module - vehicle_dot_product;
+                float current_allowed_velocity;
+                // min(dist to first; dist to last)
+                if (dist_to_max_point > vehicle_dot_product && vehicle_dot_product > target_dot_product) {
+                    //We are near first point and comming to it
+                    current_allowed_velocity = vehicle_dot_product * _parameters.proportional_gain;
+                    if (fabsf(current_velocity) > current_allowed_velocity) {
+                        velocity_vector *= current_allowed_velocity/fabsf(current_velocity);
+                        fprintf(stderr, "Correcting velocity from %.3f to %.3f\n"
+                                ,(double) current_velocity ,(double) velocity_vector.length());
+                    }
+                }
+                else if (dist_to_max_point < vehicle_dot_product && vehicle_dot_product < target_dot_product) {
+                    // We are near last point and comming to it
+                    current_allowed_velocity = dist_to_max_point * _parameters.proportional_gain;
+                    if (fabsf(current_velocity) > current_allowed_velocity) {
+                        velocity_vector *= current_allowed_velocity/fabsf(current_velocity);
+                        fprintf(stderr, "Correcting velocity from %.3f to %.3f\n"
+                                ,(double) current_velocity ,(double) velocity_vector.length());
+                    }
+                }
+
                 pos_sp_triplet->current.vx = velocity_vector(0);
                 pos_sp_triplet->current.vy = velocity_vector(1);
                 pos_sp_triplet->current.velocity_valid = true;

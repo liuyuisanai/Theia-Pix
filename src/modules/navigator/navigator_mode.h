@@ -136,6 +136,8 @@ public:
         int airdog_init_pos_use; 
 
         float a_yaw_ignore_radius;
+        // Proportional gain for horizontal position error
+        float proportional_gain;
 	} _parameters;		
 
 
@@ -166,6 +168,7 @@ public:
         param_t airdog_init_pos_use;
 
         param_t a_yaw_ignore_radius;
+        param_t proportional_gain;
 	} _parameter_handles;
 
 
