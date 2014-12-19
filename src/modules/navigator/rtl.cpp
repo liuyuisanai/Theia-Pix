@@ -42,6 +42,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <fcntl.h>
+#include <float.h>
 
 #include <mavlink/mavlink_log.h>
 #include <systemlib/err.h>
@@ -162,10 +163,10 @@ RTL::set_rtl_setpoint()
     pos_sp_triplet->current.valid = true;
     pos_sp_triplet->next.valid = false;
     
+    float climb_alt = _navigator->get_home_position()->alt + _parameters.rtl_ret_alt;
+
 	switch (rtl_state) {
 		case RTL_STATE_CLIMB: {
-			float climb_alt = _navigator->get_home_position()->alt + _parameters.rtl_ret_alt;
-
 			pos_sp_triplet->current.lat = global_pos->lat;
 			pos_sp_triplet->current.lon = global_pos->lon;
 			pos_sp_triplet->current.alt = climb_alt;
@@ -197,8 +198,10 @@ RTL::set_rtl_setpoint()
 
 			pos_sp_triplet->current.lat = home_pos->lat;
 			pos_sp_triplet->current.lon = home_pos->lon;
-			//Do not reset altitude:
-			pos_sp_triplet->current.alt = pos_sp_triplet->current.alt;
+			//Do not reset altitude only if we were climbing before:
+			if (fabsf(pos_sp_triplet->current.alt - climb_alt) >= FLT_EPSILON) {
+				pos_sp_triplet->current.alt = global_pos->alt;
+			}
 			pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
 
 			break;
