@@ -425,7 +425,7 @@ float PathFollow::calculate_desired_velocity(float dst_to_ok) {
     }
     
 
-    float reaction_time = 0.25f; // time in seconds when we increase speed from _target_velocity till _target_velocity + max_vel_err
+    float reaction_time = 0.45f; // time in seconds when we increase speed from _target_velocity till _target_velocity + max_vel_err
     float fraction = calc_vel_dt / reaction_time; // full increase will happen in reaction_time time, so we calculate how much we need to increase in dt time
 
 
