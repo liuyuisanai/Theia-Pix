@@ -141,6 +141,9 @@ Leashed::on_active()
     double lon_new;
 
     if (_ready_to_follow) {
+        // Resulting vector
+        math::Vector<2> vector_desired;
+
         /* we have at least 2 points setted from leash */
         _vehicle_lat = global_pos->lat;
         _vehicle_lon = global_pos->lon;
@@ -180,46 +183,70 @@ Leashed::on_active()
                 , target_y - _first_leash_point[1]
                 );
 
-        // Calculating dot product of target vector and path vector
-        float dot_product = 0.0f;
-        dot_product = _vector_v * vector_target;
+        // Calculating dot product of vehicle vector and path vector
+        float vehicle_dot_product = _vector_v * vector_vehicle;
 
         // Limiting product not to be great than module of path vector
-        if (dot_product >= _v_module) {
-            dot_product = _v_module;
-        } else if (dot_product < 0.0f) {
-            dot_product = 0.0f;
-        } else {
-            // Calculating velocity
-            math::Vector<2> velocity_vector(_target_v_n, _target_v_e);
-            velocity_vector = _vector_v * fabsf(velocity_vector * _vector_v);
-            pos_sp_triplet->current.vx = velocity_vector(0);
-            pos_sp_triplet->current.vy = velocity_vector(1);
-            pos_sp_triplet->current.velocity_valid = true;
-        }
+        float v_v_length = vector_vehicle.length();
+        float from_vehicle_to_path = (v_v_length * v_v_length) - (vehicle_dot_product * vehicle_dot_product);
 
+        /* --- if we are outside of path - return to it first -- */
+        if ( from_vehicle_to_path > 3.0f*3.0f // TODO [Max] make this a param
+             || vehicle_dot_product >= _v_module+3.0f
+             || vehicle_dot_product < -3.0f
+           ) { 
+            //fprintf(stderr, "v_dot was %.3f ", (double) vehicle_dot_product);
 
-        // Calculating vector from path start to desired point on path
-        math::Vector<2> vector_desired;
-        vector_desired = _vector_v * dot_product;
-
-        // ===== Resulting vector =====
-        vector_desired -= vector_vehicle;
-
-        if (vector_desired.length() < 20.0f) {
-
-            //fprintf(stderr, "[Loiter] correcting speed: %.3f  vector_length: %.3f x:%.3f y:%.3f\n"
-            //        , (double)velocity
-            //        , (double)vector_desired.length()
-            //        , (double)vector_desired(0)
-            //        , (double)vector_desired(1)
+            // Changing projection if vehicle outside of last/first points
+            if (vehicle_dot_product >= _v_module) {
+                vehicle_dot_product = _v_module;
+            } else if (vehicle_dot_product < 0.0f) {
+                vehicle_dot_product = 0.0f;
+            }
+            //fprintf(stderr, "Outside of path; to_path_sq %.3f, v_dot %.3f _vmod+3.0 %.3f\n"
+            //        ,(double) from_vehicle_to_path
+            //        ,(double) vehicle_dot_product
+            //        ,(double)(_v_module+3.0f)
             //        );
+            // Calculating vector from path start to desired point on path
+            vector_desired = _vector_v * vehicle_dot_product;
+
+            // ===== Resulting vector =====
+            vector_desired -= vector_vehicle;
+            //fprintf(stderr, " outside of path; vector_desired {%.3f,%.3f}\n"
+            //        ,(double)vector_desired(0), (double)vector_desired(1)
+            //       );
+            pos_sp_triplet->current.velocity_valid = false;
+
         } else {
-            //fprintf(stderr, "[Loiter] no speed correction vector_length: %.3f x:%.3f y:%.3f\n"
-            //        , (double)vector_desired.length()
-            //        , (double)vector_desired(0)
-            //        , (double)vector_desired(1)
-            //        );
+        /* -- We are on path and could follow target now -- */
+            //Calculating dot product of target vector and path vector
+            float target_dot_product = _vector_v * vector_target; 
+            if (target_dot_product >= _v_module) {
+                target_dot_product = _v_module;
+                //fprintf(stderr, "On path, in last_point\n");
+            } else if (target_dot_product < 0.0f) {
+                target_dot_product = 0.0f;
+                //fprintf(stderr, "On path, in first_point\n");
+            } else {
+                // Calculating velocity
+                math::Vector<2> velocity_vector(_target_v_n, _target_v_e);
+                velocity_vector = _vector_v * (velocity_vector * _vector_v);
+                //fprintf(stderr, "velocity: target {%.3f,%.3f} vehicle{%.3f,%.3f}\n"
+                //        ,(double) _target_v_n, (double) _target_v_e
+                //        ,(double) velocity_vector(0), (double) velocity_vector(1)
+                //       );
+                pos_sp_triplet->current.vx = velocity_vector(0);
+                pos_sp_triplet->current.vy = velocity_vector(1);
+                pos_sp_triplet->current.velocity_valid = true;
+            }
+
+
+            // Calculating vector from path start to desired point on path
+            vector_desired = _vector_v * target_dot_product;
+
+            // ===== Resulting vector =====
+            vector_desired -= vector_vehicle;
         }
 
         add_vector_to_global_position(
@@ -250,22 +277,11 @@ Leashed::on_active()
         _navigator->set_position_setpoint_triplet_updated();
     }
     else {
-        //// We still don't have points to follow, continuing to ABS follow
-        //_target_lat = target_pos->lat;
-        //_target_lon = target_pos->lon;
-        //fprintf(stderr, "[leashed] Flying like a ABS follow %.3f %.3f\n"
-        //        , (double)target_pos->lat
-        //        , (double)target_pos->lon);
-
-
-        ///* add offset to target position */
-        //add_vector_to_global_position(
-        //        _target_lat
-        //        , _target_lon
-        //        , _afollow_offset(0)
-        //        , _afollow_offset(1)
-        //        , &lat_new
-        //        , &lon_new);
+        // Switch back to LOITER
+            commander_request_s *commander_request = _navigator->get_commander_request();
+            commander_request->request_type = V_MAIN_STATE_CHANGE;
+            commander_request->main_state = MAIN_STATE_LOITER;
+            _navigator->set_commander_request_updated();
          }
 }
 
