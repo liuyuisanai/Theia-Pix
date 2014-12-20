@@ -234,16 +234,20 @@ Leashed::on_active()
                 // min(dist to first; dist to last)
                 if (dist_to_max_point > vehicle_dot_product && vehicle_dot_product > target_dot_product) {
                     //We are near first point and comming to it
-                    current_allowed_velocity = vehicle_dot_product * _parameters.proportional_gain;
+                    current_allowed_velocity = (vehicle_dot_product - 3.0f) * _parameters.proportional_gain; // TODO [Max] REMOVE DIRTY HACK
+                    // Should not be negative
+                    current_allowed_velocity = current_allowed_velocity < 0.0f ? 0.0f : current_allowed_velocity;
                     if (fabsf(current_velocity) > current_allowed_velocity) {
-                        velocity_vector *= current_allowed_velocity/fabsf(current_velocity);
+                        velocity_vector *= current_allowed_velocity/fabsf(current_velocity); // TODO [Max] division by zero?
                     }
                 }
                 else if (dist_to_max_point < vehicle_dot_product && vehicle_dot_product < target_dot_product) {
                     // We are near last point and comming to it
-                    current_allowed_velocity = dist_to_max_point * _parameters.proportional_gain;
+                    current_allowed_velocity = (dist_to_max_point - 3.0f) * _parameters.proportional_gain * 0.5f; // TODO [Max] REMOVE DIRTY HACK
+                    // Should not be negative
+                    current_allowed_velocity = current_allowed_velocity < 0.0f ? 0.0f : current_allowed_velocity;
                     if (fabsf(current_velocity) > current_allowed_velocity) {
-                        velocity_vector *= current_allowed_velocity/fabsf(current_velocity);
+                        velocity_vector *= current_allowed_velocity/fabsf(current_velocity); // TODO [Max] division by zero?
                     }
                 }
 
