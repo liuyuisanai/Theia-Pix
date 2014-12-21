@@ -924,6 +924,9 @@ int commander_thread_main(int argc, char *argv[])
 	status.circuit_breaker_engaged_enginefailure_check = false;
 	status.circuit_breaker_engaged_gpsfailure_check = false;
 
+	status.condition_target_position_valid = false;
+	status.last_target_time = 0;
+
 	/* publish initial state */
 	status_pub = orb_advertise(ORB_ID(vehicle_status), &status);
 	if (status_pub < 0) {
