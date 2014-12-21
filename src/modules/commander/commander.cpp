@@ -2448,7 +2448,7 @@ set_main_state_rc(struct vehicle_status_s *status_local, struct manual_control_s
             }
             else {
             	//TODO: [INE] fallback to Auto Mission
-            	res == TRANSITION_DENIED;
+            	res = TRANSITION_DENIED;
             }
 
             if (res != TRANSITION_DENIED) {
