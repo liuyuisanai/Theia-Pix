@@ -76,6 +76,9 @@
 #include <commander/px4_custom_mode.h>
 #include <geo/geo.h>
 
+#include <uORB/topics/mavlink_receive_stats.h>
+#include <uORB/uORB.h>
+
 __BEGIN_DECLS
 
 #include "mavlink_bridge_header.h"
@@ -1499,6 +1502,11 @@ MavlinkReceiver::handle_message_hil_state_quaternion(mavlink_message_t *msg)
 void *
 MavlinkReceiver::receive_thread(void *arg)
 {
+	mavlink_receive_stats_s stats;
+	memset(&stats, 0, sizeof(stats));
+
+	orb_advert_t mavlink_stat_topic = 0;
+
 	int uart_fd = _mavlink->get_uart_fd();
 
 	const int timeout = 500;
@@ -1534,11 +1542,35 @@ MavlinkReceiver::receive_thread(void *arg)
 
 					/* handle packet with parent object */
 					_mavlink->handle_message(&msg);
+
+					switch (msg.msgid) {
+					case MAVLINK_MSG_ID_HEARTBEAT:
+						++stats.heartbeat_count;
+						break;
+					case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
+						++stats.gpos_count;
+						break;
+					case MAVLINK_MSG_ID_TRAJECTORY:
+						++stats.trajectory_count;
+						break;
+					default:
+						break;
+					}
 				}
 			}
 
 			/* count received bytes */
 			_mavlink->count_rxbytes(nread);
+
+			if (nread > 0) {
+				/* Report to uORB */
+				stats.total_bytes += nread;
+				if (mavlink_stat_topic > 0) {
+					orb_publish(ORB_ID(mavlink_receive_stats), mavlink_stat_topic, &stats);
+				} else {
+					mavlink_stat_topic = orb_advertise(ORB_ID(mavlink_receive_stats), &stats);
+				}
+			}
 		}
 	}
 
