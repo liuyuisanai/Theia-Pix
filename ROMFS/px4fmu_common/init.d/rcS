@@ -444,7 +444,12 @@ then
 		fi
 	fi
 
-	mavlink start $MAVLINK_FLAGS
+	if param compare MAV_MINIMALISTIC 1
+	then
+		mavlink start -m airdog $MAVLINK_FLAGS
+	else
+		mavlink start $MAVLINK_FLAGS
+	fi
 
 	#
 	# UAVCAN
