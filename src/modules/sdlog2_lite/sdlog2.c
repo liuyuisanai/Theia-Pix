@@ -89,6 +89,7 @@
 #include <uORB/topics/system_power.h>
 #include <uORB/topics/servorail_status.h>
 #include <uORB/topics/airdog_path_log.h>
+#include <uORB/topics/mavlink_receive_stats.h>
 
 #include <systemlib/systemlib.h>
 #include <systemlib/param/param.h>
@@ -803,6 +804,7 @@ int sdlog2_lite_thread_main(int argc, char *argv[])
 		struct servorail_status_s servorail_status;
 		struct target_global_position_s target_pos;
 		struct trajectory_s trajectory;
+		struct mavlink_receive_stats_s mav_stats;
 	} buf;
 
 	memset(&buf, 0, sizeof(buf));
@@ -818,6 +820,7 @@ int sdlog2_lite_thread_main(int argc, char *argv[])
 			struct log_GPOS_s log_GPOS;
 			struct log_LPOS_s log_LPOS;
 			struct log_LOTJ_s log_LOTJ;
+			struct log_MVST_s log_MVST;
 		} body;
 	} log_msg = {
 		LOG_PACKET_HEADER_INIT(0)
@@ -853,6 +856,7 @@ int sdlog2_lite_thread_main(int argc, char *argv[])
 		int servorail_status_sub;
 		int target_pos_sub;
 		int trajectory_sub;
+		int mav_stats_sub;
 	} subs;
 
 	subs.cmd_sub = orb_subscribe(ORB_ID(airdog_path_log));
@@ -884,6 +888,8 @@ int sdlog2_lite_thread_main(int argc, char *argv[])
 	subs.servorail_status_sub = orb_subscribe(ORB_ID(servorail_status));
 	subs.target_pos_sub = orb_subscribe(ORB_ID(target_global_position));
 	subs.trajectory_sub = orb_subscribe(ORB_ID(trajectory));
+	subs.mav_stats_sub = orb_subscribe(ORB_ID(mavlink_receive_stats));
+
 
 	thread_running = true;
 
@@ -1017,6 +1023,16 @@ int sdlog2_lite_thread_main(int argc, char *argv[])
 			log_msg.body.log_LOTJ.vel_d = buf.trajectory.vel_d;
 			log_msg.body.log_LOTJ.heading = buf.trajectory.heading;
 			LOGBUFFER_WRITE_AND_COUNT(LOTJ);
+		}
+
+		if (copy_if_updated(ORB_ID(mavlink_receive_stats), subs.mav_stats_sub, &buf.mav_stats)) {
+			log_msg.msg_type = LOG_MVST_MSG;
+			log_msg.body.log_MVST.total_bytes = buf.mav_stats.total_bytes;
+			log_msg.body.log_MVST.gpos_count = buf.mav_stats.gpos_count;
+			log_msg.body.log_MVST.heartbeat_count = buf.mav_stats.heartbeat_count;
+			log_msg.body.log_MVST.trajectory_count = buf.mav_stats.trajectory_count;
+
+			LOGBUFFER_WRITE_AND_COUNT(MVST);
 		}
 
 		/* signal the other thread new data, but not yet unlock */
