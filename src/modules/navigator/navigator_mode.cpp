@@ -270,7 +270,7 @@ NavigatorMode::set_camera_mode(camera_mode_t camera_mode)
 		_camera_mode = camera_mode;
 
 		commander_request_s *commander_request = _navigator->get_commander_request();
-		commander_request->request_type = AIRD_CAMERA_MODE_CHANGE;
+		commander_request->camera_mode_changed = true;
 		commander_request->camera_mode = camera_mode;
 		_navigator->set_commander_request_updated();
 
@@ -413,7 +413,7 @@ NavigatorMode::takeoff()
 	pos_sp_triplet->current.lon = global_pos->lon;
 	pos_sp_triplet->current.alt = global_pos->alt + _parameters.takeoff_alt;
 
-	pos_sp_triplet->current.yaw = NAN;
+	pos_sp_triplet->current.yaw = global_pos->yaw;//NAN;
 	pos_sp_triplet->current.type = SETPOINT_TYPE_TAKEOFF;
 
 	_navigator->set_position_setpoint_triplet_updated();

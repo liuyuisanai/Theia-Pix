@@ -70,6 +70,8 @@
 #include <geo/geo.h>
 #include <systemlib/systemlib.h>
 #include <drivers/drv_hrt.h>
+#include <lib/geo_lookup/geo_mag_declination.h>
+#include <systemlib/param/param.h>
 
 #include "position_estimator_inav_params.h"
 #include "inertial_filter.h"
@@ -91,6 +93,7 @@ static const hrt_abstime sonar_valid_timeout = 1000000;	// estimate sonar distan
 static const hrt_abstime xy_src_timeout = 2000000;	// estimate position during this time after position sources loss
 static const uint32_t updates_counter_len = 1000000;
 //static const float max_flow = 1.0f;	// max flow value that can be used, rad/s
+static bool mag_declination_set = false;
 
 __EXPORT int position_estimator_inav_main(int argc, char *argv[]);
 
@@ -708,13 +711,43 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 						mavlink_log_info(mavlink_fd, "[inav] GPS signal lost");
 					}
 
-				} else {
-					if (gps.eph < max_eph_epv * 0.7f && gps.epv < max_eph_epv * 0.7f && gps.fix_type >= 3) {
-						gps_valid = true;
-						reset_est = true;
-						mavlink_log_info(mavlink_fd, "[inav] GPS signal found");
-					}
-				}
+				// } else {
+				// 	if (gps.eph < max_eph_epv * 0.7f && gps.epv < max_eph_epv * 0.7f && gps.fix_type >= 3) {
+				// 		gps_valid = true;
+				// 		reset_est = true;
+				// 		mavlink_log_info(mavlink_fd, "[inav] GPS signal found");
+				// 	}
+				// }
+                } else {
+                    if (gps.eph < max_eph_epv * 0.7f && gps.epv < max_eph_epv * 0.7f && gps.fix_type >= 3) {
+                        gps_valid = true;
+                        reset_est = true;
+                        mavlink_log_info(mavlink_fd, "[inav] GPS signal found");
+                        if (!mag_declination_set) {
+                        	mag_declination_set = true;
+                            param_t param = param_find("AIRD_AUTO_MAG");
+                            bool should_set_decl = false; 
+                            param_get(param, &should_set_decl);
+                            if (should_set_decl) {
+                            	float lat = gps.lat * 1e-7;
+                                float lon = gps.lon * 1e-7;
+                                float decl = get_mag_declination(lat, lon);
+                                param = param_find("ATT_MAG_DECL");
+                                param_set(param, &decl);
+                                mavlink_log_info(mavlink_fd, "Declination calculated: %4.7f", (double)decl);
+	                          	
+                            	//Write parameter to permanent memory only if gps is required to arm and thus is not in air
+                            	param = param_find("A_REQUIRE_GPS");
+                            	param_get(param, &should_set_decl);
+                            	if (should_set_decl) {
+	                                // Params write
+	    							param_save_default();
+                            	}
+                            }
+                        }
+                    }
+                }
+
 
 				if (gps_valid) {
 					double lat = gps.lat * 1e-7;

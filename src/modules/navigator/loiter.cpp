@@ -94,6 +94,10 @@ Loiter::on_activation()
 	} else {
 		_camera_mode = UNDEFINED;
 		set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, 1); 
+		commander_request_s *commander_request = _navigator->get_commander_request();
+        commander_request->request_type = AIRD_STATE_CHANGE;
+        commander_request->airdog_state = AIRD_STATE_IN_AIR;
+        _navigator->set_commander_request_updated();
 	}
 }
 

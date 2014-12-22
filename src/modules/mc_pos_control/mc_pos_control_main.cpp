@@ -356,6 +356,11 @@ private:
 	void		point_to_target();
 
 	/**
+	 * Set camera pitch (smooth speed)
+	 */
+	void		set_camera_pitch(float pitch);
+
+	/**
 	 * Shim for calling task_main from task_create.
 	 */
 	static void	task_main_trampoline(int argc, char *argv[]);
@@ -1146,9 +1151,15 @@ MulticopterPositionControl::control_auto_vel(float dt) {
 
             move_direction = pos_sp_delta_xy.normalized();
 
-            _vel_sp(0) = move_direction(0) * _pos_sp_triplet.current.abs_velocity;
-            _vel_sp(1) = move_direction(1) * _pos_sp_triplet.current.abs_velocity;
-            _vel_sp(2) = pos_sp_delta(2) * _params.pos_p(2);
+            if (_pos_sp_triplet.next.valid) {
+
+            }
+            else 
+            {
+                _vel_sp(0) = move_direction(0) * _pos_sp_triplet.current.abs_velocity;
+                _vel_sp(1) = move_direction(1) * _pos_sp_triplet.current.abs_velocity;
+                _vel_sp(2) = pos_sp_delta(2) * _params.pos_p(2);
+            }
 
             /* XXX AK _att_sp and yaws are published before control_auto_vel is called!!!
              * Merge with b8ac590c589aedb71f2201de9b046b390f0ad358 takes over point_to_target logic
@@ -1485,6 +1496,22 @@ MulticopterPositionControl::control_follow(float dt)
 	}
 }
 
+static float last_pitch = 0.0f;
+static float pitch_change_speed = 0.002f;
+void MulticopterPositionControl::set_camera_pitch(float pitch){
+	float pitch_delta = pitch - last_pitch;
+	float pitch_delta_20th = pitch_delta/20.f;
+	if (fabsf(pitch_delta) > pitch_change_speed){
+		if (pitch_delta > 0.0f) {
+			last_pitch += (pitch_delta_20th > pitch_change_speed ? pitch_change_speed : pitch_delta_20th);
+		}	
+		else {
+			last_pitch -= (-pitch_delta_20th > pitch_change_speed ? pitch_change_speed : -pitch_delta_20th);
+		}
+	}
+	_cam_control.control[1] = last_pitch;
+}
+
 void
 MulticopterPositionControl::point_to_target()
 {
@@ -1492,9 +1519,6 @@ MulticopterPositionControl::point_to_target()
 	/* calculate current offset (not offset setpoint) */
 	math::Vector<3> current_offset = _pos - _tpos;
 	math::Vector<2> current_offset_xy(current_offset(0), current_offset(1));
-
-
-
 	/* don't try to rotate near singularity */
 	float current_offset_xy_len = current_offset_xy.length();
 	if (current_offset_xy_len > FOLLOW_OFFS_XY_MIN) {
@@ -1507,7 +1531,7 @@ MulticopterPositionControl::point_to_target()
 	}
 
 	/* control camera pitch in global frame (for BL camera gimbal) */
-	_cam_control.control[1] = atan2f(current_offset(2), current_offset_xy_len) / _params.cam_pitch_max + _manual.aux2;
+	set_camera_pitch(atan2f(current_offset(2), current_offset_xy_len) / _params.cam_pitch_max + _manual.aux2);
 }
 
 void
@@ -1782,7 +1806,8 @@ MulticopterPositionControl::task_main()
 				// TODO! AK: Check what values can be for uninitialized camera_pitch!
                 // It makes sense to change yaw and pich trough setpoint when point_to_target is not used                 
                 if (!_control_mode.flag_control_point_to_target && _pos_sp_triplet.current.valid) {
-                	_cam_control.control[1] = _pos_sp_triplet.current.camera_pitch;
+                	//_cam_control.control[1] = _pos_sp_triplet.current.camera_pitch;
+					set_camera_pitch(_pos_sp_triplet.current.camera_pitch);
                 }
 
 				/* use constant descend rate when landing, ignore altitude setpoint */

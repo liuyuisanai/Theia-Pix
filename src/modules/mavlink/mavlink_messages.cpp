@@ -119,6 +119,8 @@ void get_mavlink_mode_state(struct vehicle_status_s *status, struct position_set
 
 	union px4_custom_mode custom_mode;
 	custom_mode.data = 0;
+	custom_mode.state_main = status->main_state;
+	custom_mode.state_nav = status->nav_state;
 
 	switch (status->nav_state) {
 
@@ -1370,7 +1372,7 @@ protected:
 
 						} else {
 							/* scale PWM out 900..2100 us to -1..1 for other channels */
-							out[i] = (act.output[i] - pwm_center) / ((PWM_HIGHEST_MAX - PWM_LOWEST_MIN) / 2);
+							out[i] = (act.output[i] - pwm_center) / ((2000 - 1000) / 2);
 						}
 
 					} else {
@@ -2148,7 +2150,8 @@ protected:
 		mavlink_trajectory_t msg;
 		trajectory_s report;
 		// TODO! Check if the messages match!
-		if (trajectory_sub->update(&trajectory_time, &report)) {
+		if (trajectory_sub->update(&trajectory_time, &report) || trajectory_time > 0
+				&& (hrt_absolute_time() - trajectory_time > 500000) ) {
 			msg.time_boot_ms = report.timestamp / 1000; // uint32_t Timestamp (milliseconds since system boot)
 			msg.lat = report.lat * 1e7; // int32_t Latitude, expressed as * 1E7
 			msg.lon = report.lon * 1e7; // int32_t Longitude, expressed as * 1E7

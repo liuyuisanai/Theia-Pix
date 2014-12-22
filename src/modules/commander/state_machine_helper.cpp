@@ -209,11 +209,11 @@ arming_state_transition(struct vehicle_status_s *status,		///< current vehicle s
 						// are measured but are insufficient
 						if (status->condition_power_input_valid && (status->avionics_power_rail_voltage > 0.0f)) {
 							// Check avionics rail voltages
-							if (status->avionics_power_rail_voltage < 4.75f) {
+							if (status->avionics_power_rail_voltage < 4.2f) {
 								mavlink_log_critical(mavlink_fd, "NOT ARMING: Avionics power low: %6.2f Volt", (double)status->avionics_power_rail_voltage);
 								feedback_provided = true;
 								valid_transition = false;
-							} else if (status->avionics_power_rail_voltage < 4.9f) {
+							} else if (status->avionics_power_rail_voltage < 4.5f) {
 								mavlink_log_critical(mavlink_fd, "CAUTION: Avionics power low: %6.2f Volt", (double)status->avionics_power_rail_voltage);
 								feedback_provided = true;
 							} else if (status->avionics_power_rail_voltage > 5.4f) {
