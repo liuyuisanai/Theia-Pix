@@ -1199,7 +1199,7 @@ MulticopterPositionControl::control_auto(float dt)
 		orb_copy(ORB_ID(position_setpoint_triplet), _pos_sp_triplet_sub, &_pos_sp_triplet);
 	}
 
-	// TODO! Raw fix.
+	// TODO! AK: Raw fix.
 	// Prevent collapse of the speed-scaled space on low speeds
 	if (_control_mode.flag_control_setpoint_velocity && _pos_sp_triplet.current.abs_velocity_valid
 			&& _pos_sp_triplet.current.abs_velocity <= 0.1f)

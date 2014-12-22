@@ -87,6 +87,10 @@ Leashed::on_activation()
 	updateParameters();
 	global_pos = _navigator->get_global_position();
 	pos_sp_triplet = _navigator->get_position_setpoint_triplet();
+    pos_sp_triplet->current.valid = false;
+    pos_sp_triplet->previous.valid = false;
+    pos_sp_triplet->next.valid = false;
+
     // TODO [Max]: we need to exit this thing if points are zero
     bool ok1, ok2;
     double first_leash_point_nav[2];
@@ -234,7 +238,7 @@ Leashed::on_active()
                 // min(dist to first; dist to last)
                 if (dist_to_max_point > vehicle_dot_product && vehicle_dot_product > target_dot_product) {
                     //We are near first point and comming to it
-                    current_allowed_velocity = (vehicle_dot_product - 3.0f) * _parameters.proportional_gain; // TODO [Max] REMOVE DIRTY HACK
+                    current_allowed_velocity = (vehicle_dot_product - 3.0f) * _parameters.proportional_gain * 0.5f; // TODO [Max] REMOVE DIRTY HACK
                     // Should not be negative
                     current_allowed_velocity = current_allowed_velocity < 0.0f ? 0.0f : current_allowed_velocity;
                     if (fabsf(current_velocity) > current_allowed_velocity) {
