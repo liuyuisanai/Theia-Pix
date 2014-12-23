@@ -46,7 +46,6 @@
 
 #include "navigator_mode.h"
 #include "mission_block.h"
-#include "leashed_follow_params.c"
 
 class Leashed : public MissionBlock
 {

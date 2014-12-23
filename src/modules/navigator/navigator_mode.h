@@ -138,6 +138,8 @@ public:
         float a_yaw_ignore_radius;
         // Proportional gain for horizontal position error
         float proportional_gain;
+
+        float acceleration;
 	} _parameters;		
 
 
