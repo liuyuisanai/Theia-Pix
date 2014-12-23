@@ -1240,8 +1240,9 @@ MulticopterPositionControl::control_cablepark(float dt)
         _ref_vector /= ref_vector_module;
     }
 
+    math::Vector<2> final_vector;
     math::Vector<2> vehicle_pos( _local_pos.x - _first_cbpark_point(0), _local_pos.y - _first_cbpark_point(1) );
-    math::Vector<2> target_pos( _local_pos.x - _first_cbpark_point(0), _local_pos.y - _first_cbpark_point(1) );
+    math::Vector<2> target_pos( _tpos.x - _first_cbpark_point(0), _tpos.y - _first_cbpark_point(1) );
 
     // Calculating dot product of vehicle vector and path vector
     float vehicle_dot_product = _ref_vector * vehicle_pos;
@@ -1251,9 +1252,9 @@ MulticopterPositionControl::control_cablepark(float dt)
     float from_vehicle_to_path = (v_v_length * v_v_length) - (vehicle_dot_product * vehicle_dot_product);
 
     /* --- if we are outside of path - return to it first -- */
-    if ( from_vehicle_to_path > _params.accept_radius * _params.accept_radius //TODO this should be somewhere here
-         || vehicle_dot_product >= _v_module + _params.accept_radius //TODO this should be somewhere here
-         || vehicle_dot_product < -params.accept_radius //TODO this should be somewhere here
+    if ( from_vehicle_to_path > _parameters.acceptance_radius * _parameters.acceptance_radius //TODO this should be somewhere here
+         || vehicle_dot_product >= ref_vector_module + _parameters.acceptance_radius //TODO this should be somewhere here
+         || vehicle_dot_product < -_parameters.acceptance_radius //TODO this should be somewhere here
        ) {
 
         // Changing projection if vehicle outside of last/first points
@@ -1263,14 +1264,48 @@ MulticopterPositionControl::control_cablepark(float dt)
             vehicle_dot_product = 0.0f;
         }
         // Calculating vector from path start to desired point on path
-        vector_desired = _vector_v * vehicle_dot_product;
+        final_vector = ref_vector * vehicle_dot_product;
+
+        // ===== Resulting vector =====
+        final_vector -= vector_vehicle;
+        pos_sp_triplet->current.velocity_valid = false;
+
+    } else {
+    /* -- We are on path and could follow target now -- */
+        //Calculating dot product of target vector and path vector
+        float target_dot_product = ref_vector_module * target_pos; 
+        if (target_dot_product >= ref_vector_module) {
+            target_dot_product = ref_vector_module;
+        } else if (target_dot_product < 0.0f) {
+            target_dot_product = 0.0f;
+        } else {
+            // Calculating velocity
+            math::Vector<2> target_velocity(_tvel(0), _tvel(1));
+            float required_velocity = target_velocity * ref_vector_module;
+
+            math::Vector<2> resulting_velocity = ref_vector_module * required_velocity;
+            
+            // Correcting velocity if near first or last point
+            float allowed_vel_to_first = (vehicle_dot_product - 3.0f) * _params.vel_ff;
+            float allowed_vel_to_last = (ref_vector_module - vehicle_dot_product - 3.0f) * _params.vel_ff;
+            
+            float current_allowed_velocity = allowed_vel_to_last < allowed_vel_to_first ? allowed_vel_to_last : allowed_vel_to_first;
+            if (fabsf(required_velocity) > current_allowed_velocity) {
+                resulting_velocity *= current_allowed_velocity/fabsf(required_velocity);
+            }
+
+            pos_sp_triplet->current.vx = resulting_velocity(0);
+            pos_sp_triplet->current.vy = resulting_velocity(1);
+            pos_sp_triplet->current.velocity_valid = true;
+        }
+
+
+        // Calculating vector from path start to desired point on path
+        vector_desired = ref_vector_module * target_dot_product;
 
         // ===== Resulting vector =====
         vector_desired -= vector_vehicle;
-        pos_sp_triplet->current.velocity_valid = false;
-
     }
-
 }
 void
 MulticopterPositionControl::control_auto(float dt)
