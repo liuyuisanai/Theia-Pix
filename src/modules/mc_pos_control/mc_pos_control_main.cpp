@@ -1205,7 +1205,7 @@ MulticopterPositionControl::control_auto_vel(float dt) {
  *      NOTE: All vactors are calculated from the first point
  */
 void
-MulticopterPositionControl::control_cablepark(float dt)
+MulticopterPositionControl::control_cablepark()
 {
     // This thing is already in local coordinates
     //update_target_pos();
@@ -1267,9 +1267,7 @@ MulticopterPositionControl::control_cablepark(float dt)
         final_vector = ref_vector * vehicle_dot_product;
 
         // ===== Resulting vector =====
-        final_vector -= vector_vehicle;
-        pos_sp_triplet->current.velocity_valid = false;
-
+        final_vector -= vehicle_pos;
     } else {
     /* -- We are on path and could follow target now -- */
         //Calculating dot product of target vector and path vector
@@ -1285,11 +1283,15 @@ MulticopterPositionControl::control_cablepark(float dt)
 
             math::Vector<2> resulting_velocity = ref_vector_module * required_velocity;
             
-            // Correcting velocity if near first or last point
-            float allowed_vel_to_first = (vehicle_dot_product - 3.0f) * _params.vel_ff;
-            float allowed_vel_to_last = (ref_vector_module - vehicle_dot_product - 3.0f) * _params.vel_ff;
             
-            float current_allowed_velocity = allowed_vel_to_last < allowed_vel_to_first ? allowed_vel_to_last : allowed_vel_to_first;
+            float current_allowed_velocity;
+            if (fabsf(target_dot_product) > fabsf(vehicle_dot_product)) {
+                // If we are comming to last point
+                current_allowed_velocity = fabsf(ref_vector_module - vehicle_dot_product) * _params.vel_ff;
+            } else {
+                // Comming to first point
+                current_allowed_velocity = fabsf(vehicle_dot_product) * _params.vel_ff;
+            }
             if (fabsf(required_velocity) > current_allowed_velocity) {
                 resulting_velocity *= current_allowed_velocity/fabsf(required_velocity);
             }
