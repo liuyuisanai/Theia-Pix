@@ -139,7 +139,6 @@ public:
         // Proportional gain for horizontal position error
         float proportional_gain;
 
-        float acceleration;
 	} _parameters;		
 
 

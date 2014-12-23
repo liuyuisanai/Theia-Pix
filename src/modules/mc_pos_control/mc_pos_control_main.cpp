@@ -257,6 +257,9 @@ private:
 
 	math::Vector<3> _follow_offset;		/**< offset from target for FOLLOW mode, vector in NED frame */
 
+    math::Vector<2> _first_cbpark_point;  /**< cable park mode first point {lat, lon, alt} */
+    math::Vector<2> _last_cbpark_point;  /**< cable park mode last point {lat, lon, alt} */
+
 	LocalPositionPredictor	_tpos_predictor;
 
     int32_t old_follow_rpt_alt = 0;
@@ -319,6 +322,11 @@ private:
 
 	bool		cross_sphere_line(const math::Vector<3>& sphere_c, float sphere_r,
 					const math::Vector<3> line_a, const math::Vector<3> line_b, math::Vector<3>& res);
+
+    /**
+     * Controll cable park mode
+     */
+    void        control_cablepark(float dt);
 
 	/**
      * Calculate velocity sp from pos_sp_triplet
@@ -1182,6 +1190,75 @@ MulticopterPositionControl::control_auto_vel(float dt) {
 
 }
 
+/**
+ * @author: Max Shvetsov <max@airdog.com>
+ * @description: this mode should controll leashed_follow mode
+ *      NOTE: All vactors are calculated from the first point
+ */
+void
+MulticopterPositionControl::control_cablepark(float dt)
+{
+    // This thing is already in local coordinates
+    update_target_pos();
+
+    /* here we should obtain first and last point from navigator
+     * some kind of topic or whatever */
+    // get first and last points in local coordinates
+    // Indented because it should be under (if topic updated)
+        map_projection_project(
+                &_ref_pos
+                ,first_pseudo_lat
+                ,first_pseudo_lon
+                ,_first_cbpark_point(0)
+                ,_first_cbpark_point(1)
+                );
+        map_projection_project(
+                &_ref_pos
+                ,last_pseudo_lat
+                ,last_pseudo_lon
+                ,_last_cbpark_point(0)
+                ,_last_cbpark_point(1)
+                );
+
+
+        math::Vector<2> ref_vector = _last_cbpark_point - _first_cbpark_point;
+        // We need this vector module for the future use
+        float ref_vector_module = ref_vector.length();
+        // Normalize reference vector now
+        ref_vector /= ref_vector_module;
+
+    math::Vector<2> vehicle_pos( _local_pos.x - _first_cbpark_point(0), _local_pos.y - _first_cbpark_point(1) );
+    math::Vector<2> target_pos( _local_pos.x - _first_cbpark_point(0), _local_pos.y - _first_cbpark_point(1) );
+
+    // Calculating dot product of vehicle vector and path vector
+    float vehicle_dot_product = ref_vector * vehicle_pos;
+
+    // Limiting product not to be great than module of path vector
+    float v_v_length = vehicle_pos.length();
+    float from_vehicle_to_path = (v_v_length * v_v_length) - (vehicle_dot_product * vehicle_dot_product);
+
+    /* --- if we are outside of path - return to it first -- */
+    if ( from_vehicle_to_path > _parameters.acceptance_radius * _parameters.acceptance_radius //TODO this should be somewhere here
+         || vehicle_dot_product >= _v_module + _parameters.acceptance_radius //TODO this should be somewhere here
+         || vehicle_dot_product < -_parameters.acceptance_radius //TODO this should be somewhere here
+       ) {
+
+        // Changing projection if vehicle outside of last/first points
+        if (vehicle_dot_product >= ref_vector_module) {
+            vehicle_dot_product = ref_vector_module;
+        } else if (vehicle_dot_product < 0.0f) {
+            vehicle_dot_product = 0.0f;
+        }
+        // Calculating vector from path start to desired point on path
+        vector_desired = _vector_v * vehicle_dot_product;
+
+        // ===== Resulting vector =====
+        vector_desired -= vector_vehicle;
+        pos_sp_triplet->current.velocity_valid = false;
+
+    }
+
+}
 void
 MulticopterPositionControl::control_auto(float dt)
 {
