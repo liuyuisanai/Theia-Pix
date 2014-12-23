@@ -260,3 +260,6 @@ ORB_DEFINE(external_trajectory, struct external_trajectory_s);
 
 #include "topics/debug_data.h"
 ORB_DEFINE(debug_data, struct debug_data_s);
+
+#include "topics/position_restriction.h"
+ORB_DEFINE(position_restriction, struct position_restriction_s);
