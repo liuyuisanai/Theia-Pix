@@ -14,8 +14,7 @@
  * @author Ilya Nevdah
  */
 
-#ifndef TOPIC_MISSION_ITEM_TRIPLET_H_
-#define TOPIC_MISSION_ITEM_TRIPLET_H_
+#pragma once
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -44,5 +43,3 @@ struct position_restriction_s
 
 /* register this as object request broker structure */
 ORB_DECLARE(position_restriction);
-
-#endif

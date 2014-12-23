@@ -79,6 +79,7 @@
 #include <lib/geo/position_predictor.h>
 #include <mavlink/mavlink_log.h>
 #include <systemlib/perf_counter.h>
+#include <uORB/topics/position_restriction.h>
 
 #define TILT_COS_MAX	0.7f
 #define SIGMA			0.000001f
@@ -136,6 +137,7 @@ private:
 	int		_target_pos_sub;		/**< target global position subscription */
     int     _vcommand_sub;          /**< vehicle command subscription */
     int     _vehicle_status_sub;    /**< vehicle status subscription */
+    int 	_pos_restrict_sub;		/**< position restriction subscribtion */
 
 	orb_advert_t	_att_sp_pub;			/**< attitude setpoint publication */
 	orb_advert_t	_local_pos_sp_pub;		/**< vehicle local position setpoint publication */
@@ -153,6 +155,7 @@ private:
 	struct vehicle_global_velocity_setpoint_s	_global_vel_sp;	/**< vehicle global velocity setpoint */
 	struct target_global_position_s		_target_pos;	/**< target global position */
 	struct actuator_controls_s			_cam_control;	/**< camera control */
+	struct position_restriction_s		_pos_restrict;	/**< position restriction*/
 
 
 	struct {
@@ -191,6 +194,7 @@ private:
         param_t sonar_smooth_coef;
         param_t mc_allowed_down_sp;
         param_t pafol_mode;
+        param_t accept_radius;
 	}		_params_handles;		/**< handles for interesting parameters */
 
 	struct {
@@ -217,6 +221,7 @@ private:
         float sonar_smooth_coef;
         float mc_allowed_down_sp;
         int pafol_mode;
+        float accept_radius;
         
 		math::Vector<3> pos_p;
 		math::Vector<3> vel_p;
@@ -259,6 +264,7 @@ private:
 
     math::Vector<2> _first_cbpark_point;  /**< cable park mode first point {lat, lon, alt} */
     math::Vector<2> _last_cbpark_point;  /**< cable park mode last point {lat, lon, alt} */
+    math::Vector<2> _ref_vector; /**< cable park mode path normalized vector {x, y} */
 
 	LocalPositionPredictor	_tpos_predictor;
 
@@ -535,6 +541,8 @@ MulticopterPositionControl::MulticopterPositionControl() :
     _params_handles.mc_allowed_down_sp      = param_find("MPC_ALLOWED_LAND");
     _params_handles.pafol_mode				= param_find("PAFOL_MODE");
 
+    _params_handles.accept_radius = param_find("NAV_ACC_RAD");
+
 	/* fetch initial parameter values */
 	parameters_update(true);
 }
@@ -661,6 +669,7 @@ MulticopterPositionControl::parameters_update(bool force)
 
 		_params.sp_offs_max = _params.vel_max.edivide(_params.pos_p) * 2.0f;
 
+		param_get(_params_handles.accept_radius, &_params.accept_radius);
 
 	}
 
@@ -1199,48 +1208,52 @@ void
 MulticopterPositionControl::control_cablepark(float dt)
 {
     // This thing is already in local coordinates
-    update_target_pos();
+    //update_target_pos();
 
-    /* here we should obtain first and last point from navigator
-     * some kind of topic or whatever */
-    // get first and last points in local coordinates
-    // Indented because it should be under (if topic updated)
-        map_projection_project(
+	bool updated;
+	orb_check(_pos_restrict_sub, &updated);
+
+    if (updated) {
+        orb_copy(ORB_ID(position_restriction), _pos_restrict_sub, &_pos_restrict);
+
+        // get first and last points in local coordinates
+    	map_projection_project(
                 &_ref_pos
-                ,first_pseudo_lat
-                ,first_pseudo_lon
-                ,_first_cbpark_point(0)
-                ,_first_cbpark_point(1)
+                ,_pos_restrict.line.first[0]
+                ,_pos_restrict.line.first[1]
+                ,&_first_cbpark_point(0)
+                ,&_first_cbpark_point(1)
                 );
         map_projection_project(
                 &_ref_pos
-                ,last_pseudo_lat
-                ,last_pseudo_lon
-                ,_last_cbpark_point(0)
-                ,_last_cbpark_point(1)
+                ,_pos_restrict.line.last[0]
+                ,_pos_restrict.line.last[1]
+                ,&_last_cbpark_point(0)
+                ,&_last_cbpark_point(1)
                 );
 
 
-        math::Vector<2> ref_vector = _last_cbpark_point - _first_cbpark_point;
+        _ref_vector = _last_cbpark_point - _first_cbpark_point;
         // We need this vector module for the future use
-        float ref_vector_module = ref_vector.length();
+        float ref_vector_module = _ref_vector.length();
         // Normalize reference vector now
-        ref_vector /= ref_vector_module;
+        _ref_vector /= ref_vector_module;
+    }
 
     math::Vector<2> vehicle_pos( _local_pos.x - _first_cbpark_point(0), _local_pos.y - _first_cbpark_point(1) );
     math::Vector<2> target_pos( _local_pos.x - _first_cbpark_point(0), _local_pos.y - _first_cbpark_point(1) );
 
     // Calculating dot product of vehicle vector and path vector
-    float vehicle_dot_product = ref_vector * vehicle_pos;
+    float vehicle_dot_product = _ref_vector * vehicle_pos;
 
     // Limiting product not to be great than module of path vector
     float v_v_length = vehicle_pos.length();
     float from_vehicle_to_path = (v_v_length * v_v_length) - (vehicle_dot_product * vehicle_dot_product);
 
     /* --- if we are outside of path - return to it first -- */
-    if ( from_vehicle_to_path > _parameters.acceptance_radius * _parameters.acceptance_radius //TODO this should be somewhere here
-         || vehicle_dot_product >= _v_module + _parameters.acceptance_radius //TODO this should be somewhere here
-         || vehicle_dot_product < -_parameters.acceptance_radius //TODO this should be somewhere here
+    if ( from_vehicle_to_path > _params.accept_radius * _params.accept_radius //TODO this should be somewhere here
+         || vehicle_dot_product >= _v_module + _params.accept_radius //TODO this should be somewhere here
+         || vehicle_dot_product < -params.accept_radius //TODO this should be somewhere here
        ) {
 
         // Changing projection if vehicle outside of last/first points
@@ -1768,17 +1781,21 @@ MulticopterPositionControl::task_main()
 
 			} else {
 				/* AUTO modes*/
-
                 if (_pos_sp_triplet.current.type != SETPOINT_TYPE_VELOCITY) { // control_auto_vel is used where vel_sp is set
 
                     if (_control_mode.flag_control_follow_target) {
-                        // For auto ABS Follow
-                        control_follow(dt);
+                        if (_control_mode.flag_control_follow_restricted) {
+							//Cable park mode
+							control_cablepark(dt);
+						}
+						else {
+                        	// For auto ABS Follow
+                        	control_follow(dt);
+                    	}
                     } else {
                         /* AUTO */
                         control_auto(dt);
                     }
-
                 }
 			}
 
