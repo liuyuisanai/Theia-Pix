@@ -46,6 +46,7 @@
 
 #include "navigator_mode.h"
 #include "mission_block.h"
+#include "leashed_follow_params.c"
 
 class Leashed : public MissionBlock
 {
@@ -74,7 +75,8 @@ private:
 
     float _target_v_n;          /**< target north speed */
     float _target_v_e;          /**< target east speed */
-    float _target_v_module;
+    float _vehicle_v_n;          /**< vehicle north speed */
+    float _vehicle_v_e;          /**< vehicle east speed */
 
 	double	_vehicle_lat;		/**< prediction for vehicle latitude */
 	double	_vehicle_lon;		/**< prediction for vehicle longitude */

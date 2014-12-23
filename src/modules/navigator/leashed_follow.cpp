@@ -60,7 +60,8 @@ Leashed::Leashed(Navigator *navigator, const char *name)
     , _target_alt()	
     , _target_v_n()
     , _target_v_e()
-    , _target_v_module()
+    , _vehicle_v_n()
+    , _vehicle_v_e()
     , _vehicle_lat()	
     , _vehicle_lon()	
     , _vehicle_alt()
@@ -68,6 +69,7 @@ Leashed::Leashed(Navigator *navigator, const char *name)
     , _ready_to_follow(false)
     , _first_leash_point{0.0,0.0}
     , _last_leash_point{0.0,0.0}
+    , _t_prev()
 {
     updateParameters();	
 }
@@ -91,7 +93,6 @@ Leashed::on_activation()
     pos_sp_triplet->previous.valid = false;
     pos_sp_triplet->next.valid = false;
 
-    // TODO [Max]: we need to exit this thing if points are zero
     bool ok1, ok2;
     double first_leash_point_nav[2];
     double last_leash_point_nav[2];
@@ -159,13 +160,26 @@ Leashed::on_active()
         _vehicle_lon = global_pos->lon;
         _target_lat = target_pos->lat;
         _target_lon = target_pos->lon;
+        _vehicle_v_n = global_pos->vel_n;
+        _vehicle_v_e = global_pos->vel_e;
         _target_v_n = target_pos->vel_n;
         _target_v_e = target_pos->vel_e;
 
+        // Calculating time for feed forward
+        hrt_abstime target_time = target_pos->timestamp;
+        float dt = 0.0f;
+        if (_t_prev != 0) {
+		    dt = target_time != 0 ? (target_time - _t_prev) * 0.000001f : 0.0f;
+        } else {
+            // First use
+            dt = 0.0f;
+        }
+        _t_prev = target_time; // Setting this as previous time
+
         
         // Vector from leash start path to vehicle
-        float vehicle_x = 0.0;
-        float vehicle_y = 0.0;
+        float vehicle_x = 0.0f;
+        float vehicle_y = 0.0f;
         map_projection_project(
                 &_ref_pos
                 , _vehicle_lat
@@ -230,8 +244,24 @@ Leashed::on_active()
             } else {
                 // Calculating velocity
                 math::Vector<2> velocity_vector(_target_v_n, _target_v_e);
-                float current_velocity = velocity_vector * _vector_v;
-                velocity_vector = _vector_v * current_velocity;
+                math::Vector<2> current_velocity_vector(_vehicle_v_n, _vehicle_v_e);
+                float current_velocity = current_velocity_vector.length();
+                float required_velocity = velocity_vector * _vector_v;
+                // Calculating required velocity change module
+                float velocity_change = required_velocity - current_velocity;
+                if (dt != 0.0f) {
+                    if (fabsf(velocity_change) / dt > _parameters.acceleration) {
+                        // We want to accelerate more than it is allowed, limit speed
+                        if (velocity_change > 0.0f) {
+                            required_velocity = current_velocity + dt * _parameters.acceleration;
+                        } else {
+                            required_velocity = current_velocity - dt * _parameters.acceleration;
+                        }
+                    }
+                }
+
+
+                velocity_vector = _vector_v * required_velocity;
                 
                 float dist_to_max_point = _v_module - vehicle_dot_product;
                 float current_allowed_velocity;
@@ -241,8 +271,8 @@ Leashed::on_active()
                     current_allowed_velocity = (vehicle_dot_product - 3.0f) * _parameters.proportional_gain * 0.5f; // TODO [Max] REMOVE DIRTY HACK
                     // Should not be negative
                     current_allowed_velocity = current_allowed_velocity < 0.0f ? 0.0f : current_allowed_velocity;
-                    if (fabsf(current_velocity) > current_allowed_velocity) {
-                        velocity_vector *= current_allowed_velocity/fabsf(current_velocity); // TODO [Max] division by zero?
+                    if (fabsf(required_velocity) > current_allowed_velocity) {
+                        velocity_vector *= current_allowed_velocity/fabsf(required_velocity); // TODO [Max] division by zero?
                     }
                 }
                 else if (dist_to_max_point < vehicle_dot_product && vehicle_dot_product < target_dot_product) {
@@ -250,8 +280,8 @@ Leashed::on_active()
                     current_allowed_velocity = (dist_to_max_point - 3.0f) * _parameters.proportional_gain * 0.5f; // TODO [Max] REMOVE DIRTY HACK
                     // Should not be negative
                     current_allowed_velocity = current_allowed_velocity < 0.0f ? 0.0f : current_allowed_velocity;
-                    if (fabsf(current_velocity) > current_allowed_velocity) {
-                        velocity_vector *= current_allowed_velocity/fabsf(current_velocity); // TODO [Max] division by zero?
+                    if (fabsf(required_velocity) > current_allowed_velocity) {
+                        velocity_vector *= current_allowed_velocity/fabsf(required_velocity); // TODO [Max] division by zero?
                     }
                 }
 
