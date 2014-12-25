@@ -586,7 +586,11 @@ Navigator::task_main()
 				_navigation_mode = &_abs_follow;
 				break;
             case NAVIGATION_STATE_CABLE_PARK:
-                _navigation_mode = &_cable_path;
+                // Switch to cable park mode only if there is enough points
+                if (       !is_empty(_first_leash_point)
+                        && !is_empty(_last_leash_point) ){
+                    _navigation_mode = &_cable_path;
+                }
                 break;
 			case NAVIGATION_STATE_AUTO_PATH_FOLLOW:
 				_navigation_mode = &_path_follow;
