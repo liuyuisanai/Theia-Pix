@@ -264,7 +264,8 @@ private:
 
     math::Vector<2> _first_cbpark_point;  /**< cable park mode first point {lat, lon, alt} */
     math::Vector<2> _last_cbpark_point;  /**< cable park mode last point {lat, lon, alt} */
-    math::Vector<2> _ref_vector; /**< cable park mode path normalized vector {x, y} */
+    math::Vector<2> _ref_vector;         /**< cable park mode path normalized vector {x, y} */
+    float _ref_vector_module;            /**< cable park vector module (before normalization) */
 
 	LocalPositionPredictor	_tpos_predictor;
 
@@ -1235,9 +1236,9 @@ MulticopterPositionControl::control_cablepark()
 
         _ref_vector = _last_cbpark_point - _first_cbpark_point;
         // We need this vector module for the future use
-        float ref_vector_module = _ref_vector.length();
+        float _ref_vector_module = _ref_vector.length();
         // Normalize reference vector now
-        _ref_vector /= ref_vector_module;
+        _ref_vector /= _ref_vector_module;
     }
 
     math::Vector<2> final_vector;
@@ -1253,13 +1254,13 @@ MulticopterPositionControl::control_cablepark()
 
     /* --- if we are outside of path - return to it first -- */
     if ( from_vehicle_to_path > _parameters.acceptance_radius * _parameters.acceptance_radius //TODO this should be somewhere here
-         || vehicle_dot_product >= ref_vector_module + _parameters.acceptance_radius //TODO this should be somewhere here
+         || vehicle_dot_product >= _ref_vector_module + _parameters.acceptance_radius //TODO this should be somewhere here
          || vehicle_dot_product < -_parameters.acceptance_radius //TODO this should be somewhere here
        ) {
 
         // Changing projection if vehicle outside of last/first points
-        if (vehicle_dot_product >= ref_vector_module) {
-            vehicle_dot_product = ref_vector_module;
+        if (vehicle_dot_product >= _ref_vector_module) {
+            vehicle_dot_product = _ref_vector_module;
         } else if (vehicle_dot_product < 0.0f) {
             vehicle_dot_product = 0.0f;
         }
@@ -1271,23 +1272,23 @@ MulticopterPositionControl::control_cablepark()
     } else {
     /* -- We are on path and could follow target now -- */
         //Calculating dot product of target vector and path vector
-        float target_dot_product = ref_vector_module * target_pos; 
-        if (target_dot_product >= ref_vector_module) {
-            target_dot_product = ref_vector_module;
+        float target_dot_product = _ref_vector_module * target_pos; 
+        if (target_dot_product >= _ref_vector_module) {
+            target_dot_product = _ref_vector_module;
         } else if (target_dot_product < 0.0f) {
             target_dot_product = 0.0f;
         } else {
             // Calculating velocity
             math::Vector<2> target_velocity(_tvel(0), _tvel(1));
-            float required_velocity = target_velocity * ref_vector_module;
+            float required_velocity = target_velocity * _ref_vector_module;
 
-            math::Vector<2> resulting_velocity = ref_vector_module * required_velocity;
+            math::Vector<2> resulting_velocity = _ref_vector_module * required_velocity;
             
             
             float current_allowed_velocity;
             if (fabsf(target_dot_product) > fabsf(vehicle_dot_product)) {
                 // If we are comming to last point
-                current_allowed_velocity = fabsf(ref_vector_module - vehicle_dot_product) * _params.vel_ff;
+                current_allowed_velocity = fabsf(_ref_vector_module - vehicle_dot_product) * _params.vel_ff;
             } else {
                 // Comming to first point
                 current_allowed_velocity = fabsf(vehicle_dot_product) * _params.vel_ff;
@@ -1296,19 +1297,21 @@ MulticopterPositionControl::control_cablepark()
                 resulting_velocity *= current_allowed_velocity/fabsf(required_velocity);
             }
 
-            pos_sp_triplet->current.vx = resulting_velocity(0);
-            pos_sp_triplet->current.vy = resulting_velocity(1);
-            pos_sp_triplet->current.velocity_valid = true;
+            _vel_ff(0) = resulting_velocity(0);
+            _vel_ff(1) = resulting_velocity(1);
         }
 
-
         // Calculating vector from path start to desired point on path
-        vector_desired = ref_vector_module * target_dot_product;
+        vector_desired = _ref_vector_module * target_dot_product;
 
         // ===== Resulting vector =====
         vector_desired -= vector_vehicle;
     }
+    // Returning to local pos of mc_pos_contoll (not starting from the first cable park point)
+    _local_pos_sp.x = vector_desired(0) + _first_cbpark_point(0);
+    _local_pos_sp.y = vector_desired(1) + _first_cbpark_point(1);
 }
+
 void
 MulticopterPositionControl::control_auto(float dt)
 {
