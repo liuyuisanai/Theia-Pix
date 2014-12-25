@@ -1211,7 +1211,7 @@ MulticopterPositionControl::control_cablepark()
     // This thing is already in local coordinates
     //update_target_pos();
 
-	bool updated;
+	bool updated = false;
 	orb_check(_pos_restrict_sub, &updated);
 
     if (updated) {
@@ -1232,7 +1232,6 @@ MulticopterPositionControl::control_cablepark()
                 ,&_last_cbpark_point(0)
                 ,&_last_cbpark_point(1)
                 );
-
 
         _ref_vector = _last_cbpark_point - _first_cbpark_point;
         // We need this vector module for the future use
@@ -1309,8 +1308,12 @@ MulticopterPositionControl::control_cablepark()
         final_vector -= vehicle_pos;
     }
     // Returning to local pos of mc_pos_contoll (not starting from the first cable park point)
-    _local_pos_sp.x = final_vector(0) + _first_cbpark_point(0);
-    _local_pos_sp.y = final_vector(1) + _first_cbpark_point(1);
+    _pos_sp(0) = final_vector(0) + _first_cbpark_point(0);
+    _pos_sp(1) = final_vector(1) + _first_cbpark_point(1);
+    //fprintf(stderr, "Setting position setpoint to: {%.3f,%.3f}\n"
+    //        ,(double) _pos_sp(0)
+    //        ,(double) _pos_sp(1)
+    //       );
 }
 
 void
@@ -1689,7 +1692,7 @@ MulticopterPositionControl::task_main()
 	_target_pos_sub = orb_subscribe(ORB_ID(target_global_position));
 	_vcommand_sub = orb_subscribe(ORB_ID(vehicle_command));
     _vehicle_status_sub = orb_subscribe(ORB_ID(vehicle_status));
-
+    _pos_restrict_sub = orb_subscribe(ORB_ID(position_restriction));
 
 	parameters_update(true);
 
