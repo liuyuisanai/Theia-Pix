@@ -429,10 +429,12 @@ Loiter::execute_command_in_aim_and_shoot(vehicle_command_s cmd){
                         , global_pos->alt
                     };
                     _navigator->set_next_path_point(point);
+                    _navigator->publish_position_restriction();
                     break;
             }
             case REMOTE_CMD_CLEAR_POINTS: {
                     _navigator->clear_path_points();
+                    _navigator->publish_position_restriction();
                     break;
             }
 

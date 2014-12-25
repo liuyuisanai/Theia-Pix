@@ -84,6 +84,7 @@
 #include <uORB/topics/mission_result.h>
 #include <uORB/topics/telemetry_status.h>
 #include <uORB/topics/commander_request.h>
+#include <uORB/topics/position_restriction.h>
 
 
 #include <drivers/drv_led.h>
@@ -1117,6 +1118,11 @@ int commander_thread_main(int argc, char *argv[])
 	struct commander_request_s commander_request;
 	memset(&commander_request, 0, sizeof(commander_request));
 
+	/* Subscribe to restricted possition topic */
+	int _pos_restrict_sub = orb_subscribe(ORB_ID(position_restriction)); 
+    struct position_restriction_s pos_restrict;	/**< position restriction*/
+	memset(&pos_restrict, 0, sizeof(pos_restrict));
+
 	control_status_leds(&status, &armed, true);
 
 	/* now initialized */
@@ -1142,6 +1148,7 @@ int commander_thread_main(int argc, char *argv[])
 	bool arming_state_changed = false;
 	bool main_state_changed = false;
 	bool failsafe_old = false;
+    bool pos_res_updated = false;
 
 	while (!thread_should_exit) {
 
@@ -1151,6 +1158,25 @@ int commander_thread_main(int argc, char *argv[])
 		}
 
 		arming_ret = TRANSITION_NOT_CHANGED;
+
+
+        orb_check( _pos_restrict_sub, &pos_res_updated);
+        if (pos_res_updated) {
+            fprintf(stderr, "[command] first, last {%.3f,%.3f}{%.3f,%.3f}\n"
+                    ,(double)pos_restrict.line.first[0]
+                    ,(double)pos_restrict.line.first[1]
+                    ,(double)pos_restrict.line.last[0]
+                    ,(double)pos_restrict.line.last[1]
+                   );
+            orb_copy(ORB_ID(position_restriction), _pos_restrict_sub, &pos_restrict);
+        }
+        if (      (pos_restrict.line.first[0] == 0.0 && pos_restrict.line.first[1] == 0.0)
+               || (pos_restrict.line.last[0] == 0.0 && pos_restrict.line.last[1] == 0.0)) {
+            status.condition_path_points_valid = false;
+        }
+        else {
+            status.condition_path_points_valid = true;
+        }
 
 
 		/* update parameters */
@@ -2874,6 +2900,7 @@ void *commander_low_prio_loop(void *arg)
                     do_storage_write_when_disarm--;
             }
         }
+            
         
 
 		/* wait for up to 200ms for data */

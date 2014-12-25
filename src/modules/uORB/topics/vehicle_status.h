@@ -223,6 +223,7 @@ struct vehicle_status_s {
 	bool condition_airspeed_valid;			/**< set to true by the commander app if there is a valid airspeed measurement available */
 	bool condition_landed;					/**< true if vehicle is landed, always true if disarmed */
 	bool condition_power_input_valid;		/**< set if input power is valid */
+    bool condition_path_points_valid;       /**< true if hase at least 2 points for path, used in cablepark mode */
 	float avionics_power_rail_voltage;		/**< voltage of the avionics power rail */
 
 	bool rc_signal_found_once;

@@ -589,7 +589,6 @@ Navigator::task_main()
 				break;
             case NAVIGATION_STATE_CABLE_PARK:
                 // Switch to cable park mode only if there is enough points
-                publish_position_restriction();
                 _navigation_mode = &_cable_path;
                 break;
 			case NAVIGATION_STATE_AUTO_PATH_FOLLOW:
@@ -709,6 +708,7 @@ Navigator::publish_position_restriction() {
 
         /* publish the position restiction */
         if (_pos_restrict_pub > 0) {
+            fprintf(stderr, "[nav] publishing\n");
             orb_publish(ORB_ID(position_restriction), _pos_restrict_pub , &_pos_restrict);
 
         } else {

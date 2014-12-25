@@ -130,6 +130,11 @@ public:
 	void publish_att_sp();
 
 	/**
+	 * Publish a new position restriction for cable park mode
+	 */
+	void		publish_position_restriction();
+
+	/**
 	 * Setters
 	 */
 	void		set_can_loiter_at_sp(bool can_loiter) { _can_loiter_at_sp = can_loiter; }
@@ -318,10 +323,6 @@ private:
 	 */
 	void		publish_position_setpoint_triplet();
 
-	/**
-	 * Publish a new position restriction for cable park mode
-	 */
-	void		publish_position_restriction();
 
 	/**
 	 * Publish requests for commander
