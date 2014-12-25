@@ -58,6 +58,8 @@
 #include <uORB/topics/target_global_position.h>
 #include <uORB/topics/commander_request.h>
 #include <uORB/topics/external_trajectory.h>
+#include <uORB/topics/position_restriction.h>
+
 
 #include <commander/px4_custom_mode.h>
 
@@ -187,6 +189,7 @@ private:
 
 
 	orb_advert_t	_pos_sp_triplet_pub;		/**< publish position setpoint triplet */
+    orb_advert_t    _pos_restrict_pub;          /**< publish position restriction */
 	orb_advert_t	_mission_result_pub;
 	orb_advert_t	_att_sp_pub;			/**< publish att sp
 							  used only in very special failsafe modes
@@ -202,6 +205,7 @@ private:
 	mission_item_s 					_mission_item;		/**< current mission item */
 	navigation_capabilities_s			_nav_caps;		/**< navigation capabilities */
 	position_setpoint_triplet_s			_pos_sp_triplet;	/**< triplet of position setpoints */
+	position_restriction_s		_pos_restrict;	/**< position restriction*/
 
 	mission_result_s				_mission_result;
 	vehicle_attitude_setpoint_s					_att_sp;
@@ -313,6 +317,11 @@ private:
 	 * Publish a new position setpoint triplet for position controllers
 	 */
 	void		publish_position_setpoint_triplet();
+
+	/**
+	 * Publish a new position restriction for cable park mode
+	 */
+	void		publish_position_restriction();
 
 	/**
 	 * Publish requests for commander

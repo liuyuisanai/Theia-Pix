@@ -70,6 +70,7 @@
 #include <uORB/topics/vehicle_command.h>
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/target_global_position.h>
+#include <uORB/topics/position_restriction.h>
 #include <systemlib/param/param.h>
 #include <systemlib/err.h>
 #include <systemlib/systemlib.h>
@@ -79,7 +80,6 @@
 #include <lib/geo/position_predictor.h>
 #include <mavlink/mavlink_log.h>
 #include <systemlib/perf_counter.h>
-#include <uORB/topics/position_restriction.h>
 
 #define TILT_COS_MAX	0.7f
 #define SIGMA			0.000001f

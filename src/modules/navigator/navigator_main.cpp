@@ -116,6 +116,7 @@ Navigator::Navigator() :
     _first_leash_point(),
     _last_leash_point(),
 	_pos_sp_triplet_pub(-1),
+    _pos_restrict_pub(-1),
 	_mission_result_pub(-1),
 	_att_sp_pub(-1),
 	_commander_request_pub(-1),
@@ -128,6 +129,7 @@ Navigator::Navigator() :
 	_mission_item{},
 	_nav_caps{},
 	_pos_sp_triplet{},
+    _pos_restrict{},
 	_mission_result{},
 	_att_sp{},
 	_target_trajectory{},
@@ -589,6 +591,7 @@ Navigator::task_main()
                 // Switch to cable park mode only if there is enough points
                 if (       !is_empty(_first_leash_point)
                         && !is_empty(_last_leash_point) ){
+                    publish_position_restriction();
                     _navigation_mode = &_cable_path;
                 }
                 break;
@@ -698,6 +701,24 @@ Navigator::publish_position_setpoint_triplet()
 		_pos_sp_triplet_pub = orb_advertise(ORB_ID(position_setpoint_triplet), &_pos_sp_triplet);
 	}
 }
+
+void
+Navigator::publish_position_restriction() {
+        //orb_copy(ORB_ID(position_restriction), _pos_restrict_sub, &_pos_restrict);
+        _pos_restrict.line.first[0] = _first_leash_point[0];
+        _pos_restrict.line.first[1] = _first_leash_point[1];
+        _pos_restrict.line.last[0] = _last_leash_point[0];
+        _pos_restrict.line.last[1] = _last_leash_point[1];
+
+        /* publish the position restiction */
+        if (_pos_restrict_pub > 0) {
+            orb_publish(ORB_ID(position_restriction), _pos_restrict_pub , &_pos_restrict);
+
+        } else {
+            _pos_restrict_pub  = orb_advertise(ORB_ID(position_restriction), &_pos_restrict);
+        }
+}
+
 
 void
 Navigator::publish_commander_request()
