@@ -266,6 +266,7 @@ private:
     math::Vector<2> _last_cbpark_point;  /**< cable park mode last point {lat, lon, alt} */
     math::Vector<2> _ref_vector; 		/**< cable park mode path normalized vector {x, y} */
     float _ref_vector_module = 1.0f;	/**< cable park vector module (before normalization) */
+    float _current_allowed_velocity;    /**< cable park maximum speed (taking last and first point into account) */
 
 	LocalPositionPredictor	_tpos_predictor;
 
@@ -1252,9 +1253,9 @@ MulticopterPositionControl::control_cablepark()
     float from_vehicle_to_path = (v_v_length * v_v_length) - (vehicle_dot_product * vehicle_dot_product);
 
     /* --- if we are outside of path - return to it first -- */
-	if ( from_vehicle_to_path > _params.accept_radius * _params.accept_radius //TODO this should be somewhere here
-         || vehicle_dot_product >= _ref_vector_module + _params.accept_radius //TODO this should be somewhere here
-         || vehicle_dot_product < -_params.accept_radius //TODO this should be somewhere here
+	if ( from_vehicle_to_path > _params.accept_radius * _params.accept_radius
+         || vehicle_dot_product >= _ref_vector_module + _params.accept_radius
+         || vehicle_dot_product < -_params.accept_radius
        ) {
 
         // Changing projection if vehicle outside of last/first points
@@ -1267,7 +1268,7 @@ MulticopterPositionControl::control_cablepark()
         final_vector = _ref_vector * vehicle_dot_product;
 
         // ===== Resulting vector =====
-        final_vector -= vehicle_pos;
+        //final_vector -= vehicle_pos;
 
     } else {
     /* -- We are on path and could follow target now -- */
@@ -1285,17 +1286,17 @@ MulticopterPositionControl::control_cablepark()
             math::Vector<2> resulting_velocity = _ref_vector * required_velocity;
             
             // Correcting velocity if near first or last point
-            float current_allowed_velocity;
+            //float current_allowed_velocity;
             if (fabsf(target_dot_product) > fabsf(vehicle_dot_product)) {
                 // If we are comming to last point
-                current_allowed_velocity = fabsf(_ref_vector_module - vehicle_dot_product) * _params.vel_ff(0);
+                _current_allowed_velocity = fabsf(_ref_vector_module - vehicle_dot_product) * _params.pos_p(0);
             } else {
                 // Comming to first point
-                current_allowed_velocity = fabsf(vehicle_dot_product) * _params.vel_ff(0);
+                _current_allowed_velocity = fabsf(vehicle_dot_product) * _params.pos_p(0);
             }
-            if (fabsf(required_velocity) > current_allowed_velocity) {
-                resulting_velocity *= current_allowed_velocity/fabsf(required_velocity);
-            }
+            //if (fabsf(required_velocity) > _current_allowed_velocity) {
+            //    resulting_velocity *= _current_allowed_velocity/fabsf(required_velocity);
+            //}
 
             _vel_ff(0) = resulting_velocity(0);
             _vel_ff(1) = resulting_velocity(1);
@@ -1305,15 +1306,11 @@ MulticopterPositionControl::control_cablepark()
         final_vector = _ref_vector * target_dot_product;
 
         // ===== Resulting vector =====
-        final_vector -= vehicle_pos;
+        //final_vector -= vehicle_pos;
     }
     // Returning to local pos of mc_pos_contoll (not starting from the first cable park point)
     _pos_sp(0) = final_vector(0) + _first_cbpark_point(0);
     _pos_sp(1) = final_vector(1) + _first_cbpark_point(1);
-    //fprintf(stderr, "Setting position setpoint to: {%.3f,%.3f}\n"
-    //        ,(double) _pos_sp(0)
-    //        ,(double) _pos_sp(1)
-    //       );
 }
 
 void
@@ -1927,6 +1924,9 @@ MulticopterPositionControl::task_main()
 
                     math::Vector<3> pos_err = _pos_sp - _pos;
                     _vel_sp = pos_err.emult(_params.pos_p) + _vel_ff;
+                    if (_control_mode.flag_control_follow_restricted && fabsf(_vel_sp.length()) > fabsf(_current_allowed_velocity)) {
+                        _vel_sp *= fabsf(_current_allowed_velocity)/fabsf(_vel_sp.length());
+                    }
 
                 }
 
