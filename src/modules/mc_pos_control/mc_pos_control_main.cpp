@@ -264,8 +264,8 @@ private:
 
     math::Vector<2> _first_cbpark_point;  /**< cable park mode first point {lat, lon, alt} */
     math::Vector<2> _last_cbpark_point;  /**< cable park mode last point {lat, lon, alt} */
-    math::Vector<2> _ref_vector;         /**< cable park mode path normalized vector {x, y} */
-    float _ref_vector_module;            /**< cable park vector module (before normalization) */
+    math::Vector<2> _ref_vector; 		/**< cable park mode path normalized vector {x, y} */
+    float _ref_vector_module = 1.0f;	/**< cable park vector module (before normalization) */
 
 	LocalPositionPredictor	_tpos_predictor;
 
@@ -333,7 +333,7 @@ private:
     /**
      * Controll cable park mode
      */
-    void        control_cablepark(float dt);
+    void        control_cablepark();
 
 	/**
      * Calculate velocity sp from pos_sp_triplet
@@ -1236,14 +1236,14 @@ MulticopterPositionControl::control_cablepark()
 
         _ref_vector = _last_cbpark_point - _first_cbpark_point;
         // We need this vector module for the future use
-        float _ref_vector_module = _ref_vector.length();
+		_ref_vector_module = _ref_vector.length();
         // Normalize reference vector now
         _ref_vector /= _ref_vector_module;
     }
 
     math::Vector<2> final_vector;
     math::Vector<2> vehicle_pos( _local_pos.x - _first_cbpark_point(0), _local_pos.y - _first_cbpark_point(1) );
-    math::Vector<2> target_pos( _tpos.x - _first_cbpark_point(0), _tpos.y - _first_cbpark_point(1) );
+    math::Vector<2> target_pos( _tpos(0) - _first_cbpark_point(0), _tpos(1) - _first_cbpark_point(1) );
 
     // Calculating dot product of vehicle vector and path vector
     float vehicle_dot_product = _ref_vector * vehicle_pos;
@@ -1253,9 +1253,9 @@ MulticopterPositionControl::control_cablepark()
     float from_vehicle_to_path = (v_v_length * v_v_length) - (vehicle_dot_product * vehicle_dot_product);
 
     /* --- if we are outside of path - return to it first -- */
-    if ( from_vehicle_to_path > _parameters.acceptance_radius * _parameters.acceptance_radius //TODO this should be somewhere here
-         || vehicle_dot_product >= _ref_vector_module + _parameters.acceptance_radius //TODO this should be somewhere here
-         || vehicle_dot_product < -_parameters.acceptance_radius //TODO this should be somewhere here
+	if ( from_vehicle_to_path > _params.accept_radius * _params.accept_radius //TODO this should be somewhere here
+         || vehicle_dot_product >= _ref_vector_module + _params.accept_radius //TODO this should be somewhere here
+         || vehicle_dot_product < -_params.accept_radius //TODO this should be somewhere here
        ) {
 
         // Changing projection if vehicle outside of last/first points
@@ -1265,14 +1265,15 @@ MulticopterPositionControl::control_cablepark()
             vehicle_dot_product = 0.0f;
         }
         // Calculating vector from path start to desired point on path
-        final_vector = ref_vector * vehicle_dot_product;
+        final_vector = _ref_vector * vehicle_dot_product;
 
         // ===== Resulting vector =====
         final_vector -= vehicle_pos;
+
     } else {
     /* -- We are on path and could follow target now -- */
         //Calculating dot product of target vector and path vector
-        float target_dot_product = _ref_vector_module * target_pos; 
+        float target_dot_product = _ref_vector * target_pos; 
         if (target_dot_product >= _ref_vector_module) {
             target_dot_product = _ref_vector_module;
         } else if (target_dot_product < 0.0f) {
@@ -1280,18 +1281,18 @@ MulticopterPositionControl::control_cablepark()
         } else {
             // Calculating velocity
             math::Vector<2> target_velocity(_tvel(0), _tvel(1));
-            float required_velocity = target_velocity * _ref_vector_module;
+            float required_velocity = target_velocity * _ref_vector;
 
-            math::Vector<2> resulting_velocity = _ref_vector_module * required_velocity;
+            math::Vector<2> resulting_velocity = _ref_vector * required_velocity;
             
-            
+            // Correcting velocity if near first or last point
             float current_allowed_velocity;
             if (fabsf(target_dot_product) > fabsf(vehicle_dot_product)) {
                 // If we are comming to last point
-                current_allowed_velocity = fabsf(_ref_vector_module - vehicle_dot_product) * _params.vel_ff;
+                current_allowed_velocity = fabsf(_ref_vector_module - vehicle_dot_product) * _params.vel_ff(0);
             } else {
                 // Comming to first point
-                current_allowed_velocity = fabsf(vehicle_dot_product) * _params.vel_ff;
+                current_allowed_velocity = fabsf(vehicle_dot_product) * _params.vel_ff(0);
             }
             if (fabsf(required_velocity) > current_allowed_velocity) {
                 resulting_velocity *= current_allowed_velocity/fabsf(required_velocity);
@@ -1302,14 +1303,14 @@ MulticopterPositionControl::control_cablepark()
         }
 
         // Calculating vector from path start to desired point on path
-        vector_desired = _ref_vector_module * target_dot_product;
+        final_vector = _ref_vector * target_dot_product;
 
         // ===== Resulting vector =====
-        vector_desired -= vector_vehicle;
+        final_vector -= vehicle_pos;
     }
     // Returning to local pos of mc_pos_contoll (not starting from the first cable park point)
-    _local_pos_sp.x = vector_desired(0) + _first_cbpark_point(0);
-    _local_pos_sp.y = vector_desired(1) + _first_cbpark_point(1);
+    _local_pos_sp.x = final_vector(0) + _first_cbpark_point(0);
+    _local_pos_sp.y = final_vector(1) + _first_cbpark_point(1);
 }
 
 void
@@ -1826,7 +1827,7 @@ MulticopterPositionControl::task_main()
                     if (_control_mode.flag_control_follow_target) {
                         if (_control_mode.flag_control_follow_restricted) {
 							//Cable park mode
-							control_cablepark(dt);
+							control_cablepark();
 						}
 						else {
                         	// For auto ABS Follow
