@@ -1160,14 +1160,8 @@ int commander_thread_main(int argc, char *argv[])
 		arming_ret = TRANSITION_NOT_CHANGED;
 
 
-        orb_check( _pos_restrict_sub, &pos_res_updated);
+        orb_check(_pos_restrict_sub, &pos_res_updated);
         if (pos_res_updated) {
-            fprintf(stderr, "[command] first, last {%.3f,%.3f}{%.3f,%.3f}\n"
-                    ,(double)pos_restrict.line.first[0]
-                    ,(double)pos_restrict.line.first[1]
-                    ,(double)pos_restrict.line.last[0]
-                    ,(double)pos_restrict.line.last[1]
-                   );
             orb_copy(ORB_ID(position_restriction), _pos_restrict_sub, &pos_restrict);
         }
         if (      (pos_restrict.line.first[0] == 0.0 && pos_restrict.line.first[1] == 0.0)

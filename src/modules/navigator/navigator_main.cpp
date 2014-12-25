@@ -278,19 +278,19 @@ Navigator::task_main_trampoline(int argc, char *argv[])
 bool
 Navigator::set_next_path_point(double point[3]) {
     if ( is_empty(_first_leash_point) ) {
-        fprintf(stderr, "[nav] Got first point on path\n");
+		mavlink_log_info(_mavlink_fd, "[nav] Got first point on path\n");
         _first_leash_point[0] = point[0];
         _first_leash_point[1] = point[1];
         _first_leash_point[2] = point[2];
         return true;
     } else if ( is_empty(_last_leash_point) ) {
-        fprintf(stderr, "[nav] Got second point on path\n");
+		mavlink_log_info(_mavlink_fd, "[nav] Got second point on path\n");
         _last_leash_point[0] = point[0];
         _last_leash_point[1] = point[1];
         _last_leash_point[2] = point[2];
         return true;
     } else {
-        fprintf(stderr, "[nav] Not setting point, already had 2\n");
+		mavlink_log_info(_mavlink_fd, "[nav] Not setting point, already had 2\n");
         return false;
     }
 }
@@ -326,7 +326,7 @@ Navigator::clear_path_points() {
     _last_leash_point[0] = 0.0;
     _last_leash_point[1] = 0.0;
     _last_leash_point[2] = 0.0;
-    fprintf(stderr, "[nav] Path points cleared - set to 0.0\n");
+    mavlink_log_info(_mavlink_fd, "[nav] Path points cleared - set to 0.0\n");
 }
 
 void
@@ -708,7 +708,6 @@ Navigator::publish_position_restriction() {
 
         /* publish the position restiction */
         if (_pos_restrict_pub > 0) {
-            fprintf(stderr, "[nav] publishing\n");
             orb_publish(ORB_ID(position_restriction), _pos_restrict_pub , &_pos_restrict);
 
         } else {
