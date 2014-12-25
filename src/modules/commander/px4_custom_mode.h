@@ -39,7 +39,7 @@ enum PX4_CUSTOM_SUB_MODE_AUTO {
 union px4_custom_mode {
 	struct {
 		uint8_t state_main;
-		uint8_t state_nav;
+		uint8_t state_aird;
 		uint8_t main_mode;
 		uint8_t sub_mode;
 	};

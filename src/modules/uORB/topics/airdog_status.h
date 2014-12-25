@@ -54,7 +54,7 @@ struct airdog_status_s {
  	uint8_t battery_remaining; // 0-100%
 	uint16_t discharged_mah;
 	uint8_t state_main;     ///< AirDog-FMU's vehicle_status main_state
-	uint8_t state_nav;      ///< AirDog-FMU's vehicle_status nav_state
+	uint8_t state_aird;     ///< AirDog-FMU's vehicle_status airdog_state
  }; /**< command sent to vehicle */
 
 /**

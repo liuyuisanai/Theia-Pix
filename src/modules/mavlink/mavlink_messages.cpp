@@ -120,7 +120,7 @@ void get_mavlink_mode_state(struct vehicle_status_s *status, struct position_set
 	union px4_custom_mode custom_mode;
 	custom_mode.data = 0;
 	custom_mode.state_main = status->main_state;
-	custom_mode.state_nav = status->nav_state;
+	custom_mode.state_aird = status->airdog_state;
 
 	switch (status->nav_state) {
 
