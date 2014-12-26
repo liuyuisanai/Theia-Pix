@@ -1628,10 +1628,10 @@ MulticopterPositionControl::control_follow(float dt)
 }
 
 static float last_pitch = 0.0f;
-static float pitch_change_speed = 0.002f;
+static float pitch_change_speed = 0.005f;
 void MulticopterPositionControl::set_camera_pitch(float pitch){
 	float pitch_delta = pitch - last_pitch;
-	float pitch_delta_20th = pitch_delta/20.f;
+	float pitch_delta_20th = pitch_delta/12.f;
 	if (fabsf(pitch_delta) > pitch_change_speed){
 		if (pitch_delta > 0.0f) {
 			last_pitch += (pitch_delta_20th > pitch_change_speed ? pitch_change_speed : pitch_delta_20th);
