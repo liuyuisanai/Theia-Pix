@@ -27,13 +27,13 @@ else
 	fi
 fi
 
-if [ $DEBUG_MODE = yes -a $MAG_started = no ]
-then
-	if lsm303d start
-	then
-		set MAG_started yes
-	fi
-fi
+#if [ $DEBUG_MODE = yes -a $MAG_started = no ]
+#then
+#	if lsm303d start
+#	then
+#		set MAG_started yes
+#	fi
+#fi
 
 if [ $MAG_started = no ]
 then
@@ -67,5 +67,12 @@ fi
 #
 if sensors start
 then
-	preflight_check &
+    if preflight_check --fail-on-error
+    then
+    else
+        tone_alarm error #Follows default preflight check tune
+    fi
+else
+    #In case sensors app returned an error, although it usually doesn't
+    tone_alarm error
 fi
