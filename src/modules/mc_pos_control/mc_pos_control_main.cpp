@@ -1924,8 +1924,13 @@ MulticopterPositionControl::task_main()
 
                     math::Vector<3> pos_err = _pos_sp - _pos;
                     _vel_sp = pos_err.emult(_params.pos_p) + _vel_ff;
-                    if (_control_mode.flag_control_follow_restricted && fabsf(_vel_sp.length()) > fabsf(_current_allowed_velocity)) {
-                        _vel_sp *= fabsf(_current_allowed_velocity)/fabsf(_vel_sp.length());
+                    if (_control_mode.flag_control_follow_restricted) {
+                        // Limit speed if we are coming to first/last points in cable park mode
+                        float cur_vel_module = fabsf(_vel_sp.length()) ;
+                        float allowed_vel_mod = fabsf(_current_allowed_velocity);
+                        if ( cur_vel_module > allowed_vel_mod ) {
+                            _vel_sp *= allowed_vel_mod/cur_vel_module;
+                        }
                     }
 
                 }
