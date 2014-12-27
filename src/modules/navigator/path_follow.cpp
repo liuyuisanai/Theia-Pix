@@ -435,7 +435,7 @@ float PathFollow::calculate_desired_velocity(float dst_to_ok) {
     float max_vel_err;
 
     if (dst_to_ok >= 0.0f){
-        max_vel_err = (float)pow(dst_to_ok, 1.5f) * vel_err_coif;
+        max_vel_err = (float)pow(dst_to_ok, 1.3f) * vel_err_coif;
 
         if (max_vel_err > _parameters.mpc_max_speed - _target_velocity)
             max_vel_err = _parameters.mpc_max_speed - _target_velocity;
