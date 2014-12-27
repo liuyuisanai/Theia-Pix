@@ -1039,6 +1039,8 @@ MavlinkReceiver::handle_message_trajectory(mavlink_message_t *msg)
 	ext_traj.vel_d = msg_traj.vz * 1.0e-2f;
 	ext_traj.heading = msg_traj.hdg * 1.0e-2f * M_DEG_TO_RAD_F;
 
+	ext_traj.point_type = msg_traj.point_type;
+
 	if (_external_trajectory_pub < 0) {
 		_external_trajectory_pub = orb_advertise(ORB_ID(external_trajectory), &ext_traj);
 
