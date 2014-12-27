@@ -176,6 +176,7 @@ static struct vehicle_control_mode_s control_mode;
 static struct offboard_control_setpoint_s sp_offboard;
 
 static bool _custom_flag_control_point_to_target = false;
+static bool arming_state_changed = false;
 
 int mode_switch_state = -1;
 
@@ -528,6 +529,7 @@ bool handle_command(struct vehicle_status_s *status_local, const struct safety_s
 				if (main_ret != TRANSITION_DENIED) {
 					//Arm/Disarm only when main state transition is not rejected
 					arming_ret = arm_disarm(base_mode & MAV_MODE_FLAG_SAFETY_ARMED, mavlink_fd, "set mode command");
+					arming_state_changed = (arming_ret == TRANSITION_CHANGED);
 				}
 
 				if (hil_ret != TRANSITION_DENIED && arming_ret != TRANSITION_DENIED && main_ret != TRANSITION_DENIED) {
@@ -1138,7 +1140,6 @@ int commander_thread_main(int argc, char *argv[])
 	uint64_t timestamp_engine_healthy = 0; /**< absolute time when engine was healty */
 
 	/* check which state machines for changes, clear "changed" flag */
-	bool arming_state_changed = false;
 	bool main_state_changed = false;
 	bool failsafe_old = false;
 
