@@ -276,41 +276,56 @@ Navigator::task_main_trampoline(int argc, char *argv[])
 }
 
 bool
-Navigator::set_next_path_point(double point[3]) {
-    if ( is_empty(_first_leash_point) ) {
-		mavlink_log_info(_mavlink_fd, "[nav] Got first point on path\n");
-        _first_leash_point[0] = point[0];
-        _first_leash_point[1] = point[1];
-        _first_leash_point[2] = point[2];
-        return true;
-    } else if ( is_empty(_last_leash_point) ) {
-		mavlink_log_info(_mavlink_fd, "[nav] Got second point on path\n");
-        _last_leash_point[0] = point[0];
-        _last_leash_point[1] = point[1];
-        _last_leash_point[2] = point[2];
-        return true;
+Navigator::set_next_path_point(double point[3], bool force, int num) {
+    if (force) {
+        switch (num) {
+            case 0:
+                _first_leash_point[0] = point[0];
+                _first_leash_point[1] = point[1];
+                _first_leash_point[2] = point[2];
+                break;
+            case 1:
+                _last_leash_point[0] = point[0];
+                _last_leash_point[1] = point[1];
+                _last_leash_point[2] = point[2];
+                break;
+        }
     } else {
-		mavlink_log_info(_mavlink_fd, "[nav] Not setting point, already had 2\n");
-        return false;
+        if ( is_empty(_first_leash_point) ) {
+            mavlink_log_info(_mavlink_fd, "[nav] Got first point on path\n");
+            _first_leash_point[0] = point[0];
+            _first_leash_point[1] = point[1];
+            _first_leash_point[2] = point[2];
+            return true;
+        } else if ( is_empty(_last_leash_point) ) {
+            mavlink_log_info(_mavlink_fd, "[nav] Got second point on path\n");
+            _last_leash_point[0] = point[0];
+            _last_leash_point[1] = point[1];
+            _last_leash_point[2] = point[2];
+            return true;
+        } else {
+            mavlink_log_info(_mavlink_fd, "[nav] Not setting point, already had 2\n");
+            return false;
+        }
     }
 }
 
 bool
-Navigator::get_path_points(int point_num, double to_point[2]) {
+Navigator::get_path_points(int point_num, double to_point[3]) {
     switch (point_num) {
         case 0:
             if (is_empty(_first_leash_point))
                 return false;
             to_point[0] = _first_leash_point[0];
             to_point[1] = _first_leash_point[1];
-            //to_point[2] = _first_leash_point[2];
+            to_point[2] = _first_leash_point[2];
             break;
         case 1:
             if (is_empty(_last_leash_point))
                 return false;
             to_point[0] = _last_leash_point[0];
             to_point[1] = _last_leash_point[1];
-            //to_point[2] = _last_leash_point[2];
+            to_point[2] = _last_leash_point[2];
             break;
         default:
             return false;
@@ -703,8 +718,10 @@ Navigator::publish_position_restriction() {
         //orb_copy(ORB_ID(position_restriction), _pos_restrict_sub, &_pos_restrict);
         _pos_restrict.line.first[0] = _first_leash_point[0];
         _pos_restrict.line.first[1] = _first_leash_point[1];
+        _pos_restrict.line.first[2] = _first_leash_point[2];
         _pos_restrict.line.last[0] = _last_leash_point[0];
         _pos_restrict.line.last[1] = _last_leash_point[1];
+        _pos_restrict.line.last[2] = _last_leash_point[2];
 
         /* publish the position restiction */
         if (_pos_restrict_pub > 0) {

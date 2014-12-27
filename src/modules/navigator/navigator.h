@@ -140,7 +140,7 @@ public:
 	void		set_can_loiter_at_sp(bool can_loiter) { _can_loiter_at_sp = can_loiter; }
 	void		set_position_setpoint_triplet_updated() { _pos_sp_triplet_updated = true; }
 	void		set_commander_request_updated() { _commander_request_updated = true; }
-    bool        set_next_path_point(double point[3]);
+    bool        set_next_path_point(double point[3], bool force = false, int num = 0);
     bool        get_path_points(int point_num, double point[3]);
     void        clear_path_points();
 

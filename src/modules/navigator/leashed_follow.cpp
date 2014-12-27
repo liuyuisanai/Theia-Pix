@@ -113,6 +113,23 @@ Leashed::execute_vehicle_command() {
 				_navigator->set_commander_request_updated();
 				break;
 			}
+            case REMOTE_CMD_UP: {
+                double first[3];
+                //double last[3];
+                _navigator->get_path_points(0, first);
+                first[2] += 3.0;
+                _navigator->set_next_path_point(first, true, 0);
+                _navigator->publish_position_restriction();
+                break;
+            }
+            case REMOTE_CMD_DOWN: {
+                double first[3];
+                _navigator->get_path_points(0, first);
+                first[2] -= 3.0;
+                _navigator->set_next_path_point(first, true, 0);
+                _navigator->publish_position_restriction();
+                break;
+            }
 		}
 	}
 }

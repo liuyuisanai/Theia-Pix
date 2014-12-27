@@ -265,8 +265,11 @@ private:
     math::Vector<2> _first_cbpark_point;  /**< cable park mode first point {lat, lon, alt} */
     math::Vector<2> _last_cbpark_point;  /**< cable park mode last point {lat, lon, alt} */
     math::Vector<2> _ref_vector; 		/**< cable park mode path normalized vector {x, y} */
+    float _first_cbpark_point_alt;     /**< cable park mode first point altitude */
+    float _last_cbpark_point_alt;     /**< cable park mode first point altitude */
     float _ref_vector_module = 1.0f;	/**< cable park vector module (before normalization) */
     float _current_allowed_velocity;    /**< cable park maximum speed (taking last and first point into account) */
+    bool _valid_vel_correction = false; /**< cable park thing to use velocity correcion */
 
 	LocalPositionPredictor	_tpos_predictor;
 
@@ -1210,7 +1213,6 @@ void
 MulticopterPositionControl::control_cablepark()
 {
     // This thing is already in local coordinates
-    //update_target_pos();
 
 	bool updated = false;
 	orb_check(_pos_restrict_sub, &updated);
@@ -1226,6 +1228,8 @@ MulticopterPositionControl::control_cablepark()
                 ,&_first_cbpark_point(0)
                 ,&_first_cbpark_point(1)
                 );
+        _first_cbpark_point_alt = -((float)_pos_restrict.line.first[2] - _ref_alt);
+
         map_projection_project(
                 &_ref_pos
                 ,_pos_restrict.line.last[0]
@@ -1233,6 +1237,7 @@ MulticopterPositionControl::control_cablepark()
                 ,&_last_cbpark_point(0)
                 ,&_last_cbpark_point(1)
                 );
+        _last_cbpark_point_alt = -((float)_pos_restrict.line.last[2] - _ref_alt);
 
         _ref_vector = _last_cbpark_point - _first_cbpark_point;
         // We need this vector module for the future use
@@ -1276,8 +1281,10 @@ MulticopterPositionControl::control_cablepark()
         float target_dot_product = _ref_vector * target_pos; 
         if (target_dot_product >= _ref_vector_module) {
             target_dot_product = _ref_vector_module;
+            _valid_vel_correction = false;
         } else if (target_dot_product < 0.0f) {
             target_dot_product = 0.0f;
+            _valid_vel_correction = false;
         } else {
             // Calculating velocity
             math::Vector<2> target_velocity(_tvel(0), _tvel(1));
@@ -1294,6 +1301,7 @@ MulticopterPositionControl::control_cablepark()
                 // Comming to first point
                 _current_allowed_velocity = fabsf(vehicle_dot_product) * _params.pos_p(0);
             }
+            _valid_vel_correction = true;
             //if (fabsf(required_velocity) > _current_allowed_velocity) {
             //    resulting_velocity *= _current_allowed_velocity/fabsf(required_velocity);
             //}
@@ -1311,6 +1319,7 @@ MulticopterPositionControl::control_cablepark()
     // Returning to local pos of mc_pos_contoll (not starting from the first cable park point)
     _pos_sp(0) = final_vector(0) + _first_cbpark_point(0);
     _pos_sp(1) = final_vector(1) + _first_cbpark_point(1);
+    _pos_sp(2) = _first_cbpark_point_alt;
 }
 
 void
@@ -1924,7 +1933,7 @@ MulticopterPositionControl::task_main()
 
                     math::Vector<3> pos_err = _pos_sp - _pos;
                     _vel_sp = pos_err.emult(_params.pos_p) + _vel_ff;
-                    if (_control_mode.flag_control_follow_restricted) {
+                    if (_control_mode.flag_control_follow_restricted && _valid_vel_correction) {
                         // Limit speed if we are coming to first/last points in cable park mode
                         float cur_vel_module = fabsf(_vel_sp.length()) ;
                         float allowed_vel_mod = fabsf(_current_allowed_velocity);
@@ -1986,11 +1995,6 @@ MulticopterPositionControl::task_main()
                                 coef *= coef;
                                 float max_vel_z = - _params.vel_max(2) * coef;
 
-                                //printf("[WARN] max_vel %.3f smooth: %.3f min-dist %.3f thing %.3f\n", 
-                                //        (double)max_vel_z, 
-                                //        (double)_params.sonar_smooth_coef, 
-                                //        (double)_params.sonar_min_dist,
-                                //        (double)(_params.sonar_min_dist - _local_pos.dist_bottom));
                                 _vel_sp(2) = max_vel_z;
                                 _sp_move_rate(2)= 0.0f;
                             }
