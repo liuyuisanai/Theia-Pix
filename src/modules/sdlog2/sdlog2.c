@@ -1870,27 +1870,27 @@ int file_copy(const char *file_old, const char *file_new)
 
 void handle_command(struct vehicle_command_s *cmd)
 {
-	int param;
-
-	/* request to set different system mode */
-	switch (cmd->command) {
-
-	case VEHICLE_CMD_PREFLIGHT_STORAGE:
-		param = (int)(cmd->param3);
-
-		if (param == 1)	{
-			sdlog2_start_log();
-
-		} else if (param == 0)	{
-			sdlog2_stop_log();
-		}
-
-		break;
-
-	default:
-		/* silently ignore */
-		break;
-	}
+//	int param;
+//
+//	/* request to set different system mode */
+//	switch (cmd->command) {
+//
+//	case VEHICLE_CMD_PREFLIGHT_STORAGE:
+//		param = (int)(cmd->param3);
+//
+//		if (param == 1)	{
+//			sdlog2_start_log();
+//
+//		} else if (param == 0)	{
+//			sdlog2_stop_log();
+//		}
+//
+//		break;
+//
+//	default:
+//		/* silently ignore */
+//		break;
+//	}
 }
 
 void handle_status(struct vehicle_status_s *status)
