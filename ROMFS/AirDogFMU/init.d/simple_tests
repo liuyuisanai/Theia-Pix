@@ -46,6 +46,11 @@ if pwm info
 then
 fi
 echo "------------------------CONTINUING--------------------------"
+echo "Test gps driver (reports status OK and some satellite and fix stats)"
+if gps status
+then
+fi
+echo "------------------------CONTINUING--------------------------"
 echo "You should also check sensor data in QGround control by rotating the board"
 echo "Another thing - try setting a parameter via param set, then save via param save, reboot, check if value is changed"
 echo "Oh. And you should check if SD card is mounted OK each time"
