@@ -101,6 +101,12 @@ NavigatorMode::updateParameters() {
 void
 NavigatorMode::updateParamHandles() {
 
+    _parameter_handles.first_point_lat = param_find("NAV_CP_FIR_LA");
+    _parameter_handles.first_point_lon = param_find("NAV_CP_FIR_LO");
+    _parameter_handles.first_point_alt = param_find("NAV_CP_FIR_AL");
+    _parameter_handles.last_point_lat = param_find("NAV_CP_LAS_LA");
+    _parameter_handles.last_point_lon = param_find("NAV_CP_LAS_LO");
+    _parameter_handles.last_point_alt = param_find("NAV_CP_LAS_AL");
 	_parameter_handles.takeoff_alt = param_find("NAV_TAKEOFF_ALT");
 	_parameter_handles.takeoff_acceptance_radius = param_find("NAV_TAKEOFF_ACR");
 	_parameter_handles.acceptance_radius = param_find("NAV_ACC_RAD");
@@ -133,6 +139,12 @@ NavigatorMode::updateParamHandles() {
 void
 NavigatorMode::updateParamValues() {
 
+    param_get(_parameter_handles.first_point_lat, &(_parameters.first_point_lat));
+    param_get(_parameter_handles.first_point_lon, &(_parameters.first_point_lon));
+    param_get(_parameter_handles.first_point_alt, &(_parameters.first_point_alt));
+    param_get(_parameter_handles.last_point_lat, &(_parameters.last_point_lat));
+    param_get(_parameter_handles.last_point_lon, &(_parameters.last_point_lon));
+    param_get(_parameter_handles.last_point_alt, &(_parameters.last_point_alt));
 	param_get(_parameter_handles.takeoff_alt, &(_parameters.takeoff_alt));
 	param_get(_parameter_handles.takeoff_acceptance_radius, &(_parameters.takeoff_acceptance_radius));
 	param_get(_parameter_handles.acceptance_radius, &(_parameters.acceptance_radius));
@@ -201,6 +213,25 @@ NavigatorMode::on_activation()
 {
 	/* invalidate position setpoint by default */
 	_navigator->get_position_setpoint_triplet()->current.valid = false;
+    //mavlink_log_info(_mavlink_fd, "[nav] About to set leash points\n");
+    //if (_parameters.first_point_lat != 0
+    //        || _parameters.first_point_lon != 0
+    //        || _parameters.first_point_alt != 0.0f) {
+    //    double first_point[3];
+    //    first_point[0] = _parameters.first_point_lat / 1e7;
+    //    first_point[1] = _parameters.first_point_lon / 1e7;
+    //    first_point[2] = _parameters.first_point_alt;
+    //    _navigator->set_next_path_point(first_point, true, 0);
+    //}
+    //if (_parameters.last_point_lat != 0
+    //        || _parameters.last_point_lon != 0
+    //        || _parameters.last_point_alt != 0.0f) {
+    //    double last_point[3];
+    //    last_point[0] = _parameters.last_point_lat / 1e7;
+    //    last_point[1] = _parameters.last_point_lon / 1e7;
+    //    last_point[2] = _parameters.last_point_alt;
+    //    _navigator->set_next_path_point(last_point, true, 0);
+    //}
 }
 
 void

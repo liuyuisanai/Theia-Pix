@@ -79,6 +79,28 @@ Loiter::on_activation()
 	//Ignore all commands received from target so far
 	update_vehicle_command();
 
+    if (_parameters.first_point_lat != 0
+            || _parameters.first_point_lon != 0
+            || _parameters.first_point_alt != 0.0f) {
+        double first_point[3];
+        first_point[0] = _parameters.first_point_lat / 1e7;
+        first_point[1] = _parameters.first_point_lon / 1e7;
+        first_point[2] = _parameters.first_point_alt;
+        _navigator->set_next_path_point(first_point, true, 0);
+        _navigator->publish_position_restriction();
+    }
+    if (_parameters.last_point_lat != 0
+            || _parameters.last_point_lon != 0
+            || _parameters.last_point_alt != 0.0f) {
+        double last_point[3];
+        last_point[0] = _parameters.last_point_lat / 1e7;
+        last_point[1] = _parameters.last_point_lon / 1e7;
+        last_point[2] = _parameters.last_point_alt;
+        _navigator->set_next_path_point(last_point, true, 1);
+        _navigator->publish_position_restriction();
+    }
+    mavlink_log_info(_mavlink_fd, "[nav] About to set leash points\n");
+
 	// Determine current loiter sub mode
 	struct vehicle_status_s *vstatus = _navigator->get_vstatus();
 

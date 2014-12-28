@@ -110,6 +110,12 @@ public:
     void resetModeArguments(main_state_t main_state);
 
 	struct {
+        int first_point_lat;
+        int first_point_lon;
+        float first_point_alt;
+        int last_point_lat;
+        int last_point_lon;
+        float last_point_alt;
 		float takeoff_alt;
 		float takeoff_acceptance_radius;
 		float acceptance_radius;
@@ -143,6 +149,12 @@ public:
 
 
 	struct {
+        param_t first_point_lat;
+        param_t first_point_lon;
+        param_t first_point_alt;
+        param_t last_point_lat;
+        param_t last_point_lon;
+        param_t last_point_alt;
 		param_t takeoff_alt;
 		param_t takeoff_acceptance_radius;
 		param_t acceptance_radius;

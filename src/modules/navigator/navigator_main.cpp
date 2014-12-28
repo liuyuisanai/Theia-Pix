@@ -279,16 +279,18 @@ bool
 Navigator::set_next_path_point(double point[3], bool force, int num) {
     if (force) {
         switch (num) {
-            case 0:
+            case 0: {
                 _first_leash_point[0] = point[0];
                 _first_leash_point[1] = point[1];
                 _first_leash_point[2] = point[2];
                 break;
-            case 1:
+            }
+            case 1: {
                 _last_leash_point[0] = point[0];
                 _last_leash_point[1] = point[1];
                 _last_leash_point[2] = point[2];
                 break;
+            }
         }
     } else {
         if ( is_empty(_first_leash_point) ) {
@@ -722,6 +724,20 @@ Navigator::publish_position_restriction() {
         _pos_restrict.line.last[0] = _last_leash_point[0];
         _pos_restrict.line.last[1] = _last_leash_point[1];
         _pos_restrict.line.last[2] = _last_leash_point[2];
+        int temp_0[2] = {_first_leash_point[0] * 1e7, _last_leash_point[0] * 1e7};
+        int temp_1[2] = {_first_leash_point[1] * 1e7, _last_leash_point[1] * 1e7};
+        float temp_2[2] = {(float)_first_leash_point[2], (float)_last_leash_point[2]};
+        if (   param_set(param_find("NAV_CP_FIR_LA"), &(temp_0[0]))
+            || param_set(param_find("NAV_CP_FIR_LO"), &(temp_1[0]))
+            || param_set(param_find("NAV_CP_FIR_AL"), &(temp_2[0]))
+            || param_set(param_find("NAV_CP_LAS_LA"), &(temp_0[1]))
+            || param_set(param_find("NAV_CP_LAS_LO"), &(temp_1[1]))
+            || param_set(param_find("NAV_CP_LAS_AL"), &(temp_2[1]))
+           ) {
+            mavlink_log_critical(_mavlink_fd, "ERROR: failed to save first leash point");
+        } else {
+            //TODO [Max] send request to save parameters
+        }
 
         /* publish the position restiction */
         if (_pos_restrict_pub > 0) {
