@@ -970,9 +970,13 @@ int sdlog2_thread_main(int argc, char *argv[])
 
 	struct vehicle_gps_position_s buf_gps_pos;
 
+	struct vehicle_command_s buf_cmd;
+
 	memset(&buf_status, 0, sizeof(buf_status));
 
 	memset(&buf_gps_pos, 0, sizeof(buf_gps_pos));
+
+	memset(&buf_cmd, 0, sizeof(buf_cmd));
 
 	/* warning! using union here to save memory, elements should be used separately! */
 	union {
@@ -1056,6 +1060,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 			struct log_GPRE_s log_GPRE;
 			struct log_GNEX_s log_GNEX;
 			struct log_MVST_s log_MVST;
+			struct log_CMD_s log_CMD;
 		} body;
 	} log_msg = {
 		LOG_PACKET_HEADER_INIT(0)
@@ -1180,8 +1185,9 @@ int sdlog2_thread_main(int argc, char *argv[])
 		usleep(sleep_delay);
 
 		/* --- VEHICLE COMMAND - LOG MANAGEMENT --- */
-		if (copy_if_updated(ORB_ID(vehicle_command), subs.cmd_sub, &buf.cmd)) {
-			handle_command(&buf.cmd);
+		bool command_updated = copy_if_updated(ORB_ID(vehicle_command), subs.cmd_sub, &buf_cmd);
+		if (command_updated) {
+			handle_command(&buf_cmd);
 		}
 
 		/* --- VEHICLE STATUS - LOG MANAGEMENT --- */
@@ -1224,6 +1230,17 @@ int sdlog2_thread_main(int argc, char *argv[])
 			log_msg.body.log_STAT.load = buf_status.load;
 			log_msg.body.log_STAT.aird_state = buf_status.airdog_state;
 			LOGBUFFER_WRITE_AND_COUNT(STAT);
+		}
+
+		if (command_updated) {
+			log_msg.msg_type = LOG_CMD_MSG;
+			log_msg.body.log_CMD.command = (uint16_t) buf_cmd.command;
+			log_msg.body.log_CMD.source_sys = buf_cmd.source_system;
+			log_msg.body.log_CMD.source_comp = buf_cmd.source_component;
+			log_msg.body.log_CMD.param1 = buf_cmd.param1;
+			log_msg.body.log_CMD.param2 = buf_cmd.param2;
+			log_msg.body.log_CMD.param3 = buf_cmd.param3;
+			LOGBUFFER_WRITE_AND_COUNT(CMD);
 		}
 
 		/* --- GPS POSITION - UNIT #1 --- */
