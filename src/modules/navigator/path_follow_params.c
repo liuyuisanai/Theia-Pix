@@ -106,3 +106,13 @@ PARAM_DEFINE_FLOAT(PAFOL_VEL_E_C, 0.5f);
  * @group PathFollow
  */
 PARAM_DEFINE_FLOAT(PAFOL_VEL_R_T, 0.5f);
+
+/**
+ * Velocity error growth power.
+ *
+ * @unit meters
+ * @min 0.1
+ * @max 20
+ * @group PathFollow
+ */
+PARAM_DEFINE_FLOAT(PAFOL_VEL_E_GP, 1.0f);

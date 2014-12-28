@@ -254,7 +254,7 @@ void PathFollow::on_active() {
         pos_sp_triplet->current.abs_velocity = _desired_speed;
         pos_sp_triplet->current.abs_velocity_valid = true;
 
-        if (_desired_speed < 1e-6f && _drone_velocity < 5.0f){
+        if (_desired_speed < 1e-6f) {
 
             //mavlink_log_critical(_mavlink_fd, "Zero point on.");
 
@@ -432,10 +432,12 @@ float PathFollow::calculate_desired_velocity(float dst_to_ok) {
 
     //float vel_err_coif = 0.5f;
     float vel_err_coif = _parameters.pafol_vel_err_coif;
+    //float vel_err_growth_power = 1.2f;
+    float vel_err_growth_power = _parameters.pafol_vel_err_growth_power;
     float max_vel_err;
 
     if (dst_to_ok >= 0.0f){
-        max_vel_err = (float)pow(dst_to_ok, 1.3f) * vel_err_coif;
+        max_vel_err = (float)pow(dst_to_ok, vel_err_growth_power ) * vel_err_coif;
 
         if (max_vel_err > _parameters.mpc_max_speed - _target_velocity)
             max_vel_err = _parameters.mpc_max_speed - _target_velocity;
@@ -445,7 +447,9 @@ float PathFollow::calculate_desired_velocity(float dst_to_ok) {
     }
     
 
-    //float reaction_time = 0.45f; // time in seconds when we increase speed from _target_velocity till _target_velocity + max_vel_err
+    float reaction_time_to_close = 0.5f; // time in seconds when we increase speed from _target_velocity till _target_velocity + max_vel_err
+    float fraction_to_close = calc_vel_dt / reaction_time_to_close; // full increase will happen in reaction_time time, so we calculate how much we need to increase in dt time
+
     float reaction_time = _parameters.pafol_vel_reaction_time; // time in seconds when we increase speed from _target_velocity till _target_velocity + max_vel_err
     float fraction = calc_vel_dt / reaction_time; // full increase will happen in reaction_time time, so we calculate how much we need to increase in dt time
 
@@ -463,7 +467,7 @@ float PathFollow::calculate_desired_velocity(float dst_to_ok) {
             vel_new = sp_velocity + fraction * max_vel_err;  // while speed is increasing we can smoothly increase velocity if setoibt
         }
     } else {
-        vel_new = sp_velocity - fraction * max_vel_err; // Do the same calculation also when we are to close// maybe we should make this more smooth
+        vel_new = sp_velocity - fraction_to_close * max_vel_err; // Do the same calculation also when we are to close// maybe we should make this more smooth
     }
 
     if (vel_new > _target_velocity_f + max_vel_err)  
@@ -479,7 +483,7 @@ float PathFollow::calculate_desired_velocity(float dst_to_ok) {
     dd_log.log(3,(double)dst_to_ok);
     dd_log.log(4,(double)_vel_ch_rate_f);
     dd_log.log(5,(double)_trajectory_distance);
-
+    dd_log.log(6,(double)zero_setpoint);
 
 	if (vel_new > _parameters.mpc_max_speed) 
         vel_new = _parameters.mpc_max_speed;

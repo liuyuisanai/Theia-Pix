@@ -120,6 +120,7 @@ NavigatorMode::updateParamHandles() {
 	_parameter_handles.pafol_safe_dist = param_find("PAFOL_SAFE_DIST");
     _parameter_handles.pafol_vel_err_coif = param_find("PAFOL_VEL_E_C");
     _parameter_handles.pafol_vel_reaction_time = param_find("PAFOL_VEL_R_T");
+    _parameter_handles.pafol_vel_err_growth_power = param_find("PAFOL_VEL_E_GP");
 
 
 
@@ -155,6 +156,7 @@ NavigatorMode::updateParamValues() {
 	param_get(_parameter_handles.pafol_safe_dist, &(_parameters.pafol_safe_dist));
 	param_get(_parameter_handles.pafol_vel_err_coif, &(_parameters.pafol_vel_err_coif));
 	param_get(_parameter_handles.pafol_vel_reaction_time, &(_parameters.pafol_vel_reaction_time));
+	param_get(_parameter_handles.pafol_vel_err_growth_power, &(_parameters.pafol_vel_err_growth_power));
 
 	param_get(_parameter_handles.mpc_max_speed, &(_parameters.mpc_max_speed));
 	param_get(_parameter_handles.rtl_ret_alt, &(_parameters.rtl_ret_alt));
