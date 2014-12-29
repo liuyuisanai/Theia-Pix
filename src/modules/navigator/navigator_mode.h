@@ -131,6 +131,7 @@ public:
         float pafol_vel_err_coif;
         float pafol_vel_reaction_time;
         float pafol_vel_err_growth_power;
+        float pafol_acc_rad;
 
 		float mpc_max_speed;
 
@@ -164,6 +165,7 @@ public:
         param_t pafol_vel_err_coif;
         param_t pafol_vel_reaction_time;
         param_t pafol_vel_err_growth_power;
+        param_t pafol_acc_rad;
 
 		param_t mpc_max_speed;
 

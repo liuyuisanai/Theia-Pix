@@ -122,9 +122,7 @@ NavigatorMode::updateParamHandles() {
     _parameter_handles.pafol_vel_reaction_time = param_find("PAFOL_VEL_R_T");
     _parameter_handles.pafol_vel_err_growth_power = param_find("PAFOL_VEL_E_GP");
 
-
-
-//    _parameter_handles.max_negative_accel = param_find("NAV_MAX_N_ACC");
+    _parameter_handles.pafol_acc_rad = param_find("PAFOL_ACC_RAD");
 
 	_parameter_handles.mpc_max_speed = param_find("MPC_XY_VEL_MAX");
     _parameter_handles.airdog_dst_inv = param_find("A_DST_INV");
@@ -157,6 +155,7 @@ NavigatorMode::updateParamValues() {
 	param_get(_parameter_handles.pafol_vel_err_coif, &(_parameters.pafol_vel_err_coif));
 	param_get(_parameter_handles.pafol_vel_reaction_time, &(_parameters.pafol_vel_reaction_time));
 	param_get(_parameter_handles.pafol_vel_err_growth_power, &(_parameters.pafol_vel_err_growth_power));
+	param_get(_parameter_handles.pafol_acc_rad, &(_parameters.pafol_acc_rad));
 
 	param_get(_parameter_handles.mpc_max_speed, &(_parameters.mpc_max_speed));
 	param_get(_parameter_handles.rtl_ret_alt, &(_parameters.rtl_ret_alt));

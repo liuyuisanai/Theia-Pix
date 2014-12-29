@@ -189,7 +189,8 @@ void PathFollow::on_active() {
         else {
         // Flying trough collected points
             
-            if (check_current_trajectory_point_passed(4.00f)) {
+
+            if (check_current_trajectory_point_passed(_parameters.pafol_acc_rad)) {
 
                 // We've passed the point, we need a new one
                 _has_valid_setpoint = _saved_trajectory.pop(_actual_point);
@@ -269,7 +270,6 @@ void PathFollow::on_active() {
             pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
             pos_sp_triplet->current.lat = global_pos->lat;
             pos_sp_triplet->current.lon = global_pos->lon;
-            pos_sp_triplet->current.alt = global_pos->alt;
         
         }
     }
