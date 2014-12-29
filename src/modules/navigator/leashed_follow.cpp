@@ -117,7 +117,7 @@ Leashed::execute_vehicle_command() {
                 double first[3];
                 //double last[3];
                 _navigator->get_path_points(0, first);
-                first[2] += 3.0;
+                first[2] += (double)_parameters.loi_step_len;
                 _navigator->set_next_path_point(first, true, 0);
                 _navigator->publish_position_restriction();
                 break;
@@ -125,7 +125,7 @@ Leashed::execute_vehicle_command() {
             case REMOTE_CMD_DOWN: {
                 double first[3];
                 _navigator->get_path_points(0, first);
-                first[2] -= 3.0;
+                first[2] -= (double)_parameters.loi_step_len;
                 _navigator->set_next_path_point(first, true, 0);
                 _navigator->publish_position_restriction();
                 break;
