@@ -136,6 +136,16 @@ PARAM_DEFINE_INT32(SDLOG_RATE, -1);
 PARAM_DEFINE_INT32(SDLOG_EXT, -1);
 
 /**
+ * Enables logging on system boot instead of "on arm".
+ * Enabled if 1, disabled otherwise.
+ *
+ * @min 0
+ * @max 1
+ * @group SD Logging
+ */
+PARAM_DEFINE_INT32(SDLOG_ON_BOOT, 0);
+
+/**
  * Following params provide support for custom update rates for each sdlog topic
  * Negative values - don't update
  * 0 - unlimited frequency
