@@ -754,21 +754,13 @@ bool set_nav_state(struct vehicle_status_s *status, const bool data_link_loss_en
         break;
 
 	case MAIN_STATE_CABLE_PARK:
-
-		/* require target position*/
-		if ((!status->condition_target_position_valid)) {
-
-			status->nav_state = NAVIGATION_STATE_LOITER;
-		} else {
-			status->nav_state = NAVIGATION_STATE_CABLE_PARK;
-		}
-		break;
 	case MAIN_STATE_ABS_FOLLOW:
-		/* require target position*/
+	case MAIN_STATE_AUTO_PATH_FOLLOW:
 		if ((!status->condition_target_position_valid)) {
 			float target_visibility_timeout_1;
 			param_get(param_find("A_TRGT_VSB_TO_1"), &target_visibility_timeout_1);
 
+            // TODO [AK] fix mavlink spam and delete "!= NAVIGATION_STATE_LOITER"
 			// On first timeout when status.condition_target_position_valid is false go into aim-and-shoot
 			if (status->nav_state != NAVIGATION_STATE_LOITER && hrt_absolute_time() - status->last_target_time > target_visibility_timeout_1 * 1000 * 1000) {
 				mavlink_log_info(mavlink_fd, "Target signal time-out, switching to Aim-and-shoot.");
@@ -780,21 +772,21 @@ bool set_nav_state(struct vehicle_status_s *status, const bool data_link_loss_en
 					status->nav_state = NAVIGATION_STATE_LOITER;
 				}
 			}
-		} else {
+        } else {
 			status->nav_state_fallback = false;
-			status->nav_state = NAVIGATION_STATE_ABS_FOLLOW;
-		}
-		break;
-
-	case MAIN_STATE_AUTO_PATH_FOLLOW:
-		/* require target position*/
-		if ((!status->condition_target_position_valid)) {
-
-			status->nav_state = NAVIGATION_STATE_LOITER;
-		} else {
-			status->nav_state = NAVIGATION_STATE_AUTO_PATH_FOLLOW;
-		}
-		break;
+			switch (status->main_state) {
+                case MAIN_STATE_CABLE_PARK:
+                    status->nav_state = NAVIGATION_STATE_CABLE_PARK;
+                    break;
+                case MAIN_STATE_ABS_FOLLOW:
+                    status->nav_state = NAVIGATION_STATE_ABS_FOLLOW;
+                    break;
+                case MAIN_STATE_AUTO_PATH_FOLLOW:
+                    status->nav_state = NAVIGATION_STATE_AUTO_PATH_FOLLOW;
+                    break;
+            }
+        }
+        break;
 
 	case MAIN_STATE_OFFBOARD:
 		/* require offboard control, otherwise stay where you are */
