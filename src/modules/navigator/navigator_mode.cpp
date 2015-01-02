@@ -111,13 +111,10 @@ NavigatorMode::updateParamHandles() {
 	_parameter_handles.rtl_ret_alt = param_find("RTL_RET_ALT");
 
 	_parameter_handles.pafol_buf_size = param_find("PAFOL_BUFF_SIZE");
-	_parameter_handles.pafol_ok_dist = param_find("PAFOL_OK_DIST");
+	_parameter_handles.pafol_min_ok_dist = param_find("PAFOL_MIN_OK_D");
 	_parameter_handles.pafol_min_alt_off = param_find("PAFOL_ALT_OFF");
 	_parameter_handles.pafol_dist_step = param_find("PAFOL_DIST_STEP");
 	_parameter_handles.pafol_alt_step = param_find("PAFOL_ALT_STEP");
-	_parameter_handles.pafol_min_ok_diff = param_find("PAFOL_MIN_TO_OK");
-	_parameter_handles.pafol_ok_max_coef = param_find("PAFOL_MAX_COEF");
-	_parameter_handles.pafol_safe_dist = param_find("PAFOL_SAFE_DIST");
     _parameter_handles.pafol_vel_err_coif = param_find("PAFOL_VEL_E_C");
     _parameter_handles.pafol_vel_reaction_time = param_find("PAFOL_VEL_R_T");
     _parameter_handles.pafol_vel_err_growth_power = param_find("PAFOL_VEL_E_GP");
@@ -130,6 +127,8 @@ NavigatorMode::updateParamHandles() {
     _parameter_handles.airdog_init_pos_use = param_find("A_INIT_POS_U");
 
     _parameter_handles.a_yaw_ignore_radius = param_find("A_YAW_IGNR_R");
+
+	_parameter_handles.follow_rpt_alt	= param_find("FOL_RPT_ALT");
 }
 
 void
@@ -141,18 +140,15 @@ NavigatorMode::updateParamValues() {
 	param_get(_parameter_handles.afol_mode, &(_parameters.afol_mode));
 
 	param_get(_parameter_handles.loi_step_len, &(_parameters.loi_step_len));
-
+    
 	param_get(_parameter_handles.rtl_ret_alt, &(_parameters.rtl_ret_alt));
 
 	param_get(_parameter_handles.pafol_buf_size, &(_parameters.pafol_buf_size));
-	param_get(_parameter_handles.pafol_ok_dist, &(_parameters.pafol_ok_dist));
+	param_get(_parameter_handles.pafol_min_ok_dist, &(_parameters.pafol_min_ok_dist));
 	param_get(_parameter_handles.pafol_min_alt_off, &(_parameters.pafol_min_alt_off));
 	param_get(_parameter_handles.pafol_dist_step, &(_parameters.pafol_dist_step));
 	param_get(_parameter_handles.pafol_alt_step, &(_parameters.pafol_alt_step));
-	param_get(_parameter_handles.pafol_min_ok_diff, &(_parameters.pafol_min_ok_diff));
-	param_get(_parameter_handles.pafol_ok_max_coef, &(_parameters.pafol_ok_max_coef));
-	param_get(_parameter_handles.pafol_safe_dist, &(_parameters.pafol_safe_dist));
-	param_get(_parameter_handles.pafol_vel_err_coif, &(_parameters.pafol_vel_err_coif));
+    param_get(_parameter_handles.pafol_vel_err_coif, &(_parameters.pafol_vel_err_coif)); 
 	param_get(_parameter_handles.pafol_vel_reaction_time, &(_parameters.pafol_vel_reaction_time));
 	param_get(_parameter_handles.pafol_vel_err_growth_power, &(_parameters.pafol_vel_err_growth_power));
 	param_get(_parameter_handles.pafol_acc_rad, &(_parameters.pafol_acc_rad));
@@ -165,6 +161,8 @@ NavigatorMode::updateParamValues() {
 	param_get(_parameter_handles.airdog_init_pos_use, &(_parameters.airdog_init_pos_use));
 
     param_get(_parameter_handles.a_yaw_ignore_radius, &(_parameters.a_yaw_ignore_radius));
+
+    param_get(_parameter_handles.follow_rpt_alt, &(_parameters.follow_rpt_alt));
 }
 
 
