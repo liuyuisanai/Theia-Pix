@@ -220,6 +220,15 @@ PARAM_DEFINE_INT32(BAT_CRIT_USE, 1);
 PARAM_DEFINE_INT32(BAT_FLAT_USE, 1);
 
 /**
+ * Target link timeout in ms. After this time target position will be considered invalid
+ *
+ * @group Airdog
+ * @min 1
+ * @max 60000
+ */
+PARAM_DEFINE_INT32(A_TRGT_DLINK_TO, 1000);
+
+/**
  * Target visibility timeout 1. Length of time when no data from target received visibility will be considered lost. 
  *
  * @group Airdog

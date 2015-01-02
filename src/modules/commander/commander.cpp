@@ -817,13 +817,13 @@ int commander_thread_main(int argc, char *argv[])
 
 	param_get(_param_require_gps, &require_gps);
 
-    float target_visibility_timeout_1;
     float target_visibility_timeout_2;
+    int32_t target_datalink_timeout;
 
-	param_t _param_target_visibility_timeout_1 = param_find("A_TRGT_VSB_TO_1");
+    param_t _param_target_datalink_timeout = param_find("A_TRGT_DLINK_TO");
 	param_t _param_target_visibility_timeout_2 = param_find("A_TRGT_VSB_TO_2");
 
-	param_get(_param_target_visibility_timeout_1, &target_visibility_timeout_1);
+	param_get(_param_target_datalink_timeout, &target_datalink_timeout);
 	param_get(_param_target_visibility_timeout_2, &target_visibility_timeout_2);
 
 	/* welcome user */
@@ -859,15 +859,19 @@ int commander_thread_main(int argc, char *argv[])
 	nav_states_str[NAVIGATION_STATE_AUTO_MISSION]		= "AUTO_MISSION";
 	nav_states_str[NAVIGATION_STATE_LOITER]		= "AUTO_LOITER";
 	nav_states_str[NAVIGATION_STATE_RTL]		= "AUTO_RTL";
+	nav_states_str[NAVIGATION_STATE_AUTO_RCRECOVER] = "RC_RECOVER";
 	nav_states_str[NAVIGATION_STATE_AUTO_RTGS]		= "AUTO_RTGS";
     nav_states_str[NAVIGATION_STATE_CABLE_PARK]           = "AUTO_CABLE_PARK";
 	nav_states_str[NAVIGATION_STATE_ABS_FOLLOW]    = "AUTO_ABS_FOLLOW";
+	nav_states_str[NAVIGATION_STATE_AUTO_LANDENGFAIL] = "LAND_ENGINE_FAIL";
+	nav_states_str[NAVIGATION_STATE_AUTO_LANDGPSFAIL] = "LAND_GPS_FAIL";
 	nav_states_str[NAVIGATION_STATE_ACRO]			= "ACRO";
 	nav_states_str[NAVIGATION_STATE_LAND]			= "LAND";
 	nav_states_str[NAVIGATION_STATE_DESCEND]		= "DESCEND";
 	nav_states_str[NAVIGATION_STATE_TERMINATION]		= "TERMINATION";
 	nav_states_str[NAVIGATION_STATE_OFFBOARD]		= "OFFBOARD";
 	nav_states_str[NAVIGATION_STATE_FOLLOW]			= "FOLLOW";
+	nav_states_str[NAVIGATION_STATE_AUTO_STANDBY] = "STANDBY";
 
 	/* pthread for slow low prio thread */
 	pthread_t commander_low_prio_thread;
@@ -1147,9 +1151,12 @@ int commander_thread_main(int argc, char *argv[])
 	uint64_t timestamp_engine_healthy = 0; /**< absolute time when engine was healty */
 
 	/* check which state machines for changes, clear "changed" flag */
+	bool arming_state_changed = false;
 	bool main_state_changed = false;
 	bool failsafe_old = false;
     bool pos_res_updated = false;
+	bool target_position_was_valid = false;
+	bool trg_eph_epv_good;
 
 	while (!thread_should_exit) {
 
@@ -1230,6 +1237,9 @@ int commander_thread_main(int argc, char *argv[])
 			param_get(_param_ef_throttle_thres, &ef_throttle_thres);
 			param_get(_param_ef_current2throttle_thres, &ef_current2throttle_thres);
 			param_get(_param_ef_time_thres, &ef_time_thres);
+
+			param_get(_param_target_datalink_timeout, &target_datalink_timeout);
+			param_get(_param_target_visibility_timeout_2, &target_visibility_timeout_2);
 
 			param_get(_param_require_gps, &require_gps);
 			if (require_gps != status.require_gps) {
@@ -1473,37 +1483,49 @@ int commander_thread_main(int argc, char *argv[])
 			orb_copy(ORB_ID(target_global_position), target_position_sub, &target_position);
 		}
 
+		// TODO! AK: Consider checking "use_alt" parameter for epv error checking
+		/* recheck target position validity */
+		if (status.condition_target_position_valid) {
+			/* More lax threshold if position was valid before */
+			if (target_position.eph > eph_threshold * 2.0f || target_position.epv > epv_threshold * 2.0f) {
+				trg_eph_epv_good = false;
+			} else {
+				trg_eph_epv_good = true;
+			}
+		} else {
+			/* More strict threshold if position was invalid before */
+			if (target_position.eph < eph_threshold && target_position.epv < epv_threshold) {
+				trg_eph_epv_good = true;
+			} else {
+				trg_eph_epv_good = false;
+			}
+		}
+		check_valid(target_position.timestamp, target_datalink_timeout * 1000, trg_eph_epv_good, &(status.condition_target_position_valid), &status_changed);
 
-		check_valid(target_position.timestamp, target_visibility_timeout_1 * 1000 * 1000, true, &(status.condition_target_position_valid), &status_changed);
+		if (status.condition_target_position_valid) {
+			status.last_target_time = hrt_absolute_time();
+			// This check has to be done before all the mode switches, so they can override this flag!
+			if (!target_position_was_valid) {
+				_custom_flag_control_point_to_target = false;
+				status_changed = true;
+			}
+		}
+		else if (status.airdog_state == AIRD_STATE_IN_AIR) {
 
-        if (!status.condition_target_position_valid && status.airdog_state == AIRD_STATE_IN_AIR){
-
-            if (!control_mode.flag_control_manual_enabled && control_mode.flag_control_auto_enabled){
-
-                hrt_abstime t = hrt_absolute_time() ;
- 
-                // On second timeout - go into EMERGENCY RTL
-                if (status.main_state!=MAIN_STATE_EMERGENCY_RTL && status.main_state!=MAIN_STATE_EMERGENCY_LAND) {
-                    if (t - target_position.timestamp > target_visibility_timeout_2 * 1000 * 1000) {
-                        mavlink_log_info(mavlink_fd, "Target signal lost for to long, EMERGENCY RTL");
-                        if (main_state_transition(&status, MAIN_STATE_EMERGENCY_RTL, mavlink_fd) == TRANSITION_CHANGED) {
-                            status_changed = true;
-                        } else if (main_state_transition(&status, MAIN_STATE_EMERGENCY_LAND, mavlink_fd) == TRANSITION_CHANGED) {
-                            status_changed = true;
-                        }
-                    }
-                }
-
-                // On first timeout when status.condition_target_position_valid is false go into aim-and-shoot
-                if (status.main_state != MAIN_STATE_LOITER && control_mode.flag_control_follow_target) {
-                    mavlink_log_info(mavlink_fd, "Target signal time-out, switching to Aim-and-shoot.");
-				    if (main_state_transition(&status, MAIN_STATE_LOITER, mavlink_fd) == TRANSITION_CHANGED) {
-                        status_changed = true; 
-                        _custom_flag_control_point_to_target = true;
-                    }
-                } 
-            }
-        }
+			if (!control_mode.flag_control_manual_enabled && control_mode.flag_control_auto_enabled) {
+				// On second timeout - go into EMERGENCY RTL
+				if (status.main_state != MAIN_STATE_RTL && status.main_state!=MAIN_STATE_EMERGENCY_RTL && status.main_state!=MAIN_STATE_EMERGENCY_LAND) {
+					if (hrt_absolute_time() - status.last_target_time > target_visibility_timeout_2 * 1000 * 1000) {
+						mavlink_log_info(mavlink_fd, "Target signal lost for too long, EMERGENCY RTL");
+						if (main_state_transition(&status, MAIN_STATE_EMERGENCY_RTL, mavlink_fd) == TRANSITION_CHANGED) {
+							status_changed = true;
+						} else if (main_state_transition(&status, MAIN_STATE_EMERGENCY_LAND, mavlink_fd) == TRANSITION_CHANGED) {
+							status_changed = true;
+						}
+					}
+				}
+			}
+		}
         
 		/* update battery status */
 		orb_check(battery_sub, &updated);
@@ -1833,8 +1855,8 @@ int commander_thread_main(int argc, char *argv[])
 					main_res = main_state_transition(&status, MAIN_STATE_LOITER, mavlink_fd);
 					if (main_res == TRANSITION_DENIED) {
 						//switch to main failsafe mode
-						warnx ("---- Transition to RTL -----");
-						main_res = main_state_transition(&status, MAIN_STATE_RTL, mavlink_fd);
+						warnx ("---- Transition to EMERGENCY_RTL -----");
+						main_res = main_state_transition(&status, MAIN_STATE_EMERGENCY_RTL, mavlink_fd);
 					}
 				}
 				if (main_res == TRANSITION_DENIED) {
@@ -2150,9 +2172,19 @@ int commander_thread_main(int argc, char *argv[])
 		if (nav_state_changed) {
 			_custom_flag_control_point_to_target = false;
 			status_changed = true;
-			warnx("nav state: %s", nav_states_str[status.nav_state]);
+			warnx("nav state: %s, fallback: %d", nav_states_str[status.nav_state], status.nav_state_fallback);
 			mavlink_log_info(mavlink_fd, "[cmd] nav state: %s", nav_states_str[status.nav_state]);
 		}
+
+		// Override point_to_target flags if target signal is bad for the first time
+		if (!status.condition_target_position_valid && status.airdog_state == AIRD_STATE_IN_AIR
+				&& target_position_was_valid) {
+			status_changed = true;
+			control_mode.flag_control_point_to_target = false;
+			_custom_flag_control_point_to_target = true;
+		}
+
+		target_position_was_valid = status.condition_target_position_valid;
 
 		/* publish states (armed, control mode, vehicle status) at least with 5 Hz */
 		if (counter % (200000 / COMMANDER_MONITORING_INTERVAL) == 0 || status_changed) {
@@ -2895,7 +2927,6 @@ void *commander_low_prio_loop(void *arg)
                     do_storage_write_when_disarm--;
             }
         }
-            
         
 
 		/* wait for up to 200ms for data */

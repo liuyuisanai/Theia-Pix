@@ -200,6 +200,7 @@ struct vehicle_status_s {
 	arming_state_t arming_state;			/**< current arming state */
 	hil_state_t hil_state;					/**< current hil state */
 	bool failsafe;							/**< true if system is in failsafe state */
+	bool nav_state_fallback;				/**< true if navigation state is a result of a fallback */
 
 	int32_t system_type;				/**< system type, inspired by MAVLink's VEHICLE_TYPE enum */
 	int32_t	system_id;				/**< system id, inspired by MAVLink's system ID field */
@@ -225,6 +226,8 @@ struct vehicle_status_s {
 	bool condition_power_input_valid;		/**< set if input power is valid */
     bool condition_path_points_valid;       /**< true if hase at least 2 points for path, used in cablepark mode */
 	float avionics_power_rail_voltage;		/**< voltage of the avionics power rail */
+
+	uint64_t last_target_time;				/**< Last timestamp, when target position was valid */
 
 	bool rc_signal_found_once;
 	bool rc_signal_lost;				/**< true if RC reception lost */

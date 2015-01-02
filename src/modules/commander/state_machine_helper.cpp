@@ -556,6 +556,8 @@ bool set_nav_state(struct vehicle_status_s *status, const bool data_link_loss_en
 
 	bool armed = (status->arming_state == ARMING_STATE_ARMED || status->arming_state == ARMING_STATE_ARMED_ERROR);
 	status->failsafe = false;
+	// There are more fallbacks, so assume fallback by default
+	status->nav_state_fallback = true;
 
 	/* evaluate main state to decide in normal (non-failsafe) mode */
 	switch (status->main_state) {
@@ -579,6 +581,8 @@ bool set_nav_state(struct vehicle_status_s *status, const bool data_link_loss_en
 			}
 
 		} else {
+			// Only intended nav modes follow, so no fallback
+			status->nav_state_fallback = false;
 			switch (status->main_state) {
 			case MAIN_STATE_ACRO:
 				status->nav_state = NAVIGATION_STATE_ACRO;
@@ -596,6 +600,7 @@ bool set_nav_state(struct vehicle_status_s *status, const bool data_link_loss_en
 				status->nav_state = NAVIGATION_STATE_POSCTL;
 				break;
 
+			// TODO! [AK] Consider falling back to Loiter in case signal is lost (might not work correctly in mc_pos)
 			case MAIN_STATE_FOLLOW:
 				status->nav_state = NAVIGATION_STATE_FOLLOW;
 				break;
@@ -607,6 +612,7 @@ bool set_nav_state(struct vehicle_status_s *status, const bool data_link_loss_en
 		}
 		break;
 	case MAIN_STATE_AUTO_STANDBY:
+		status->nav_state_fallback = false;
 		status->nav_state = NAVIGATION_STATE_AUTO_STANDBY;
 		break;
 	case MAIN_STATE_AUTO_MISSION:
@@ -659,9 +665,11 @@ bool set_nav_state(struct vehicle_status_s *status, const bool data_link_loss_en
 		/* don't bother if RC is lost and mission is not yet finished */
 		} else if (status->rc_signal_lost && !stay_in_failsafe) {
 
+			status->nav_state_fallback = false;
 			/* this mode is ok, we don't need RC for missions */
 			status->nav_state = NAVIGATION_STATE_AUTO_MISSION;
 		} else if (!stay_in_failsafe){
+			status->nav_state_fallback = false;
 			/* everything is perfect */
 			status->nav_state = NAVIGATION_STATE_AUTO_MISSION;
 		}
@@ -671,6 +679,7 @@ bool set_nav_state(struct vehicle_status_s *status, const bool data_link_loss_en
 		/* go into failsafe on a engine failure */
 		if (status->engine_failure) {
 			status->nav_state = NAVIGATION_STATE_AUTO_LANDENGFAIL;
+		// TODO! [AK] Shouldn't it be target signal?
 		/* also go into failsafe if just datalink is lost */
 		} else if (status->data_link_lost && data_link_loss_enabled) {
 			status->failsafe = true;
@@ -688,9 +697,11 @@ bool set_nav_state(struct vehicle_status_s *status, const bool data_link_loss_en
 		/* don't bother if RC is lost if datalink is connected */
 		} else if (status->rc_signal_lost) {
 
+			status->nav_state_fallback = false;
 			/* this mode is ok, we don't need RC for loitering */
 			status->nav_state = NAVIGATION_STATE_LOITER;
 		} else {
+			status->nav_state_fallback = false;
 			/* everything is perfect */
 			status->nav_state = NAVIGATION_STATE_LOITER;
 		}
@@ -713,6 +724,7 @@ bool set_nav_state(struct vehicle_status_s *status, const bool data_link_loss_en
 				status->nav_state = NAVIGATION_STATE_TERMINATION;
 			}
 		} else {
+			status->nav_state_fallback = false;
 			status->nav_state = NAVIGATION_STATE_RTL;
 		}
 		break;
@@ -732,10 +744,12 @@ bool set_nav_state(struct vehicle_status_s *status, const bool data_link_loss_en
 				status->nav_state = NAVIGATION_STATE_TERMINATION;
 			}
 		} else {
+			status->nav_state_fallback = false;
 			status->nav_state = NAVIGATION_STATE_RTL;
 		}
         break;
     case MAIN_STATE_EMERGENCY_LAND:
+		status->nav_state_fallback = false;
         status->nav_state = NAVIGATION_STATE_LAND;
         break;
 
@@ -749,14 +763,25 @@ bool set_nav_state(struct vehicle_status_s *status, const bool data_link_loss_en
 			status->nav_state = NAVIGATION_STATE_CABLE_PARK;
 		}
 		break;
-
 	case MAIN_STATE_ABS_FOLLOW:
-
 		/* require target position*/
 		if ((!status->condition_target_position_valid)) {
+			float target_visibility_timeout_1;
+			param_get(param_find("A_TRGT_VSB_TO_1"), &target_visibility_timeout_1);
 
-			status->nav_state = NAVIGATION_STATE_LOITER;
+			// On first timeout when status.condition_target_position_valid is false go into aim-and-shoot
+			if (status->nav_state != NAVIGATION_STATE_LOITER && hrt_absolute_time() - status->last_target_time > target_visibility_timeout_1 * 1000 * 1000) {
+				mavlink_log_info(mavlink_fd, "Target signal time-out, switching to Aim-and-shoot.");
+				// Ignore more complex Loiter fallbacks
+				if (status->engine_failure) {
+					status->nav_state = NAVIGATION_STATE_AUTO_LANDENGFAIL;
+				}
+				else {
+					status->nav_state = NAVIGATION_STATE_LOITER;
+				}
+			}
 		} else {
+			status->nav_state_fallback = false;
 			status->nav_state = NAVIGATION_STATE_ABS_FOLLOW;
 		}
 		break;
@@ -788,6 +813,7 @@ bool set_nav_state(struct vehicle_status_s *status, const bool data_link_loss_en
 				status->nav_state = NAVIGATION_STATE_TERMINATION;
 			}
 		} else {
+			status->nav_state_fallback = false;
 			status->nav_state = NAVIGATION_STATE_OFFBOARD;
 		}
 	default:

@@ -65,8 +65,8 @@ struct target_global_position_s {
 	float vel_n; 		/**< Ground north velocity, m/s				 			   */
 	float vel_e;		/**< Ground east velocity, m/s							   */
 	float vel_d;		/**< Ground downside velocity, m/s						   */
-	float eph;			/**< Error position horizontal							   */
-	float epv;			/**< Error position vertical							   */
+	float eph;			/**< Error position horizontal, m						   */
+	float epv;			/**< Error position vertical, m							   */
 	float yaw; 			/**< Yaw in radians -PI..+PI.							   */
 };
 

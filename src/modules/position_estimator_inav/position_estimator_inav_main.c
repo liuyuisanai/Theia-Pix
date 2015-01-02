@@ -860,10 +860,8 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 			sonar_valid = false;
 			warnx("SONAR timeout");
             sonar_prev = 0.0f;
-			mavlink_log_info(mavlink_fd, "[inav] SONAR timeout");
 		}
 		else if (sonar_valid) {
-			//mavlink_log_info(mavlink_fd, "[inav] SONAR VALID alt = % 9.6f", (double)dist_bottom);	
 		}
 
 		float dt = t_prev > 0 ? (t - t_prev) / 1000000.0f : 0.0f;

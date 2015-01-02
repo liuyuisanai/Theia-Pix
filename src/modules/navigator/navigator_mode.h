@@ -98,7 +98,7 @@ public:
 	 */
 	bool update_vehicle_command();
 
-	void set_camera_mode(camera_mode_t camera_mode);
+	void set_camera_mode(camera_mode_t camera_mode, bool force_change = false);
 
 	inline void updateParameters();
 	void updateParamValues();

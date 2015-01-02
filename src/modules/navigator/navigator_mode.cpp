@@ -270,7 +270,7 @@ NavigatorMode::execute_vehicle_command()
 }
 
 void
-NavigatorMode::set_camera_mode(camera_mode_t camera_mode)
+NavigatorMode::set_camera_mode(camera_mode_t camera_mode, bool force_change)
 {
 	// target_pos = _navigator->get_target_position();
 	// global_pos = _navigator->get_global_position();
@@ -303,7 +303,7 @@ NavigatorMode::set_camera_mode(camera_mode_t camera_mode)
 	// pos_sp_triplet->current.aim_to_target = point_to_target;		
 	// _navigator->set_position_setpoint_triplet_updated();
 
-	if (_camera_mode != camera_mode) {
+	if (_camera_mode != camera_mode || force_change) {
 
 		_camera_mode = camera_mode;
 
@@ -351,6 +351,7 @@ NavigatorMode::check_current_pos_sp_reached(SETPOINT_TYPE expected_sp_type)
 
         if (vstatus->condition_landed){
 
+        	// TODO! [AK] Is not sent in most cases, as "disarm" request in the same cycle overrides it
             commander_request_s *commander_request = _navigator->get_commander_request();
             commander_request->request_type = AIRD_STATE_CHANGE;
             commander_request->airdog_state = AIRD_STATE_LANDED;
