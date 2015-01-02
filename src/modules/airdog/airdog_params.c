@@ -112,3 +112,10 @@ PARAM_DEFINE_FLOAT(A_LAND_MAX_V, 2.0f);
  * @max     1.0f
  */
 PARAM_DEFINE_FLOAT(A_LAND_MIN_V, 0.3f);
+
+/**
+ * @descr: Parameter overriding max pwm set in rc scripts. If set to 0, script value will be used
+ *
+ * @min: 0
+ */
+PARAM_DEFINE_INT32(A_MAX_PWM, 0);

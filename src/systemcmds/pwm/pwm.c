@@ -59,6 +59,7 @@
 
 #include "systemlib/systemlib.h"
 #include "systemlib/err.h"
+#include <systemlib/param/param.h>
 #include "drivers/drv_pwm_output.h"
 #include <drivers/drv_hrt.h>
 
@@ -347,9 +348,17 @@ pwm_main(int argc, char *argv[])
 		if (set_mask == 0) {
 			usage("no channels set");
 		}
-		if (pwm_value == 0)
+		int param_max_pwm;
+		if (param_get(param_find("A_MAX_PWM"),&param_max_pwm) != 0)
+		{
+			param_max_pwm = 0;
+		}
+		if (pwm_value == 0 && param_max_pwm > 0)
 			usage("no PWM value provided");
 
+		if (param_max_pwm > 0) {
+			pwm_value = param_max_pwm;
+		}
 		struct pwm_output_values pwm_values = {.values = {0}, .channel_count = 0};
 
 		for (unsigned i = 0; i < servo_count; i++) {
