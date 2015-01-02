@@ -48,7 +48,7 @@ else
 		blinkm systemstate
 	fi
 fi
-	
+
 commander start
 usleep 1000000
 fmu mode_gpio
@@ -57,12 +57,12 @@ airdog start
 usleep 1000000
 
  # trajectory_calculator start
- 
+
  # Original Mavlink
  # mavlink start -d /dev/ttyS1 -m custom
  # usleep 1000000
  # mavlink stream -d /dev/ttyS1 -s GLOBAL_POSITION_TIME -r 18
- 
+
  # Targeter+trajectory Simulator Mavlink
  # mavlink start -r 20000 -d /dev/ttyACM0 -m target
 
@@ -72,9 +72,11 @@ usleep 1000000
 
  # New Mavlink without trajectory
    mavlink start -d /dev/ttyS1 -m custom
+if param compare AIRD_LEASH_MODE 0
+then
    usleep 1000000
    mavlink stream -d /dev/ttyS1 -s GLOBAL_POSITION_INT -r 18
-   usleep 1000000
+fi
 
 sdlog2_lite start -r 200 -b 22 -t
 #exit
