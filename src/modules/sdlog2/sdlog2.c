@@ -92,6 +92,7 @@
 #include <uORB/topics/system_power.h>
 #include <uORB/topics/servorail_status.h>
 #include <uORB/topics/debug_data.h>
+#include <uORB/topics/mavlink_receive_stats.h>
 
 #include <systemlib/systemlib.h>
 #include <systemlib/param/param.h>
@@ -135,6 +136,16 @@ PARAM_DEFINE_INT32(SDLOG_RATE, -1);
 PARAM_DEFINE_INT32(SDLOG_EXT, -1);
 
 /**
+ * Enables logging on system boot instead of "on arm".
+ * Enabled if 1, disabled otherwise.
+ *
+ * @min 0
+ * @max 1
+ * @group SD Logging
+ */
+PARAM_DEFINE_INT32(SDLOG_ON_BOOT, 0);
+
+/**
  * Following params provide support for custom update rates for each sdlog topic
  * Negative values - don't update
  * 0 - unlimited frequency
@@ -164,6 +175,7 @@ PARAM_DEFINE_INT32(SDLOG_M_SERVO, 0);
 PARAM_DEFINE_INT32(SDLOG_M_TRGPOS, 0);
 PARAM_DEFINE_INT32(SDLOG_M_EXTRAJ, 0);
 PARAM_DEFINE_INT32(SDLOG_M_DEBUGD, 0);
+PARAM_DEFINE_INT32(SDLOG_M_MAVST, 0);
 
 #define LOGBUFFER_WRITE_AND_COUNT(_msg) if (logbuffer_write(&lb, &log_msg, LOG_PACKET_SIZE(_msg))) { \
 		log_msgs_written++; \
@@ -968,9 +980,13 @@ int sdlog2_thread_main(int argc, char *argv[])
 
 	struct vehicle_gps_position_s buf_gps_pos;
 
+	struct vehicle_command_s buf_cmd;
+
 	memset(&buf_status, 0, sizeof(buf_status));
 
 	memset(&buf_gps_pos, 0, sizeof(buf_gps_pos));
+
+	memset(&buf_cmd, 0, sizeof(buf_cmd));
 
 	/* warning! using union here to save memory, elements should be used separately! */
 	union {
@@ -1005,6 +1021,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 		struct target_global_position_s target_pos;
 		struct external_trajectory_s ext_traj;
         struct debug_data_s debug_data;
+        struct mavlink_receive_stats_s mav_stats;
 	} buf;
 
 	memset(&buf, 0, sizeof(buf));
@@ -1052,6 +1069,8 @@ int sdlog2_thread_main(int argc, char *argv[])
             struct log_DEBUGD_s log_DEBUGD;
 			struct log_GPRE_s log_GPRE;
 			struct log_GNEX_s log_GNEX;
+			struct log_MVST_s log_MVST;
+			struct log_CMD_s log_CMD;
 		} body;
 	} log_msg = {
 		LOG_PACKET_HEADER_INIT(0)
@@ -1093,6 +1112,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 		int external_trajectory_sub;
 
         int debug_data_sub;
+        int mav_stats_sub;
 	} subs;
 
 	int sub_freq;
@@ -1135,6 +1155,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 	LOG_ORB_PARAM_SUBSCRIBE(subs.external_trajectory_sub, ORB_ID(external_trajectory), "SDLOG_M_EXTRAJ", sub_freq)
 
 	LOG_ORB_PARAM_SUBSCRIBE(subs.debug_data_sub, ORB_ID(debug_data), "SDLOG_M_DEBUGD", sub_freq)
+	LOG_ORB_PARAM_SUBSCRIBE(subs.mav_stats_sub, ORB_ID(mavlink_receive_stats), "SDLOG_M_MAVST", sub_freq)
 
 	thread_running = true;
 
@@ -1174,8 +1195,9 @@ int sdlog2_thread_main(int argc, char *argv[])
 		usleep(sleep_delay);
 
 		/* --- VEHICLE COMMAND - LOG MANAGEMENT --- */
-		if (copy_if_updated(ORB_ID(vehicle_command), subs.cmd_sub, &buf.cmd)) {
-			handle_command(&buf.cmd);
+		bool command_updated = copy_if_updated(ORB_ID(vehicle_command), subs.cmd_sub, &buf_cmd);
+		if (command_updated) {
+			handle_command(&buf_cmd);
 		}
 
 		/* --- VEHICLE STATUS - LOG MANAGEMENT --- */
@@ -1218,6 +1240,17 @@ int sdlog2_thread_main(int argc, char *argv[])
 			log_msg.body.log_STAT.load = buf_status.load;
 			log_msg.body.log_STAT.aird_state = buf_status.airdog_state;
 			LOGBUFFER_WRITE_AND_COUNT(STAT);
+		}
+
+		if (command_updated) {
+			log_msg.msg_type = LOG_CMD_MSG;
+			log_msg.body.log_CMD.command = (uint16_t) buf_cmd.command;
+			log_msg.body.log_CMD.source_sys = buf_cmd.source_system;
+			log_msg.body.log_CMD.source_comp = buf_cmd.source_component;
+			log_msg.body.log_CMD.param1 = buf_cmd.param1;
+			log_msg.body.log_CMD.param2 = buf_cmd.param2;
+			log_msg.body.log_CMD.param3 = buf_cmd.param3;
+			LOGBUFFER_WRITE_AND_COUNT(CMD);
 		}
 
 		/* --- GPS POSITION - UNIT #1 --- */
@@ -1781,6 +1814,16 @@ int sdlog2_thread_main(int argc, char *argv[])
                 log_msg.body.log_DEBUGD.val[i] = buf.debug_data.val[i];
 
             LOGBUFFER_WRITE_AND_COUNT(DEBUGD);
+		}
+
+		if (copy_if_updated(ORB_ID(mavlink_receive_stats), subs.mav_stats_sub, &buf.mav_stats)) {
+			log_msg.msg_type = LOG_MVST_MSG;
+			log_msg.body.log_MVST.total_bytes = buf.mav_stats.total_bytes;
+			log_msg.body.log_MVST.gpos_count = buf.mav_stats.gpos_count;
+			log_msg.body.log_MVST.heartbeat_count = buf.mav_stats.heartbeat_count;
+			log_msg.body.log_MVST.trajectory_count = buf.mav_stats.trajectory_count;
+
+			LOGBUFFER_WRITE_AND_COUNT(MVST);
 		}
 
 		/* signal the other thread new data, but not yet unlock */

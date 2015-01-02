@@ -139,6 +139,8 @@ private:
     int     _vehicle_status_sub;    /**< vehicle status subscription */
     int 	_pos_restrict_sub;		/**< position restriction subscribtion */
 
+    int co = 0;
+
 	orb_advert_t	_att_sp_pub;			/**< attitude setpoint publication */
 	orb_advert_t	_local_pos_sp_pub;		/**< vehicle local position setpoint publication */
 	orb_advert_t	_global_vel_sp_pub;		/**< vehicle global velocity setpoint publication */
@@ -1183,10 +1185,6 @@ MulticopterPositionControl::control_auto_vel(float dt) {
                 _vel_sp(2) = pos_sp_delta(2) * _params.pos_p(2);
             }
 
-            /* XXX AK _att_sp and yaws are published before control_auto_vel is called!!!
-             * Merge with b8ac590c589aedb71f2201de9b046b390f0ad358 takes over point_to_target logic
-             * So point_to_target yaw should not be a problem, but custom setpoint yaw is unsupported for now.
-             */
             /* if (isfinite(_att_sp.yaw_body)) {
                 _att_sp.yaw_body = _pos_sp_triplet.current.yaw;
             } */

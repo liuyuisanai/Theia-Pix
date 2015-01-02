@@ -84,3 +84,46 @@ PARAM_DEFINE_FLOAT(PAFOL_ALT_STEP, 1.0f);
 
 // 0 or 1. 1 - simple follower, 0 - L1 follower. Temporary.
 PARAM_DEFINE_INT32(PAFOL_MODE, 0);
+
+
+/**
+ * Velocity error coif.
+ *
+ * @unit meters
+ * @min 0.1
+ * @max 20
+ * @group PathFollow
+ */
+PARAM_DEFINE_FLOAT(PAFOL_VEL_E_C, 0.5f);
+
+
+/**
+ * Velocity reaction time.
+ *
+ * @unit meters
+ * @min 0.1
+ * @max 20
+ * @group PathFollow
+ */
+PARAM_DEFINE_FLOAT(PAFOL_VEL_R_T, 0.5f);
+
+/**
+ * Velocity error growth power.
+ *
+ * @unit meters
+ * @min 0.1
+ * @max 20
+ * @group PathFollow
+ */
+PARAM_DEFINE_FLOAT(PAFOL_VEL_E_GP, 1.0f);
+
+
+/**
+ * Path follow acceptance radius
+ *
+ * @unit meters
+ * @min 0.1
+ * @max 20
+ * @group PathFollow
+ */
+PARAM_DEFINE_FLOAT(PAFOL_ACC_RAD, 5.0f);

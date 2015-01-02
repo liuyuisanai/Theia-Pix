@@ -54,12 +54,14 @@ void PathFollow::on_inactive() {
 }
 void PathFollow::on_activation() {
 
-    new debug_data_log();
+	mavlink_log_info(_mavlink_fd, "Follow path activation");
 
 	_mavlink_fd = _navigator->get_mavlink_fd();
 	// TODO! This message belongs elsewhere
 	mavlink_log_info(_mavlink_fd, "Activated Follow Path");
 	warnx("Follow path active! Max _speed control, L1, parameters, memory check, mavlink_fd!");
+
+    zero_setpoint = false;
 
 	if (!_inited) {
 		mavlink_log_critical(_mavlink_fd, "Follow Path mode wasn't initialized! Aborting...");
@@ -95,6 +97,7 @@ void PathFollow::on_activation() {
 
 	pos_sp_triplet = _navigator->get_position_setpoint_triplet();
 	pos_sp_triplet->next.valid = false;
+	pos_sp_triplet->current.valid = true;
 	pos_sp_triplet->previous.valid = false;
 
     pos_sp_triplet->current.type = SETPOINT_TYPE_VELOCITY;
@@ -105,7 +108,6 @@ void PathFollow::on_activation() {
     pos_sp_triplet->current.valid = true;
 	pos_sp_triplet->current.abs_velocity_valid = true;
 	pos_sp_triplet->current.abs_velocity = 0.0f;
-
 
 	_navigator->set_position_setpoint_triplet_updated();
     
@@ -121,15 +123,11 @@ void PathFollow::on_activation() {
         mavlink_log_critical(_mavlink_fd, "Trajectory overflow!");
         warnx("Trajectory overflow!");
     }
-
-
 }
 void PathFollow::on_active() {
 	if (!_inited) {
 		return; // Wait for the Loiter mode to take over, but avoid pausing main navigator thread
 	}
-
-	bool setpointChanged = false;
 
     hrt_abstime t = hrt_absolute_time();
     _dt = _t_prev != 0 ? (t - _t_prev) : 0.0f;
@@ -148,104 +146,137 @@ void PathFollow::on_active() {
 
 	pos_sp_triplet = _navigator->get_position_setpoint_triplet();
 
-	if (!_has_valid_setpoint) {
-	// Waiting for the first trajectory point. Should not occur during the flight
-		// TODO! Temporary safety measure
-		if (check_point_safe()) {
-			_has_valid_setpoint = _saved_trajectory.pop(_actual_point);
-			if (_has_valid_setpoint) {
+    if (zero_setpoint == false) {
+        if (!_has_valid_setpoint) {
+        // Waiting for the first trajectory point.
+            if (check_point_safe()) {
+                _has_valid_setpoint = _saved_trajectory.pop(_actual_point);
+                if (_has_valid_setpoint) {
 
-                mavlink_log_info(_mavlink_fd, "Set first setpoint.");
+                    //mavlink_log_info(_mavlink_fd, "Set first setpoint.");
 
-				global_pos = _navigator->get_global_position();
-				pos_sp_triplet->previous.type = SETPOINT_TYPE_VELOCITY;
-				pos_sp_triplet->previous.lat = global_pos->lat;
-				pos_sp_triplet->previous.lon = global_pos->lon;
-				pos_sp_triplet->previous.alt = global_pos->alt;
-				pos_sp_triplet->previous.position_valid = true;
-				pos_sp_triplet->previous.valid = true;
-				update_setpoint(_actual_point, pos_sp_triplet->current);
-                
-				if (_saved_trajectory.peek(0, _future_point)) {
-					update_setpoint(_future_point, pos_sp_triplet->next);
-				}
-				else {
-					pos_sp_triplet->next.valid = false;
-				}
-			}
-			setpointChanged = true;
-		} else {
-             
-            // Set tmp_sp to global pos when no traj points avaiable
-            pos_sp_triplet->current.type = SETPOINT_TYPE_VELOCITY;
-            pos_sp_triplet->current.lat = target_pos->lat;
-            pos_sp_triplet->current.lon = target_pos->lon;
-            pos_sp_triplet->current.alt = target_pos->alt + _vertical_offset;
-            pos_sp_triplet->current.position_valid = true;
-            pos_sp_triplet->current.valid = true;
-            setpointChanged = true;
-
-        }
-	}
-	else {
-	// Flying trough collected points
-        
-		if (check_current_trajectory_point_passed(4.00f)) {
-
-            // We've passed the point, we need a new one
-            _has_valid_setpoint = _saved_trajectory.pop(_actual_point);
-            if (_has_valid_setpoint) {
-
-                mavlink_log_info(_mavlink_fd, "Setpoint reached, set next setpoint.");
-                // Distance between reached point and the next stops being trajectory distance
-                // and becomes "drone to setpoint" distance
-                _trajectory_distance -= get_distance_to_next_waypoint(pos_sp_triplet->current.lat,
-                    pos_sp_triplet->current.lon, _actual_point.lat, _actual_point.lon);
-
-                // Having both previous and next waypoint allows L1 algorithm
-                memcpy(&(pos_sp_triplet->previous),&(pos_sp_triplet->current),sizeof(position_setpoint_s));
-                // Trying to prevent L1 algorithm
-                // pos_sp_triplet->previous.valid = false;
-
-                update_setpoint(_actual_point, pos_sp_triplet->current);
-                setpointChanged = true;
-
-                current_point_passed = false;
-
-                if (_saved_trajectory.peek(0, _future_point)) {
-                    update_setpoint(_future_point, pos_sp_triplet->next);
+                    global_pos = _navigator->get_global_position();
+                    pos_sp_triplet->previous.type = SETPOINT_TYPE_VELOCITY;
+                    pos_sp_triplet->previous.lat = global_pos->lat;
+                    pos_sp_triplet->previous.lon = global_pos->lon;
+                    pos_sp_triplet->previous.alt = global_pos->alt;
+                    pos_sp_triplet->previous.position_valid = true;
+                    pos_sp_triplet->previous.valid = true;
+                    update_setpoint(_actual_point, pos_sp_triplet->current);
+                    
+                    /* mc_pos_control is not yet using next sp for velocity sp
+                    if (_saved_trajectory.peek(0, _future_point)) {
+                        update_setpoint(_future_point, pos_sp_triplet->next);
+                    }
+                    else {
+                        pos_sp_triplet->next.valid = false;
+                    }
+                    */
                 }
-                else {
-                    pos_sp_triplet->next.valid = false;
-                }
-            }
-            else {
+            } else {
 
-                // Set tmp_sp to target pos when no traj points avaiable
+                //mavlink_log_info(_mavlink_fd, "Set target position setpoint. No trajectory points. ");
+
                 pos_sp_triplet->current.type = SETPOINT_TYPE_VELOCITY;
                 pos_sp_triplet->current.lat = target_pos->lat;
                 pos_sp_triplet->current.lon = target_pos->lon;
                 pos_sp_triplet->current.alt = target_pos->alt + _vertical_offset;
                 pos_sp_triplet->current.position_valid = true;
                 pos_sp_triplet->current.valid = true;
-                setpointChanged = true;
 
-                mavlink_log_info(_mavlink_fd, "Follow path queue empty!");
-
-                // No trajectory points left
-                _trajectory_distance = 0;
             }
-		}
-	}
+        }
+        else {
+        // Flying trough collected points
+            
 
-    _desired_speed = calculate_desired_velocity(calculate_current_distance()-_ok_distance);
-    pos_sp_triplet->current.abs_velocity = _desired_speed;
-    pos_sp_triplet->current.abs_velocity_valid = true;
-    setpointChanged = true;
+            if (check_current_trajectory_point_passed(_parameters.pafol_acc_rad)) {
 
-	if (setpointChanged) {
-		_navigator->set_position_setpoint_triplet_updated();
-	}
+                // We've passed the point, we need a new one
+                _has_valid_setpoint = _saved_trajectory.pop(_actual_point);
+                if (_has_valid_setpoint) {
+
+                    //mavlink_log_info(_mavlink_fd, "Setpoint reached, set next setpoint.");
+                    // Distance between reached point and the next stops being trajectory distance
+                    // and becomes "drone to setpoint" distance
+                    _trajectory_distance -= get_distance_to_next_waypoint(pos_sp_triplet->current.lat,
+                        pos_sp_triplet->current.lon, _actual_point.lat, _actual_point.lon);
+
+                    // Having both previous and next waypoint allows L1 algorithm
+                    memcpy(&(pos_sp_triplet->previous),&(pos_sp_triplet->current),sizeof(position_setpoint_s));
+                    // Trying to prevent L1 algorithm
+                    // pos_sp_triplet->previous.valid = false;
+
+                    //mavlink_log_info(_mavlink_fd, "Trajectory point passed. Take next point.");
+
+                    update_setpoint(_actual_point, pos_sp_triplet->current);
+
+                    current_point_passed = false;
+
+                    /* mc_pos_control is not yet using next sp for velocity sp
+                    if (_saved_trajectory.peek(0, _future_point)) {
+                        update_setpoint(_future_point, pos_sp_triplet->next);
+                    }
+                    else {
+                        pos_sp_triplet->next.valid = false;
+                    }
+                    */
+                }
+                else {
+
+                    //mavlink_log_info(_mavlink_fd, "Trajectory point passed. No new points. Follow target. ");
+
+                    pos_sp_triplet->current.type = SETPOINT_TYPE_VELOCITY;
+                    pos_sp_triplet->current.lat = target_pos->lat;
+                    pos_sp_triplet->current.lon = target_pos->lon;
+                    pos_sp_triplet->current.alt = target_pos->alt + _vertical_offset;
+                    pos_sp_triplet->current.position_valid = true;
+                    pos_sp_triplet->current.valid = true;
+                    _trajectory_distance = 0;
+                }
+            } else {
+
+            }
+        }
+    }
+
+    _desired_speed = calculate_desired_velocity(calculate_current_distance() - _ok_distance);
+
+    if (zero_setpoint == true){
+
+        if (_desired_speed > 1e-6f) {
+            zero_setpoint = false;
+            pos_sp_triplet = last_moving_sp_triplet;
+            //mavlink_log_critical(_mavlink_fd, "Zero point off.");
+        }
+    }
+    else if (zero_setpoint == false) {
+
+        pos_sp_triplet->current.abs_velocity = _desired_speed;
+        pos_sp_triplet->current.abs_velocity_valid = true;
+
+        if (_desired_speed < 1e-6f) {
+
+            //mavlink_log_critical(_mavlink_fd, "Zero point on.");
+
+            zero_setpoint = true;
+            last_moving_sp_triplet = pos_sp_triplet;
+
+            global_pos = _navigator->get_global_position();
+
+            pos_sp_triplet->next.valid = false;
+            pos_sp_triplet->current.valid = true;
+            pos_sp_triplet->previous.valid = false;
+            pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
+            pos_sp_triplet->current.lat = global_pos->lat;
+            pos_sp_triplet->current.lon = global_pos->lon;
+        
+        }
+    }
+
+
+    _navigator->set_position_setpoint_triplet_updated();
+
 }
 
 void PathFollow::execute_vehicle_command() {
@@ -311,6 +342,8 @@ void PathFollow::update_saved_trajectory() {
 // TODO! Write two separate methods, one that does copying and applying offsets, other - for prev, next, current point magic
 void PathFollow::update_setpoint(const buffer_point_s &desired_point, position_setpoint_s &destination) {
 
+	//mavlink_log_info(_mavlink_fd, "New point %.8f %.8f", (double)desired_point.lat, (double)desired_point.lon);
+
 	destination.type = SETPOINT_TYPE_VELOCITY;
 	destination.lat = desired_point.lat;
 	destination.lon = desired_point.lon;
@@ -352,26 +385,12 @@ void PathFollow::update_drone_velocity() {
 
 void PathFollow::update_min_max_dist() {
 
-    if (_ok_distance<_parameters.pafol_safe_dist + _parameters.pafol_min_ok_diff)
-        _ok_distance = _parameters.pafol_safe_dist + _parameters.pafol_min_ok_diff;
+    _ok_distance = 12.0f;
 
-	_min_distance = _ok_distance - _parameters.pafol_min_ok_diff;
-
-	if (_min_distance < _parameters.pafol_safe_dist) {
-		_min_distance = _parameters.pafol_safe_dist;
-		// TODO! Do we need this check? martinsf: Nope. 
-		if (_ok_distance <= _min_distance) {
-			// Add 1 meter to avoid division by 0 when calculating speed
-			_ok_distance = _min_distance + 1.0f;
-		}
-	}
-
-    _ok_distance = 10.0f;
-
-	warnx("Distances updated! Ok: %9.6f, Min: %9.6f, Max: %9.6f.", double(_ok_distance), double(_min_distance), double(_max_distance));
 }
 
 float PathFollow::calculate_desired_velocity(float dst_to_ok) {
+
 
 
     // calculate drone speed change rate and filter it
@@ -411,11 +430,14 @@ float PathFollow::calculate_desired_velocity(float dst_to_ok) {
 
     calc_vel_dt/= 1000000.0f;
 
-    float vel_err_coif = 0.5f;
+    //float vel_err_coif = 0.5f;
+    float vel_err_coif = _parameters.pafol_vel_err_coif;
+    //float vel_err_growth_power = 1.2f;
+    float vel_err_growth_power = _parameters.pafol_vel_err_growth_power;
     float max_vel_err;
 
     if (dst_to_ok >= 0.0f){
-        max_vel_err = (float)pow(dst_to_ok, 1.5f) * vel_err_coif;
+        max_vel_err = (float)pow(dst_to_ok, vel_err_growth_power ) * vel_err_coif;
 
         if (max_vel_err > _parameters.mpc_max_speed - _target_velocity)
             max_vel_err = _parameters.mpc_max_speed - _target_velocity;
@@ -425,7 +447,10 @@ float PathFollow::calculate_desired_velocity(float dst_to_ok) {
     }
     
 
-    float reaction_time = 0.45f; // time in seconds when we increase speed from _target_velocity till _target_velocity + max_vel_err
+    float reaction_time_to_close = 0.5f; // time in seconds when we increase speed from _target_velocity till _target_velocity + max_vel_err
+    float fraction_to_close = calc_vel_dt / reaction_time_to_close; // full increase will happen in reaction_time time, so we calculate how much we need to increase in dt time
+
+    float reaction_time = _parameters.pafol_vel_reaction_time; // time in seconds when we increase speed from _target_velocity till _target_velocity + max_vel_err
     float fraction = calc_vel_dt / reaction_time; // full increase will happen in reaction_time time, so we calculate how much we need to increase in dt time
 
 
@@ -442,7 +467,7 @@ float PathFollow::calculate_desired_velocity(float dst_to_ok) {
             vel_new = sp_velocity + fraction * max_vel_err;  // while speed is increasing we can smoothly increase velocity if setoibt
         }
     } else {
-        vel_new = sp_velocity - fraction * max_vel_err; // Do the same calculation also when we are to close// maybe we should make this more smooth
+        vel_new = sp_velocity - fraction_to_close * max_vel_err; // Do the same calculation also when we are to close// maybe we should make this more smooth
     }
 
     if (vel_new > _target_velocity_f + max_vel_err)  
@@ -458,10 +483,15 @@ float PathFollow::calculate_desired_velocity(float dst_to_ok) {
     dd_log.log(3,(double)dst_to_ok);
     dd_log.log(4,(double)_vel_ch_rate_f);
     dd_log.log(5,(double)_trajectory_distance);
-
+    dd_log.log(6,(double)zero_setpoint);
 
 	if (vel_new > _parameters.mpc_max_speed) 
         vel_new = _parameters.mpc_max_speed;
+
+    //int traj_setpoints = _saved_trajectory.get_value_count();
+	// mavlink_log_info(_mavlink_fd, "Calculate desired velocity %.3f %.3f %.3f ", (double)dst_to_ok, (double)vel_new, (double)traj_setpoints);
+	//mavlink_log_info(_mavlink_fd, "Dst_to_ok %.3f", (double)dst_to_ok );
+    
 
 	return vel_new;
 
@@ -475,7 +505,8 @@ float PathFollow::calculate_current_distance() {
     float dst_line = get_distance_to_next_waypoint(global_pos->lat, global_pos->lon, target_pos->lat, target_pos->lon);
 
 	float dst_traj = _trajectory_distance;
-    if (_has_valid_setpoint ){
+
+    if (_saved_trajectory.get_value_count() > 0){
 
         dst_traj += get_distance_to_next_waypoint(global_pos->lat, global_pos->lon, _actual_point.lat, _actual_point.lon);
         dst_traj += get_distance_to_next_waypoint(_last_point.lat, _last_point.lon, target_pos->lat, target_pos->lon);
@@ -520,10 +551,12 @@ bool PathFollow::check_current_trajectory_point_passed(float acceptance_dst) {
     double h = dst_xy_len / dot_product;
     double dst_to_line;
 
-    if (h>dst_xy_len) 
+    if (h + 1e-6 > dst_xy_len) 
         dst_to_line = 0.0f;
     else 
         dst_to_line = sqrt(dst_xy_len*dst_xy_len - h*h);
+
+	//mavlink_log_info(_mavlink_fd, "Dst to line %.5f", dst_to_line);
 
     if (acceptance_dst >= (float)dst_to_line && (float)dst_xy_len <= 3 * acceptance_dst )
         return true;

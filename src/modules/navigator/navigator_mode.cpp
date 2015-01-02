@@ -124,8 +124,11 @@ NavigatorMode::updateParamHandles() {
 	_parameter_handles.pafol_min_ok_diff = param_find("PAFOL_MIN_TO_OK");
 	_parameter_handles.pafol_ok_max_coef = param_find("PAFOL_MAX_COEF");
 	_parameter_handles.pafol_safe_dist = param_find("PAFOL_SAFE_DIST");
+    _parameter_handles.pafol_vel_err_coif = param_find("PAFOL_VEL_E_C");
+    _parameter_handles.pafol_vel_reaction_time = param_find("PAFOL_VEL_R_T");
+    _parameter_handles.pafol_vel_err_growth_power = param_find("PAFOL_VEL_E_GP");
 
-//    _parameter_handles.max_negative_accel = param_find("NAV_MAX_N_ACC");
+    _parameter_handles.pafol_acc_rad = param_find("PAFOL_ACC_RAD");
 
 	_parameter_handles.mpc_max_speed = param_find("MPC_XY_VEL_MAX");
     _parameter_handles.airdog_dst_inv = param_find("A_DST_INV");
@@ -162,6 +165,10 @@ NavigatorMode::updateParamValues() {
 	param_get(_parameter_handles.pafol_min_ok_diff, &(_parameters.pafol_min_ok_diff));
 	param_get(_parameter_handles.pafol_ok_max_coef, &(_parameters.pafol_ok_max_coef));
 	param_get(_parameter_handles.pafol_safe_dist, &(_parameters.pafol_safe_dist));
+	param_get(_parameter_handles.pafol_vel_err_coif, &(_parameters.pafol_vel_err_coif));
+	param_get(_parameter_handles.pafol_vel_reaction_time, &(_parameters.pafol_vel_reaction_time));
+	param_get(_parameter_handles.pafol_vel_err_growth_power, &(_parameters.pafol_vel_err_growth_power));
+	param_get(_parameter_handles.pafol_acc_rad, &(_parameters.pafol_acc_rad));
 
 	param_get(_parameter_handles.mpc_max_speed, &(_parameters.mpc_max_speed));
 	param_get(_parameter_handles.rtl_ret_alt, &(_parameters.rtl_ret_alt));

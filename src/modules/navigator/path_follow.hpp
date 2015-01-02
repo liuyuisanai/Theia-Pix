@@ -51,6 +51,7 @@ private:
 
     debug_data_log dd_log;
 
+    struct position_setpoint_triplet_s 	*last_moving_sp_triplet;
 
 
     float _target_velocity;   // raw target velocity
@@ -73,6 +74,7 @@ private:
 	hrt_abstime _dt = 0;
 
     bool current_point_passed = false;
+    bool zero_setpoint = false;
 
 
 	// Updates saved trajectory and trajectory distance with a new point

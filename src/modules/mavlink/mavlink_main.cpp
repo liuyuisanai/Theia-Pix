@@ -389,7 +389,7 @@ Mavlink::forward_message(const mavlink_message_t *msg, Mavlink *self)
 	Mavlink *inst;
 	LL_FOREACH(_mavlink_instances, inst) {
 		if (inst != self) {
-			// TODO! Consider if this code should run on target.
+			// TODO! Consider if this code should run on target and on airdog.
 			/* if not in normal mode, we are an onboard link
 			 * onboard links should only pass on messages from the same system ID */
 			if (!(self->_mode != MAVLINK_MODE_NORMAL && msg->sysid != mavlink_system.sysid)) {
@@ -1246,6 +1246,9 @@ Mavlink::task_main(int argc, char *argv[])
 			else if (strcmp(optarg, "target") == 0) {
 				_mode = MAVLINK_MODE_TARGET;
 			}
+			else if (strcmp(optarg, "airdog") == 0) {
+				_mode = MAVLINK_MODE_AIRDOG;
+			}
 
 			break;
 
@@ -1309,6 +1312,10 @@ Mavlink::task_main(int argc, char *argv[])
 		break;
 	case MAVLINK_MODE_TARGET:
 		warnx("mode: TARGET");
+		break;
+
+	case MAVLINK_MODE_AIRDOG:
+		warnx("mode: AIRDOG");
 		break;
 
 	default:
@@ -1436,6 +1443,10 @@ Mavlink::task_main(int argc, char *argv[])
 		// TODO! Change to custom message, when it is available
 		configure_stream("GLOBAL_POSITION_INT", 10.0f);
 		configure_stream("TRAJECTORY", 10.0f);
+		break;
+
+	case MAVLINK_MODE_AIRDOG:
+		configure_stream("SYS_STATUS", 1.0f);
 		break;
 
 	default:

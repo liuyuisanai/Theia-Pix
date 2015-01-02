@@ -479,6 +479,26 @@ struct log_DEBUGD_s {
     float val[8];
 };
 
+/* --- Mavlink stats --- */
+#define LOG_MVST_MSG 70
+struct log_MVST_s {
+	uint32_t total_bytes;
+	uint32_t heartbeat_count;
+	uint32_t gpos_count;
+	uint32_t trajectory_count;
+};
+
+/* --- Vehicle command --- */
+#define LOG_CMD_MSG 71
+struct log_CMD_s {
+	uint16_t command;
+	uint8_t source_sys;
+	uint8_t source_comp;
+	float param1;
+	float param2;
+	float param3;
+};
+
 /********** SYSTEM MESSAGES, ID > 0x80 **********/
 
 /* --- TIME - TIME STAMP --- */
@@ -549,6 +569,8 @@ static const struct log_format_s log_formats[] = {
 	LOG_FORMAT(LOTJ, "BQLLffffff", "Type,Time,Lat,Lon,Alt,RAlt,VelN,VelE,VelD,Head"),
 	LOG_FORMAT(GPRE, "BLLfB",		"NavState,Lat,Lon,Alt,Type"),
 	LOG_FORMAT(GNEX, "BLLfB",		"NavState,Lat,Lon,Alt,Type"),
+	LOG_FORMAT(MVST, "IIII", "TotalBytes,HrtCount,GposCount,TrajCount"),
+	LOG_FORMAT(CMD, "HBBfff", "Cmd,SrcSys,SrcComp,Par1,Par2,Par3"),
 
 	/* system-level messages, ID >= 0x80 */
 	/* FMT: don't write format of format message, it's useless */

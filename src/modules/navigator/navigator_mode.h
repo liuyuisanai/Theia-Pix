@@ -134,6 +134,10 @@ public:
 		float pafol_min_ok_diff;
 		float pafol_ok_max_coef;
 		float pafol_safe_dist;
+        float pafol_vel_err_coif;
+        float pafol_vel_reaction_time;
+        float pafol_vel_err_growth_power;
+        float pafol_acc_rad;
 
 		float mpc_max_speed;
 
@@ -173,6 +177,10 @@ public:
 		param_t pafol_min_ok_diff;
 		param_t pafol_ok_max_coef;
 		param_t pafol_safe_dist;
+        param_t pafol_vel_err_coif;
+        param_t pafol_vel_reaction_time;
+        param_t pafol_vel_err_growth_power;
+        param_t pafol_acc_rad;
 
 		param_t mpc_max_speed;
 
