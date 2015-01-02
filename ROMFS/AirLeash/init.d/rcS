@@ -68,11 +68,31 @@ fi
 #
 # MAVLink
 #
-mavlink start -d $MAVLINK_TTY -m custom
-usleep 1000
-mavlink stream -r 18 -d $MAVLINK_TTY -s GLOBAL_POSITION_INT
-usleep 1000
-mavlink stream -r 0.1 -d $MAVLINK_TTY -s GPS_RAW_INT
+if param compare AIRD_LEASH_MODE 0
+then
+	#Default leash
+	mavlink start -d $MAVLINK_TTY -m custom
+	usleep 1000
+	mavlink stream -r 18 -d $MAVLINK_TTY -s GLOBAL_POSITION_INT
+	usleep 1000
+	mavlink stream -r 0.1 -d $MAVLINK_TTY -s GPS_RAW_INT
+else
+	if param compare AIRD_LEASH_MODE 1
+	then
+		#Trainer leash
+		mavlink start -d $MAVLINK_TTY -m custom
+	else
+		if param compare AIRD_LEASH_MODE 2
+		then
+			#Follow path leash
+			trajectory_calculator start
+			mavlink start -d $MAVLINK_TTY -m target
+			usleep 1000
+			mavlink stream -r 0.1 -d $MAVLINK_TTY -s GPS_RAW_INT
+		fi
+	fi
+fi
+
 
 #
 # Sensors, GPS, estimators and commander

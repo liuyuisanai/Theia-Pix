@@ -27,6 +27,7 @@ MODULES		+= drivers/ms5611
 MODULES		+= drivers/stm32
 MODULES		+= drivers/stm32/adc
 MODULES		+= drivers/stm32/tone_alarm
+MODULES		+= modules/airdog  # AIRD_LEASH_MODE parameter
 MODULES		+= modules/airdog/trajectory_calculator
 MODULES		+= modules/gpio_tool
 MODULES		+= modules/kbd_test
@@ -86,9 +87,6 @@ MODULES		+= modules/mavlink
 #MODULES		+= modules/navigator
 #MODULES		+= modules/gpio_led
 #MODULES		+= modules/uavcan
-
-# TODO rewrite airdog
-#MODULES 	+= modules/airdog
 
 #
 # Estimation modules (EKF/ SO3 / other filters)
