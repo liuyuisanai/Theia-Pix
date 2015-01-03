@@ -33,7 +33,7 @@ PathFollow::PathFollow(Navigator *navigator, const char *name):
 		_ok_distance(0.0f),
 		_vertical_offset(0.0f),
 		_inited(false),
-		_target_vel_lpf(0.5f),
+		_target_vel_lpf(0.2f),
 		_drone_vel_lpf(0.2f),
         _vel_ch_rate_lpf(0.2f),
 		_target_velocity(0.5f),
@@ -53,19 +53,34 @@ void PathFollow::on_inactive() {
 	// update_saved_trajectory();
 }
 void PathFollow::on_activation() {
+	_mavlink_fd = _navigator->get_mavlink_fd();
 
 	mavlink_log_info(_mavlink_fd, "Follow path activation");
 
-	_mavlink_fd = _navigator->get_mavlink_fd();
-	// TODO! This message belongs elsewhere
-	mavlink_log_info(_mavlink_fd, "Activated Follow Path");
-	warnx("Follow path active! Max _speed control, L1, parameters, memory check, mavlink_fd!");
+	global_pos = _navigator->get_global_position();
+	target_pos = _navigator->get_target_position();
+
+	_ok_distance = get_distance_to_next_waypoint(global_pos->lat, global_pos->lon, target_pos->lat, target_pos->lon);
+	if (_ok_distance < _parameters.pafol_min_ok_dist) {
+		_ok_distance = _parameters.pafol_min_ok_dist;
+	}
+
+    if (_parameters.follow_rpt_alt == 0) {
+        _alt = global_pos->alt;
+        _vertical_offset = 0.0f;
+    } else {
+        _vertical_offset = global_pos->alt - target_pos->alt;
+        if (_vertical_offset < _parameters.pafol_min_alt_off) {
+            _vertical_offset = _parameters.pafol_min_alt_off;
+        }
+    }
 
     zero_setpoint = false;
 
 	if (!_inited) {
+
 		mavlink_log_critical(_mavlink_fd, "Follow Path mode wasn't initialized! Aborting...");
-		warnx("Follow Path mode wasn't initialized! Aborting...");
+
 		int buzzer = open(TONEALARM_DEVICE_PATH, O_WRONLY);
 		ioctl(buzzer, TONE_SET_ALARM, TONE_NOTIFY_NEGATIVE_TUNE);
 		close(buzzer);
@@ -81,38 +96,18 @@ void PathFollow::on_activation() {
 	// Reset trajectory and distance offsets
 	_saved_trajectory.do_empty();
 	update_saved_trajectory();
-	global_pos = _navigator->get_global_position();
-	target_pos = _navigator->get_target_position();
-	_ok_distance = get_distance_to_next_waypoint(global_pos->lat, global_pos->lon, target_pos->lat, target_pos->lon);
-	if (_ok_distance < _parameters.pafol_ok_dist) {
-		_ok_distance = _parameters.pafol_ok_dist;
-	}
-
-
-	update_min_max_dist();
-	_vertical_offset = global_pos->alt - target_pos->alt;
-	if (_vertical_offset < _parameters.pafol_min_alt_off) {
-		_vertical_offset = _parameters.pafol_min_alt_off;
-	}
 
 	pos_sp_triplet = _navigator->get_position_setpoint_triplet();
+
 	pos_sp_triplet->next.valid = false;
 	pos_sp_triplet->current.valid = true;
 	pos_sp_triplet->previous.valid = false;
 
-    pos_sp_triplet->current.type = SETPOINT_TYPE_VELOCITY;
-    pos_sp_triplet->current.lat = target_pos->lat;
-    pos_sp_triplet->current.lon = target_pos->lon;
-    pos_sp_triplet->current.alt = target_pos->alt + _vertical_offset;
-    pos_sp_triplet->current.position_valid = true;
-    pos_sp_triplet->current.valid = true;
-	pos_sp_triplet->current.abs_velocity_valid = true;
-	pos_sp_triplet->current.abs_velocity = 0.0f;
+    set_target_setpoint(pos_sp_triplet->current);
 
+	pos_sp_triplet->current.abs_velocity = 0.0f;
 	_navigator->set_position_setpoint_triplet_updated();
     
-	target_pos = _navigator->get_target_position();
-
     _trajectory_distance = 0;
     _last_trajectory_time = target_pos->timestamp;
     _last_point.lat = target_pos->lat;
@@ -175,28 +170,18 @@ void PathFollow::on_active() {
                 }
             } else {
 
-                //mavlink_log_info(_mavlink_fd, "Set target position setpoint. No trajectory points. ");
-
-                pos_sp_triplet->current.type = SETPOINT_TYPE_VELOCITY;
-                pos_sp_triplet->current.lat = target_pos->lat;
-                pos_sp_triplet->current.lon = target_pos->lon;
-                pos_sp_triplet->current.alt = target_pos->alt + _vertical_offset;
-                pos_sp_triplet->current.position_valid = true;
-                pos_sp_triplet->current.valid = true;
+                mavlink_log_info(_mavlink_fd, "Set target position setpoint. No trajectory points. ");
+                set_target_setpoint(pos_sp_triplet->current);
 
             }
         }
         else {
         // Flying trough collected points
-            
-
             if (check_current_trajectory_point_passed(_parameters.pafol_acc_rad)) {
-
                 // We've passed the point, we need a new one
                 _has_valid_setpoint = _saved_trajectory.pop(_actual_point);
                 if (_has_valid_setpoint) {
 
-                    //mavlink_log_info(_mavlink_fd, "Setpoint reached, set next setpoint.");
                     // Distance between reached point and the next stops being trajectory distance
                     // and becomes "drone to setpoint" distance
                     _trajectory_distance -= get_distance_to_next_waypoint(pos_sp_triplet->current.lat,
@@ -205,12 +190,9 @@ void PathFollow::on_active() {
                     // Having both previous and next waypoint allows L1 algorithm
                     memcpy(&(pos_sp_triplet->previous),&(pos_sp_triplet->current),sizeof(position_setpoint_s));
                     // Trying to prevent L1 algorithm
-                    // pos_sp_triplet->previous.valid = false;
-
-                    //mavlink_log_info(_mavlink_fd, "Trajectory point passed. Take next point.");
+                     pos_sp_triplet->previous.valid = false;
 
                     update_setpoint(_actual_point, pos_sp_triplet->current);
-
                     current_point_passed = false;
 
                     /* mc_pos_control is not yet using next sp for velocity sp
@@ -223,16 +205,7 @@ void PathFollow::on_active() {
                     */
                 }
                 else {
-
-                    //mavlink_log_info(_mavlink_fd, "Trajectory point passed. No new points. Follow target. ");
-
-                    pos_sp_triplet->current.type = SETPOINT_TYPE_VELOCITY;
-                    pos_sp_triplet->current.lat = target_pos->lat;
-                    pos_sp_triplet->current.lon = target_pos->lon;
-                    pos_sp_triplet->current.alt = target_pos->alt + _vertical_offset;
-                    pos_sp_triplet->current.position_valid = true;
-                    pos_sp_triplet->current.valid = true;
-                    _trajectory_distance = 0;
+                    set_target_setpoint(pos_sp_triplet->current);
                 }
             } else {
 
@@ -241,13 +214,12 @@ void PathFollow::on_active() {
     }
 
     _desired_speed = calculate_desired_velocity(calculate_current_distance() - _ok_distance);
-
-    if (zero_setpoint == true){
+  if (zero_setpoint == true){
 
         if (_desired_speed > 1e-6f) {
             zero_setpoint = false;
             pos_sp_triplet = last_moving_sp_triplet;
-            //mavlink_log_critical(_mavlink_fd, "Zero point off.");
+            mavlink_log_critical(_mavlink_fd, "Zero point off.");
         }
     }
     else if (zero_setpoint == false) {
@@ -256,8 +228,6 @@ void PathFollow::on_active() {
         pos_sp_triplet->current.abs_velocity_valid = true;
 
         if (_desired_speed < 1e-6f) {
-
-            //mavlink_log_critical(_mavlink_fd, "Zero point on.");
 
             zero_setpoint = true;
             last_moving_sp_triplet = pos_sp_triplet;
@@ -273,7 +243,6 @@ void PathFollow::on_active() {
         
         }
     }
-
 
     _navigator->set_position_setpoint_triplet_updated();
 
@@ -293,14 +262,12 @@ void PathFollow::execute_vehicle_command() {
 			}
 			case REMOTE_CMD_FURTHER:
 				_ok_distance += _parameters.pafol_dist_step;
-				update_min_max_dist();
 				break;
 			case REMOTE_CMD_CLOSER: {
 				_ok_distance -= _parameters.pafol_dist_step;
-				if (_ok_distance < _parameters.pafol_ok_dist) {
-					_ok_distance = _parameters.pafol_ok_dist;
+				if (_ok_distance < _parameters.pafol_min_ok_dist) {
+					_ok_distance = _parameters.pafol_min_ok_dist;
 				}
-				update_min_max_dist();
 				break;
 			}
 			case REMOTE_CMD_UP: {
@@ -318,8 +285,9 @@ void PathFollow::execute_vehicle_command() {
 }
 
 void PathFollow::update_saved_trajectory() {
+
 	struct external_trajectory_s *target_trajectory = _navigator->get_target_trajectory();
-	// Assuming timestamp won't be 0 on first call
+
 	if (_last_trajectory_time != target_trajectory->timestamp && target_trajectory->point_type != 0) {
 		if (_saved_trajectory.is_empty()) {
 			_trajectory_distance = 0;
@@ -339,18 +307,42 @@ void PathFollow::update_saved_trajectory() {
 	}
 }
 
-// TODO! Write two separate methods, one that does copying and applying offsets, other - for prev, next, current point magic
 void PathFollow::update_setpoint(const buffer_point_s &desired_point, position_setpoint_s &destination) {
 
-	//mavlink_log_info(_mavlink_fd, "New point %.8f %.8f", (double)desired_point.lat, (double)desired_point.lon);
+	mavlink_log_info(_mavlink_fd, "New point %.8f %.8f", (double)desired_point.alt);
 
 	destination.type = SETPOINT_TYPE_VELOCITY;
 	destination.lat = desired_point.lat;
 	destination.lon = desired_point.lon;
 	destination.alt = desired_point.alt + _vertical_offset;
+
+    if (_parameters.follow_rpt_alt == 1) 
+        destination.alt = desired_point.alt + _vertical_offset;
+    else
+        destination.alt = _alt + _vertical_offset;
+
 	destination.position_valid = true;
 	destination.valid = true;
 }
+
+void PathFollow::set_target_setpoint(position_setpoint_s &destination) {
+
+    target_pos = _navigator->get_target_position();
+
+    destination.type = SETPOINT_TYPE_VELOCITY;
+    destination.lat = target_pos->lat;
+    destination.lon = target_pos->lon;
+
+    if (_parameters.follow_rpt_alt == 1) 
+        destination.alt = target_pos->alt + _vertical_offset;
+    else
+        destination.alt = _alt + _vertical_offset;
+
+    destination.position_valid = true;
+    destination.valid = true;
+
+}
+
 
 void PathFollow::update_target_velocity() {
 
@@ -383,15 +375,7 @@ void PathFollow::update_drone_velocity() {
 
 }
 
-void PathFollow::update_min_max_dist() {
-
-    _ok_distance = 12.0f;
-
-}
-
 float PathFollow::calculate_desired_velocity(float dst_to_ok) {
-
-
 
     // calculate drone speed change rate and filter it
     if (_global_pos_timestamp_last != global_pos->timestamp){
@@ -489,9 +473,8 @@ float PathFollow::calculate_desired_velocity(float dst_to_ok) {
         vel_new = _parameters.mpc_max_speed;
 
     //int traj_setpoints = _saved_trajectory.get_value_count();
-	// mavlink_log_info(_mavlink_fd, "Calculate desired velocity %.3f %.3f %.3f ", (double)dst_to_ok, (double)vel_new, (double)traj_setpoints);
+	//mavlink_log_info(_mavlink_fd, "Calculate desired velocity %.3f %.3f %.3f ", (double)dst_to_ok, (double)vel_new, (double)traj_setpoints);
 	//mavlink_log_info(_mavlink_fd, "Dst_to_ok %.3f", (double)dst_to_ok );
-    
 
 	return vel_new;
 
@@ -563,5 +546,3 @@ bool PathFollow::check_current_trajectory_point_passed(float acceptance_dst) {
     else 
         return false;
 }
-
-

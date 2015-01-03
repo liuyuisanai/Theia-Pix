@@ -127,13 +127,10 @@ public:
 		float rtl_ret_alt;
 
 		ssize_t pafol_buf_size;
-		float pafol_ok_dist;
+		float pafol_min_ok_dist;
 		float pafol_min_alt_off;
 		float pafol_dist_step;
 		float pafol_alt_step;
-		float pafol_min_ok_diff;
-		float pafol_ok_max_coef;
-		float pafol_safe_dist;
         float pafol_vel_err_coif;
         float pafol_vel_reaction_time;
         float pafol_vel_err_growth_power;
@@ -144,6 +141,8 @@ public:
         float airdog_dst_inv; 
         float airdog_init_pos_dst;
         int airdog_init_pos_use; 
+
+        int follow_rpt_alt;
 
         float a_yaw_ignore_radius;
         // Proportional gain for horizontal position error
@@ -170,13 +169,10 @@ public:
 		param_t rtl_ret_alt;
 
 		param_t pafol_buf_size;
-		param_t pafol_ok_dist;
+		param_t pafol_min_ok_dist;
 		param_t pafol_min_alt_off;
 		param_t pafol_dist_step;
 		param_t pafol_alt_step;
-		param_t pafol_min_ok_diff;
-		param_t pafol_ok_max_coef;
-		param_t pafol_safe_dist;
         param_t pafol_vel_err_coif;
         param_t pafol_vel_reaction_time;
         param_t pafol_vel_err_growth_power;
@@ -187,6 +183,8 @@ public:
         param_t airdog_dst_inv;
         param_t airdog_init_pos_dst; 
         param_t airdog_init_pos_use;
+
+        param_t follow_rpt_alt;
 
         param_t a_yaw_ignore_radius;
         param_t proportional_gain;

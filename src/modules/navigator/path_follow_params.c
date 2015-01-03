@@ -20,37 +20,8 @@ PARAM_DEFINE_INT32(PAFOL_BUFF_SIZE, 500);
  * @max 100
  * @group PathFollow
  */
-PARAM_DEFINE_FLOAT(PAFOL_OK_DIST, 10.0f);
+PARAM_DEFINE_FLOAT(PAFOL_MIN_OK_D, 10.0f);
 
-/**
- * Difference between absolute minimum distance and desired distance
- *
- * @unit meters
- * @min 0
- * @max 95
- * @group PathFollow
- */
-PARAM_DEFINE_FLOAT(PAFOL_MIN_TO_OK, 5.0f);
-
-/**
- * Coefficient for maximum distance. Maximum distance = "desired distance"*coefficient
- *
- * @unit coefficient
- * @min 1
- * @max 20
- * @group PathFollow
- */
-PARAM_DEFINE_FLOAT(PAFOL_MAX_COEF, 1.5f);
-
-/**
- * Safety switch distance. Drone won't even try to get to a point that is closer than this to target
- *
- * @unit meters
- * @min 5
- * @max 20
- * @group PathFollow
- */
-PARAM_DEFINE_FLOAT(PAFOL_SAFE_DIST, 10.0f);
 
 /**
  * Minimum altitude offset from target trajectory
@@ -81,9 +52,6 @@ PARAM_DEFINE_FLOAT(PAFOL_DIST_STEP, 1.0f);
  * @group PathFollow
  */
 PARAM_DEFINE_FLOAT(PAFOL_ALT_STEP, 1.0f);
-
-// 0 or 1. 1 - simple follower, 0 - L1 follower. Temporary.
-PARAM_DEFINE_INT32(PAFOL_MODE, 0);
 
 
 /**

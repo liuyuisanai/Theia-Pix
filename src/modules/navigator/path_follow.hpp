@@ -76,17 +76,19 @@ private:
     bool current_point_passed = false;
     bool zero_setpoint = false;
 
+    float _alt;
+
 
 	// Updates saved trajectory and trajectory distance with a new point
 	void update_saved_trajectory();
+	// Update position setpoint to desired values
+	inline void set_target_setpoint(position_setpoint_s &destination);
 	// Update position setpoint to desired values
 	inline void update_setpoint(const buffer_point_s &desired_point, position_setpoint_s &destination);
 	// Update target velocity with a new value
 	inline void update_target_velocity();
 	// Update drone velocity with a new value
 	inline void update_drone_velocity();
-	// Updates minimum and maximum distance based on ok distance
-	inline void update_min_max_dist();
 	// Calculates desired speed in m/s based on current distance and target's speed
 	inline float calculate_desired_velocity(float distance);
 	// Calculates total current distance by trajectory + drone distance to setpoint + target distance to last point
