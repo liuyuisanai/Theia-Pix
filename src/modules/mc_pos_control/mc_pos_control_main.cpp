@@ -197,6 +197,7 @@ private:
         param_t mc_allowed_down_sp;
         param_t pafol_mode;
         param_t accept_radius;
+        param_t cable_park_vel_coef;
 	}		_params_handles;		/**< handles for interesting parameters */
 
 	struct {
@@ -224,6 +225,7 @@ private:
         float mc_allowed_down_sp;
         int pafol_mode;
         float accept_radius;
+        float cable_park_vel_coef;
         
 		math::Vector<3> pos_p;
 		math::Vector<3> vel_p;
@@ -549,6 +551,7 @@ MulticopterPositionControl::MulticopterPositionControl() :
     _params_handles.pafol_mode				= param_find("PAFOL_MODE");
 
     _params_handles.accept_radius = param_find("NAV_ACC_RAD");
+    _params_handles.cable_park_vel_coef = param_find("MPC_CBP_VEL_P");
 
 	/* fetch initial parameter values */
 	parameters_update(true);
@@ -1286,7 +1289,7 @@ MulticopterPositionControl::control_cablepark()
         } else {
             // Calculating velocity
             math::Vector<2> target_velocity(_tvel(0), _tvel(1));
-            float required_velocity = target_velocity * _ref_vector;
+            float required_velocity = target_velocity * _ref_vector * _params.cable_park_vel_coef;
 
             math::Vector<2> resulting_velocity = _ref_vector * required_velocity;
             
