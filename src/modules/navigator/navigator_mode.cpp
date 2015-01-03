@@ -173,7 +173,7 @@ NavigatorMode::updateParamValues() {
 	param_get(_parameter_handles.airdog_init_pos_use, &(_parameters.airdog_init_pos_use));
 
     param_get(_parameter_handles.a_yaw_ignore_radius, &(_parameters.a_yaw_ignore_radius));
-    param_get(_parameter_handles.a_yaw_ignore_radius, &(_parameters.proportional_gain));
+    param_get(_parameter_handles.proportional_gain, &(_parameters.proportional_gain));
     param_get(_parameter_handles.follow_rpt_alt, &(_parameters.follow_rpt_alt));
 }
 
