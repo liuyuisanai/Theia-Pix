@@ -105,6 +105,9 @@ Loiter::on_activation()
 	// Determine current loiter sub mode
 	struct vehicle_status_s *vstatus = _navigator->get_vstatus();
 
+	// Prevent camera mode from resetting on activation
+	previous_target_valid_flag = vstatus->condition_target_position_valid;
+
     _mavlink_fd = _navigator->get_mavlink_fd();
 
     if (vstatus->auto_takeoff_cmd) {
@@ -527,6 +530,12 @@ Loiter::execute_command_in_landing(vehicle_command_s cmd){
 	if (cmd.command == VEHICLE_CMD_NAV_REMOTE_CMD) {
 		int remote_cmd = cmd.param1;
 		if (remote_cmd == REMOTE_CMD_PLAY_PAUSE) {
+			// Update airdog state
+			commander_request_s *commander_request = _navigator->get_commander_request();
+			commander_request->request_type = AIRD_STATE_CHANGE;
+			commander_request->airdog_state = AIRD_STATE_IN_AIR;
+			_navigator->set_commander_request_updated();
+
 			set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, 1);
 			loiter_sub_mode = LOITER_SUB_MODE_AIM_AND_SHOOT;
 		}
