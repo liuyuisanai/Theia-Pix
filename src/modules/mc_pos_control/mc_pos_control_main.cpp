@@ -607,6 +607,8 @@ MulticopterPositionControl::parameters_update(bool force)
 		param_get(_params_handles.tilt_max_land, &_params.tilt_max_land);
 		_params.tilt_max_land = math::radians(_params.tilt_max_land);
 		param_get(_params_handles.follow_vel_ff, &_params.follow_vel_ff);
+		param_get(_params_handles.cable_park_vel_coef, &_params.cable_park_vel_coef);
+		
 		param_get(_params_handles.follow_talt_offs, &_params.follow_talt_offs);
 		param_get(_params_handles.follow_yaw_off_max, &_params.follow_yaw_off_max);
 		_params.follow_yaw_off_max = math::radians(_params.follow_yaw_off_max);
@@ -1289,7 +1291,7 @@ MulticopterPositionControl::control_cablepark()
         } else {
             // Calculating velocity
             math::Vector<2> target_velocity(_tvel(0), _tvel(1));
-            float required_velocity = target_velocity * _ref_vector * _params.cable_park_vel_coef;
+            float required_velocity = target_velocity * _ref_vector * _params.follow_vel_ff;
 
             math::Vector<2> resulting_velocity = _ref_vector * required_velocity;
             
