@@ -2452,17 +2452,7 @@ set_main_state_rc(struct vehicle_status_s *status_local, struct manual_control_s
 				break;	// changed successfully or already in this state
 			}
 
-			// Beep and print rejects even if target is lost for period less than timeout
 			print_reject_mode(status_local, "FOLLOW");
-
-			float target_visibility_timeout_1;
-			param_get(param_find("A_TRGT_VSB_TO_1"), &target_visibility_timeout_1);
-			if (!status_local->condition_target_position_valid && status_local->main_state == MAIN_STATE_FOLLOW &&
-					hrt_absolute_time() - status_local->last_target_time <= target_visibility_timeout_1 * 1000 * 1000) {
-				// Ignore all fallbacks in case we're in the manual follow and target was lost for period less than timeout
-				res = TRANSITION_NOT_CHANGED;
-				break;
-			}
 		}
 
 		if (sp_man->posctl_switch == SWITCH_POS_ON) {

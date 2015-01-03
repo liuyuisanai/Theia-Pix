@@ -313,9 +313,17 @@ main_state_transition(struct vehicle_status_s *status, main_state_t new_main_sta
 
 	case MAIN_STATE_FOLLOW:
 		/* need at minimum local position estimate */
-		if (status->condition_target_position_valid &&
-				(status->condition_local_position_valid || status->condition_global_position_valid)) {
-			ret = TRANSITION_CHANGED;
+		if (status->condition_local_position_valid || status->condition_global_position_valid) {
+			float target_visibility_timeout_1;
+			param_get(param_find("A_TRGT_VSB_TO_1"), &target_visibility_timeout_1);
+			if (status->condition_target_position_valid) {
+				ret = TRANSITION_CHANGED;
+			}
+			else if (status->main_state == MAIN_STATE_FOLLOW &&
+					hrt_absolute_time() - status->last_target_time <= target_visibility_timeout_1 * 1000 * 1000) {
+				// Already in Follow and target was lost for period less than timeout
+				ret = TRANSITION_NOT_CHANGED; // Do not return deny before timeout
+			}
 		}
 		break;
 
