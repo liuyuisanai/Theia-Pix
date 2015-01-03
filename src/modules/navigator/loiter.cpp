@@ -110,16 +110,23 @@ Loiter::on_activation()
 
     _mavlink_fd = _navigator->get_mavlink_fd();
 
+    // By default reset camera only if the camera mode has changed
+    int8_t camera_reset_mode = 0;
+    if (vstatus->nav_state_fallback) {
+    	// Skip camera resetting in case we've fallbacked to Loiter
+    	camera_reset_mode = -1;
+    }
+
     if (vstatus->auto_takeoff_cmd) {
-		set_sub_mode(LOITER_SUB_MODE_TAKING_OFF, 1);
+		set_sub_mode(LOITER_SUB_MODE_TAKING_OFF, 1, camera_reset_mode);
 		takeoff();
 		//resetModeArguments(MAIN_STATE_LOITER); //now done in commander itself
 
 	} else if (vstatus->airdog_state == AIRD_STATE_LANDED || vstatus->airdog_state == AIRD_STATE_STANDBY) {
-		set_sub_mode(LOITER_SUB_MODE_LANDED, 1);
+		set_sub_mode(LOITER_SUB_MODE_LANDED, 1, camera_reset_mode);
 	} else {
 		_camera_mode = UNDEFINED;
-		set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, 1); 
+		set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, 1, camera_reset_mode);
 		commander_request_s *commander_request = _navigator->get_commander_request();
         commander_request->request_type = AIRD_STATE_CHANGE;
         commander_request->airdog_state = AIRD_STATE_IN_AIR;
@@ -157,7 +164,7 @@ Loiter::on_active()
 	if (previous_target_valid_flag != vehicle_status->condition_target_position_valid) {
 		if(vehicle_status->condition_target_position_valid) {
 			// Refresh current submode if target signal regained and force camera reset
-			set_sub_mode(loiter_sub_mode, 0, true);
+			set_sub_mode(loiter_sub_mode, 0, 1);
 		}
 		else {
 			// Reset yaw only, 'cause we might be moving to initial position or something
@@ -542,9 +549,12 @@ Loiter::execute_command_in_landing(vehicle_command_s cmd){
 	}
 }
 
-// @param reset_setpoint: 0 = false; 1 = reset position and type; 2 = reset type only
+/**
+ * @param reset_setpoint: 0 = false; 1 = reset position and type; 2 = reset type only
+ * @param force_camera_reset: -1 => skip camera change; 0 => change only if state changed; 1 => force reset
+ */
 void
-Loiter::set_sub_mode(LOITER_SUB_MODE new_sub_mode, uint8_t reset_setpoint, bool force_camera_reset) {
+Loiter::set_sub_mode(LOITER_SUB_MODE new_sub_mode, uint8_t reset_setpoint, int8_t force_camera_reset) {
 
 	if (reset_setpoint > 0) {
 		pos_sp_triplet = _navigator->get_position_setpoint_triplet();
@@ -573,30 +583,32 @@ Loiter::set_sub_mode(LOITER_SUB_MODE new_sub_mode, uint8_t reset_setpoint, bool 
 
 	char * sub_mode_str;
 
-	switch(new_sub_mode){
-		case LOITER_SUB_MODE_AIM_AND_SHOOT:
-			sub_mode_str = "Aim-and-shoot";
-			set_camera_mode(AIM_TO_TARGET, force_camera_reset);
-			break;
-		case LOITER_SUB_MODE_LOOK_DOWN:
-			sub_mode_str = "Look down";
-			set_camera_mode(LOOK_DOWN, force_camera_reset);
-			break;
-		case LOITER_SUB_MODE_GO_TO_POSITION:
-			sub_mode_str = "Go-to-position";
-			set_camera_mode(AIM_TO_TARGET, force_camera_reset);
-			break;
-		case LOITER_SUB_MODE_LANDING:
-			sub_mode_str = "Landing";
-			set_camera_mode(HORIZONTAL, force_camera_reset);
-			break;
-		case LOITER_SUB_MODE_TAKING_OFF:
-			sub_mode_str = "Taking-off";
-			set_camera_mode(HORIZONTAL, force_camera_reset);
-			break;
-		case LOITER_SUB_MODE_LANDED:
-			sub_mode_str = "Landed";
-			break;
+	if (force_camera_reset != -1) {
+		switch(new_sub_mode){
+			case LOITER_SUB_MODE_AIM_AND_SHOOT:
+				sub_mode_str = "Aim-and-shoot";
+				set_camera_mode(AIM_TO_TARGET, force_camera_reset == 1);
+				break;
+			case LOITER_SUB_MODE_LOOK_DOWN:
+				sub_mode_str = "Look down";
+				set_camera_mode(LOOK_DOWN, force_camera_reset == 1);
+				break;
+			case LOITER_SUB_MODE_GO_TO_POSITION:
+				sub_mode_str = "Go-to-position";
+				set_camera_mode(AIM_TO_TARGET, force_camera_reset == 1);
+				break;
+			case LOITER_SUB_MODE_LANDING:
+				sub_mode_str = "Landing";
+				set_camera_mode(HORIZONTAL, force_camera_reset == 1);
+				break;
+			case LOITER_SUB_MODE_TAKING_OFF:
+				sub_mode_str = "Taking-off";
+				set_camera_mode(HORIZONTAL, force_camera_reset == 1);
+				break;
+			case LOITER_SUB_MODE_LANDED:
+				sub_mode_str = "Landed";
+				break;
+		}
 	}
 
 	mavlink_log_info(_mavlink_fd, "[loiter] Loiter sub mode set to %s ! ", sub_mode_str);
