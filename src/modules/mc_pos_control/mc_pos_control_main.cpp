@@ -1254,6 +1254,8 @@ MulticopterPositionControl::control_cablepark()
     // Limiting product not to be great than module of path vector
     float v_v_length = vehicle_pos.length();
     float from_vehicle_to_path = (v_v_length * v_v_length) - (vehicle_dot_product * vehicle_dot_product);
+    // Use correction only if on path
+    _valid_vel_correction = false;
 
     /* --- if we are outside of path - return to it first -- */
 	if ( from_vehicle_to_path > _params.accept_radius * _params.accept_radius
@@ -1279,10 +1281,8 @@ MulticopterPositionControl::control_cablepark()
         float target_dot_product = _ref_vector * target_pos; 
         if (target_dot_product >= _ref_vector_module) {
             target_dot_product = _ref_vector_module;
-            _valid_vel_correction = false;
         } else if (target_dot_product < 0.0f) {
             target_dot_product = 0.0f;
-            _valid_vel_correction = false;
         } else {
             // Calculating velocity
             math::Vector<2> target_velocity(_tvel(0), _tvel(1));
