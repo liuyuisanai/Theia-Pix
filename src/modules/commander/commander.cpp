@@ -787,7 +787,6 @@ int commander_thread_main(int argc, char *argv[])
 	param_t _param_ef_throttle_thres = param_find("COM_EF_THROT");
 	param_t _param_ef_current2throttle_thres = param_find("COM_EF_C2T");
 	param_t _param_ef_time_thres = param_find("COM_EF_TIME");
-	
 
 	float battery_warning_level;
 	float battery_critical_level;
@@ -825,6 +824,15 @@ int commander_thread_main(int argc, char *argv[])
 
 	param_get(_param_target_datalink_timeout, &target_datalink_timeout);
 	param_get(_param_target_visibility_timeout_2, &target_visibility_timeout_2);
+
+	param_t _param_good_target_eph = param_find("A_GOOD_TRG_EPH");
+	param_t _param_good_target_epv = param_find("A_GOOD_TRG_EPV");
+
+	float good_target_eph;
+	float good_target_epv;
+
+	param_get(_param_good_target_eph, &good_target_eph);
+	param_get(_param_good_target_epv, &good_target_epv);
 
 	/* welcome user */
 	warnx("starting");
@@ -1156,7 +1164,8 @@ int commander_thread_main(int argc, char *argv[])
 	bool failsafe_old = false;
     bool pos_res_updated = false;
 	bool target_position_was_valid = false;
-	bool trg_eph_epv_good;
+	bool trg_eph_good;
+	bool trg_epv_good;
 
 	while (!thread_should_exit) {
 
@@ -1240,6 +1249,9 @@ int commander_thread_main(int argc, char *argv[])
 
 			param_get(_param_target_datalink_timeout, &target_datalink_timeout);
 			param_get(_param_target_visibility_timeout_2, &target_visibility_timeout_2);
+
+			param_get(_param_good_target_eph, &good_target_eph);
+			param_get(_param_good_target_epv, &good_target_epv);
 
 			param_get(_param_require_gps, &require_gps);
 			if (require_gps != status.require_gps) {
@@ -1487,20 +1499,39 @@ int commander_thread_main(int argc, char *argv[])
 		/* recheck target position validity */
 		if (status.condition_target_position_valid) {
 			/* More lax threshold if position was valid before */
-			if (target_position.eph > eph_threshold * 2.0f || target_position.epv > epv_threshold * 2.0f) {
-				trg_eph_epv_good = false;
-			} else {
-				trg_eph_epv_good = true;
+			if (good_target_eph > FLT_EPSILON && target_position.eph > good_target_eph * 2.0f) {
+				trg_eph_good = false;
+			}
+			else {
+				// Always good if parameter-defined "good_target_eph" is non-positive
+				trg_eph_good = true;
+			}
+			if (good_target_epv > FLT_EPSILON && target_position.epv > good_target_epv * 2.0f) {
+				trg_epv_good = false;
+			}
+			else {
+				// Always good if parameter-defined "good_target_epv" is non-positive
+				trg_epv_good = true;
 			}
 		} else {
 			/* More strict threshold if position was invalid before */
-			if (target_position.eph < eph_threshold && target_position.epv < epv_threshold) {
-				trg_eph_epv_good = true;
-			} else {
-				trg_eph_epv_good = false;
+			if (good_target_eph <= FLT_EPSILON || target_position.eph < good_target_eph) {
+				// Always good if parameter-defined "good_target_eph" is non-positive
+				trg_eph_good = true;
+			}
+			else {
+				trg_eph_good = false;
+			}
+
+			if (good_target_epv <= FLT_EPSILON || target_position.epv < good_target_epv) {
+				// Always good if parameter-defined "good_target_epv" is non-positive
+				trg_epv_good = true;
+			}
+			else {
+				trg_epv_good = false;
 			}
 		}
-		check_valid(target_position.timestamp, target_datalink_timeout * 1000, trg_eph_epv_good, &(status.condition_target_position_valid), &status_changed);
+		check_valid(target_position.timestamp, target_datalink_timeout * 1000, trg_eph_good && trg_epv_good, &(status.condition_target_position_valid), &status_changed);
 
 		if (status.condition_target_position_valid) {
 			status.last_target_time = hrt_absolute_time();
