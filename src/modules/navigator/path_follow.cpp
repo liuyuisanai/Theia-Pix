@@ -170,7 +170,7 @@ void PathFollow::on_active() {
                 }
             } else {
 
-                mavlink_log_info(_mavlink_fd, "Set target position setpoint. No trajectory points. ");
+                // mavlink_log_info(_mavlink_fd, "Set target position setpoint. No trajectory points. ");
                 set_target_setpoint(pos_sp_triplet->current);
 
             }
@@ -309,7 +309,7 @@ void PathFollow::update_saved_trajectory() {
 
 void PathFollow::update_setpoint(const buffer_point_s &desired_point, position_setpoint_s &destination) {
 
-	mavlink_log_info(_mavlink_fd, "New point %.8f %.8f", (double)desired_point.alt);
+	// mavlink_log_info(_mavlink_fd, "New point %.8f %.8f", (double)desired_point.alt);
 
 	destination.type = SETPOINT_TYPE_VELOCITY;
 	destination.lat = desired_point.lat;
