@@ -77,6 +77,7 @@ private:
     bool zero_setpoint = false;
 
     float _alt;
+    int co = 0;
 
 
 	// Updates saved trajectory and trajectory distance with a new point
@@ -96,7 +97,7 @@ private:
 	// Checks if the next point in the buffer is safe to use
 	inline bool check_point_safe();
     // Setpoint reached specialized for path follow
-    inline bool check_current_trajectory_point_passed(float acceptance_line_dst);
+    inline bool check_current_trajectory_point_passed();
     
 
 

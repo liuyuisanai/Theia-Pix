@@ -135,6 +135,8 @@ public:
         float pafol_vel_reaction_time;
         float pafol_vel_err_growth_power;
         float pafol_acc_rad;
+        float pafol_acc_dst_to_line;
+        float pafol_acc_dst_to_point;
 
 		float mpc_max_speed;
 
@@ -177,6 +179,8 @@ public:
         param_t pafol_vel_reaction_time;
         param_t pafol_vel_err_growth_power;
         param_t pafol_acc_rad;
+        param_t pafol_acc_dst_to_line;
+        param_t pafol_acc_dst_to_point;
 
 		param_t mpc_max_speed;
 

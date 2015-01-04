@@ -177,7 +177,8 @@ void PathFollow::on_active() {
         }
         else {
         // Flying trough collected points
-            if (check_current_trajectory_point_passed(_parameters.pafol_acc_rad)) {
+            if (check_current_trajectory_point_passed()) {
+                //mavlink_log_info(_mavlink_fd, "Point passed ! Get next one ! ");
                 // We've passed the point, we need a new one
                 _has_valid_setpoint = _saved_trajectory.pop(_actual_point);
                 if (_has_valid_setpoint) {
@@ -513,7 +514,14 @@ bool PathFollow::check_point_safe() {
 
 }
 
-bool PathFollow::check_current_trajectory_point_passed(float acceptance_dst) {
+bool PathFollow::check_current_trajectory_point_passed() {
+
+    float acc_dst_to_line = _parameters.pafol_acc_dst_to_line;
+    //float acc_dst_to_line = 1.0f;
+    float acc_dst_to_point = _parameters.pafol_acc_dst_to_point;
+    //float acc_dst_to_point = 8.0f;
+    
+    mavlink_log_info(_mavlink_fd, "%.5f %.5f", (double)acc_dst_to_line, (double)acc_dst_to_point);
 
 	pos_sp_triplet = _navigator->get_position_setpoint_triplet();
 	global_pos = _navigator->get_global_position();
@@ -521,28 +529,20 @@ bool PathFollow::check_current_trajectory_point_passed(float acceptance_dst) {
 	struct map_projection_reference_s _ref_pos;
     map_projection_init(&_ref_pos, global_pos->lat, global_pos->lon);
 
+    math::Vector<2> vel_xy(global_pos->vel_n, global_pos->vel_e);  
     math::Vector<2> dst_xy; 
     
     map_projection_project(&_ref_pos,
 				pos_sp_triplet->current.lat, pos_sp_triplet->current.lon,
 				&dst_xy.data[0], &dst_xy.data[1]);
 
-    math::Vector<2> vel_xy(global_pos->vel_n, global_pos->vel_e);  
+    if (vel_xy.length() < 1e-6f) return false;
 
-    double dst_xy_len = dst_xy.length();
-    double dot_product = vel_xy(0) * dst_xy(1) - vel_xy(1) * dst_xy(0);
-    double h = dst_xy_len / dot_product;
-    double dst_to_line;
+    float dot_product = vel_xy(0) * dst_xy(0) + vel_xy(1) * dst_xy(1);
+    float dst_to_line = dot_product / vel_xy.length();
 
-    if (h + 1e-6 > dst_xy_len) 
-        dst_to_line = 0.0f;
-    else 
-        dst_to_line = sqrt(dst_xy_len*dst_xy_len - h*h);
-
-	//mavlink_log_info(_mavlink_fd, "Dst to line %.5f", dst_to_line);
-
-    if (acceptance_dst >= (float)dst_to_line && (float)dst_xy_len <= 3 * acceptance_dst )
+    if (dst_to_line <= acc_dst_to_line && dst_xy.length() <= acc_dst_to_point )
         return true;
-    else 
+    else
         return false;
 }

@@ -95,3 +95,23 @@ PARAM_DEFINE_FLOAT(PAFOL_VEL_E_GP, 1.0f);
  * @group PathFollow
  */
 PARAM_DEFINE_FLOAT(PAFOL_ACC_RAD, 5.0f);
+
+/**
+ * Path follow acceptance distance to line 
+ *
+ * @unit meters
+ * @min 0.1
+ * @max 50
+ * @group PathFollow
+ */
+PARAM_DEFINE_FLOAT(PAFOL_AC_DST_LN, 2.0f);
+
+/**
+ * Path follow acceptance distance to point 
+ *
+ * @unit meters
+ * @min 0.1
+ * @max 50
+ * @group PathFollow
+ */
+PARAM_DEFINE_FLOAT(PAFOL_AC_DST_PT, 8.0f);
