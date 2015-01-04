@@ -7,7 +7,8 @@
 # the ROMFS if it's available
 #
 ROMFS_ROOT	 = $(PX4_BASE)/ROMFS/px4fmu_common
-ROMFS_OPTIONAL_FILES = $(PX4_BASE)/Images/px4io-v2_default.bin
+ROMFS_OPTIONAL_FILES = $(PX4_BASE)/Images/px4io-v2_default.bin \
+		       $(PX4_BASE)/ROMFS/FW/*
 
 #
 # Board support modules
@@ -167,6 +168,7 @@ MODULES				+= modules/gpio_tool
 MODULES				+= modules/spi_exchange
 MODULES				+= modules/sensors_probe
 MODULES				+= modules/sensors_switch
+MODULES				+= modules/SiKUploader
 
 #
 # Transitional support - add commands from the NuttX export archive.
