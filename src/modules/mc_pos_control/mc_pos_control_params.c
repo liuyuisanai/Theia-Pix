@@ -41,7 +41,6 @@
 
 #include <systemlib/param/param.h>
 
-PARAM_DEFINE_FLOAT(MPC_CBP_VEL_P, 1.0f);
 /**
  * Allowed landing speed
  *
