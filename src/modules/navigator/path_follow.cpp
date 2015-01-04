@@ -521,8 +521,6 @@ bool PathFollow::check_current_trajectory_point_passed() {
     float acc_dst_to_point = _parameters.pafol_acc_dst_to_point;
     //float acc_dst_to_point = 8.0f;
     
-    mavlink_log_info(_mavlink_fd, "%.5f %.5f", (double)acc_dst_to_line, (double)acc_dst_to_point);
-
 	pos_sp_triplet = _navigator->get_position_setpoint_triplet();
 	global_pos = _navigator->get_global_position();
 
