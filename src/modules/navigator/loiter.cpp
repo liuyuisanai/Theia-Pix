@@ -474,6 +474,9 @@ Loiter::execute_command_in_aim_and_shoot(vehicle_command_s cmd){
                     commander_request_s *commander_request = _navigator->get_commander_request();
                     commander_request->request_type = V_MAIN_STATE_CHANGE;
                     commander_request->main_state = MAIN_STATE_AUTO_PATH_FOLLOW;
+
+                    _navigator->set_flag_reset_pfol_offs(true);
+
                     _navigator->set_commander_request_updated();
                 
                 } else if (_parameters.afol_mode == 2) {

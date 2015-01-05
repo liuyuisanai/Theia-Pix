@@ -109,6 +109,7 @@ public:
     void disarm();
     void resetModeArguments(main_state_t main_state);
 
+
 	struct {
         int first_point_lat;
         int first_point_lon;
@@ -211,6 +212,7 @@ protected:
 
 	int		_mavlink_fd;			/**< the file descriptor to send messages over mavlink */
 
+
 	bool check_current_pos_sp_reached(SETPOINT_TYPE expected_sp_type = SETPOINT_TYPE_UNDEFINED);
     void go_to_intial_position();
     camera_mode_t _camera_mode;
@@ -218,7 +220,6 @@ protected:
 private:
 
 	bool _first_run;
-
 
 	/*
 	 * This class has ptr data members, so it should not be copied,

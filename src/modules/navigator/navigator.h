@@ -143,6 +143,7 @@ public:
     bool        set_next_path_point(double point[3], bool force = false, int num = 0);
     bool        get_path_points(int point_num, double point[3]);
     void        clear_path_points();
+    bool        set_flag_reset_pfol_offs(bool value); // set value of _reset_path_follow_offset flag
 
 	/**
 	 * Getters
@@ -156,6 +157,7 @@ public:
 	struct position_setpoint_triplet_s* get_position_setpoint_triplet() { return &_pos_sp_triplet; }
 	struct mission_result_s*	    get_mission_result() { return &_mission_result; }
 	struct vehicle_attitude_setpoint_s* get_att_sp() { return &_att_sp; }
+    bool get_flag_reset_pfol_offs(); // get value of _reset_path_follow_offset flag
 
 	struct commander_request_s*	get_commander_request() { return &_commander_request;};
 	struct target_global_position_s*    get_target_position() {return &_target_pos; }
@@ -191,7 +193,7 @@ private:
 	int		_target_trajectory_sub;	/**< target trajectory subscription */
     double   _first_leash_point[3];  /**< first point to draw path in cable park */
     double   _last_leash_point[3];   /**< last point to draw path in cable park */
-
+    bool _flag_reset_pfol_offs;
 
 	orb_advert_t	_pos_sp_triplet_pub;		/**< publish position setpoint triplet */
     orb_advert_t    _pos_restrict_pub;          /**< publish position restriction */

@@ -863,3 +863,16 @@ Navigator::publish_att_sp()
 static bool is_empty(double array[3]) {
     return (array[0] == 0.0 && array[1] == 0.0 && array[2] == 0.0);
 }
+
+
+bool
+Navigator::get_flag_reset_pfol_offs(){
+    return _flag_reset_pfol_offs;
+}
+
+bool
+Navigator::set_flag_reset_pfol_offs(bool value){
+    bool changed = (value != _flag_reset_pfol_offs);
+    _flag_reset_pfol_offs = value;
+    return changed;
+}
