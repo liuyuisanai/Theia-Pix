@@ -197,6 +197,7 @@ private:
         param_t mc_allowed_down_sp;
         param_t pafol_mode;
         param_t accept_radius;
+        param_t pitch_lpf_cut;
 	}		_params_handles;		/**< handles for interesting parameters */
 
 	struct {
@@ -232,6 +233,8 @@ private:
 		math::Vector<3> vel_ff;
 		math::Vector<3> vel_max;
 		math::Vector<3> sp_offs_max;
+
+		float pitch_lpf_cut;
 	}		_params;
 
 	struct map_projection_reference_s _ref_pos;
@@ -286,6 +289,8 @@ private:
     struct vehicle_status_s _vstatus;
 
 	perf_counter_t _loop_perf;
+
+	math::LowPassFilter<float> _pitchLPF;
 
 	/**
 	 * Update our local parameter cache.
@@ -462,7 +467,8 @@ MulticopterPositionControl::MulticopterPositionControl() :
 	_reset_alt_sp(true),
 	_mode_auto(false),
 	_reset_follow_offset(true),
-	_loop_perf(perf_alloc(PC_ELAPSED, "mc_pos_control"))
+	_loop_perf(perf_alloc(PC_ELAPSED, "mc_pos_control")),
+	_pitchLPF ()
 {
 	memset(&_att, 0, sizeof(_att));
 	memset(&_att_sp, 0, sizeof(_att_sp));
@@ -549,6 +555,9 @@ MulticopterPositionControl::MulticopterPositionControl() :
     _params_handles.pafol_mode				= param_find("PAFOL_MODE");
 
     _params_handles.accept_radius = param_find("NAV_ACC_RAD");
+
+    _params_handles.pitch_lpf_cut = param_find("MPC_PITCH_LPF");
+
 
 	/* fetch initial parameter values */
 	parameters_update(true);
@@ -679,6 +688,13 @@ MulticopterPositionControl::parameters_update(bool force)
 
 		param_get(_params_handles.accept_radius, &_params.accept_radius);
 
+		param_get(_params_handles.pitch_lpf_cut, &_params.pitch_lpf_cut);
+		if (_params.pitch_lpf_cut < 0.0f) {
+			_pitchLPF.set_cutoff_frequency(-_params.pitch_lpf_cut);
+		}
+		else {
+			_pitchLPF.set_cutoff_frequency(_params.pitch_lpf_cut);
+		}
 	}
 
 	return OK;
@@ -1647,6 +1663,12 @@ void MulticopterPositionControl::set_camera_pitch(float pitch){
 		else {
 			last_pitch -= (-pitch_delta_20th > pitch_change_speed ? pitch_change_speed : -pitch_delta_20th);
 		}
+	}
+	if (_params.pitch_lpf_cut < -FLT_EPSILON) {
+		last_pitch = _pitchLPF.apply(hrt_absolute_time(), pitch);
+	}
+	else if (_params.pitch_lpf_cut > FLT_EPSILON) {
+		last_pitch = _pitchLPF.apply(hrt_absolute_time(), last_pitch);
 	}
 	_cam_control.control[1] = last_pitch;
 }

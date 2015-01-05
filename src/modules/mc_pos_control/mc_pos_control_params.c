@@ -313,3 +313,11 @@ PARAM_DEFINE_FLOAT(CAM_P_MAX, 90.0f);
  *
 **/
 PARAM_DEFINE_FLOAT(A_YAW_IGNR_R, 2.0f);
+
+/**
+ * Cutoff frequency of LPF filter on camera pitch
+ * If set negative, then only LPF filter will be used.
+ * If set to 0, then LPF won't be used (just delta correction).
+ * If set positive, then LPF + delta correction will be used
+ */
+PARAM_DEFINE_FLOAT(MPC_PITCH_LPF, 0.0f);
