@@ -1243,7 +1243,6 @@ MulticopterPositionControl::control_cablepark()
                 ,&_first_cbpark_point(0)
                 ,&_first_cbpark_point(1)
                 );
-        _first_cbpark_point_alt = -((float)_pos_restrict.line.first[2] - _ref_alt);
 
         map_projection_project(
                 &_ref_pos
@@ -1252,13 +1251,18 @@ MulticopterPositionControl::control_cablepark()
                 ,&_last_cbpark_point(0)
                 ,&_last_cbpark_point(1)
                 );
-        _last_cbpark_point_alt = -((float)_pos_restrict.line.last[2] - _ref_alt);
 
-        _ref_vector = _last_cbpark_point - _first_cbpark_point;
-        // We need this vector module for the future use
-		_ref_vector_module = _ref_vector.length();
-        // Normalize reference vector now
-        _ref_vector /= _ref_vector_module;
+        // Do not reset reference vector if points are in the same spot
+        if ( (_last_cbpark_point - _first_cbpark_point).length > FLT_EPSILON ) {
+			_first_cbpark_point_alt = -((float)_pos_restrict.line.first[2] - _ref_alt);
+			_last_cbpark_point_alt = -((float)_pos_restrict.line.last[2] - _ref_alt);
+
+			_ref_vector = _last_cbpark_point - _first_cbpark_point;
+			// We need this vector module for the future use
+			_ref_vector_module = _ref_vector.length();
+			// Normalize reference vector now
+			_ref_vector /= _ref_vector_module;
+        }
     }
 
     math::Vector<2> final_vector;
