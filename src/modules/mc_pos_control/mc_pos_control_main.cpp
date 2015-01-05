@@ -1185,7 +1185,7 @@ MulticopterPositionControl::control_auto_vel(float dt) {
 
         math::Vector<3> pos_sp_delta = _pos_sp - _pos;
 
-		if (_pos_sp_triplet.current.abs_velocity_valid) {
+		if (_pos_sp_triplet.current.abs_velocity_valid && _pos_sp != _pos) {
 
             math::Vector<2> move_direction;
             math::Vector<2> pos_sp_delta_xy(pos_sp_delta(0), pos_sp_delta(1));
