@@ -115,3 +115,14 @@ PARAM_DEFINE_FLOAT(PAFOL_AC_DST_LN, 2.0f);
  * @group PathFollow
  */
 PARAM_DEFINE_FLOAT(PAFOL_AC_DST_PT, 8.0f);
+
+
+/**
+ * Path follow speed when the drone is allowed to stop imidiatelly
+ *
+ * @unit meters
+ * @min 0.1
+ * @max 50
+ * @group PathFollow
+ */
+PARAM_DEFINE_FLOAT(PAFOL_STOP_SPD, 2.0f);

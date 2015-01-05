@@ -137,6 +137,7 @@ public:
         float pafol_acc_rad;
         float pafol_acc_dst_to_line;
         float pafol_acc_dst_to_point;
+        float pafol_stop_speed;
 
 		float mpc_max_speed;
 
@@ -181,6 +182,7 @@ public:
         param_t pafol_acc_rad;
         param_t pafol_acc_dst_to_line;
         param_t pafol_acc_dst_to_point;
+        param_t pafol_stop_speed;
 
 		param_t mpc_max_speed;
 

@@ -40,8 +40,6 @@ private:
 	buffer_point_s _actual_point; // Point currently in use as a setpoint
 	bool _has_valid_setpoint; // Flag indicating if _actual_point can be used
 	buffer_point_s _future_point; // Point of trajectory after the actual
-	float _desired_speed; // Speed we want to move with until distance changes
-	float _min_distance, _max_distance, _ok_distance; // Distances to use when following
 	float _vertical_offset; // Vertical offset off the trajectory
 	bool _inited; // Indicates if the mode was inited successfully
 	math::LowPassFilter<math::Vector<3>> _target_vel_lpf; // Filter for target velocity
@@ -60,6 +58,9 @@ private:
     float _drone_velocity_f;    // drone velocity filtered 
     float _last_drone_velocity_f; // drone velocity in the last iteratiovn
     float _last_drone_velocity; // drone velocity in the last iteratiovn
+
+	float _desired_speed; // Speed we want to move with until distance changes
+	float _ok_distance; // Distances to use when following
 
     float _vel_ch_rate;  // velocity change rate
     float _vel_ch_rate_f; // velocity change rate filtered
@@ -98,7 +99,4 @@ private:
 	inline bool check_point_safe();
     // Setpoint reached specialized for path follow
     inline bool check_current_trajectory_point_passed();
-    
-
-
 };

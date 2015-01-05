@@ -27,17 +27,15 @@ PathFollow::PathFollow(Navigator *navigator, const char *name):
 		_saved_trajectory(),
 		_trajectory_distance(0.0f),
 		_has_valid_setpoint(false),
-		_desired_speed(0.0f),
-		_min_distance(0.0f),
-		_max_distance(0.0f),
-		_ok_distance(0.0f),
 		_vertical_offset(0.0f),
 		_inited(false),
 		_target_vel_lpf(0.2f),
 		_drone_vel_lpf(0.2f),
         _vel_ch_rate_lpf(0.2f),
 		_target_velocity(0.5f),
-        _drone_velocity(0.0f){
+        _drone_velocity(0.0f),
+		_desired_speed(0.0f),
+		_ok_distance(-1.0f){
 }
 PathFollow::~PathFollow() {
 
@@ -60,10 +58,10 @@ void PathFollow::on_activation() {
 	global_pos = _navigator->get_global_position();
 	target_pos = _navigator->get_target_position();
 
-	_ok_distance = get_distance_to_next_waypoint(global_pos->lat, global_pos->lon, target_pos->lat, target_pos->lon);
-	if (_ok_distance < _parameters.pafol_min_ok_dist) {
-		_ok_distance = _parameters.pafol_min_ok_dist;
-	}
+    _ok_distance = get_distance_to_next_waypoint(global_pos->lat, global_pos->lon, target_pos->lat, target_pos->lon);
+    if (_ok_distance < _parameters.pafol_min_ok_dist) {
+        _ok_distance = _parameters.pafol_min_ok_dist;
+    }
 
     if (_parameters.follow_rpt_alt == 0) {
         _alt = global_pos->alt;
@@ -215,12 +213,13 @@ void PathFollow::on_active() {
     }
 
     _desired_speed = calculate_desired_velocity(calculate_current_distance() - _ok_distance);
+
   if (zero_setpoint == true){
 
         if (_desired_speed > 1e-6f) {
             zero_setpoint = false;
             pos_sp_triplet = last_moving_sp_triplet;
-            mavlink_log_critical(_mavlink_fd, "Zero point off.");
+            //mavlink_log_critical(_mavlink_fd, "Zero point off.");
         }
     }
     else if (zero_setpoint == false) {
@@ -228,7 +227,9 @@ void PathFollow::on_active() {
         pos_sp_triplet->current.abs_velocity = _desired_speed;
         pos_sp_triplet->current.abs_velocity_valid = true;
 
-        if (_desired_speed < 1e-6f) {
+
+
+        if (_desired_speed < 1e-6f && _drone_velocity < _parameters.pafol_stop_speed ) {
 
             zero_setpoint = true;
             last_moving_sp_triplet = pos_sp_triplet;
@@ -241,6 +242,7 @@ void PathFollow::on_active() {
             pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
             pos_sp_triplet->current.lat = global_pos->lat;
             pos_sp_triplet->current.lon = global_pos->lon;
+            //mavlink_log_critical(_mavlink_fd, "Zero point on.");
         
         }
     }
@@ -517,9 +519,7 @@ bool PathFollow::check_point_safe() {
 bool PathFollow::check_current_trajectory_point_passed() {
 
     float acc_dst_to_line = _parameters.pafol_acc_dst_to_line;
-    //float acc_dst_to_line = 1.0f;
     float acc_dst_to_point = _parameters.pafol_acc_dst_to_point;
-    //float acc_dst_to_point = 8.0f;
     
 	pos_sp_triplet = _navigator->get_position_setpoint_triplet();
 	global_pos = _navigator->get_global_position();

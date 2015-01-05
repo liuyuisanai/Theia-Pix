@@ -128,6 +128,8 @@ NavigatorMode::updateParamHandles() {
     _parameter_handles.pafol_acc_dst_to_line = param_find("PAFOL_AC_DST_LN");
     _parameter_handles.pafol_acc_dst_to_point = param_find("PAFOL_AC_DST_PT");
 
+    _parameter_handles.pafol_stop_speed = param_find("PAFOL_STOP_SPD");
+
     _parameter_handles.pafol_acc_rad = param_find("PAFOL_ACC_RAD");
 
 	_parameter_handles.mpc_max_speed = param_find("MPC_XY_VEL_MAX");
@@ -169,6 +171,8 @@ NavigatorMode::updateParamValues() {
 	param_get(_parameter_handles.pafol_acc_rad, &(_parameters.pafol_acc_rad));
 	param_get(_parameter_handles.pafol_acc_dst_to_line, &(_parameters.pafol_acc_dst_to_line));
 	param_get(_parameter_handles.pafol_acc_dst_to_point, &(_parameters.pafol_acc_dst_to_point));
+
+	param_get(_parameter_handles.pafol_stop_speed, &(_parameters.pafol_stop_speed));
 
 	param_get(_parameter_handles.mpc_max_speed, &(_parameters.mpc_max_speed));
 	param_get(_parameter_handles.rtl_ret_alt, &(_parameters.rtl_ret_alt));
