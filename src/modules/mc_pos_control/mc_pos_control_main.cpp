@@ -1783,8 +1783,13 @@ MulticopterPositionControl::task_main()
 
 		update_ref();
 
-		/* manual camera pitch control, overridden later if needed */
-		_cam_control.control[1] = _manual.aux2;
+		// TODO! [AK] One hack to rule them all. Do a more propper check if we should reset the pitch
+		if (_vstatus.condition_target_position_valid || (_vstatus.main_state != MAIN_STATE_ABS_FOLLOW &&
+				_vstatus.main_state != MAIN_STATE_CABLE_PARK && _vstatus.main_state != MAIN_STATE_LOITER &&
+				_vstatus.main_state != MAIN_STATE_AUTO_PATH_FOLLOW && _vstatus.main_state != MAIN_STATE_FOLLOW)) {
+			/* manual camera pitch control, overridden later if needed */
+			_cam_control.control[1] = _manual.aux2;
+		}
 
 		if (_control_mode.flag_control_altitude_enabled ||
 		    _control_mode.flag_control_position_enabled ||
@@ -1958,7 +1963,12 @@ MulticopterPositionControl::task_main()
                 // It makes sense to change yaw and pich trough setpoint when point_to_target is not used                 
                 if (!_control_mode.flag_control_point_to_target && _pos_sp_triplet.current.valid) {
                 	//_cam_control.control[1] = _pos_sp_triplet.current.camera_pitch;
-					set_camera_pitch(_pos_sp_triplet.current.camera_pitch);
+					// TODO! [AK] One hack to rule them all. Do a more propper check if we should reset the pitch
+					if (_vstatus.condition_target_position_valid || (_vstatus.main_state != MAIN_STATE_ABS_FOLLOW &&
+							_vstatus.main_state != MAIN_STATE_CABLE_PARK && _vstatus.main_state != MAIN_STATE_LOITER &&
+							_vstatus.main_state != MAIN_STATE_AUTO_PATH_FOLLOW && _vstatus.main_state != MAIN_STATE_FOLLOW)) {
+						set_camera_pitch(_pos_sp_triplet.current.camera_pitch);
+					}
                 }
 
 				/* use constant descend rate when landing, ignore altitude setpoint */
