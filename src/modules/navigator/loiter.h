@@ -52,6 +52,7 @@
 
 class Loiter : public MissionBlock
 {
+
 public:
 	Loiter(Navigator *navigator, const char *name);
 
@@ -76,6 +77,9 @@ private:
 		LOITER_SUB_MODE_TAKING_OFF,			// vehicle is taking off
 
 	} loiter_sub_mode;
+
+	// Keep aligned with the enum above!
+	static const char* mode_names[];
 
 	void execute_command_in_landed(vehicle_command_s cmd);
 	void execute_command_in_aim_and_shoot(vehicle_command_s cmd);

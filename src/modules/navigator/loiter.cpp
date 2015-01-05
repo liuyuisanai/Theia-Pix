@@ -56,6 +56,15 @@
 #include "loiter.h"
 #include "navigator.h"
 
+// Keep aligned with sub_mode enum!
+const char* Loiter::mode_names[] = { "Landed",
+		"Aim-and-shoot",
+		"Look down",
+		"Go-to-position",
+		"Landing",
+		"Taking-off"
+};
+
 Loiter::Loiter(Navigator *navigator, const char *name) :
 	MissionBlock(navigator, name),
 	previous_target_valid_flag(false)
@@ -584,37 +593,29 @@ Loiter::set_sub_mode(LOITER_SUB_MODE new_sub_mode, uint8_t reset_setpoint, int8_
 
 	loiter_sub_mode = new_sub_mode;
 
-	char * sub_mode_str;
-
 	if (force_camera_reset != -1) {
 		switch(new_sub_mode){
 			case LOITER_SUB_MODE_AIM_AND_SHOOT:
-				sub_mode_str = "Aim-and-shoot";
 				set_camera_mode(AIM_TO_TARGET, force_camera_reset == 1);
 				break;
 			case LOITER_SUB_MODE_LOOK_DOWN:
-				sub_mode_str = "Look down";
 				set_camera_mode(LOOK_DOWN, force_camera_reset == 1);
 				break;
 			case LOITER_SUB_MODE_GO_TO_POSITION:
-				sub_mode_str = "Go-to-position";
 				set_camera_mode(AIM_TO_TARGET, force_camera_reset == 1);
 				break;
 			case LOITER_SUB_MODE_LANDING:
-				sub_mode_str = "Landing";
 				set_camera_mode(HORIZONTAL, force_camera_reset == 1);
 				break;
 			case LOITER_SUB_MODE_TAKING_OFF:
-				sub_mode_str = "Taking-off";
 				set_camera_mode(HORIZONTAL, force_camera_reset == 1);
 				break;
 			case LOITER_SUB_MODE_LANDED:
-				sub_mode_str = "Landed";
 				break;
 		}
 	}
 
-	mavlink_log_info(_mavlink_fd, "[loiter] Loiter sub mode set to %s ! ", sub_mode_str);
+	mavlink_log_info(_mavlink_fd, "[loiter] Loiter sub mode set to %s ! ", Loiter::mode_names[new_sub_mode]);
 
 }
 
