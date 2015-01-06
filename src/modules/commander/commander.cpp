@@ -873,6 +873,7 @@ int commander_thread_main(int argc, char *argv[])
 	nav_states_str[NAVIGATION_STATE_ABS_FOLLOW]    = "AUTO_ABS_FOLLOW";
 	nav_states_str[NAVIGATION_STATE_AUTO_LANDENGFAIL] = "LAND_ENGINE_FAIL";
 	nav_states_str[NAVIGATION_STATE_AUTO_LANDGPSFAIL] = "LAND_GPS_FAIL";
+	nav_states_str[NAVIGATION_STATE_AUTO_PATH_FOLLOW] = "AUTO_PATH_FOLLOW";
 	nav_states_str[NAVIGATION_STATE_ACRO]			= "ACRO";
 	nav_states_str[NAVIGATION_STATE_LAND]			= "LAND";
 	nav_states_str[NAVIGATION_STATE_DESCEND]		= "DESCEND";
