@@ -198,6 +198,10 @@ private:
         param_t pafol_mode;
         param_t accept_radius;
         param_t pitch_lpf_cut;
+
+        param_t yaw_dead_zone_r;
+        param_t yaw_gradient_zone_r;
+
 	}		_params_handles;		/**< handles for interesting parameters */
 
 	struct {
@@ -225,6 +229,9 @@ private:
         float mc_allowed_down_sp;
         int pafol_mode;
         float accept_radius;
+
+        float yaw_dead_zone_r;
+        float yaw_gradient_zone_r;
         
 		math::Vector<3> pos_p;
 		math::Vector<3> vel_p;
@@ -535,6 +542,9 @@ MulticopterPositionControl::MulticopterPositionControl() :
     _params_handles.land_correction_on = param_find("A_LAND_CORR_ON");
 	_params_handles.takeoff_speed	= param_find("MPC_TAKEOFF_SPD");
 
+    _params_handles.yaw_dead_zone_r = param_find("A_YAW_DEAD_Z_R");
+    _params_handles.yaw_gradient_zone_r = param_find("A_YAW_GRAD_Z_R");
+
 	_params_handles.tilt_max_land	= param_find("MPC_TILTMAX_LND");
 	_params_handles.follow_vel_ff	= param_find("FOL_VEL_FF");
 	_params_handles.follow_talt_offs	= param_find("FOL_TALT_OFF");
@@ -613,6 +623,9 @@ MulticopterPositionControl::parameters_update(bool force)
 		param_get(_params_handles.tilt_max_land, &_params.tilt_max_land);
 		_params.tilt_max_land = math::radians(_params.tilt_max_land);
 		param_get(_params_handles.follow_vel_ff, &_params.follow_vel_ff);
+
+		param_get(_params_handles.yaw_dead_zone_r, &_params.yaw_dead_zone_r);
+		param_get(_params_handles.yaw_gradient_zone_r, &_params.yaw_gradient_zone_r);
 		
 		param_get(_params_handles.follow_talt_offs, &_params.follow_talt_offs);
 		param_get(_params_handles.follow_yaw_off_max, &_params.follow_yaw_off_max);
@@ -1597,7 +1610,7 @@ MulticopterPositionControl::control_follow(float dt)
 	float follow_offset_xy_len = follow_offset_xy.length();
 
 	if (sp_move_rate_xy.length_squared() > 0.0f) {
-		if (_control_mode.flag_control_point_to_target && follow_offset_xy_len > FOLLOW_OFFS_XY_MIN) {
+		if (_control_mode.flag_control_point_to_target && follow_offset_xy_len > _params.yaw_dead_zone_r) {
 			/* calculate change rate in polar coordinates phi, d */
 			float rate_phi = -sp_move_rate_xy(1) / follow_offset_xy_len;
 			float rate_d = -sp_move_rate_xy(0);
@@ -1676,13 +1689,15 @@ void MulticopterPositionControl::set_camera_pitch(float pitch){
 void
 MulticopterPositionControl::point_to_target()
 {
+
+    mavlink_log_info(_mavlink_fd, "%.5f %.5f", (double)_params.yaw_dead_zone_r, (double)_params.yaw_gradient_zone_r);
 	/* change yaw to keep direction to target */
 	/* calculate current offset (not offset setpoint) */
 	math::Vector<3> current_offset = _pos - _tpos;
 	math::Vector<2> current_offset_xy(current_offset(0), current_offset(1));
 	/* don't try to rotate near singularity */
 	float current_offset_xy_len = current_offset_xy.length();
-	if (current_offset_xy_len > FOLLOW_OFFS_XY_MIN) {
+	if (current_offset_xy_len > _params.yaw_dead_zone_r) {
 		/* calculate yaw setpoint from current positions and control offset with yaw stick */
 		_att_sp.yaw_body = _wrap_pi(atan2f(-current_offset_xy(1), -current_offset_xy(0)) + _manual.r * _params.follow_yaw_off_max);
 

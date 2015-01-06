@@ -306,13 +306,25 @@ PARAM_DEFINE_FLOAT(FOL_LPF, 1.0f);
 PARAM_DEFINE_FLOAT(CAM_P_MAX, 90.0f);
 
 /**
- * YAW ignore radius i.e. dead zone
+ * Yaw dead zone radius, yaw wont work if target in XY plane will be closer than
+ * dead zone radius
  * @unit meters
  * @min 0.0
  * @max 50.0
  *
 **/
-PARAM_DEFINE_FLOAT(A_YAW_IGNR_R, 2.0f);
+PARAM_DEFINE_FLOAT(A_YAW_DEAD_Z_R, 2.0f);
+
+
+/**
+ * Yaw gardient zone radius, speed of yaw in this zone will be determined
+ * where between GRAD ZONE and DEAD ZONE on XY plane target is positioned
+ * @unit meters
+ * @min 0.0
+ * @max 50.0
+ *
+**/
+PARAM_DEFINE_FLOAT(A_YAW_GRAD_Z_R, 4.0f);
 
 /**
  * Cutoff frequency of LPF filter on camera pitch
