@@ -677,6 +677,10 @@ MulticopterAttitudeControl::control_attitude(float dt)
 	/* limit yaw rate */
 	_rates_sp(2) = math::constrain(_rates_sp(2), -_params.yaw_rate_max, _params.yaw_rate_max);
 
+    if (_v_att_sp.yawrate_limit != 0.0f) {
+        _rates_sp(2) = math::constrain(_rates_sp(2), -_v_att_sp.yawrate_limit, _v_att_sp.yawrate_limit);
+    }
+
 	/* feed forward attitude rates */
 	_rates_sp += rates_ff;
 }
