@@ -286,9 +286,16 @@ Navigator::set_next_path_point(double point[3], bool force, int num) {
                 break;
             }
             case 1: {
-                _last_leash_point[0] = point[0];
-                _last_leash_point[1] = point[1];
-                _last_leash_point[2] = point[2];
+                if (_first_leash_point[0] != point[0] &&
+                    _first_leash_point[1] != point[1] &&
+                    _first_leash_point[2] != point[2]) {
+                        _last_leash_point[0] = point[0];
+                        _last_leash_point[1] = point[1];
+                        _last_leash_point[2] = point[2];
+                } else {
+                    mavlink_log_info(_mavlink_fd, "[nav] Not setting second point: same as first one\n");
+                    return false;
+                }
                 break;
             }
         }
@@ -298,18 +305,25 @@ Navigator::set_next_path_point(double point[3], bool force, int num) {
             _first_leash_point[0] = point[0];
             _first_leash_point[1] = point[1];
             _first_leash_point[2] = point[2];
-            return true;
-        } else if ( is_empty(_last_leash_point) ) {
-            mavlink_log_info(_mavlink_fd, "[nav] Got second point on path\n");
-            _last_leash_point[0] = point[0];
-            _last_leash_point[1] = point[1];
-            _last_leash_point[2] = point[2];
-            return true;
-        } else {
-            mavlink_log_info(_mavlink_fd, "[nav] Not setting point, already had 2\n");
-            return false;
-        }
-    }
+             return true;
+         } else if ( is_empty(_last_leash_point) ) {
+             if (_first_leash_point[0] != point[0] &&
+                 _first_leash_point[1] != point[1] &&
+                 _first_leash_point[2] != point[2]) {
+                     mavlink_log_info(_mavlink_fd, "[nav] Got second point on path\n");
+                     _last_leash_point[0] = point[0];
+                     _last_leash_point[1] = point[1];
+                     _last_leash_point[2] = point[2];
+             } else {
+                 mavlink_log_info(_mavlink_fd, "[nav] Not setting second point: same as first one\n");
+                 return false;
+             }
+         } else {
+             mavlink_log_info(_mavlink_fd, "[nav] Not setting point, already had 2\n");
+             return false;
+         }
+     }
+     return true;
 }
 
 bool
