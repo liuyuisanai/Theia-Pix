@@ -1356,7 +1356,7 @@ MulticopterPositionControl::control_cablepark()
     // Returning to local pos of mc_pos_contoll (not starting from the first cable park point)
     _pos_sp(0) = final_vector(0) + _first_cbpark_point(0);
     _pos_sp(1) = final_vector(1) + _first_cbpark_point(1);
-    _pos_sp(2) = _first_cbpark_point_alt;
+    //_pos_sp(2) = _first_cbpark_point_alt; // TODO [Max]: This should be fixed, now working wrong cause of ref_alt changes..
 }
 
 void
