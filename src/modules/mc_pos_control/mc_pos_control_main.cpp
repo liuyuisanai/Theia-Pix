@@ -1987,7 +1987,7 @@ MulticopterPositionControl::task_main()
 
 				/* run position & altitude controllers, calculate velocity setpoint */
 
-                if (_pos_sp_triplet.current.type == SETPOINT_TYPE_VELOCITY){
+                if (_pos_sp_triplet.current.type == SETPOINT_TYPE_VELOCITY && _control_mode.flag_control_auto_enabled){
 
                     control_auto_vel(dt); // calculate vel_sp
 

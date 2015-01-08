@@ -324,7 +324,7 @@ PARAM_DEFINE_FLOAT(A_YAW_DEAD_Z_R, 2.0f);
  * @max 50.0
  *
 **/
-PARAM_DEFINE_FLOAT(A_YAW_GRAD_Z_R, 4.0f);
+PARAM_DEFINE_FLOAT(A_YAW_GRAD_Z_R, 2.0f);
 
 /**
  * Cutoff frequency of LPF filter on camera pitch
