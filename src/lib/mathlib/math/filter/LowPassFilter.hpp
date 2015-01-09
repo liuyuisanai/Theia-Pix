@@ -54,6 +54,9 @@ public:
 			float a = dt / (_rc + dt);
 			_value *= (1.0f - a);
 			_value += next_value * a;
+			if (_time_last == 0) {
+				_value = next_value; // init first sample
+			}
 		}
 
 		_time_last = t;

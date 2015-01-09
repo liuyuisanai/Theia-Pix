@@ -76,6 +76,14 @@ PARAM_DEFINE_INT32(MAV_USEHILGPS, 0);
  */
 PARAM_DEFINE_INT32(MAV_FWDEXTSP, 1);
 
+/**
+ * Indicates whether to use minimalistic stream configuration
+ * If set to rcS will start mavlink with very few streams allowing
+ * more bandwidth for target messages
+ * @group MAVLink
+ */
+PARAM_DEFINE_INT32(MAV_MINIMALISTIC, 0);
+
 mavlink_system_t mavlink_system = {
 	100,
 	50,

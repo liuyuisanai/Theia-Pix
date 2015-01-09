@@ -34,9 +34,12 @@ enum PX4_CUSTOM_SUB_MODE_AUTO {
 	PX4_CUSTOM_SUB_MODE_AUTO_RTGS,
 };
 
+// TODO 1. move the union definition to mavlink module.
+// TODO 2. check required fields.
 union px4_custom_mode {
 	struct {
-		uint16_t reserved;
+		uint8_t state_main;
+		uint8_t state_aird;
 		uint8_t main_mode;
 		uint8_t sub_mode;
 	};

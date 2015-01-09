@@ -59,6 +59,8 @@ struct vehicle_attitude_setpoint_s {
 	float pitch_body;				/**< body angle in NED frame		*/
 	float yaw_body;					/**< body angle in NED frame		*/
 	//float body_valid;				/**< Set to true if body angles are valid */
+    
+    float yawrate_limit;             /** Yaw rate limit. 0 - no limit */
 
 	float rollrate_ff;				/**< feed forward roll rate in body frame		*/
 	float pitchrate_ff;				/**< feed forward pitch rate in body frame		*/

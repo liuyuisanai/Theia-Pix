@@ -27,7 +27,8 @@
 	X(12,SENS_SON_MIN,		0, 0, 1.0f,		PTYPE_FLOAT,	    0.5f,       4.0f,		0.5f,	    "50A" ) \
 	X(13,SENS_SON_ON,		0, 0, 1.0f,		PTYPE_INT,		    0,	        1,		    1,		    " 50" ) \
 	X(14,MPC_Z_VEL_MAX,		0, 0, 1.0f,		PTYPE_FLOAT,	    1.0f,       20.0f,	    1.0f,	    "UUE" ) \
-	X(15,MPC_XY_VEL_MAX,	0, 0, 1.0f,		PTYPE_FLOAT,	    1.0f,       10.0f,	    1.0f,	    "HUE" ) 
+	X(15,MPC_XY_VEL_MAX,	0, 0, 1.0f,		PTYPE_FLOAT,	    1.0f,       10.0f,	    1.0f,	    "HUE" ) \
+    X(16,NAV_AFOL_MODE,     0, 0, 1.0f,     PTYPE_INT,          0,          2,          1,          "AF0")
 //	X(0,	/* FTO */				FOL_TALT_OFF,		0, 0, 1.0f,		PTYPE_INT,		0,		1,		1,		"FTO" ) \
 	X(1,	/* FRA */				FOL_RPT_ALT,		0, 0, 1.0f,		PTYPE_INT,		0,		1,		1,		"FRA" ) \
 	X(2,	/* FUA */				FOL_USE_ALT,		0, 0, 1.0f,		PTYPE_INT,		0,		1,		1,		"FUA" ) \
@@ -56,7 +57,7 @@
 	X(18,	/* NAV_RTL_ALT */		NAV_RTL_ALT,		0, 0, 1.0f,		PTYPE_FLOAT,	3.0f,	50.0f,	1.0f,	"RAL" ) \
 	X(19,	/* NAV_LAND_HOME */		NAV_LAND_HOME,		0, 0, 1.0f,		PTYPE_INT,		0,		1,		1,		"LAH" )
 
-#define PARAM_COUNT 16
+#define PARAM_COUNT 17
 
 #define X(n, id, cv, ev, mul, type, min, max, step, dsym) PARAM_##id = n,
 enum param_id {

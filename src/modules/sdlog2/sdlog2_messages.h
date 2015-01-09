@@ -424,6 +424,35 @@ struct log_TPOS_s {
 	float eph;
 	float epv;
 };
+/* --- EXTJ - EXTERNAL TRAJECTORY --- */
+#define LOG_EXTJ_MSG 65
+struct log_EXTJ_s {
+	uint8_t point_type; /**< Indicates whether movement has crossed the threshold, 0 - still point, 1 - moving */
+	uint8_t sysid; 		/**< External system id */
+	uint64_t timestamp;	/**< Time of this estimate, in microseconds since system start */
+	int32_t lat;			/**< Latitude in degrees */
+	int32_t lon;			/**< Longitude in degrees */
+	float alt;			/**< Altitude AMSL in meters */
+	float relative_alt; /**< Altitude above ground in meters */
+	float vel_n; 		/**< Ground north velocity, m/s	*/
+	float vel_e;		/**< Ground east velocity, m/s */
+	float vel_d;		/**< Ground downside velocity, m/s */
+	float heading;   	/**< Compass heading in radians [0..2PI) */
+};
+/* --- LOTJ - LOCAL TRAJECTORY --- */
+#define LOG_LOTJ_MSG 66
+struct log_LOTJ_s {
+	uint8_t point_type; /**< Indicates whether movement has crossed the threshold, 0 - still point, 1 - moving */
+	uint64_t timestamp;	/**< Time of this estimate, in microseconds since system start		*/
+	int32_t lat;			/**< Latitude in degrees	*/
+	int32_t lon;			/**< Longitude in degrees	*/
+	float alt;			/**< Altitude AMSL in meters */
+	float relative_alt; /**< Altitude above ground in meters */
+	float vel_n; 		/**< Ground north velocity, m/s	*/
+	float vel_e;		/**< Ground east velocity, m/s */
+	float vel_d;		/**< Ground downside velocity, m/s */
+	float heading;   	/**< Compass heading in radians [0..2PI) */
+};
 
 /* --- GPRE - PREVIOUS GLOBAL SETPOINT --- */
 #define LOG_GPRE_MSG 67
@@ -442,6 +471,33 @@ struct log_GNEX_s {
 	int32_t lon;
 	float alt;
 	uint8_t type;
+};
+
+
+/* --- DEBUG DATA --- */
+#define LOG_DEBUGD_MSG 69
+struct log_DEBUGD_s {
+    float val[8];
+};
+
+/* --- Mavlink stats --- */
+#define LOG_MVST_MSG 70
+struct log_MVST_s {
+	uint32_t total_bytes;
+	uint32_t heartbeat_count;
+	uint32_t gpos_count;
+	uint32_t trajectory_count;
+};
+
+/* --- Vehicle command --- */
+#define LOG_CMD_MSG 71
+struct log_CMD_s {
+	uint16_t command;
+	uint8_t source_sys;
+	uint8_t source_comp;
+	float param1;
+	float param2;
+	float param3;
 };
 
 /********** SYSTEM MESSAGES, ID > 0x80 **********/
@@ -509,8 +565,13 @@ static const struct log_format_s log_formats[] = {
 	LOG_FORMAT(TECS, "fffffffffffffB",	"ASP,AF,FSP,F,FF,AsSP,AsF,AsDSP,AsD,TERSP,TER,EDRSP,EDR,M"),
 	LOG_FORMAT(WIND, "ffff",	"X,Y,CovX,CovY"),
 	LOG_FORMAT(TPOS, "BQLLffffff", "SysID,Time,Lat,Lon,Alt,VelN,VelE,VelD,EPH,EPV"),
+	LOG_FORMAT(EXTJ, "BBQLLffffff", "Type,SysID,Time,Lat,Lon,Alt,RAlt,VelN,VelE,VelD,Head"),
+	LOG_FORMAT(DEBUGD, "ffffffff", "val0,val1,val2,val3,val4,val5,val6,val7"),
+	LOG_FORMAT(LOTJ, "BQLLffffff", "Type,Time,Lat,Lon,Alt,RAlt,VelN,VelE,VelD,Head"),
 	LOG_FORMAT(GPRE, "BLLfB",		"NavState,Lat,Lon,Alt,Type"),
 	LOG_FORMAT(GNEX, "BLLfB",		"NavState,Lat,Lon,Alt,Type"),
+	LOG_FORMAT(MVST, "IIII", "TotalBytes,HrtCount,GposCount,TrajCount"),
+	LOG_FORMAT(CMD, "HBBfff", "Cmd,SrcSys,SrcComp,Par1,Par2,Par3"),
 
 	/* system-level messages, ID >= 0x80 */
 	/* FMT: don't write format of format message, it's useless */

@@ -56,6 +56,15 @@
 #include "loiter.h"
 #include "navigator.h"
 
+// Keep aligned with sub_mode enum!
+const char* Loiter::mode_names[] = { "Landed",
+		"Aim-and-shoot",
+		"Look down",
+		"Go-to-position",
+		"Landing",
+		"Taking-off"
+};
+
 Loiter::Loiter(Navigator *navigator, const char *name) :
 	MissionBlock(navigator, name),
 	previous_target_valid_flag(false)
@@ -80,21 +89,75 @@ Loiter::on_activation()
 	//Ignore all commands received from target so far
 	update_vehicle_command();
 
+    if (_parameters.first_point_lat == _parameters.last_point_lat
+        && _parameters.first_point_lon == _parameters.last_point_lon
+        && _parameters.first_point_lat != 0
+        && _parameters.first_point_lon != 0
+        ){
+        // Deleting points, from logs and parameters, can't be valid
+        int i_reset = 0;
+        float f_reset = 0.0f;
+        if (   param_set(param_find("NAV_CP_FIR_LA"), &i_reset)
+            || param_set(param_find("NAV_CP_FIR_LO"), &i_reset)
+            || param_set(param_find("NAV_CP_FIR_AL"), &f_reset)
+            || param_set(param_find("NAV_CP_LAS_LA"), &i_reset)
+            || param_set(param_find("NAV_CP_LAS_LO"), &i_reset)
+            || param_set(param_find("NAV_CP_LAS_AL"), &f_reset)
+           ) {
+            mavlink_log_critical(_mavlink_fd, "ERROR: failed to save first leash point");
+        } else {
+            fprintf(stderr, "[loi] Eraised all params\n");
+            //TODO [Max] send request to save parameters
+        }
+    } else {
+        if (_parameters.first_point_lat != 0
+                || _parameters.first_point_lon != 0
+                || _parameters.first_point_alt != 0.0f) {
+            double first_point[3];
+            first_point[0] = _parameters.first_point_lat / 1e7;
+            first_point[1] = _parameters.first_point_lon / 1e7;
+            first_point[2] = _parameters.first_point_alt;
+            _navigator->set_next_path_point(first_point, true, 0);
+            fprintf(stderr, "[loi] setting first point\n");
+        }
+        if (_parameters.last_point_lat != 0
+                || _parameters.last_point_lon != 0
+                || _parameters.last_point_alt != 0.0f) {
+            double last_point[3];
+            last_point[0] = _parameters.last_point_lat / 1e7;
+            last_point[1] = _parameters.last_point_lon / 1e7;
+            last_point[2] = _parameters.last_point_alt;
+            _navigator->set_next_path_point(last_point, true, 1);
+            fprintf(stderr, "[loi] setting second point\n");
+        }
+        _navigator->publish_position_restriction();
+    }
+
 	// Determine current loiter sub mode
 	struct vehicle_status_s *vstatus = _navigator->get_vstatus();
 
+	// Prevent camera mode from resetting on activation
+	previous_target_valid_flag = vstatus->condition_target_position_valid;
+
     _mavlink_fd = _navigator->get_mavlink_fd();
 
+    // By default reset camera only if the camera mode has changed
+    int8_t camera_reset_mode = 0;
+    if (vstatus->nav_state_fallback) {
+    	// Skip camera resetting in case we've fallbacked to Loiter
+    	camera_reset_mode = -1;
+    }
+
     if (vstatus->auto_takeoff_cmd) {
-		set_sub_mode(LOITER_SUB_MODE_TAKING_OFF, 1);
+		set_sub_mode(LOITER_SUB_MODE_TAKING_OFF, 1, camera_reset_mode);
 		takeoff();
 		//resetModeArguments(MAIN_STATE_LOITER); //now done in commander itself
 
 	} else if (vstatus->airdog_state == AIRD_STATE_LANDED || vstatus->airdog_state == AIRD_STATE_STANDBY) {
-		set_sub_mode(LOITER_SUB_MODE_LANDED, 1);
+		set_sub_mode(LOITER_SUB_MODE_LANDED, 1, camera_reset_mode);
 	} else {
 		_camera_mode = UNDEFINED;
-		set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, 1); 
+		set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, 1, camera_reset_mode);
 		commander_request_s *commander_request = _navigator->get_commander_request();
         commander_request->request_type = AIRD_STATE_CHANGE;
         commander_request->airdog_state = AIRD_STATE_IN_AIR;
@@ -132,7 +195,7 @@ Loiter::on_active()
 	if (previous_target_valid_flag != vehicle_status->condition_target_position_valid) {
 		if(vehicle_status->condition_target_position_valid) {
 			// Refresh current submode if target signal regained and force camera reset
-			set_sub_mode(loiter_sub_mode, 0, true);
+			set_sub_mode(loiter_sub_mode, 0, 1);
 		}
 		else {
 			// Reset yaw only, 'cause we might be moving to initial position or something
@@ -430,14 +493,46 @@ Loiter::execute_command_in_aim_and_shoot(vehicle_command_s cmd){
 
 			}
 			case REMOTE_CMD_PLAY_PAUSE: {
+                if (_parameters.afol_mode == 0) {
 
-				commander_request_s *commander_request = _navigator->get_commander_request();
-				commander_request->request_type = V_MAIN_STATE_CHANGE;
-				commander_request->main_state = MAIN_STATE_ABS_FOLLOW;
-				_navigator->set_commander_request_updated();
+                	commander_request_s *commander_request = _navigator->get_commander_request();
+					commander_request->request_type = V_MAIN_STATE_CHANGE;
+					commander_request->main_state = MAIN_STATE_ABS_FOLLOW;
+					_navigator->set_commander_request_updated();
 
+                } else if (_parameters.afol_mode == 1) {
+                     
+                    commander_request_s *commander_request = _navigator->get_commander_request();
+                    commander_request->request_type = V_MAIN_STATE_CHANGE;
+                    commander_request->main_state = MAIN_STATE_AUTO_PATH_FOLLOW;
+
+                    _navigator->set_flag_reset_pfol_offs(true);
+
+                    _navigator->set_commander_request_updated();
+                
+                } else if (_parameters.afol_mode == 2) {
+                    commander_request_s *commander_request = _navigator->get_commander_request();
+                    commander_request->request_type = V_MAIN_STATE_CHANGE;
+                    commander_request->main_state = MAIN_STATE_CABLE_PARK;
+                    _navigator->set_commander_request_updated();
+                }
 				break;
 			}
+            case REMOTE_CMD_SET_POINT: {
+                    double point[3] = {
+                          global_pos->lat
+                        , global_pos->lon
+                        , global_pos->alt
+                    };
+                    _navigator->set_next_path_point(point);
+                    _navigator->publish_position_restriction();
+                    break;
+            }
+            case REMOTE_CMD_CLEAR_POINTS: {
+                    _navigator->clear_path_points();
+                    _navigator->publish_position_restriction();
+                    break;
+            }
 
 		}
 
@@ -476,15 +571,24 @@ Loiter::execute_command_in_landing(vehicle_command_s cmd){
 	if (cmd.command == VEHICLE_CMD_NAV_REMOTE_CMD) {
 		int remote_cmd = cmd.param1;
 		if (remote_cmd == REMOTE_CMD_PLAY_PAUSE) {
+			// Update airdog state
+			commander_request_s *commander_request = _navigator->get_commander_request();
+			commander_request->request_type = AIRD_STATE_CHANGE;
+			commander_request->airdog_state = AIRD_STATE_IN_AIR;
+			_navigator->set_commander_request_updated();
+
 			set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, 1);
 			loiter_sub_mode = LOITER_SUB_MODE_AIM_AND_SHOOT;
 		}
 	}
 }
 
-// @param reset_setpoint: 0 = false; 1 = reset position and type; 2 = reset type only
+/**
+ * @param reset_setpoint: 0 = false; 1 = reset position and type; 2 = reset type only
+ * @param force_camera_reset: -1 => skip camera change; 0 => change only if state changed; 1 => force reset
+ */
 void
-Loiter::set_sub_mode(LOITER_SUB_MODE new_sub_mode, uint8_t reset_setpoint, bool force_camera_reset) {
+Loiter::set_sub_mode(LOITER_SUB_MODE new_sub_mode, uint8_t reset_setpoint, int8_t force_camera_reset) {
 
 	if (reset_setpoint > 0) {
 		pos_sp_triplet = _navigator->get_position_setpoint_triplet();
@@ -511,35 +615,29 @@ Loiter::set_sub_mode(LOITER_SUB_MODE new_sub_mode, uint8_t reset_setpoint, bool 
 
 	loiter_sub_mode = new_sub_mode;
 
-	char * sub_mode_str;
-
-	switch(new_sub_mode){
-		case LOITER_SUB_MODE_AIM_AND_SHOOT:
-			sub_mode_str = "Aim-and-shoot";
-			set_camera_mode(AIM_TO_TARGET, force_camera_reset);
-			break;
-		case LOITER_SUB_MODE_LOOK_DOWN:
-			sub_mode_str = "Look down";
-			set_camera_mode(LOOK_DOWN, force_camera_reset);
-			break;
-		case LOITER_SUB_MODE_GO_TO_POSITION:
-			sub_mode_str = "Go-to-position";
-			set_camera_mode(AIM_TO_TARGET, force_camera_reset);
-			break;
-		case LOITER_SUB_MODE_LANDING:
-			sub_mode_str = "Landing";
-			set_camera_mode(HORIZONTAL, force_camera_reset);
-			break;
-		case LOITER_SUB_MODE_TAKING_OFF:
-			sub_mode_str = "Taking-off";
-			set_camera_mode(HORIZONTAL, force_camera_reset);
-			break;
-		case LOITER_SUB_MODE_LANDED:
-			sub_mode_str = "Landed";
-			break;
+	if (force_camera_reset != -1) {
+		switch(new_sub_mode){
+			case LOITER_SUB_MODE_AIM_AND_SHOOT:
+				set_camera_mode(AIM_TO_TARGET, force_camera_reset == 1);
+				break;
+			case LOITER_SUB_MODE_LOOK_DOWN:
+				set_camera_mode(LOOK_DOWN, force_camera_reset == 1);
+				break;
+			case LOITER_SUB_MODE_GO_TO_POSITION:
+				set_camera_mode(AIM_TO_TARGET, force_camera_reset == 1);
+				break;
+			case LOITER_SUB_MODE_LANDING:
+				set_camera_mode(HORIZONTAL, force_camera_reset == 1);
+				break;
+			case LOITER_SUB_MODE_TAKING_OFF:
+				set_camera_mode(HORIZONTAL, force_camera_reset == 1);
+				break;
+			case LOITER_SUB_MODE_LANDED:
+				break;
+		}
 	}
 
-	mavlink_log_info(_mavlink_fd, "[loiter] Loiter sub mode set to %s ! ", sub_mode_str);
+	mavlink_log_info(_mavlink_fd, "[loiter] Loiter sub mode set to %s ! ", Loiter::mode_names[new_sub_mode]);
 
 }
 

@@ -76,6 +76,9 @@
 #include <commander/px4_custom_mode.h>
 #include <geo/geo.h>
 
+#include <uORB/topics/mavlink_receive_stats.h>
+#include <uORB/uORB.h>
+
 __BEGIN_DECLS
 
 #include "mavlink_bridge_header.h"
@@ -953,6 +956,8 @@ MavlinkReceiver::handle_message_heartbeat(mavlink_message_t *msg)
 
                     _airdog_status.main_mode = custom_mode.main_mode;
                     _airdog_status.sub_mode = custom_mode.sub_mode;
+                    _airdog_status.state_main = custom_mode.state_main;
+                    _airdog_status.state_aird = custom_mode.state_aird;
                     _airdog_status.base_mode = heartbeat.base_mode;
                     _airdog_status.system_status = heartbeat.system_status;
                     _airdog_status.timestamp = hrt_absolute_time();
@@ -1033,6 +1038,8 @@ MavlinkReceiver::handle_message_trajectory(mavlink_message_t *msg)
 	ext_traj.vel_e = msg_traj.vy * 1.0e-2f;
 	ext_traj.vel_d = msg_traj.vz * 1.0e-2f;
 	ext_traj.heading = msg_traj.hdg * 1.0e-2f * M_DEG_TO_RAD_F;
+
+	ext_traj.point_type = msg_traj.point_type;
 
 	if (_external_trajectory_pub < 0) {
 		_external_trajectory_pub = orb_advertise(ORB_ID(external_trajectory), &ext_traj);
@@ -1497,6 +1504,11 @@ MavlinkReceiver::handle_message_hil_state_quaternion(mavlink_message_t *msg)
 void *
 MavlinkReceiver::receive_thread(void *arg)
 {
+	mavlink_receive_stats_s stats;
+	memset(&stats, 0, sizeof(stats));
+
+	orb_advert_t mavlink_stat_topic = 0;
+
 	int uart_fd = _mavlink->get_uart_fd();
 
 	const int timeout = 500;
@@ -1532,11 +1544,35 @@ MavlinkReceiver::receive_thread(void *arg)
 
 					/* handle packet with parent object */
 					_mavlink->handle_message(&msg);
+
+					switch (msg.msgid) {
+					case MAVLINK_MSG_ID_HEARTBEAT:
+						++stats.heartbeat_count;
+						break;
+					case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
+						++stats.gpos_count;
+						break;
+					case MAVLINK_MSG_ID_TRAJECTORY:
+						++stats.trajectory_count;
+						break;
+					default:
+						break;
+					}
 				}
 			}
 
 			/* count received bytes */
 			_mavlink->count_rxbytes(nread);
+
+			if (nread > 0) {
+				/* Report to uORB */
+				stats.total_bytes += nread;
+				if (mavlink_stat_topic > 0) {
+					orb_publish(ORB_ID(mavlink_receive_stats), mavlink_stat_topic, &stats);
+				} else {
+					mavlink_stat_topic = orb_advertise(ORB_ID(mavlink_receive_stats), &stats);
+				}
+			}
 		}
 	}
 

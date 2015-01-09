@@ -84,6 +84,7 @@
 #include <uORB/topics/mission_result.h>
 #include <uORB/topics/telemetry_status.h>
 #include <uORB/topics/commander_request.h>
+#include <uORB/topics/position_restriction.h>
 
 
 #include <drivers/drv_led.h>
@@ -786,7 +787,6 @@ int commander_thread_main(int argc, char *argv[])
 	param_t _param_ef_throttle_thres = param_find("COM_EF_THROT");
 	param_t _param_ef_current2throttle_thres = param_find("COM_EF_C2T");
 	param_t _param_ef_time_thres = param_find("COM_EF_TIME");
-	
 
 	float battery_warning_level;
 	float battery_critical_level;
@@ -825,6 +825,15 @@ int commander_thread_main(int argc, char *argv[])
 	param_get(_param_target_datalink_timeout, &target_datalink_timeout);
 	param_get(_param_target_visibility_timeout_2, &target_visibility_timeout_2);
 
+	param_t _param_good_target_eph = param_find("A_GOOD_TRG_EPH");
+	param_t _param_good_target_epv = param_find("A_GOOD_TRG_EPV");
+
+	float good_target_eph;
+	float good_target_epv;
+
+	param_get(_param_good_target_eph, &good_target_eph);
+	param_get(_param_good_target_epv, &good_target_epv);
+
 	/* welcome user */
 	warnx("starting");
 
@@ -860,9 +869,11 @@ int commander_thread_main(int argc, char *argv[])
 	nav_states_str[NAVIGATION_STATE_RTL]		= "AUTO_RTL";
 	nav_states_str[NAVIGATION_STATE_AUTO_RCRECOVER] = "RC_RECOVER";
 	nav_states_str[NAVIGATION_STATE_AUTO_RTGS]		= "AUTO_RTGS";
+    nav_states_str[NAVIGATION_STATE_CABLE_PARK]           = "AUTO_CABLE_PARK";
 	nav_states_str[NAVIGATION_STATE_ABS_FOLLOW]    = "AUTO_ABS_FOLLOW";
 	nav_states_str[NAVIGATION_STATE_AUTO_LANDENGFAIL] = "LAND_ENGINE_FAIL";
 	nav_states_str[NAVIGATION_STATE_AUTO_LANDGPSFAIL] = "LAND_GPS_FAIL";
+	nav_states_str[NAVIGATION_STATE_AUTO_PATH_FOLLOW] = "AUTO_PATH_FOLLOW";
 	nav_states_str[NAVIGATION_STATE_ACRO]			= "ACRO";
 	nav_states_str[NAVIGATION_STATE_LAND]			= "LAND";
 	nav_states_str[NAVIGATION_STATE_DESCEND]		= "DESCEND";
@@ -1125,6 +1136,11 @@ int commander_thread_main(int argc, char *argv[])
 	struct commander_request_s commander_request;
 	memset(&commander_request, 0, sizeof(commander_request));
 
+	/* Subscribe to restricted possition topic */
+	int _pos_restrict_sub = orb_subscribe(ORB_ID(position_restriction)); 
+    struct position_restriction_s pos_restrict;	/**< position restriction*/
+	memset(&pos_restrict, 0, sizeof(pos_restrict));
+
 	control_status_leds(&status, &armed, true);
 
 	/* now initialized */
@@ -1149,8 +1165,10 @@ int commander_thread_main(int argc, char *argv[])
 	/* check which state machines for changes, clear "changed" flag */
 	bool main_state_changed = false;
 	bool failsafe_old = false;
+    bool pos_res_updated = false;
 	bool target_position_was_valid = false;
-	bool trg_eph_epv_good;
+	bool trg_eph_good;
+	bool trg_epv_good;
 
 	while (!thread_should_exit) {
 
@@ -1160,6 +1178,21 @@ int commander_thread_main(int argc, char *argv[])
 		}
 
 		arming_ret = TRANSITION_NOT_CHANGED;
+
+
+        orb_check(_pos_restrict_sub, &pos_res_updated);
+        if (pos_res_updated) {
+            orb_copy(ORB_ID(position_restriction), _pos_restrict_sub, &pos_restrict);
+        }
+        if (      (pos_restrict.line.first[0] == 0.0 && pos_restrict.line.first[1] == 0.0)
+               || (pos_restrict.line.last[0] == 0.0 && pos_restrict.line.last[1] == 0.0)
+               || (pos_restrict.line.first[0] == pos_restrict.line.last[0] && pos_restrict.line.first[1] == pos_restrict.line.last[1]) //to avoid vector module == NaN
+           ) {
+            status.condition_path_points_valid = false;
+        }
+        else {
+            status.condition_path_points_valid = true;
+        }
 
 
 		/* update parameters */
@@ -1221,6 +1254,9 @@ int commander_thread_main(int argc, char *argv[])
 
 			param_get(_param_target_datalink_timeout, &target_datalink_timeout);
 			param_get(_param_target_visibility_timeout_2, &target_visibility_timeout_2);
+
+			param_get(_param_good_target_eph, &good_target_eph);
+			param_get(_param_good_target_epv, &good_target_epv);
 
 			param_get(_param_require_gps, &require_gps);
 			if (require_gps != status.require_gps) {
@@ -1468,20 +1504,39 @@ int commander_thread_main(int argc, char *argv[])
 		/* recheck target position validity */
 		if (status.condition_target_position_valid) {
 			/* More lax threshold if position was valid before */
-			if (target_position.eph > eph_threshold * 2.0f || target_position.epv > epv_threshold * 2.0f) {
-				trg_eph_epv_good = false;
-			} else {
-				trg_eph_epv_good = true;
+			if (good_target_eph > FLT_EPSILON && target_position.eph > good_target_eph * 2.0f) {
+				trg_eph_good = false;
+			}
+			else {
+				// Always good if parameter-defined "good_target_eph" is non-positive
+				trg_eph_good = true;
+			}
+			if (good_target_epv > FLT_EPSILON && target_position.epv > good_target_epv * 2.0f) {
+				trg_epv_good = false;
+			}
+			else {
+				// Always good if parameter-defined "good_target_epv" is non-positive
+				trg_epv_good = true;
 			}
 		} else {
 			/* More strict threshold if position was invalid before */
-			if (target_position.eph < eph_threshold && target_position.epv < epv_threshold) {
-				trg_eph_epv_good = true;
-			} else {
-				trg_eph_epv_good = false;
+			if (good_target_eph <= FLT_EPSILON || target_position.eph < good_target_eph) {
+				// Always good if parameter-defined "good_target_eph" is non-positive
+				trg_eph_good = true;
+			}
+			else {
+				trg_eph_good = false;
+			}
+
+			if (good_target_epv <= FLT_EPSILON || target_position.epv < good_target_epv) {
+				// Always good if parameter-defined "good_target_epv" is non-positive
+				trg_epv_good = true;
+			}
+			else {
+				trg_epv_good = false;
 			}
 		}
-		check_valid(target_position.timestamp, target_datalink_timeout * 1000, trg_eph_epv_good, &(status.condition_target_position_valid), &status_changed);
+		check_valid(target_position.timestamp, target_datalink_timeout * 1000, trg_eph_good && trg_epv_good, &(status.condition_target_position_valid), &status_changed);
 
 		if (status.condition_target_position_valid) {
 			status.last_target_time = hrt_absolute_time();
@@ -2547,6 +2602,8 @@ set_control_mode()
 	control_mode.flag_system_hil_enabled = status.hil_state == HIL_STATE_ON;
 	control_mode.flag_control_offboard_enabled = false;
 	control_mode.flag_control_follow_target = false;
+	control_mode.flag_control_setpoint_velocity = false;
+	control_mode.flag_control_follow_restricted = false;
 	if (!_custom_flag_control_point_to_target) {
 		control_mode.flag_control_point_to_target = false;
 	}
@@ -2725,6 +2782,41 @@ set_control_mode()
 		control_mode.flag_control_position_enabled = false;
 		control_mode.flag_control_velocity_enabled = false;
 		control_mode.flag_control_termination_enabled = false;
+		break;
+
+	case NAVIGATION_STATE_AUTO_PATH_FOLLOW:
+		control_mode.flag_control_manual_enabled = false;
+		control_mode.flag_control_auto_enabled = true;
+		control_mode.flag_control_rates_enabled = true;
+		control_mode.flag_control_attitude_enabled = true;
+		control_mode.flag_control_altitude_enabled = true;
+		control_mode.flag_control_climb_rate_enabled = true;
+		control_mode.flag_control_position_enabled = true;
+		control_mode.flag_control_velocity_enabled = true;
+		control_mode.flag_control_termination_enabled = false;
+		control_mode.flag_control_follow_target = false;
+		if (!_custom_flag_control_point_to_target) {
+			control_mode.flag_control_point_to_target = true;
+		}
+		control_mode.flag_control_setpoint_velocity = true;
+		break;
+
+	case NAVIGATION_STATE_CABLE_PARK:
+		control_mode.flag_control_manual_enabled = false;
+		control_mode.flag_control_auto_enabled = true;
+		control_mode.flag_control_rates_enabled = true;
+		control_mode.flag_control_attitude_enabled = true;
+		control_mode.flag_control_altitude_enabled = true;
+		control_mode.flag_control_climb_rate_enabled = true;
+		control_mode.flag_control_position_enabled = true;
+		control_mode.flag_control_velocity_enabled = true;
+		control_mode.flag_control_termination_enabled = false;
+		control_mode.flag_control_follow_target = true;
+		if (!_custom_flag_control_point_to_target) {
+			control_mode.flag_control_point_to_target = true;
+		}
+        control_mode.flag_control_leash_control_offset = true;
+        control_mode.flag_control_follow_restricted = true;
 		break;
 
 	case NAVIGATION_STATE_ABS_FOLLOW:

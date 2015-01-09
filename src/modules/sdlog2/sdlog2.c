@@ -73,6 +73,7 @@
 #include <uORB/topics/vehicle_local_position_setpoint.h>
 #include <uORB/topics/vehicle_global_position.h>
 #include <uORB/topics/target_global_position.h>
+#include <uORB/topics/external_trajectory.h>
 #include <uORB/topics/position_setpoint_triplet.h>
 #include <uORB/topics/vehicle_gps_position.h>
 #include <uORB/topics/satellite_info.h>
@@ -90,7 +91,8 @@
 #include <uORB/topics/tecs_status.h>
 #include <uORB/topics/system_power.h>
 #include <uORB/topics/servorail_status.h>
-#include <uORB/topics/wind_estimate.h>
+#include <uORB/topics/debug_data.h>
+#include <uORB/topics/mavlink_receive_stats.h>
 
 #include <systemlib/systemlib.h>
 #include <systemlib/param/param.h>
@@ -134,6 +136,16 @@ PARAM_DEFINE_INT32(SDLOG_RATE, -1);
 PARAM_DEFINE_INT32(SDLOG_EXT, -1);
 
 /**
+ * Enables logging on system boot instead of "on arm".
+ * Enabled if 1, disabled otherwise.
+ *
+ * @min 0
+ * @max 1
+ * @group SD Logging
+ */
+PARAM_DEFINE_INT32(SDLOG_ON_BOOT, 0);
+
+/**
  * Following params provide support for custom update rates for each sdlog topic
  * Negative values - don't update
  * 0 - unlimited frequency
@@ -162,6 +174,8 @@ PARAM_DEFINE_INT32(SDLOG_M_SYSPOW, 0);
 PARAM_DEFINE_INT32(SDLOG_M_SERVO, 0);
 PARAM_DEFINE_INT32(SDLOG_M_TRGPOS, 0);
 PARAM_DEFINE_INT32(SDLOG_M_EXTRAJ, 0);
+PARAM_DEFINE_INT32(SDLOG_M_DEBUGD, 0);
+PARAM_DEFINE_INT32(SDLOG_M_MAVST, 0);
 
 #define LOGBUFFER_WRITE_AND_COUNT(_msg) if (logbuffer_write(&lb, &log_msg, LOG_PACKET_SIZE(_msg))) { \
 		log_msgs_written++; \
@@ -966,9 +980,13 @@ int sdlog2_thread_main(int argc, char *argv[])
 
 	struct vehicle_gps_position_s buf_gps_pos;
 
+	struct vehicle_command_s buf_cmd;
+
 	memset(&buf_status, 0, sizeof(buf_status));
 
 	memset(&buf_gps_pos, 0, sizeof(buf_gps_pos));
+
+	memset(&buf_cmd, 0, sizeof(buf_cmd));
 
 	/* warning! using union here to save memory, elements should be used separately! */
 	union {
@@ -999,8 +1017,11 @@ int sdlog2_thread_main(int argc, char *argv[])
 		struct system_power_s system_power;
 		struct servorail_status_s servorail_status;
 		struct satellite_info_s sat_info;
-		struct wind_estimate_s wind_estimate;
+		//struct wind_estimate_s wind_estimate;
 		struct target_global_position_s target_pos;
+		struct external_trajectory_s ext_traj;
+        struct debug_data_s debug_data;
+        struct mavlink_receive_stats_s mav_stats;
 	} buf;
 
 	memset(&buf, 0, sizeof(buf));
@@ -1044,8 +1065,12 @@ int sdlog2_thread_main(int argc, char *argv[])
 			struct log_TECS_s log_TECS;
 			struct log_WIND_s log_WIND;
 			struct log_TPOS_s log_TPOS;
+			struct log_EXTJ_s log_EXTJ;
+            struct log_DEBUGD_s log_DEBUGD;
 			struct log_GPRE_s log_GPRE;
 			struct log_GNEX_s log_GNEX;
+			struct log_MVST_s log_MVST;
+			struct log_CMD_s log_CMD;
 		} body;
 	} log_msg = {
 		LOG_PACKET_HEADER_INIT(0)
@@ -1084,6 +1109,10 @@ int sdlog2_thread_main(int argc, char *argv[])
 		int servorail_status_sub;
 		// int wind_sub;
 		int target_pos_sub;
+		int external_trajectory_sub;
+
+        int debug_data_sub;
+        int mav_stats_sub;
 	} subs;
 
 	int sub_freq;
@@ -1123,6 +1152,10 @@ int sdlog2_thread_main(int argc, char *argv[])
 	/* we need to rate-limit wind, as we do not need the full update rate */
 	// orb_set_interval(subs.wind_sub, 90);
 	LOG_ORB_PARAM_SUBSCRIBE(subs.target_pos_sub, ORB_ID(target_global_position), "SDLOG_M_TRGPOS", sub_freq)
+	LOG_ORB_PARAM_SUBSCRIBE(subs.external_trajectory_sub, ORB_ID(external_trajectory), "SDLOG_M_EXTRAJ", sub_freq)
+
+	LOG_ORB_PARAM_SUBSCRIBE(subs.debug_data_sub, ORB_ID(debug_data), "SDLOG_M_DEBUGD", sub_freq)
+	LOG_ORB_PARAM_SUBSCRIBE(subs.mav_stats_sub, ORB_ID(mavlink_receive_stats), "SDLOG_M_MAVST", sub_freq)
 
 	thread_running = true;
 
@@ -1162,8 +1195,9 @@ int sdlog2_thread_main(int argc, char *argv[])
 		usleep(sleep_delay);
 
 		/* --- VEHICLE COMMAND - LOG MANAGEMENT --- */
-		if (copy_if_updated(ORB_ID(vehicle_command), subs.cmd_sub, &buf.cmd)) {
-			handle_command(&buf.cmd);
+		bool command_updated = copy_if_updated(ORB_ID(vehicle_command), subs.cmd_sub, &buf_cmd);
+		if (command_updated) {
+			handle_command(&buf_cmd);
 		}
 
 		/* --- VEHICLE STATUS - LOG MANAGEMENT --- */
@@ -1207,6 +1241,17 @@ int sdlog2_thread_main(int argc, char *argv[])
 			log_msg.body.log_STAT.aird_state = buf_status.airdog_state;
 			log_msg.body.log_STAT.target_valid = buf_status.condition_target_position_valid;
 			LOGBUFFER_WRITE_AND_COUNT(STAT);
+		}
+
+		if (command_updated) {
+			log_msg.msg_type = LOG_CMD_MSG;
+			log_msg.body.log_CMD.command = (uint16_t) buf_cmd.command;
+			log_msg.body.log_CMD.source_sys = buf_cmd.source_system;
+			log_msg.body.log_CMD.source_comp = buf_cmd.source_component;
+			log_msg.body.log_CMD.param1 = buf_cmd.param1;
+			log_msg.body.log_CMD.param2 = buf_cmd.param2;
+			log_msg.body.log_CMD.param3 = buf_cmd.param3;
+			LOGBUFFER_WRITE_AND_COUNT(CMD);
 		}
 
 		/* --- GPS POSITION - UNIT #1 --- */
@@ -1314,7 +1359,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 			if (write_IMU) {
 				log_msg.msg_type = LOG_IMU_MSG;
 				log_msg.body.log_IMU.gyro_x = buf.sensor.gyro_rad_s[0];
-				log_msg.body.log_IMU.gyro_y = buf.sensor.gyro_rad_s[1];
+                log_msg.body.log_IMU.gyro_y = buf.sensor.gyro_rad_s[1];
 				log_msg.body.log_IMU.gyro_z = buf.sensor.gyro_rad_s[2];
 				log_msg.body.log_IMU.acc_x = buf.sensor.accelerometer_m_s2[0];
 				log_msg.body.log_IMU.acc_y = buf.sensor.accelerometer_m_s2[1];
@@ -1745,6 +1790,43 @@ int sdlog2_thread_main(int argc, char *argv[])
 			LOGBUFFER_WRITE_AND_COUNT(TPOS);
 		}
 
+		/* --- EXTERNAL TRAJECTORY --- */
+		if (copy_if_updated(ORB_ID(external_trajectory), subs.external_trajectory_sub, &buf.ext_traj)) {
+			log_msg.msg_type = LOG_EXTJ_MSG;
+			log_msg.body.log_EXTJ.point_type = buf.ext_traj.point_type;
+			log_msg.body.log_EXTJ.sysid = buf.ext_traj.sysid;
+			log_msg.body.log_EXTJ.timestamp = buf.ext_traj.timestamp;
+			log_msg.body.log_EXTJ.lat = buf.ext_traj.lat * 1e7d;
+			log_msg.body.log_EXTJ.lon = buf.ext_traj.lon * 1e7d;
+			log_msg.body.log_EXTJ.alt = buf.ext_traj.alt;
+			log_msg.body.log_EXTJ.relative_alt = buf.ext_traj.relative_alt;
+			log_msg.body.log_EXTJ.vel_n = buf.ext_traj.vel_n;
+			log_msg.body.log_EXTJ.vel_e = buf.ext_traj.vel_e;
+			log_msg.body.log_EXTJ.vel_d = buf.ext_traj.vel_d;
+			log_msg.body.log_EXTJ.heading = buf.ext_traj.heading;
+			LOGBUFFER_WRITE_AND_COUNT(EXTJ);
+		}
+
+
+		if (copy_if_updated(ORB_ID(debug_data), subs.debug_data_sub, &buf.debug_data)) {
+
+			log_msg.msg_type = LOG_DEBUGD_MSG;
+            for (int i=0;i<8;i++)
+                log_msg.body.log_DEBUGD.val[i] = buf.debug_data.val[i];
+
+            LOGBUFFER_WRITE_AND_COUNT(DEBUGD);
+		}
+
+		if (copy_if_updated(ORB_ID(mavlink_receive_stats), subs.mav_stats_sub, &buf.mav_stats)) {
+			log_msg.msg_type = LOG_MVST_MSG;
+			log_msg.body.log_MVST.total_bytes = buf.mav_stats.total_bytes;
+			log_msg.body.log_MVST.gpos_count = buf.mav_stats.gpos_count;
+			log_msg.body.log_MVST.heartbeat_count = buf.mav_stats.heartbeat_count;
+			log_msg.body.log_MVST.trajectory_count = buf.mav_stats.trajectory_count;
+
+			LOGBUFFER_WRITE_AND_COUNT(MVST);
+		}
+
 		/* signal the other thread new data, but not yet unlock */
 		if (logbuffer_count(&lb) > MIN_BYTES_TO_WRITE) {
 			/* only request write if several packets can be written at once */
@@ -1833,27 +1915,27 @@ int file_copy(const char *file_old, const char *file_new)
 
 void handle_command(struct vehicle_command_s *cmd)
 {
-	int param;
-
-	/* request to set different system mode */
-	switch (cmd->command) {
-
-	case VEHICLE_CMD_PREFLIGHT_STORAGE:
-		param = (int)(cmd->param3);
-
-		if (param == 1)	{
-			sdlog2_start_log();
-
-		} else if (param == 0)	{
-			sdlog2_stop_log();
-		}
-
-		break;
-
-	default:
-		/* silently ignore */
-		break;
-	}
+//	int param;
+//
+//	/* request to set different system mode */
+//	switch (cmd->command) {
+//
+//	case VEHICLE_CMD_PREFLIGHT_STORAGE:
+//		param = (int)(cmd->param3);
+//
+//		if (param == 1)	{
+//			sdlog2_start_log();
+//
+//		} else if (param == 0)	{
+//			sdlog2_stop_log();
+//		}
+//
+//		break;
+//
+//	default:
+//		/* silently ignore */
+//		break;
+//	}
 }
 
 void handle_status(struct vehicle_status_s *status)

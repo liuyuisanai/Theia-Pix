@@ -13,7 +13,7 @@
 
 namespace AT {
 
-constexpr size_t reply_buffer_size = 128;
+constexpr size_t reply_buffer_size = 512;
 constexpr size_t reply_read_retries = 25;
 constexpr useconds_t reply_read_delay = 100 * 1000;
 
@@ -86,13 +86,13 @@ wait_ok_error(Device &f) {
 		}
 		n += s;
 		buf[n] = '\0';
-		ok = std::strstr(buf, "\r\nOK\r\n");
-		found = ok or std::strstr(buf, "\r\nERROR\r\n");
+		ok = std::strstr(buf, "OK\r\n");
+		found = ok or std::strstr(buf, "ERROR\r\n");
 	}
 	if (not found and n > 0) {
 		buf[n] = '\0';
-		ok = std::strstr(buf, "\r\nOK\r\n");
-		found = ok or std::strstr(buf, "\r\nERROR\r\n");
+		ok = std::strstr(buf, "OK\r\n");
+		found = ok or std::strstr(buf, "ERROR\r\n");
 	}
 	return std::make_pair(found, ok);
 }
@@ -130,7 +130,7 @@ template <typename Device>
 inline bool
 switch_to_at_mode(Device &f) {
 	sleep(1);
-	static const char escape_seq[3] = {'/', '/', '/'};
+	static const char escape_seq[3] = {'+', '+', '+'};
 	bool ok = write(f, escape_seq, sizeof(escape_seq));
 	if (ok) {
 		sleep(1);

@@ -100,7 +100,7 @@ public:
 
 	void set_camera_mode(camera_mode_t camera_mode, bool force_change = false);
 
-	void updateParameters();
+	inline void updateParameters();
 	void updateParamValues();
 	void updateParamHandles();
 
@@ -109,50 +109,92 @@ public:
     void disarm();
     void resetModeArguments(main_state_t main_state);
 
+
 	struct {
+        int first_point_lat;
+        int first_point_lon;
+        float first_point_alt;
+        int last_point_lat;
+        int last_point_lon;
+        float last_point_alt;
 		float takeoff_alt;
 		float takeoff_acceptance_radius;
 		float acceptance_radius;
-		float loiter_step;
-		float velocity_lpf;
 
-		int afol_rep_target_alt;
-		int afol_use_cam_pitch;
+        int afol_mode;
 
 		float loi_step_len;
-		float loi_min_alt;
 
 		float rtl_ret_alt;
+
+		ssize_t pafol_buf_size;
+		float pafol_min_ok_dist;
+		float pafol_min_alt_off;
+		float pafol_dist_step;
+		float pafol_alt_step;
+        float pafol_vel_err_coif;
+        float pafol_vel_reaction_time;
+        float pafol_vel_err_growth_power;
+        float pafol_acc_rad;
+        float pafol_acc_dst_to_line;
+        float pafol_acc_dst_to_point;
+        float pafol_stop_speed;
+
+		float mpc_max_speed;
 
         float airdog_dst_inv; 
         float airdog_init_pos_dst;
         int airdog_init_pos_use; 
 
+        int follow_rpt_alt;
+
         float a_yaw_ignore_radius;
+        // Proportional gain for horizontal position error
+        float proportional_gain;
 
 	} _parameters;		
 
 
 	struct {
+        param_t first_point_lat;
+        param_t first_point_lon;
+        param_t first_point_alt;
+        param_t last_point_lat;
+        param_t last_point_lon;
+        param_t last_point_alt;
 		param_t takeoff_alt;
 		param_t takeoff_acceptance_radius;
 		param_t acceptance_radius;
-		param_t velocity_lpf;
 
-		param_t afol_rep_target_alt;
-		param_t afol_use_cam_pitch;
+        param_t afol_mode;
 
 		param_t loi_step_len;
-		param_t loi_min_alt;
 
 		param_t rtl_ret_alt;
+
+		param_t pafol_buf_size;
+		param_t pafol_min_ok_dist;
+		param_t pafol_min_alt_off;
+		param_t pafol_dist_step;
+		param_t pafol_alt_step;
+        param_t pafol_vel_err_coif;
+        param_t pafol_vel_reaction_time;
+        param_t pafol_vel_err_growth_power;
+        param_t pafol_acc_rad;
+        param_t pafol_acc_dst_to_line;
+        param_t pafol_acc_dst_to_point;
+        param_t pafol_stop_speed;
+
+		param_t mpc_max_speed;
 
         param_t airdog_dst_inv;
         param_t airdog_init_pos_dst; 
         param_t airdog_init_pos_use;
 
-        param_t a_yaw_ignore_radius;
+        param_t follow_rpt_alt;
 
+        param_t a_yaw_ignore_radius;
+        param_t proportional_gain;
 	} _parameter_handles;
 
 
@@ -170,6 +212,7 @@ protected:
 
 	int		_mavlink_fd;			/**< the file descriptor to send messages over mavlink */
 
+
 	bool check_current_pos_sp_reached(SETPOINT_TYPE expected_sp_type = SETPOINT_TYPE_UNDEFINED);
     void go_to_intial_position();
     camera_mode_t _camera_mode;
@@ -177,7 +220,6 @@ protected:
 private:
 
 	bool _first_run;
-
 
 	/*
 	 * This class has ptr data members, so it should not be copied,

@@ -73,6 +73,7 @@
 #include <uORB/topics/vehicle_local_position_setpoint.h>
 #include <uORB/topics/vehicle_global_position.h>
 #include <uORB/topics/target_global_position.h>
+#include <uORB/topics/trajectory.h>
 #include <uORB/topics/position_setpoint_triplet.h>
 #include <uORB/topics/vehicle_gps_position.h>
 #include <uORB/topics/vehicle_vicon_position.h>
@@ -88,6 +89,7 @@
 #include <uORB/topics/system_power.h>
 #include <uORB/topics/servorail_status.h>
 #include <uORB/topics/airdog_path_log.h>
+#include <uORB/topics/mavlink_receive_stats.h>
 
 #include <systemlib/systemlib.h>
 #include <systemlib/param/param.h>
@@ -801,6 +803,8 @@ int sdlog2_lite_thread_main(int argc, char *argv[])
 		struct system_power_s system_power;
 		struct servorail_status_s servorail_status;
 		struct target_global_position_s target_pos;
+		struct trajectory_s trajectory;
+		struct mavlink_receive_stats_s mav_stats;
 	} buf;
 
 	memset(&buf, 0, sizeof(buf));
@@ -815,6 +819,8 @@ int sdlog2_lite_thread_main(int argc, char *argv[])
 			struct log_STAT_s log_STAT;
 			struct log_GPOS_s log_GPOS;
 			struct log_LPOS_s log_LPOS;
+			struct log_LOTJ_s log_LOTJ;
+			struct log_MVST_s log_MVST;
 		} body;
 	} log_msg = {
 		LOG_PACKET_HEADER_INIT(0)
@@ -849,6 +855,8 @@ int sdlog2_lite_thread_main(int argc, char *argv[])
 		int system_power_sub;
 		int servorail_status_sub;
 		int target_pos_sub;
+		int trajectory_sub;
+		int mav_stats_sub;
 	} subs;
 
 	subs.cmd_sub = orb_subscribe(ORB_ID(airdog_path_log));
@@ -879,6 +887,9 @@ int sdlog2_lite_thread_main(int argc, char *argv[])
 	subs.system_power_sub = orb_subscribe(ORB_ID(system_power));
 	subs.servorail_status_sub = orb_subscribe(ORB_ID(servorail_status));
 	subs.target_pos_sub = orb_subscribe(ORB_ID(target_global_position));
+	subs.trajectory_sub = orb_subscribe(ORB_ID(trajectory));
+	subs.mav_stats_sub = orb_subscribe(ORB_ID(mavlink_receive_stats));
+
 
 	thread_running = true;
 
@@ -998,6 +1009,30 @@ int sdlog2_lite_thread_main(int argc, char *argv[])
 			log_msg.body.log_LPOS.eph = buf.local_pos.eph;
 			log_msg.body.log_LPOS.epv = buf.local_pos.epv;
 			LOGBUFFER_WRITE_AND_COUNT(LPOS);
+		}
+		if (copy_if_updated(ORB_ID(trajectory), subs.trajectory_sub, &buf.trajectory)) {
+			log_msg.msg_type = LOG_LOTJ_MSG;
+			log_msg.body.log_LOTJ.point_type = buf.trajectory.point_type;
+			log_msg.body.log_LOTJ.timestamp = buf.trajectory.timestamp;
+			log_msg.body.log_LOTJ.lat = buf.trajectory.lat * 1e7d;
+			log_msg.body.log_LOTJ.lon = buf.trajectory.lon * 1e7d;
+			log_msg.body.log_LOTJ.alt = buf.trajectory.alt;
+			log_msg.body.log_LOTJ.relative_alt = buf.trajectory.relative_alt;
+			log_msg.body.log_LOTJ.vel_n = buf.trajectory.vel_n;
+			log_msg.body.log_LOTJ.vel_e = buf.trajectory.vel_e;
+			log_msg.body.log_LOTJ.vel_d = buf.trajectory.vel_d;
+			log_msg.body.log_LOTJ.heading = buf.trajectory.heading;
+			LOGBUFFER_WRITE_AND_COUNT(LOTJ);
+		}
+
+		if (copy_if_updated(ORB_ID(mavlink_receive_stats), subs.mav_stats_sub, &buf.mav_stats)) {
+			log_msg.msg_type = LOG_MVST_MSG;
+			log_msg.body.log_MVST.total_bytes = buf.mav_stats.total_bytes;
+			log_msg.body.log_MVST.gpos_count = buf.mav_stats.gpos_count;
+			log_msg.body.log_MVST.heartbeat_count = buf.mav_stats.heartbeat_count;
+			log_msg.body.log_MVST.trajectory_count = buf.mav_stats.trajectory_count;
+
+			LOGBUFFER_WRITE_AND_COUNT(MVST);
 		}
 
 		/* signal the other thread new data, but not yet unlock */

@@ -52,6 +52,7 @@
 
 class Loiter : public MissionBlock
 {
+
 public:
 	Loiter(Navigator *navigator, const char *name);
 
@@ -77,6 +78,9 @@ private:
 
 	} loiter_sub_mode;
 
+	// Keep aligned with the enum above!
+	static const char* mode_names[];
+
 	void execute_command_in_landed(vehicle_command_s cmd);
 	void execute_command_in_aim_and_shoot(vehicle_command_s cmd);
 	void execute_command_in_look_down(vehicle_command_s cmd);
@@ -84,7 +88,7 @@ private:
 	void execute_command_in_landing(vehicle_command_s cmd);
 	void execute_command_in_taking_off(vehicle_command_s cmd);
 
-	void set_sub_mode(LOITER_SUB_MODE new_sub_mode, uint8_t reset_setpoint = 1, bool force_camera_reset = false);
+	void set_sub_mode(LOITER_SUB_MODE new_sub_mode, uint8_t reset_setpoint = 1, int8_t force_camera_reset = 0);
 
 	bool flag_sub_mode_goal_reached;
 	bool previous_target_valid_flag;

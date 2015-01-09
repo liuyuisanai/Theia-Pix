@@ -254,3 +254,21 @@ PARAM_DEFINE_FLOAT(A_TRGT_VSB_TO_2, 5.0f);
  * @max 1 
  */
 PARAM_DEFINE_INT32(A_REQUIRE_GPS, 1);
+
+/**
+ * EPH value at which target position always will be considered valid
+ * Use 0.0 or negative numbers to disable EPH check
+ *
+ * @group Airdog
+ * @min -1.0f
+ */
+PARAM_DEFINE_FLOAT(A_GOOD_TRG_EPH, 0.0f);
+
+/**
+ * EPV value at which target position always will be considered valid
+ * Use 0.0 or negative numbers to disable EPV check
+ *
+ * @group Airdog
+ * @min -1.0f
+ */
+PARAM_DEFINE_FLOAT(A_GOOD_TRG_EPV, 0.0f);

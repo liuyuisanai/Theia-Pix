@@ -70,6 +70,8 @@ typedef enum {
 	MAIN_STATE_LOITER,
 	MAIN_STATE_RTL,
 	MAIN_STATE_ABS_FOLLOW,
+    MAIN_STATE_CABLE_PARK,
+    MAIN_STATE_AUTO_PATH_FOLLOW,
 	MAIN_STATE_ACRO,
 	MAIN_STATE_OFFBOARD,
 	MAIN_STATE_FOLLOW,
@@ -89,7 +91,7 @@ typedef enum {
 } airdog_state_t;
 
 // If you change the order, add or remove arming_state_t states make sure to update the arrays
-// in state_machine_helper.cpp as well.
+// in_state_machine_helper.cpp as well.
 typedef enum {
 	ARMING_STATE_INIT = 0,
 	ARMING_STATE_STANDBY,
@@ -119,8 +121,10 @@ typedef enum {
 	NAVIGATION_STATE_AUTO_RCRECOVER,	/**< RC recover mode */
 	NAVIGATION_STATE_AUTO_RTGS,			/**< Auto return to groundstation on data link loss */
 	NAVIGATION_STATE_ABS_FOLLOW,        /**< AUTO Abs Follow mode */
+    NAVIGATION_STATE_CABLE_PARK,        /**< Auto cable park mode */
 	NAVIGATION_STATE_AUTO_LANDENGFAIL,	/**< Auto land on engine failure */
 	NAVIGATION_STATE_AUTO_LANDGPSFAIL,	/**< Auto land on gps failure (e.g. open loop loiter down) */
+    NAVIGATION_STATE_AUTO_PATH_FOLLOW,  /**< AUTO Path Follow mode */
 	NAVIGATION_STATE_ACRO,				/**< Acro mode */
 	NAVIGATION_STATE_LAND,				/**< Land mode */
 	NAVIGATION_STATE_DESCEND,			/**< Descend mode (no position control) */
@@ -220,6 +224,7 @@ struct vehicle_status_s {
 	bool condition_airspeed_valid;			/**< set to true by the commander app if there is a valid airspeed measurement available */
 	bool condition_landed;					/**< true if vehicle is landed, always true if disarmed */
 	bool condition_power_input_valid;		/**< set if input power is valid */
+    bool condition_path_points_valid;       /**< true if hase at least 2 points for path, used in cablepark mode */
 	float avionics_power_rail_voltage;		/**< voltage of the avionics power rail */
 
 	uint64_t last_target_time;				/**< Last timestamp, when target position was valid */

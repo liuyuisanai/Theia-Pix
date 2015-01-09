@@ -119,6 +119,8 @@ void get_mavlink_mode_state(struct vehicle_status_s *status, struct position_set
 
 	union px4_custom_mode custom_mode;
 	custom_mode.data = 0;
+	custom_mode.state_main = status->main_state;
+	custom_mode.state_aird = status->airdog_state;
 
 	switch (status->nav_state) {
 
@@ -2136,19 +2138,22 @@ public:
 private:
 	MavlinkOrbSubscription *trajectory_sub;
 	uint64_t trajectory_time;
+	uint64_t last_send_time;
 	/* do not allow top copying this class */
 	MavlinkStreamTrajectory(MavlinkStreamTrajectory &);
 	MavlinkStreamTrajectory& operator = (const MavlinkStreamTrajectory &);
 protected:
 	explicit MavlinkStreamTrajectory(Mavlink *mavlink) : MavlinkStream(mavlink),
 			trajectory_sub(mavlink->add_orb_subscription(ORB_ID(trajectory))),
-			trajectory_time(0)
+			trajectory_time(0),
+			last_send_time(0)
 	{}
 	void send(const hrt_abstime t) {
 		mavlink_trajectory_t msg;
 		trajectory_s report;
 		// TODO! Check if the messages match!
-		if (trajectory_sub->update(&trajectory_time, &report)) {
+		if (trajectory_sub->update(&trajectory_time, &report) || (last_send_time > 0
+				&& ((hrt_absolute_time() - last_send_time) > 500000)) ) {
 			msg.time_boot_ms = report.timestamp / 1000; // uint32_t Timestamp (milliseconds since system boot)
 			msg.lat = report.lat * 1e7; // int32_t Latitude, expressed as * 1E7
 			msg.lon = report.lon * 1e7; // int32_t Longitude, expressed as * 1E7
@@ -2164,6 +2169,7 @@ protected:
 			/* warnx("%d\n%d %d %d\n%d\n%d %d %d\n%d\n%d", msg.time_boot_ms, msg.lat, msg.lon, msg.alt,
 					msg.relative_alt, msg.vx, msg.vy, msg.vz, msg.hdg, msg.point_type); */
 			_mavlink->send_message(MAVLINK_MSG_ID_TRAJECTORY, &msg);
+			last_send_time = hrt_absolute_time();
 		}
 	}
 };

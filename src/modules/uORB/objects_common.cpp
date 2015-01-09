@@ -257,3 +257,12 @@ ORB_DEFINE(trajectory, struct trajectory_s);
 
 #include "topics/external_trajectory.h"
 ORB_DEFINE(external_trajectory, struct external_trajectory_s);
+
+#include "topics/debug_data.h"
+ORB_DEFINE(debug_data, struct debug_data_s);
+
+#include "topics/position_restriction.h"
+ORB_DEFINE(position_restriction, struct position_restriction_s);
+
+#include "topics/mavlink_receive_stats.h"
+ORB_DEFINE(mavlink_receive_stats, struct mavlink_receive_stats_s);

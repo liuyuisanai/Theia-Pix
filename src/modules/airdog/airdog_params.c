@@ -54,7 +54,14 @@ PARAM_DEFINE_INT32(AIRD_BINDED_ID, 4);
 /*Custom binded device id.*/
 PARAM_DEFINE_INT32(AIRD_TRAINER_ID, 10);
 
-/*Custom binded device id.*/
+/*
+ * Leash mode:
+ *   0 is target,
+ *   1 is trainer.
+ */
+PARAM_DEFINE_INT32(AIRD_LEASH_MODE, 0);
+
+/* TODO Description. (It was wrong.) */
 PARAM_DEFINE_INT32(AIRD_PITCH_DOWN, 0);
 
 /*Enable if should check for external magnetometer*/
@@ -93,7 +100,7 @@ PARAM_DEFINE_FLOAT(A_LAND_SAFE_H, 0.3f);
  * @descr:  Airdog param for custom landing with range finders
  *          Max landing speed which will be held from the start of landing
  *          and then lowered by range finder down to A_LAND_MIN_V
- *          
+ *
  * @author: Max Shvetsov <maxim.shvetsov@airdog.com>
  * @unit:   Meters/seconds
  * @min:    0.5f <- Practically should be higher. The minimum should be configured in A_LAND_MIN_V
@@ -105,10 +112,17 @@ PARAM_DEFINE_FLOAT(A_LAND_MAX_V, 2.0f);
  * @descr:  Airdog param for custom landing with range finders
  *          Minimal landing speed which vehicle will achieve when close to the ground and about to
  *          disarm and land.
- *          
+ *
  * @author: Max Shvetsov <maxim.shvetsov@airdog.com>
  * @unit:   Meters/seconds
- * @min:    0.1f 
+ * @min:    0.1f
  * @max     1.0f
  */
 PARAM_DEFINE_FLOAT(A_LAND_MIN_V, 0.3f);
+
+/**
+ * @descr: Parameter overriding max pwm set in rc scripts. If set to 0, script value will be used
+ *
+ * @min: 0
+ */
+PARAM_DEFINE_INT32(A_MAX_PWM, 0);

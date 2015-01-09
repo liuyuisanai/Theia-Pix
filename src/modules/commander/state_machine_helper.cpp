@@ -313,9 +313,17 @@ main_state_transition(struct vehicle_status_s *status, main_state_t new_main_sta
 
 	case MAIN_STATE_FOLLOW:
 		/* need at minimum local position estimate */
-		if (status->condition_target_position_valid &&
-				(status->condition_local_position_valid || status->condition_global_position_valid)) {
-			ret = TRANSITION_CHANGED;
+		if (status->condition_local_position_valid || status->condition_global_position_valid) {
+			float target_visibility_timeout_1;
+			param_get(param_find("A_TRGT_VSB_TO_1"), &target_visibility_timeout_1);
+			if (status->condition_target_position_valid) {
+				ret = TRANSITION_CHANGED;
+			}
+			else if (status->main_state == MAIN_STATE_FOLLOW &&
+					hrt_absolute_time() - status->last_target_time <= target_visibility_timeout_1 * 1000 * 1000) {
+				// Already in Follow and target was lost for period less than timeout
+				ret = TRANSITION_NOT_CHANGED; // Do not return deny before timeout
+			}
 		}
 		break;
 
@@ -353,6 +361,15 @@ main_state_transition(struct vehicle_status_s *status, main_state_t new_main_sta
         ret = TRANSITION_CHANGED; 
         break;
 
+	case MAIN_STATE_CABLE_PARK:
+        {
+            /* need global position estimate */
+            if (status->condition_path_points_valid && status->condition_global_position_valid && status->condition_target_position_valid) {
+                ret = TRANSITION_CHANGED;
+            }
+            break;
+        }
+
 	case MAIN_STATE_ABS_FOLLOW:
         {
             /* need global position estimate */
@@ -361,6 +378,13 @@ main_state_transition(struct vehicle_status_s *status, main_state_t new_main_sta
             }
             break;
         }
+
+	case MAIN_STATE_AUTO_PATH_FOLLOW:
+		/* need global position estimate */
+		if (status->condition_global_position_valid && status->condition_target_position_valid) {
+			ret = TRANSITION_CHANGED;
+		}
+		break;
 
 	case MAIN_STATE_OFFBOARD:
 
@@ -732,32 +756,44 @@ bool set_nav_state(struct vehicle_status_s *status, const bool data_link_loss_en
 			status->nav_state = NAVIGATION_STATE_RTL;
 		}
         break;
-	case MAIN_STATE_EMERGENCY_LAND:
+    case MAIN_STATE_EMERGENCY_LAND:
 		status->nav_state_fallback = false;
-		status->nav_state = NAVIGATION_STATE_LAND;
-		break;
-	case MAIN_STATE_ABS_FOLLOW:
-		/* require target position*/
-		if ((!status->condition_target_position_valid)) {
-			float target_visibility_timeout_1;
-			param_get(param_find("A_TRGT_VSB_TO_1"), &target_visibility_timeout_1);
+        status->nav_state = NAVIGATION_STATE_LAND;
+        break;
 
+	case MAIN_STATE_CABLE_PARK:
+	case MAIN_STATE_ABS_FOLLOW:
+	case MAIN_STATE_AUTO_PATH_FOLLOW:
+		float target_visibility_timeout_1;
+		param_get(param_find("A_TRGT_VSB_TO_1"), &target_visibility_timeout_1);
+		if ((!status->condition_target_position_valid &&
+				hrt_absolute_time() - status->last_target_time > target_visibility_timeout_1 * 1000 * 1000)) {
 			// On first timeout when status.condition_target_position_valid is false go into aim-and-shoot
-			if (status->nav_state != NAVIGATION_STATE_LOITER && hrt_absolute_time() - status->last_target_time > target_visibility_timeout_1 * 1000 * 1000) {
+			if (status->nav_state != NAVIGATION_STATE_LOITER && status->nav_state != NAVIGATION_STATE_AUTO_LANDENGFAIL) {
 				mavlink_log_info(mavlink_fd, "Target signal time-out, switching to Aim-and-shoot.");
-				// Ignore more complex Loiter fallbacks
-				if (status->engine_failure) {
-					status->nav_state = NAVIGATION_STATE_AUTO_LANDENGFAIL;
-				}
-				else {
-					status->nav_state = NAVIGATION_STATE_LOITER;
-				}
 			}
-		} else {
+			// Ignore more complex Loiter fallbacks
+			if (status->engine_failure) {
+				status->nav_state = NAVIGATION_STATE_AUTO_LANDENGFAIL;
+			}
+			else {
+				status->nav_state = NAVIGATION_STATE_LOITER;
+			}
+        } else {
 			status->nav_state_fallback = false;
-			status->nav_state = NAVIGATION_STATE_ABS_FOLLOW;
-		}
-		break;
+			switch (status->main_state) {
+                case MAIN_STATE_CABLE_PARK:
+                    status->nav_state = NAVIGATION_STATE_CABLE_PARK;
+                    break;
+                case MAIN_STATE_ABS_FOLLOW:
+                    status->nav_state = NAVIGATION_STATE_ABS_FOLLOW;
+                    break;
+                case MAIN_STATE_AUTO_PATH_FOLLOW:
+                    status->nav_state = NAVIGATION_STATE_AUTO_PATH_FOLLOW;
+                    break;
+            }
+        }
+        break;
 
 	case MAIN_STATE_OFFBOARD:
 		/* require offboard control, otherwise stay where you are */
