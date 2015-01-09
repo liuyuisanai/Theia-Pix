@@ -116,7 +116,6 @@ public:
 	int		start();
 
 private:
-    int iter = 0;
 
 	const float alt_ctl_dz = 0.2f;
 
@@ -138,8 +137,6 @@ private:
     int     _vcommand_sub;          /**< vehicle command subscription */
     int     _vehicle_status_sub;    /**< vehicle status subscription */
     int 	_pos_restrict_sub;		/**< position restriction subscribtion */
-
-    int co = 0;
 
 	orb_advert_t	_att_sp_pub;			/**< attitude setpoint publication */
 	orb_advert_t	_local_pos_sp_pub;		/**< vehicle local position setpoint publication */
