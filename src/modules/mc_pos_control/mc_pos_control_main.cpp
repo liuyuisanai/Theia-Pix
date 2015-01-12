@@ -1955,6 +1955,13 @@ MulticopterPositionControl::task_main()
 				_local_pos_sp_pub = orb_advertise(ORB_ID(vehicle_local_position_setpoint), &_local_pos_sp);
 			}
 
+			// Paranoid NaN protection
+			for (int i = 0; i < 3; ++i) {
+				if (!isfinite(_pos_sp(i))) {
+					// Reset to current local position. If it still contains NaNs it has to be fiexd in inav
+					_pos_sp(i) = _pos(i);
+				}
+			}
 
 			if (!_control_mode.flag_control_manual_enabled && _pos_sp_triplet.current.valid && _pos_sp_triplet.current.type == SETPOINT_TYPE_IDLE) {
 				/* idle state, don't run controller and set zero thrust */
@@ -2100,6 +2107,14 @@ MulticopterPositionControl::task_main()
 
 				} else {
 					_global_vel_sp_pub = orb_advertise(ORB_ID(vehicle_global_velocity_setpoint), &_global_vel_sp);
+				}
+
+				// Paranoid NaN protection
+				for (int i = 0; i < 3; ++i) {
+					if (!isfinite(_vel_sp(i))) {
+						// By default try to stop
+						_vel_sp(i) = 0;
+					}
 				}
 
 				if (_control_mode.flag_control_climb_rate_enabled || _control_mode.flag_control_velocity_enabled) {
