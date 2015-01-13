@@ -107,6 +107,8 @@ RTL::on_activation()
 		rtl_state = RTL_STATE_CLIMB;
 	}
 
+	set_camera_mode(HORIZONTAL, true);
+
 	set_rtl_setpoint();
 
 }
