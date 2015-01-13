@@ -487,7 +487,6 @@ Loiter::execute_command_in_aim_and_shoot(vehicle_command_s cmd){
 			}
 			case REMOTE_CMD_LOOK_DOWN: {
 
-				pos_sp_triplet->current.camera_pitch = -1.57f;
 				set_sub_mode(LOITER_SUB_MODE_LOOK_DOWN, 0);
 				break;
 

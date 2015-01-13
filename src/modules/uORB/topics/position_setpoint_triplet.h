@@ -93,6 +93,7 @@ struct position_setpoint_s
 	bool acceleration_valid;	//*< true if acceleration setpoint is valid/should be used */
 	bool acceleration_is_force;	//*< interprete acceleration as force */
 	float camera_pitch;			/**< camera pitch */
+	bool camera_pitch_valid; /**< true if camera pitch setpoint is valid */
 	float abs_velocity;	//**< absolute velocity to use while moving to the setpoint */
 	float abs_velocity_valid;	//**< true if abs_velocity is valid */
 };

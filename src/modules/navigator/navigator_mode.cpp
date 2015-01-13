@@ -317,10 +317,11 @@ NavigatorMode::set_camera_mode(camera_mode_t camera_mode, bool force_change)
 		commander_request->camera_mode = camera_mode;
 		_navigator->set_commander_request_updated();
 
+		pos_sp_triplet = _navigator->get_position_setpoint_triplet();
+
 		if (camera_mode != AIM_TO_TARGET) {
 			global_pos = _navigator->get_global_position();
 			//keep current yaw angle;
-			pos_sp_triplet = _navigator->get_position_setpoint_triplet();
 			pos_sp_triplet->current.yaw = global_pos->yaw;
 			switch (camera_mode) {
 				case HORIZONTAL :
@@ -330,8 +331,13 @@ NavigatorMode::set_camera_mode(camera_mode_t camera_mode, bool force_change)
 					pos_sp_triplet->current.camera_pitch = -1.0f;
 					break;
 			}
-			_navigator->set_position_setpoint_triplet_updated();
+			pos_sp_triplet->current.camera_pitch_valid = true;
+
 		}
+		else {
+			pos_sp_triplet->current.camera_pitch_valid = false;
+		}
+		_navigator->set_position_setpoint_triplet_updated();
 	}
 }
 

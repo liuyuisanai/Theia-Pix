@@ -1838,8 +1838,12 @@ MulticopterPositionControl::task_main()
 
 		update_ref();
 
-		/* manual camera pitch control, overridden later if needed */
-		_cam_control.control[1] = _manual.aux2;
+		/* manual camera pitch control, overridden later if needed, 0 on init
+		 * Check for manual follow state prevents pitch reset on target signal loss */
+		if (_control_mode.flag_control_manual_enabled && !_vstatus.rc_signal_lost
+				&& _vstatus.nav_state != NAVIGATION_STATE_FOLLOW) {
+			_cam_control.control[1] = _manual.aux2;
+		}
 
 		if (_control_mode.flag_control_altitude_enabled ||
 		    _control_mode.flag_control_position_enabled ||
@@ -2018,7 +2022,7 @@ MulticopterPositionControl::task_main()
 
 				// TODO! AK: Check what values can be for uninitialized camera_pitch!
                 // It makes sense to change yaw and pich trough setpoint when point_to_target is not used                 
-                if (!_control_mode.flag_control_point_to_target && _pos_sp_triplet.current.valid) {
+                if (!_control_mode.flag_control_point_to_target && _pos_sp_triplet.current.valid && _pos_sp_triplet.current.camera_pitch_valid) {
                 	//_cam_control.control[1] = _pos_sp_triplet.current.camera_pitch;
 					set_camera_pitch(_pos_sp_triplet.current.camera_pitch);
                 }
