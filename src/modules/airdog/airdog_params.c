@@ -57,7 +57,8 @@ PARAM_DEFINE_INT32(AIRD_TRAINER_ID, 10);
 /*
  * Leash mode:
  *   0 is target,
- *   1 is trainer.
+ *   1 is trainer,
+ *   2 is target with trajectory
  */
 PARAM_DEFINE_INT32(AIRD_LEASH_MODE, 0);
 

@@ -56,26 +56,35 @@ usleep 1000000
 airdog start
 usleep 1000000
 
- # trajectory_calculator start
-
- # Original Mavlink
- # mavlink start -d /dev/ttyS1 -m custom
- # usleep 1000000
- # mavlink stream -d /dev/ttyS1 -s GLOBAL_POSITION_TIME -r 18
-
- # Targeter+trajectory Simulator Mavlink
+ # Targeter+trajectory USB-test Mavlink
  # mavlink start -r 20000 -d /dev/ttyACM0 -m target
 
- # New Mavlink
- # mavlink start -d /dev/ttyS1 -m target
- # usleep 1000000
-
- # New Mavlink without trajectory
-   mavlink start -d /dev/ttyS1 -m custom
+#
+# MAVLink
+#
 if param compare AIRD_LEASH_MODE 0
 then
-   usleep 1000000
-   mavlink stream -d /dev/ttyS1 -s GLOBAL_POSITION_INT -r 18
+	#Default leash
+	mavlink start -d $MAVLINK_TTY -m custom
+	usleep 1000
+	mavlink stream -r 18 -d $MAVLINK_TTY -s GLOBAL_POSITION_INT
+	usleep 1000
+	mavlink stream -r 0.1 -d $MAVLINK_TTY -s GPS_RAW_INT
+else
+	if param compare AIRD_LEASH_MODE 1
+	then
+		#Trainer leash
+		mavlink start -d $MAVLINK_TTY -m custom
+	else
+		if param compare AIRD_LEASH_MODE 2
+		then
+			#Follow path leash
+			trajectory_calculator start
+			mavlink start -d $MAVLINK_TTY -m target
+			usleep 1000
+			mavlink stream -r 0.1 -d $MAVLINK_TTY -s GPS_RAW_INT
+		fi
+	fi
 fi
 
 sdlog2_lite start -r 200 -b 22 -t
