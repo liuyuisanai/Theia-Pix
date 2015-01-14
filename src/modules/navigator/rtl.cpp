@@ -78,6 +78,7 @@ RTL::on_activation()
 {
 	updateParameters();
 
+	_navigator->invalidate_setpoint_triplet();
 	global_pos =  _navigator->get_global_position();
 	home_pos = _navigator->get_home_position();
 	pos_sp_triplet = _navigator->get_position_setpoint_triplet();
@@ -173,6 +174,7 @@ RTL::set_rtl_setpoint()
 			pos_sp_triplet->current.lon = global_pos->lon;
 			pos_sp_triplet->current.alt = climb_alt;
 			pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
+			pos_sp_triplet->current.position_valid = true;
 
 			break;
 		}
@@ -197,6 +199,7 @@ RTL::set_rtl_setpoint()
             math::Vector<2> offset_xy(offset_x, offset_y);
 
             pos_sp_triplet->current.yaw = _wrap_pi(atan2f(offset_xy(1), offset_xy(0)));
+            pos_sp_triplet->current.yaw_valid = true;
 
 			pos_sp_triplet->current.lat = home_pos->lat;
 			pos_sp_triplet->current.lon = home_pos->lon;
@@ -205,10 +208,12 @@ RTL::set_rtl_setpoint()
 				pos_sp_triplet->current.alt = global_pos->alt;
 			}
 			pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
+			pos_sp_triplet->current.position_valid;
 
 			break;
 		}
 		case RTL_STATE_LAND: {
+			// TODO! [AK] Consider resetting Yaw to NaN to be coherent with other landing cases
             land(0); //do not reset setpoint, let it be at home position
 			break;
 		}

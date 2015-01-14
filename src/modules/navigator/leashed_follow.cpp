@@ -87,6 +87,7 @@ void
 Leashed::on_activation()
 {
 	updateParameters();
+	_navigator->invalidate_setpoint_triplet();
 }
 
 void
