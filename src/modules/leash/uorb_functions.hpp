@@ -19,6 +19,8 @@ enum MAV_MODE_FLAG {
 	MAV_MODE_FLAG_SAFETY_ARMED = 128,
 };
 
+namespace airleash {
+
 static void
 orb_read_once(const orb_metadata * const id, void * const x)
 {
@@ -69,7 +71,7 @@ send_set_mode(uint8_t base_mode, enum PX4_CUSTOM_MAIN_MODE custom_main_mode)
 	orb_advertise(ORB_ID(vehicle_command), &cmd);
 }
 
-bool
+static bool
 is_drone_armed()
 {
 	struct airdog_status_s airdog_status;
@@ -77,7 +79,7 @@ is_drone_armed()
 	return airdog_status.base_mode & MAV_MODE_FLAG_SAFETY_ARMED;
 }
 
-bool
+static bool
 is_drone_active()
 {
 	struct airdog_status_s airdog_status;
@@ -85,7 +87,7 @@ is_drone_active()
 	return airdog_status.timestamp > 0;
 }
 
-bool
+static void
 send_arm_command()
 {
 	struct airdog_status_s airdog_status;
@@ -96,3 +98,5 @@ send_arm_command()
 			| MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
 	send_set_mode(mode, PX4_CUSTOM_MAIN_MODE_AUTO);
 }
+
+} // end of namespace airleash
