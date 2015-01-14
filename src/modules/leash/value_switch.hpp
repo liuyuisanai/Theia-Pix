@@ -2,34 +2,117 @@
 
 template <
 	typename ValueT,
-	template <ValueT> class CaseHandlerT,
-	ValueT ... cases
+	typename ResultT,
+	template <ValueT> class CaseT,
+	ValueT DEFAULT,
+	ValueT ... CASES
 >
-struct ValueSwitch {
+struct ValueListSwitch {
 	using value_type = ValueT;
-
-	template <value_type x>
-	using case_type = CaseHandlerT<x>;
+	using result_type = ResultT;
+	template <value_type x> using case_type = CaseT<x>;
 
 	template < value_type FIRST, value_type ... REST>
-	struct CaseFirst
+	struct Match
 	{
-		inline void apply_if_match (value_type x)
+		inline result_type
+		choose_by(value_type x)
 		{
-			CaseFirst<FIRST> case_first;
-			if (case_first.match(x)) case_first.apply();
-			else CaseFirst<REST...>().apply_if_match(x);
+			switch (x)
+			{
+			case FIRST:
+				return result_type(CaseT<FIRST>{});
+			default:
+				return Match<REST...>().choose_by(x);
+			}
 		}
 	};
 
-	template <value_type V>
-	struct CaseFirst<V>
+	template <value_type LAST>
+	struct Match<LAST>
 	{
-		inline bool match(value_type x) { return x == V; }
-		inline void apply() { case_type<V>()(); }
-		inline void apply_if_match(value_type x) { if (match(x)) apply(); }
+		inline result_type
+		choose_by(value_type x)
+		{
+			switch (x)
+			{
+			case LAST:
+				return result_type(CaseT<LAST>{});
+			default:
+				return result_type(CaseT<DEFAULT>{});
+			}
+		}
 	};
 
-	void process(value_type x)
-	{ CaseFirst<cases...>().apply_if_match(x); }
+	static inline result_type
+	choose_by(value_type x) { return Match<CASES...>().choose_by(x); }
+};
+
+template <
+	typename ValueT,
+	typename ResultT,
+	template <ValueT> class CaseT,
+	ValueT DEFAULT
+>
+struct ValueListSwitch< ValueT, ResultT, CaseT, DEFAULT >
+{ static_assert(true, "ValueSwitch with default case only."); };
+
+template <
+	typename ValueT,
+	typename ResultT,
+	template <ValueT> class CaseT,
+	ValueT DEFAULT,
+	ValueT LOWER_BOUND,
+	ValueT UPPER_BOUND
+	// [Lower, Upper) range
+>
+struct ValueRangeSwitch {
+
+	static_assert(LOWER_BOUND < UPPER_BOUND,
+			"ValueRangeSwitch range must be [lower; upper).");
+
+	using value_type = ValueT;
+	using result_type = ResultT;
+	template <value_type x> using case_type = CaseT<x>;
+
+	template < typename T, ValueT V >
+	// T prevents explicit specialization restriction
+	struct Match
+	{
+		inline result_type
+		choose_by(value_type x)
+		{
+			switch (x)
+			{
+			case V:
+				return result_type(CaseT< V >{});
+			default:
+				return result_type(
+					Match< T, previous(V) >{}.choose_by(x)
+				);
+			}
+		}
+	};
+
+	template <typename T>
+	// T prevents explicit specialization restriction
+	struct Match<T, LOWER_BOUND>
+	{
+		inline result_type
+		choose_by(value_type x)
+		{
+			switch (x)
+			{
+			case LOWER_BOUND:
+				return result_type(CaseT<LOWER_BOUND>{});
+			default:
+				return result_type(CaseT<DEFAULT>{});
+			}
+		}
+	};
+
+	static inline result_type
+	choose_by(value_type x) {
+		return Match< void, previous(UPPER_BOUND) >{}.choose_by(x);
+	}
 };

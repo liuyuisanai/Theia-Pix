@@ -41,6 +41,7 @@ handle_button(const KbdButtonState & btn)
 {
 	using kbd_handler::ShortPress;
 	using kbd_handler::LongPress;
+	using kbd_handler::RepeatPress;
 	using kbd_handler::handle_event;
 
 	unsigned long_press_min = LONG_PRESS_DURATION_us;
