@@ -890,3 +890,24 @@ Navigator::set_flag_reset_pfol_offs(bool value){
     _flag_reset_pfol_offs = value;
     return changed;
 }
+
+void Navigator::invalidate_setpoint_triplet() {
+	invalidate_single_setpoint(_pos_sp_triplet.current);
+	invalidate_single_setpoint(_pos_sp_triplet.next);
+	invalidate_single_setpoint(_pos_sp_triplet.previous);
+	set_position_setpoint_triplet_updated();
+}
+
+/* TODO! [AK] Consider changing setpoint type to "Undefined"
+To prevent, for example, unintended "type == velocity" checks from succeeding */
+void Navigator::invalidate_single_setpoint(position_setpoint_s &setpoint) {
+	// Avoid simple memset 0 to preserve all the values just in case
+	setpoint.valid = false;
+	setpoint.abs_velocity_valid = false;
+	setpoint.acceleration_valid = false;
+	setpoint.camera_pitch_valid = false;
+	setpoint.position_valid = false;
+	setpoint.velocity_valid = false;
+	setpoint.yaw_valid = false;
+	setpoint.yawspeed_valid = false;
+}

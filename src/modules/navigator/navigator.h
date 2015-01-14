@@ -135,6 +135,17 @@ public:
 	void		publish_position_restriction();
 
 	/**
+	 * Reset all validity flags of the triplet to "invalid"
+	 * to prevent old values from taking effect
+	 */
+	void invalidate_setpoint_triplet();
+
+	/**
+	 * Helper function resets validity flags of a single setpoint structure to "invalid"
+	 */
+	inline static void invalidate_single_setpoint(position_setpoint_s &setpoint);
+
+	/**
 	 * Setters
 	 */
 	void		set_can_loiter_at_sp(bool can_loiter) { _can_loiter_at_sp = can_loiter; }
