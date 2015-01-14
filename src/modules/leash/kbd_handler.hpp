@@ -13,72 +13,124 @@ static void
 say(const char s[])
 { fprintf(stderr, "%s\n", s); }
 
+template <ModeId, EventKind, ButtonId>
+struct handle : Default // Only this one should be inherited from Default.
+{ static void exec(App&) { say("unknown"); } };
 
-static void
-handle_default(state_t) { say("unknown"); }
-
-
-static void
-handle(state_t, ModeA, LongPress, Power  )
+template <ModeId AnyMode>
+struct handle<AnyMode, EventKind::LONG_PRESS, BTN_MASK_POWER>
 {
-	say("ModeA LongPress Power  ");
-	usleep(5000); // 5ms pause to make the message visible at console.
-	halt_and_power_off();
-}
-
-static void
-handle(state_t, ModeA, ShortPress, Power  )
-{
-	say("ModeA ShortPress Power  ");
-
-	// pmenu_ctrl->open();
-}
-
-static void
-handle(state_t, ModeA, ShortPress, Play   )
-{
-	say("ModeA ShortPress Play   ");
-	if (is_drone_active())
+	static void
+	exec(App&)
 	{
-		if (is_drone_armed())
-			send_command(REMOTE_CMD_PLAY_PAUSE);
-		else
-			send_arm_command();
+		say("EventKind::LONG_PRESS Power  ");
+		usleep(5000); // 5ms to make the message visible at console.
+		halt_and_power_off();
 	}
-}
+};
 
-static void
-handle(state_t, ModeA, ShortPress, Up     )
+//template <>
+//struct handle<ModeId::A, RepeatPress, Power>
+//{
+//	static void
+//	exec(App&)
+//	{
+//		say("ModeId::A RepeatPress Power  ");
+//	}
+//};
+
+template <ModeId AnyMode>
+struct handle<AnyMode, EventKind::SHORT_PRESS, BTN_MASK_POWER>
 {
-	say("ModeA ShortPress Up     ");
-	send_command(REMOTE_CMD_FURTHER);
-}
+	static void
+	exec(App&)
+	{
+		say("EventKind::SHORT_PRESS Power  ");
+		// pmenu_ctrl->open();
+	}
+};
 
-static void
-handle(state_t, ModeA, ShortPress, Down   )
+template <>
+struct handle<ModeId::A, EventKind::SHORT_PRESS, BTN_MASK_PLAY>
 {
-	say("ModeA ShortPress Down   ");
-	send_command(REMOTE_CMD_CLOSER);
-}
+	static void
+	exec(App&)
+	{
+		say("ModeId::A EventKind::SHORT_PRESS Play   ");
+		if (is_drone_active())
+		{
+			if (is_drone_armed())
+				send_command(REMOTE_CMD_PLAY_PAUSE);
+			else
+				send_arm_command();
+		}
+	}
+};
 
-// static void
-// handle(state_t, ModeA, ShortPress, Center )
-// {
-//        	say("ModeA ShortPress Center ");
-// }
-
-static void
-handle(state_t, ModeA, ShortPress, Left   )
+template <>
+struct handle<ModeId::A, EventKind::SHORT_PRESS, BTN_MASK_UP>
 {
-	say("ModeA ShortPress Left   ");
-	send_command(REMOTE_CMD_LEFT);
-}
+	static void
+	exec(App&)
+	{
+		say("ModeId::A EventKind::SHORT_PRESS Up     ");
+		send_command(REMOTE_CMD_FURTHER);
+	}
+};
 
-static void
-handle(state_t, ModeA, ShortPress, Right  )
+template <>
+struct handle<ModeId::A, EventKind::SHORT_PRESS, BTN_MASK_DOWN>
 {
-	say("ModeA ShortPress Right  ");
-	send_command(REMOTE_CMD_RIGHT);
-}
+	static void
+	exec(App&)
+	{
+		say("ModeId::A EventKind::SHORT_PRESS Down   ");
+		send_command(REMOTE_CMD_CLOSER);
+	}
+};
+
+template <>
+struct handle<ModeId::A, EventKind::SHORT_PRESS, BTN_MASK_CENTER>
+{
+	static void
+	exec(App & app)
+	{
+		say("ModeId::A EventKind::SHORT_PRESS Center ");
+		app.set_mode_next(ModeId::DRIFT);
+	}
+};
+
+template <>
+struct handle<ModeId::DRIFT, EventKind::SHORT_PRESS, BTN_MASK_CENTER>
+{
+	static void
+	exec(App & app)
+	{
+		say("ModeId::DRIFT EventKind::SHORT_PRESS Center ");
+		app.set_mode_next(ModeId::A);
+	}
+};
+
+template <>
+struct handle<ModeId::A, EventKind::SHORT_PRESS, BTN_MASK_LEFT>
+{
+	static void
+	exec(App&)
+	{
+		say("ModeId::A EventKind::SHORT_PRESS Left   ");
+		send_command(REMOTE_CMD_LEFT);
+	}
+};
+
+template <>
+struct handle<ModeId::A, EventKind::SHORT_PRESS, BTN_MASK_RIGHT>
+{
+	static void
+	exec(App&)
+	{
+		say("ModeId::A EventKind::SHORT_PRESS Right  ");
+		send_command(REMOTE_CMD_RIGHT);
+	}
+};
 
 } // end of namespace kbd_handler

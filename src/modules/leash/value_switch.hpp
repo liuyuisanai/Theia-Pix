@@ -12,7 +12,7 @@ struct ValueListSwitch {
 	using result_type = ResultT;
 	template <value_type x> using case_type = CaseT<x>;
 
-	template < value_type FIRST, value_type ... REST>
+	template <value_type FIRST, value_type ... REST>
 	struct Match
 	{
 		inline result_type
@@ -75,7 +75,7 @@ struct ValueRangeSwitch {
 	using result_type = ResultT;
 	template <value_type x> using case_type = CaseT<x>;
 
-	template < typename T, ValueT V >
+	template <typename T, ValueT V>
 	// T prevents explicit specialization restriction
 	struct Match
 	{

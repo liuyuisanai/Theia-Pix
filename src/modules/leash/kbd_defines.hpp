@@ -26,9 +26,12 @@ struct Default {};
  * Events
  */
 
-struct ShortPress  {};
-struct LongPress   {};
-struct RepeatPress {};
+enum EventKind
+{
+	SHORT_PRESS,
+	LONG_PRESS,
+	REPEAT_PRESS
+};
 
 
 /*
@@ -40,17 +43,12 @@ enum class ModeId
 	NONE,
 	LOWER_BOUND, // ValueRangeSwitch LOWER_BOUND
 	A = LOWER_BOUND,
-	// B,
+	DRIFT,
 	UPPER_BOUND // ValueRangeSwitch UPPER_BOUND
 };
 
 /* previous(ModeId) is required by ValueRangeSwitch implementation */
 constexpr ModeId previous(ModeId);
-
-struct ModeA {};
-
-template< ModeId > struct ModeTypeMap { using type = Default; };
-template<> struct ModeTypeMap< ModeId::A > { using type = ModeA; };
 
 
 /*
@@ -58,22 +56,5 @@ template<> struct ModeTypeMap< ModeId::A > { using type = ModeA; };
  */
 
 using ButtonId = pressed_mask_t;
-
-struct Power  {};
-struct Play   {};
-struct Up     {};
-struct Down   {};
-struct Center {};
-struct Left   {};
-struct Right  {};
-
-template< ButtonId > struct ButtonTypeMap { using type = Default; };
-template<> struct ButtonTypeMap< BTN_MASK_POWER  > { using type = Power;  };
-template<> struct ButtonTypeMap< BTN_MASK_PLAY   > { using type = Play;   };
-template<> struct ButtonTypeMap< BTN_MASK_UP     > { using type = Up;     };
-template<> struct ButtonTypeMap< BTN_MASK_DOWN   > { using type = Down;   };
-template<> struct ButtonTypeMap< BTN_MASK_CENTER > { using type = Center; };
-template<> struct ButtonTypeMap< BTN_MASK_LEFT   > { using type = Left;   };
-template<> struct ButtonTypeMap< BTN_MASK_RIGHT  > { using type = Right;  };
 
 } // end of namespace kbd_handler

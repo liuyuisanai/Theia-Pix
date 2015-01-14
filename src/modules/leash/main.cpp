@@ -12,9 +12,7 @@ extern "C" __EXPORT int main(int argc, const char *argv[]);
 #include <drivers/drv_hrt.h>
 #include <systemlib/systemlib.h>
 
-// TODO move to a header.
-using state_t = int;
-
+#include "app.hpp"
 #include "kbd_defines.hpp"
 #include "kbd_handler.hpp"
 #include "kbd_handler_base.hpp"
@@ -40,12 +38,9 @@ update_buttons(KbdButtonState & s, hrt_abstime now, int f_kbd)
 }
 
 void
-handle_button(const KbdButtonState & btn)
+handle_button(App & app, const KbdButtonState & btn)
 {
-	using kbd_handler::ShortPress;
-	using kbd_handler::LongPress;
-	using kbd_handler::RepeatPress;
-	using kbd_handler::handle_event;
+	using kbd_handler::EventKind;
 
 	unsigned long_press_min = LONG_PRESS_DURATION_us;
 	unsigned long_press_max = LONG_PRESS_DURATION_us + KBD_SCAN_INTERVAL_usec;
@@ -54,9 +49,9 @@ handle_button(const KbdButtonState & btn)
 	{
 		unsigned dt = btn.time_released - btn.time_pressed;
 		if (dt < long_press_min)
-			handle_event<ShortPress>(0, btn.actual_button);
+			app.handle_button<EventKind::SHORT_PRESS>(btn.actual_button);
 		else if (dt < long_press_max)
-			handle_event<LongPress>(1, btn.actual_button);
+			app.handle_button<EventKind::LONG_PRESS>(btn.actual_button);
 	}
 	else
 	{
@@ -66,12 +61,16 @@ handle_button(const KbdButtonState & btn)
 			// Quick hack -- RepeatPress check is not supported yet.
 
 			if (false) // RepeatPress.defined_for(btn.actual_button))
-				handle_event<RepeatPress>(2, btn.actual_button);
+				app.handle_button<EventKind::REPEAT_PRESS>(btn.actual_button);
 			else if (dt < long_press_max)
-				handle_event<LongPress>(1, btn.actual_button);
+				app.handle_button<EventKind::LONG_PRESS>(btn.actual_button);
 		}
 	}
 }
+
+void
+handle_time(App & app, hrt_abstime now)
+{ app.handle_time(now); }
 
 static int
 daemon(int argc, char *argv[])
@@ -83,6 +82,7 @@ daemon(int argc, char *argv[])
 	}
 
 	KbdButtonState btn;
+	App app;
 
 	daemon_running = true;
 	fprintf(stderr, "%s has started.\n", argv[0]);
@@ -94,7 +94,10 @@ daemon(int argc, char *argv[])
 		update_buttons(btn, now, f_kbd_masks);
 
 		if (btn.actual_button and btn.time_pressed)
-			handle_button(btn);
+			handle_button(app, btn);
+		else
+			handle_time(app, now);
+
 
 		// if (btn.actual_button)
 		// {
@@ -169,5 +172,6 @@ leash_main(int argc, const char *argv[])
 		return 1;
 	}
 
+	fprintf(stderr, "main() is returning 0");
 	return 0;
 }
