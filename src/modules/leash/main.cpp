@@ -12,6 +12,9 @@ extern "C" __EXPORT int main(int argc, const char *argv[]);
 #include <drivers/drv_hrt.h>
 #include <systemlib/systemlib.h>
 
+#include "kbd_defines.hpp"
+#include "kbd_handler.hpp"
+#include "kbd_handler_base.hpp"
 #include "kbd_reader.hpp"
 
 namespace {
@@ -28,9 +31,42 @@ void
 update_buttons(KbdButtonState & s, hrt_abstime now, int f_kbd)
 {
 	pressed_mask_t masks[KBD_SCAN_BUFFER_N_ITEMS];
+	// f_kbd should always be full enough.  Ignore read result.
 	read(f_kbd, masks, sizeof(masks));
-	// It should always be full.
 	s.update(now, masks);
+}
+
+void
+handle_button(const KbdButtonState & btn)
+{
+	using kbd_handler::ShortPress;
+	using kbd_handler::LongPress;
+	using kbd_handler::handle_event;
+
+	unsigned long_press_min = LONG_PRESS_DURATION_us;
+	unsigned long_press_max = LONG_PRESS_DURATION_us + KBD_SCAN_INTERVAL_usec;
+
+	if (btn.time_released)
+	{
+		unsigned dt = btn.time_released - btn.time_pressed;
+		if (dt < long_press_min)
+			handle_event<ShortPress>(btn.actual_button);
+		else if (dt < long_press_max)
+			handle_event<LongPress>(btn.actual_button);
+	}
+	else
+	{
+		unsigned dt = hrt_absolute_time() - btn.time_pressed;
+		if (long_press_min <= dt)
+		{
+			// Quick hack -- RepeatPress check is not supported yet.
+
+			if (false) // RepeatPress.defined_for(btn.actual_button))
+				handle_event<RepeatPress>(btn.actual_button);
+			else if (dt < long_press_max)
+				handle_event<LongPress>(btn.actual_button);
+		}
+	}
 }
 
 static int
@@ -53,17 +89,20 @@ daemon(int argc, char *argv[])
 		hrt_abstime now = hrt_absolute_time();
 		update_buttons(btn, now, f_kbd_masks);
 
-		if (btn.actual_button)
-		{
-			if (btn.time_released)
-				printf("%04x mask was pressed for %u usec.\n",
-					btn.actual_button,
-					btn.time_released - btn.time_pressed);
-			else
-				printf("%04x mask is pressed for %u usec.\n",
-					btn.actual_button,
-					now - btn.time_pressed);
-		}
+		if (btn.actual_button and btn.time_pressed)
+			handle_button(btn);
+
+		// if (btn.actual_button)
+		// {
+		// 	if (btn.time_released)
+		// 		printf("%04x mask was pressed for %u usec.\n",
+		// 			btn.actual_button,
+		// 			btn.time_released - btn.time_pressed);
+		// 	else
+		// 		printf("%04x mask is pressed for %u usec.\n",
+		// 			btn.actual_button,
+		// 			now - btn.time_pressed);
+		// }
 	}
 
 	close(f_kbd_masks);
@@ -125,4 +164,6 @@ leash_main(int argc, const char *argv[])
 		usage(argv[0]);
 		return 1;
 	}
+
+	return 0;
 }
