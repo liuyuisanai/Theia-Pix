@@ -20,7 +20,7 @@ previous(ModeId x)
  */
 template <typename ... T>
 Default
-handle(const T & ...);
+handle(state_t, const T & ...);
 
 } // end of namespace kbd_handler
 
@@ -40,15 +40,16 @@ struct call_handle_info
 	using button_type = ButtonT;
 
 	static inline void
-	do_call(std::true_type default_case)
-	{ handle_default(); }
+	do_call(state_t state, std::true_type default_case)
+	{ handle_default(state); }
 
 	static inline void
-	do_call(std::false_type)
-	{ handle(mode_type{}, event_type{}, button_type{}); }
+	do_call(state_t state, std::false_type non_default_case)
+	{ handle(state, mode_type{}, event_type{}, button_type{}); }
 
-	using handle_result_type =
-		decltype(handle(mode_type{}, event_type{}, button_type{}));
+	using handle_result_type = decltype(
+		handle(state_t{}, mode_type{}, event_type{}, button_type{})
+	);
 
 	using // either std::false_type or std::true_type
 	is_default_type = std::is_same<handle_result_type, Default>;
@@ -57,7 +58,7 @@ struct call_handle_info
 	is_default = is_default_type::value;
 
 	static inline void
-	call() { do_call(is_default_type{}); }
+	call(state_t state) { do_call(state, is_default_type{}); }
 };
 
 template <typename ModeT, typename ButtonT>
@@ -68,18 +69,12 @@ class assert_exclusive_long_and_repeated_press_type
 	static constexpr bool repeat_is_default =
 		call_handle_info<RepeatPress, ModeT, ButtonT>::is_default;
 
-	static_assert(
-		long_is_default or repeat_is_default,
-		/* Note: default is opposite to defined. */
-
+	static_assert(long_is_default or repeat_is_default,
 		"LongPress and RepeatPress can _not_ both be defined for"
-		" the same button and mode."
-		/*
-		 * Note: If you got the error, check
-		 *   void handle(ModeX, LongPress/RepeatPress, Up/Down/...)
-		 */
+	        " the same button and mode."
+		// Note: If you got the error, check
+		//   void handle(LongPress/RepeatPress, ModeX, Up/Down/...)
 	);
-
 };
 
 template <typename EventT, typename ModeT, typename ButtonT>
@@ -109,13 +104,14 @@ struct call_handle_strict<RepeatPress, ModeT, ButtonT>
  * one of the following types.
  */
 
-using void_fun_0_pointer_type = void(*)();
-
 template <typename T>
-using void_fun_1_pointer_type = void(*)(T);
+using void_fun_1_pointer_t = void(*)(T);
 
 template <typename T1, typename T2>
-using void_fun_2_pointer_type = void(*)(T1, T2);
+using void_fun_2_pointer_t = void(*)(T1, T2);
+
+template <typename T1, typename T2, typename T3>
+using void_fun_3_pointer_t = void(*)(T1, T2, T3);
 
 
 /*
@@ -134,10 +130,10 @@ struct resolve_handle_0
 	using info = call_handle_strict<event_type, mode_type, button_type>;
 
 	static void
-	resolve () { info::call(); }
+	resolve (state_t state) { info::call(state); }
 
 	inline explicit
-	operator void_fun_0_pointer_type () const
+	operator void_fun_1_pointer_t<state_t> () const
 	{ return &resolve; }
 };
 
@@ -150,11 +146,10 @@ struct resolve_handle_1
 	template <ButtonId _b>
 	using switch_case_type = resolve_handle_0<event_type, mode_type, _b>;
 
-	//using switch_result_type = std::function<void()>;
-	using switch_result_type = void_fun_0_pointer_type;
+	using switch_result_type = void_fun_1_pointer_t<state_t>;
 
 	static void
-	resolve(ButtonId x)
+	resolve(state_t state, ButtonId x)
 	{
 		using value_switch_type = ValueListSwitch<
 			ButtonId,
@@ -164,11 +159,11 @@ struct resolve_handle_1
 			ALL_BUTTONS
 		>;
 		const auto call = value_switch_type::choose_by(x);
-		call();
+		call(state);
 	}
 
 	inline explicit
-	operator void_fun_1_pointer_type<ButtonId> () const
+	operator void_fun_2_pointer_t<state_t, ButtonId> () const
 	{ return &resolve; }
 };
 
@@ -184,11 +179,10 @@ struct resolve_handle_2
 		typename ModeTypeMap<m>::type
 	>;
 
-	//using switch_result_type = std::function<void()>;
-	using switch_result_type = void_fun_1_pointer_type<ButtonId>;
+	using switch_result_type = void_fun_2_pointer_t<state_t, ButtonId>;
 
 	static void
-	resolve (ModeId m, ButtonId b)
+	resolve (state_t state, ModeId m, ButtonId b)
 	{
 		using value_switch_type = ValueRangeSwitch<
 			ModeId,
@@ -198,11 +192,11 @@ struct resolve_handle_2
 			ModeId::LOWER_BOUND, ModeId::UPPER_BOUND
 		>;
 		const auto call = value_switch_type::choose_by(m);
-		call();
+		call(state);
 	}
 
 	inline explicit
-	operator void_fun_2_pointer_type<ModeId, ButtonId> () const
+	operator void_fun_3_pointer_t<state_t, ModeId, ButtonId> () const
 	{ return resolve; }
 };
 
@@ -217,20 +211,20 @@ namespace kbd_handler
 
 template <typename EventT>
 void
-handle_event(ButtonId b)
+handle_event(state_t state, ButtonId b)
 {
 	using namespace details;
 	using resolve_type = resolve_handle_1<EventT, ModeA>;
-	resolve_type::resolve(b);
+	resolve_type::resolve(state, b);
 }
 
 template <typename EventT>
 void
-handle_event(ModeId m, ButtonId b)
+handle_event(state_t state, ModeId m, ButtonId b)
 {
 	using namespace details;
 	using resolve_type = resolve_handle_2<EventT>;
-	resolve_type::resolve(m, b);
+	resolve_type::resolve(state, m, b);
 }
 
 } // end of namespace kbd_handler

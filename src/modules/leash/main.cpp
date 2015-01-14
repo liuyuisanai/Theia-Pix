@@ -12,6 +12,9 @@ extern "C" __EXPORT int main(int argc, const char *argv[]);
 #include <drivers/drv_hrt.h>
 #include <systemlib/systemlib.h>
 
+// TODO move to a header.
+using state_t = int;
+
 #include "kbd_defines.hpp"
 #include "kbd_handler.hpp"
 #include "kbd_handler_base.hpp"
@@ -51,9 +54,9 @@ handle_button(const KbdButtonState & btn)
 	{
 		unsigned dt = btn.time_released - btn.time_pressed;
 		if (dt < long_press_min)
-			handle_event<ShortPress>(btn.actual_button);
+			handle_event<ShortPress>(0, btn.actual_button);
 		else if (dt < long_press_max)
-			handle_event<LongPress>(btn.actual_button);
+			handle_event<LongPress>(1, btn.actual_button);
 	}
 	else
 	{
@@ -63,9 +66,9 @@ handle_button(const KbdButtonState & btn)
 			// Quick hack -- RepeatPress check is not supported yet.
 
 			if (false) // RepeatPress.defined_for(btn.actual_button))
-				handle_event<RepeatPress>(btn.actual_button);
+				handle_event<RepeatPress>(2, btn.actual_button);
 			else if (dt < long_press_max)
-				handle_event<LongPress>(btn.actual_button);
+				handle_event<LongPress>(1, btn.actual_button);
 		}
 	}
 }

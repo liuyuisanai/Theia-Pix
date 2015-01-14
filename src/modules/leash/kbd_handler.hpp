@@ -15,11 +15,11 @@ say(const char s[])
 
 
 static void
-handle_default() { say("unknown"); }
+handle_default(state_t) { say("unknown"); }
 
 
 static void
-handle(ModeA, LongPress, Power  )
+handle(state_t, ModeA, LongPress, Power  )
 {
 	say("ModeA LongPress Power  ");
 	usleep(5000); // 5ms pause to make the message visible at console.
@@ -27,7 +27,7 @@ handle(ModeA, LongPress, Power  )
 }
 
 static void
-handle(ModeA, ShortPress, Power  )
+handle(state_t, ModeA, ShortPress, Power  )
 {
 	say("ModeA ShortPress Power  ");
 
@@ -35,7 +35,7 @@ handle(ModeA, ShortPress, Power  )
 }
 
 static void
-handle(ModeA, ShortPress, Play   )
+handle(state_t, ModeA, ShortPress, Play   )
 {
 	say("ModeA ShortPress Play   ");
 	if (is_drone_active())
@@ -48,34 +48,34 @@ handle(ModeA, ShortPress, Play   )
 }
 
 static void
-handle(ModeA, ShortPress, Up     )
+handle(state_t, ModeA, ShortPress, Up     )
 {
 	say("ModeA ShortPress Up     ");
 	send_command(REMOTE_CMD_FURTHER);
 }
 
 static void
-handle(ModeA, ShortPress, Down   )
+handle(state_t, ModeA, ShortPress, Down   )
 {
 	say("ModeA ShortPress Down   ");
 	send_command(REMOTE_CMD_CLOSER);
 }
 
 // static void
-// handle(ModeA, ShortPress, Center )
+// handle(state_t, ModeA, ShortPress, Center )
 // {
 //        	say("ModeA ShortPress Center ");
 // }
 
 static void
-handle(ModeA, ShortPress, Left   )
+handle(state_t, ModeA, ShortPress, Left   )
 {
 	say("ModeA ShortPress Left   ");
 	send_command(REMOTE_CMD_LEFT);
 }
 
 static void
-handle(ModeA, ShortPress, Right  )
+handle(state_t, ModeA, ShortPress, Right  )
 {
 	say("ModeA ShortPress Right  ");
 	send_command(REMOTE_CMD_RIGHT);
