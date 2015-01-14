@@ -384,6 +384,18 @@ void AccelCalibrator::rotate_transformation(math::Matrix<3,3> &accel_T, math::Ve
 	param_get(param_find("SENS_BOARD_ROT"), &board_rotation);
 	math::Matrix<3,3> rotation_matrix;
 	get_rot_matrix((Rotation) board_rotation, &rotation_matrix);
+
+	// Applying fine offsets
+	math::Matrix<3, 3> board_rotation_offset;
+	float board_offset[3];
+	param_get(param_find("SENS_BOARD_X_OFF"), &(board_offset[0]));
+	param_get(param_find("SENS_BOARD_Y_OFF"), &(board_offset[1]));
+	param_get(param_find("SENS_BOARD_Z_OFF"), &(board_offset[2]));
+	board_rotation_offset.from_euler( M_DEG_TO_RAD_F * board_offset[0],
+			M_DEG_TO_RAD_F * board_offset[1],
+			M_DEG_TO_RAD_F * board_offset[2]);
+	rotation_matrix = rotation_matrix * board_rotation_offset;
+
 	// For rotation matrices transposing and inverting gives the same result, but transposing is faster
 	math::Matrix<3,3> inverted_rotation = rotation_matrix.transposed();
 
