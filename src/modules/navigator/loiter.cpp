@@ -148,6 +148,8 @@ Loiter::on_activation()
     	camera_reset_mode = -1;
     }
 
+    _navigator->invalidate_setpoint_triplet();
+
     if (vstatus->auto_takeoff_cmd) {
 		set_sub_mode(LOITER_SUB_MODE_TAKING_OFF, 1, camera_reset_mode);
 		takeoff();
@@ -203,6 +205,7 @@ Loiter::on_active()
 			if (pos_sp_triplet->current.valid) {
 				global_pos = _navigator->get_global_position();
 				pos_sp_triplet->current.yaw = global_pos->yaw;
+				pos_sp_triplet->current.yaw_valid = true;
 				_navigator->set_position_setpoint_triplet_updated();
 			}
 		}
@@ -335,6 +338,7 @@ Loiter::execute_command_in_aim_and_shoot(vehicle_command_s cmd){
 				pos_sp_triplet->current.alt = global_pos->alt + _parameters.loi_step_len;
 				pos_sp_triplet->current.lat = global_pos->lat;
 				pos_sp_triplet->current.lon = global_pos->lon;
+				pos_sp_triplet->current.position_valid = true;
 
 				pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
 
@@ -345,6 +349,7 @@ Loiter::execute_command_in_aim_and_shoot(vehicle_command_s cmd){
 				pos_sp_triplet->current.alt = global_pos->alt - _parameters.loi_step_len;
 				pos_sp_triplet->current.lat = global_pos->lat;
 				pos_sp_triplet->current.lon = global_pos->lon;
+				pos_sp_triplet->current.position_valid = true;
 
 				pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
 				break;
@@ -379,6 +384,7 @@ Loiter::execute_command_in_aim_and_shoot(vehicle_command_s cmd){
 				pos_sp_triplet->current.lat = lat_new;
 				pos_sp_triplet->current.lon = lon_new;
 				pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
+				pos_sp_triplet->current.position_valid = true;
 
 				break;
 			}
@@ -412,6 +418,7 @@ Loiter::execute_command_in_aim_and_shoot(vehicle_command_s cmd){
 				pos_sp_triplet->current.lat = lat_new;
 				pos_sp_triplet->current.lon = lon_new;
 				pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
+				pos_sp_triplet->current.position_valid = true;
 
 				break;
 			}
@@ -441,6 +448,7 @@ Loiter::execute_command_in_aim_and_shoot(vehicle_command_s cmd){
 				pos_sp_triplet->current.lat = lat_new;
 				pos_sp_triplet->current.lon = lon_new;
 				pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
+				pos_sp_triplet->current.position_valid = true;
 
 				break;
 
@@ -472,6 +480,7 @@ Loiter::execute_command_in_aim_and_shoot(vehicle_command_s cmd){
 				pos_sp_triplet->current.lat = lat_new;
 				pos_sp_triplet->current.lon = lon_new;
 				pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
+				pos_sp_triplet->current.position_valid = true;
 
 				break;
 			}
@@ -480,6 +489,7 @@ Loiter::execute_command_in_aim_and_shoot(vehicle_command_s cmd){
 				pos_sp_triplet->current.lat = target_pos->lat;
 				pos_sp_triplet->current.lon = target_pos->lon;
 				pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
+				pos_sp_triplet->current.position_valid = true;
 
 				set_sub_mode(LOITER_SUB_MODE_GO_TO_POSITION, 0);
 
@@ -576,6 +586,7 @@ Loiter::execute_command_in_landing(vehicle_command_s cmd){
 			commander_request->airdog_state = AIRD_STATE_IN_AIR;
 			_navigator->set_commander_request_updated();
 
+			_navigator->invalidate_setpoint_triplet();
 			set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, 1);
 			loiter_sub_mode = LOITER_SUB_MODE_AIM_AND_SHOOT;
 		}
@@ -607,6 +618,9 @@ Loiter::set_sub_mode(LOITER_SUB_MODE new_sub_mode, uint8_t reset_setpoint, int8_
 			pos_sp_triplet->current.lat = global_pos->lat;
 
 			pos_sp_triplet->current.yaw = global_pos->yaw;
+
+			pos_sp_triplet->current.position_valid = true;
+			pos_sp_triplet->current.yaw_valid = true;
 		}
 
 		_navigator->set_position_setpoint_triplet_updated();

@@ -223,8 +223,8 @@ NavigatorMode::on_inactive()
 void
 NavigatorMode::on_activation()
 {
-	/* invalidate position setpoint by default */
-	_navigator->get_position_setpoint_triplet()->current.valid = false;
+	/* invalidate position setpoint triplet by default */
+	_navigator->invalidate_setpoint_triplet();
     //mavlink_log_info(_mavlink_fd, "[nav] About to set leash points\n");
     //if (_parameters.first_point_lat != 0
     //        || _parameters.first_point_lon != 0
@@ -323,6 +323,7 @@ NavigatorMode::set_camera_mode(camera_mode_t camera_mode, bool force_change)
 			global_pos = _navigator->get_global_position();
 			//keep current yaw angle;
 			pos_sp_triplet->current.yaw = global_pos->yaw;
+			pos_sp_triplet->current.yaw_valid = true;
 			switch (camera_mode) {
 				case HORIZONTAL :
 					pos_sp_triplet->current.camera_pitch = 0.0f;		
@@ -427,16 +428,18 @@ NavigatorMode::land(uint8_t reset_setpoint)
     pos_sp_triplet = _navigator->get_position_setpoint_triplet();
     global_pos = _navigator->get_global_position();
 
-	pos_sp_triplet->previous.valid = false;
-	pos_sp_triplet->current.valid = true;
-	pos_sp_triplet->next.valid = false;
-
 	if (reset_setpoint == 1) {
+		// Will update local pos_sp_triplet as it is a pointer to the same struct
+		_navigator->invalidate_setpoint_triplet();
+
+		pos_sp_triplet->current.valid = true;
 
 		pos_sp_triplet->current.lat = global_pos->lat;
 		pos_sp_triplet->current.lon = global_pos->lon;
 		pos_sp_triplet->current.alt = global_pos->alt;
+		pos_sp_triplet->current.position_valid = true;
 		pos_sp_triplet->current.yaw = NAN;
+		pos_sp_triplet->current.yaw_valid = false;
 	}
 
 	pos_sp_triplet->current.type = SETPOINT_TYPE_LAND;
@@ -452,6 +455,7 @@ NavigatorMode::land(uint8_t reset_setpoint)
 void
 NavigatorMode::takeoff()
 {
+	_navigator->invalidate_setpoint_triplet();
     pos_sp_triplet = _navigator->get_position_setpoint_triplet();
     global_pos = _navigator->get_global_position();
 
@@ -462,8 +466,10 @@ NavigatorMode::takeoff()
 	pos_sp_triplet->current.lat = global_pos->lat;
 	pos_sp_triplet->current.lon = global_pos->lon;
 	pos_sp_triplet->current.alt = global_pos->alt + _parameters.takeoff_alt;
+	pos_sp_triplet->current.position_valid = true;
 
 	pos_sp_triplet->current.yaw = global_pos->yaw;//NAN;
+	pos_sp_triplet->current.yaw_valid = true;
 	pos_sp_triplet->current.type = SETPOINT_TYPE_TAKEOFF;
 
 	_navigator->set_position_setpoint_triplet_updated();
@@ -479,6 +485,7 @@ NavigatorMode::takeoff()
 void
 NavigatorMode::disarm()
 {
+	_navigator->invalidate_setpoint_triplet();
 	commander_request_s *commander_request = _navigator->get_commander_request();
 	commander_request->request_type = V_DISARM;
 	_navigator->set_commander_request_updated();
@@ -535,8 +542,12 @@ NavigatorMode::go_to_intial_position(){
             float dst = sqrt( offset_x * offset_x + offset_y * offset_y);
 
             if (dst <= _parameters.airdog_dst_inv && dst > _parameters.airdog_init_pos_dst) {
-                pos_sp_triplet->current.yaw = _wrap_pi(atan2f(-new_drone_offset(1), -new_drone_offset(0)));
+                _navigator->invalidate_setpoint_triplet();
 
+                pos_sp_triplet->current.yaw = _wrap_pi(atan2f(-new_drone_offset(1), -new_drone_offset(0)));
+                pos_sp_triplet->current.yaw_valid = true;
+
+                pos_sp_triplet->current.valid = true;
                 pos_sp_triplet->previous.valid = false;
                 pos_sp_triplet->next.valid = false;
 
@@ -544,6 +555,7 @@ NavigatorMode::go_to_intial_position(){
                 pos_sp_triplet->current.lon = lon_new;
                 //pos_sp_triplet->current.alt = alt_new;
                 pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
+                pos_sp_triplet->current.position_valid = true;
                 
                 _navigator->set_position_setpoint_triplet_updated();
             }
