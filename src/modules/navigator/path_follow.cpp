@@ -103,6 +103,7 @@ void PathFollow::on_activation() {
 	_saved_trajectory.do_empty();
 	update_saved_trajectory();
 
+	_navigator->invalidate_setpoint_triplet();
 	pos_sp_triplet = _navigator->get_position_setpoint_triplet();
 
 	pos_sp_triplet->next.valid = false;
@@ -112,6 +113,7 @@ void PathFollow::on_activation() {
     set_target_setpoint(pos_sp_triplet->current);
 
 	pos_sp_triplet->current.abs_velocity = 0.0f;
+	pos_sp_triplet->current.abs_velocity_valid = true;
 	_navigator->set_position_setpoint_triplet_updated();
     
     _trajectory_distance = 0;
@@ -244,12 +246,14 @@ void PathFollow::on_active() {
 
             global_pos = _navigator->get_global_position();
 
-            pos_sp_triplet->next.valid = false;
-            pos_sp_triplet->current.valid = true;
-            pos_sp_triplet->previous.valid = false;
+            // Will update pos_sp_triplet too as it points to the same location
+            _navigator->invalidate_setpoint_triplet();
+
             pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
             pos_sp_triplet->current.lat = global_pos->lat;
             pos_sp_triplet->current.lon = global_pos->lon;
+            pos_sp_triplet->current.valid = true;
+            pos_sp_triplet->current.position_valid = true;
             //mavlink_log_critical(_mavlink_fd, "Zero point on.");
         
         }
