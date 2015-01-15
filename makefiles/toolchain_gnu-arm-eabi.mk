@@ -125,6 +125,11 @@ ARCHCXXFLAGS		 = -fno-exceptions -fno-rtti -std=gnu++0x -fno-threadsafe-statics
 
 # Generic warnings
 #
+# -Wfatal-errors prevents g++ from giving you all the clues it has,
+# and templates better be compiled with no -Wfatal-errors.
+# Setting SHOW_ALL_ERRORS non-empty makes compiler give all the output.
+#
+SHOW_ALL_ERRORS =
 ARCHWARNINGS		 = -Wall \
 			   -Wextra \
 			   -Wdouble-promotion \
@@ -138,12 +143,12 @@ ARCHWARNINGS		 = -Wall \
 			   -Wno-unused-parameter \
 			   -Werror=format-security \
 			   -Werror=array-bounds \
-			   -Wfatal-errors \
 			   -Wformat=1 \
 			   -Werror=unused-but-set-variable \
 			   -Werror=unused-variable \
 			   -Werror=double-promotion \
-			   -Werror=reorder
+			   -Werror=reorder \
+			   $(if $(SHOW_ALL_ERRORS),,-Wfatal-errors)
 #   -Wcast-qual  - generates spurious noreturn attribute warnings, try again later
 #   -Wconversion - would be nice, but too many "risky-but-safe" conversions in the code
 #   -Wcast-align - would help catch bad casts in some cases, but generates too many false positives
