@@ -140,8 +140,10 @@ then
 	position_estimator_inav start
 fi
 
-# TODO replace with airleash app
+# commander required for calibration
 commander start
+
+leash start
 
 if [ $EXIT_ON_END == yes ]
 then
