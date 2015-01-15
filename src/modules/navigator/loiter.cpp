@@ -180,7 +180,12 @@ Loiter::on_active()
             go_to_intial_position(); 
         }
         else {
-        	set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, 2);
+        	if (_parameters.start_follow_immediately == 1) {
+        		start_follow();
+        	}
+        	else {
+        		set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, 2);
+        	}
         }
 	}
 
@@ -191,7 +196,12 @@ Loiter::on_active()
 	}
 
 	if (loiter_sub_mode == LOITER_SUB_MODE_GO_TO_POSITION && check_current_pos_sp_reached()) {
-		set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, 0);
+		if (_parameters.start_follow_immediately == 1) {
+        	start_follow();
+    	}
+    	else {
+			set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, 0);
+		}
 	}
 
 	if (previous_target_valid_flag != vehicle_status->condition_target_position_valid) {
@@ -502,29 +512,7 @@ Loiter::execute_command_in_aim_and_shoot(vehicle_command_s cmd){
 
 			}
 			case REMOTE_CMD_PLAY_PAUSE: {
-                if (_parameters.afol_mode == 0) {
-
-                	commander_request_s *commander_request = _navigator->get_commander_request();
-					commander_request->request_type = V_MAIN_STATE_CHANGE;
-					commander_request->main_state = MAIN_STATE_ABS_FOLLOW;
-					_navigator->set_commander_request_updated();
-
-                } else if (_parameters.afol_mode == 1) {
-                     
-                    commander_request_s *commander_request = _navigator->get_commander_request();
-                    commander_request->request_type = V_MAIN_STATE_CHANGE;
-                    commander_request->main_state = MAIN_STATE_AUTO_PATH_FOLLOW;
-
-                    _navigator->set_flag_reset_pfol_offs(true);
-
-                    _navigator->set_commander_request_updated();
-                
-                } else if (_parameters.afol_mode == 2) {
-                    commander_request_s *commander_request = _navigator->get_commander_request();
-                    commander_request->request_type = V_MAIN_STATE_CHANGE;
-                    commander_request->main_state = MAIN_STATE_CABLE_PARK;
-                    _navigator->set_commander_request_updated();
-                }
+                start_follow();
 				break;
 			}
             case REMOTE_CMD_SET_POINT: {
@@ -656,4 +644,31 @@ Loiter::set_sub_mode(LOITER_SUB_MODE new_sub_mode, uint8_t reset_setpoint, int8_
 
 void
 Loiter::execute_command_in_taking_off(vehicle_command_s cmd) {
+}
+
+void
+Loiter::start_follow() {
+	if (_parameters.afol_mode == 0) {
+
+    	commander_request_s *commander_request = _navigator->get_commander_request();
+		commander_request->request_type = V_MAIN_STATE_CHANGE;
+		commander_request->main_state = MAIN_STATE_ABS_FOLLOW;
+		_navigator->set_commander_request_updated();
+
+    } else if (_parameters.afol_mode == 1) {
+         
+        commander_request_s *commander_request = _navigator->get_commander_request();
+        commander_request->request_type = V_MAIN_STATE_CHANGE;
+        commander_request->main_state = MAIN_STATE_AUTO_PATH_FOLLOW;
+
+        _navigator->set_flag_reset_pfol_offs(true);
+
+        _navigator->set_commander_request_updated();
+    
+    } else if (_parameters.afol_mode == 2) {
+        commander_request_s *commander_request = _navigator->get_commander_request();
+        commander_request->request_type = V_MAIN_STATE_CHANGE;
+        commander_request->main_state = MAIN_STATE_CABLE_PARK;
+        _navigator->set_commander_request_updated();
+    }
 }

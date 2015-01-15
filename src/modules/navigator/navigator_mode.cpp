@@ -140,6 +140,7 @@ NavigatorMode::updateParamHandles() {
     _parameter_handles.a_yaw_ignore_radius = param_find("A_YAW_IGNR_R");
     _parameter_handles.proportional_gain = param_find("MPC_XY_P");
 	_parameter_handles.follow_rpt_alt	= param_find("FOL_RPT_ALT");
+	_parameter_handles.start_follow_immediately = param_find("A_FOL_IMDTLY");
 }
 
 void
@@ -184,6 +185,8 @@ NavigatorMode::updateParamValues() {
     param_get(_parameter_handles.a_yaw_ignore_radius, &(_parameters.a_yaw_ignore_radius));
     param_get(_parameter_handles.proportional_gain, &(_parameters.proportional_gain));
     param_get(_parameter_handles.follow_rpt_alt, &(_parameters.follow_rpt_alt));
+    param_get(_parameter_handles.start_follow_immediately, &(_parameters.start_follow_immediately));
+    
 }
 
 

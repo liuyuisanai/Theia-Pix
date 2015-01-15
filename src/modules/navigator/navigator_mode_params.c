@@ -114,3 +114,12 @@ PARAM_DEFINE_FLOAT(A_INIT_POS_D, 5.00f);
  * @group Airdog
  */
 PARAM_DEFINE_INT32(A_INIT_POS_U, 1);
+
+/**
+ * Start follow mode immediately after take-off or initial positioning
+ *
+ * @min 0
+ * @max 1
+ * @group Airdog
+ */
+PARAM_DEFINE_INT32(A_FOL_IMDTLY, 0);

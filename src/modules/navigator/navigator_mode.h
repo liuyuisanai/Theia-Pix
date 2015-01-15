@@ -152,6 +152,8 @@ public:
         // Proportional gain for horizontal position error
         float proportional_gain;
 
+        int start_follow_immediately;
+
 	} _parameters;		
 
 
@@ -195,6 +197,8 @@ public:
 
         param_t a_yaw_ignore_radius;
         param_t proportional_gain;
+        param_t start_follow_immediately;
+
 	} _parameter_handles;
 
 
