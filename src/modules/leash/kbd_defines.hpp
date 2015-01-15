@@ -98,4 +98,7 @@ template <EventKind, typename State>
 void
 handle_event(State &, ModeId m, ButtonId b);
 
+bool
+has_repeated_press(ModeId m, ButtonId b);
+
 } // end of namespace kbd_handler

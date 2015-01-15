@@ -101,6 +101,10 @@ struct call_handle_strict<EventKind::REPEAT_PRESS, MODE, BUTTON>
 	  assert_exclusive_long_and_repeated_press_type<MODE, BUTTON>
 {};
 
+}} // end of namespace kbd_handler::details
+
+
+namespace kbd_handler { namespace details { namespace call {
 
 /*
  * std::function<void()> replacement.
@@ -188,7 +192,87 @@ struct resolve_handle_2
 	}
 };
 
-}} // end of namespace kbd_handler::details
+}}} // end of namespace kbd_handler::details::call
+
+namespace kbd_handler { namespace details { namespace repeated_defined {
+
+/*
+ * std::function<bool()> replacement.
+ *
+ * It is required as gnu stl and nuttx have conflict at ctype.h and locale.
+ *
+ * The replacement is to returning static function addresses.
+ * The static addressed are returned by explicit typecast operator to
+ * one of the following types.
+ */
+
+template <typename T>
+using bool_fun_1_pointer_t = bool(*)(T);
+
+/*
+ * Helpers that choose proper handle(Event, Mode, Button)
+ * by given event type and mode and button constants.
+ *
+ */
+
+template <EventKind EVENT, ModeId MODE, ButtonId BUTTON>
+struct is_default_0
+{
+	using info = call_handle_strict<EVENT, MODE, BUTTON>;
+
+	constexpr explicit
+	operator bool () const
+	{ return info::is_default; }
+};
+
+template <EventKind EVENT, ModeId MODE>
+struct is_default_1
+{
+	template <ButtonId BUTTON>
+	using switch_case_type = is_default_0<EVENT, MODE, BUTTON>;
+
+	static bool
+	resolve(ButtonId b)
+	{
+		using value_switch_type = ValueListSwitch<
+			ButtonId,
+			bool,
+			switch_case_type,
+			-1,
+			ALL_BUTTONS
+		>;
+		return value_switch_type::choose_by(b);
+	}
+
+	inline explicit
+	operator bool_fun_1_pointer_t<ButtonId> () const
+	{ return &resolve; }
+};
+
+template <EventKind EVENT>
+struct is_default_2
+{
+	template <ModeId MODE>
+	using switch_case_type = is_default_1< EVENT, MODE >;
+
+	using switch_result_type = bool_fun_1_pointer_t<ButtonId>;
+
+	static bool
+	resolve (ModeId m, ButtonId b)
+	{
+		using value_switch_type = ValueRangeSwitch<
+			ModeId,
+			switch_result_type,
+			switch_case_type,
+			ModeId::NONE,
+			ModeId::LOWER_BOUND, ModeId::UPPER_BOUND
+		>;
+		const auto call = value_switch_type::choose_by(m);
+		return call(b);
+	}
+};
+
+}}} // end of namespace kbd_handler::details::repeated_defined
 
 namespace kbd_handler
 {
@@ -201,9 +285,17 @@ template <EventKind EVENT, typename State>
 void
 handle_event(State & state, ModeId m, ButtonId b)
 {
-	using namespace details;
+	using namespace details::call;
 	using resolve_type = resolve_handle_2<EVENT>;
 	resolve_type::resolve(state, m, b);
+}
+
+bool
+has_repeated_press(ModeId m, ButtonId b)
+{
+	using namespace details::repeated_defined;
+	using is_default_type = is_default_2<REPEAT_PRESS>;
+	return not is_default_type::resolve(m, b);
 }
 
 } // end of namespace kbd_handler

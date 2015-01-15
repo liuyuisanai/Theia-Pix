@@ -135,6 +135,12 @@ struct App
 		}
 	}
 
+	bool
+	has_repeated_press(ButtonId btn)
+	{
+		return kbd_handler::has_repeated_press(mode, btn);
+	}
+
 	template <EventKind EVENT>
 	void
 	handle_press(ButtonId btn)

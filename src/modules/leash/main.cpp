@@ -65,7 +65,7 @@ handle_kbd_state(App & app, const KbdButtonState & btn, hrt_abstime now)
 		{
 			// Quick hack -- RepeatPress check is not supported yet.
 
-			if (false) // RepeatPress.defined_for(btn.actual_button))
+			if (app.has_repeated_press(btn.actual_button))
 				app.handle_press<EventKind::REPEAT_PRESS>(btn.actual_button);
 			else if (dt < long_press_max)
 			{
