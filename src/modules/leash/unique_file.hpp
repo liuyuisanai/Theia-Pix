@@ -26,14 +26,14 @@ public:
 	}
 
 	inline
-	int get() { return fd; }
+	int get() const { return fd; }
 
 	friend inline ssize_t
-	read(unique_file & uf, void * buf, size_t buf_size)
+	read(const unique_file & uf, void * buf, size_t buf_size)
 	{ return ::read(uf.fd, buf, buf_size); }
 
 	friend inline ssize_t
-	write(unique_file & uf, const void * buf, size_t buf_size)
+	write(const unique_file & uf, const void * buf, size_t buf_size)
 	{ return ::write(uf.fd, buf, buf_size); }
 };
 

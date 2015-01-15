@@ -30,8 +30,39 @@ struct call_handle_info
 	is_default = std::is_base_of<Default, handle_type>::value;
 
 	static inline void
-	call(App & app) { handle_type::exec(app); }
+	call(App & app) {
+		fprintf(stderr, "Event %s Mode %s Button %03x %s\n",
+				EventDebugName<EVENT>::name,
+				ModeDebugName<MODE>::name,
+				BUTTON,
+				ButtonDebugName<BUTTON>::name);
+		handle_type::exec(app);
+	}
 };
+
+//template <ModeId MODE, ButtonId BUTTON, EventKind A, EventKind B, const char msg[]>
+//class assert_exclusive_event_pair<
+//{
+//	static constexpr bool
+//	a_default = call_handle_info<A, MODE, BUTTON>::is_default;
+//	static constexpr bool
+//	b_default = call_handle_info<B, MODE, BUTTON>::is_default;
+//
+//	/* Note: default is opposite to defined. */
+//	static_assert(a_default and b_default, "" msg);
+//};
+//
+//template <ModeId MODE, ButtonId BUTTON>
+//class assert_exclusive_presses = assert_exclusive_event_pair<
+//	MODE, BUTTON, EventKind::LONG_PRESS, EventKind::REPEAT_PRESS,
+//	"LongPress and RepeatPress can _not_ both be defined for"
+//	" the same button and mode."
+//	/*
+//	 * Note: If you got the error, check template specialisation for
+//	 *   handle<MODE, LONG_PRESS/REPEAT_PRESS, BUTTON>
+//	 * or AnyButton/AnyMode or enabled_if cases.
+//	 */
+//>;
 
 template <ModeId MODE, ButtonId BUTTON>
 class assert_exclusive_long_and_repeated_press_type
@@ -86,9 +117,6 @@ using void_fun_1_pointer_t = void(*)(T);
 
 template <typename T1, typename T2>
 using void_fun_2_pointer_t = void(*)(T1, T2);
-
-template <typename T1, typename T2, typename T3>
-using void_fun_3_pointer_t = void(*)(T1, T2, T3);
 
 
 /*
@@ -158,10 +186,6 @@ struct resolve_handle_2
 		const auto call = value_switch_type::choose_by(m);
 		call(app, b);
 	}
-
-	inline explicit
-	operator void_fun_3_pointer_t<App &, ModeId, ButtonId> () const
-	{ return resolve; }
 };
 
 }} // end of namespace kbd_handler::details
@@ -173,13 +197,13 @@ namespace kbd_handler
  * Shortcuts to resolve_handle_X types for more clear event processing code.
  */
 
-template <EventKind EVENT>
+template <EventKind EVENT, typename State>
 void
-handle_event(App & app, ModeId m, ButtonId b)
+handle_event(State & state, ModeId m, ButtonId b)
 {
 	using namespace details;
 	using resolve_type = resolve_handle_2<EVENT>;
-	resolve_type::resolve(app, m, b);
+	resolve_type::resolve(state, m, b);
 }
 
 } // end of namespace kbd_handler

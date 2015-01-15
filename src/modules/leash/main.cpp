@@ -8,6 +8,11 @@ extern "C" __EXPORT int main(int argc, const char *argv[]);
 #include <cstring>
 #include <cstdio>
 
+static void
+say(const char s[])
+{ fprintf(stderr, "%s\n", s); }
+
+
 #include <drivers/drv_airleash_kbd.h>
 #include <drivers/drv_hrt.h>
 #include <systemlib/systemlib.h>
@@ -15,7 +20,6 @@ extern "C" __EXPORT int main(int argc, const char *argv[]);
 #include "app.hpp"
 #include "kbd_defines.hpp"
 #include "kbd_handler.hpp"
-#include "kbd_handler_base.hpp"
 #include "kbd_reader.hpp"
 
 namespace {
@@ -38,7 +42,7 @@ update_buttons(KbdButtonState & s, hrt_abstime now, int f_kbd)
 }
 
 void
-handle_button(App & app, const KbdButtonState & btn)
+handle_kbd_state(App & app, const KbdButtonState & btn, hrt_abstime now)
 {
 	using kbd_handler::EventKind;
 
@@ -49,21 +53,25 @@ handle_button(App & app, const KbdButtonState & btn)
 	{
 		unsigned dt = btn.time_released - btn.time_pressed;
 		if (dt < long_press_min)
-			app.handle_button<EventKind::SHORT_PRESS>(btn.actual_button);
+			app.handle_press<EventKind::SHORT_PRESS>(btn.actual_button);
 		else if (dt < long_press_max)
-			app.handle_button<EventKind::LONG_PRESS>(btn.actual_button);
+			app.handle_press<EventKind::LONG_PRESS>(btn.actual_button);
+		app.handle_release();
 	}
 	else
 	{
-		unsigned dt = hrt_absolute_time() - btn.time_pressed;
+		unsigned dt = now - btn.time_pressed;
 		if (long_press_min <= dt)
 		{
 			// Quick hack -- RepeatPress check is not supported yet.
 
 			if (false) // RepeatPress.defined_for(btn.actual_button))
-				app.handle_button<EventKind::REPEAT_PRESS>(btn.actual_button);
+				app.handle_press<EventKind::REPEAT_PRESS>(btn.actual_button);
 			else if (dt < long_press_max)
-				app.handle_button<EventKind::LONG_PRESS>(btn.actual_button);
+			{
+				app.handle_press<EventKind::LONG_PRESS>(btn.actual_button);
+				app.handle_release();
+			}
 		}
 	}
 }
@@ -93,10 +101,17 @@ daemon(int argc, char *argv[])
 		hrt_abstime now = hrt_absolute_time();
 		update_buttons(btn, now, f_kbd_masks);
 
+		/*
+		 * Button events have priority to timeouts as
+		 * while button is pressed no timeout should happen, and
+		 * then button, most probably, will reset the timeout itself.
+		 */
 		if (btn.actual_button and btn.time_pressed)
-			handle_button(app, btn);
+			handle_kbd_state(app, btn, now);
 		else
-			handle_time(app, now);
+			app.handle_time(now);
+
+		app.update_state(now);
 
 
 		// if (btn.actual_button)
@@ -129,7 +144,7 @@ usage(const char name[])
 } // end of anonymous namespace
 
 int
-leash_main(int argc, const char *argv[])
+main(int argc, const char *argv[])
 {
 	if (argc != 2)
 	{
