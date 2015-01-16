@@ -59,9 +59,6 @@
 #include <math.h>
 
 #include <drivers/drv_range_finder.h>
-#include <drivers/drv_accel.h>
-#include <drivers/drv_gyro.h>
-#include <drivers/drv_mag.h>
 
 #include <uORB/uORB.h>
 #include <uORB/topics/vehicle_status.h>
@@ -204,11 +201,6 @@ PARAM_DEFINE_INT32(SDLOG_M_MAVST, 0);
 
 #define MIN(X,Y) ((X) < (Y) ? (X) : (Y))
 
-struct log_PARM_packet_s {
-	LOG_PACKET_HEADER;
-	struct log_PARM_s body;
-};
-
 static bool main_thread_should_exit = false;		/**< Deamon exit flag */
 static bool thread_running = false;			/**< Deamon status flag */
 static int deamon_task;						/**< Handle of deamon task / thread */
@@ -297,12 +289,6 @@ static int write_formats(int fd);
  * Write version message to log file.
  */
 static int write_version(int fd);
-
-/**
- * Helper function for writing structure parameters.
- */
-static ssize_t struct_write_helper(int fd, struct log_PARM_packet_s* log_msg,
-		const float* value, const char* name);
 
 /**
  * Write parameters to log file.
@@ -773,17 +759,13 @@ int write_version(int fd)
 	return write(fd, &log_msg_VER, sizeof(log_msg_VER));
 }
 
-ssize_t struct_write_helper(int fd, struct log_PARM_packet_s* log_msg,
-		const float* value, const char* name) {
-	strncpy(log_msg->body.name, name, sizeof(log_msg->body.name));
-	log_msg->body.value = *value;
-	return write(fd, log_msg, sizeof(*log_msg));
-}
-
 int write_parameters(int fd)
 {
 	/* construct parameter message */
-	struct log_PARM_packet_s log_msg_PARM = {
+	struct {
+		LOG_PACKET_HEADER;
+		struct log_PARM_s body;
+	} log_msg_PARM = {
 		LOG_PACKET_HEADER_INIT(LOG_PARM_MSG),
 	};
 
@@ -792,9 +774,7 @@ int write_parameters(int fd)
 
 	for (param_t param = 0; param < params_cnt; param++) {
 		/* fill parameter message and write it */
-		if (param_type(param) < PARAM_TYPE_STRUCT) {
-			strncpy(log_msg_PARM.body.name, param_name(param), sizeof(log_msg_PARM.body.name));
-		}
+		strncpy(log_msg_PARM.body.name, param_name(param), sizeof(log_msg_PARM.body.name));
 		float value = NAN;
 
 		switch (param_type(param)) {
@@ -808,50 +788,6 @@ int write_parameters(int fd)
 		case PARAM_TYPE_FLOAT:
 			param_get(param, &value);
 			break;
-
-		case PARAM_TYPE_STRUCT ... PARAM_TYPE_STRUCT_MAX: {
-				const char* prname = param_name(param);
-				if ( strcmp(prname, "SENS_ACC_SCALE") == 0 ) {
-					struct accel_scale scale;
-					param_get(param, &scale);
-
-					written += struct_write_helper(fd, &log_msg_PARM, &(scale.x_offset), "SENS_ACC_XOFF");
-					written += struct_write_helper(fd, &log_msg_PARM, &(scale.x_scale), "SENS_ACC_XSCALE");
-					written += struct_write_helper(fd, &log_msg_PARM, &(scale.y_offset), "SENS_ACC_YOFF");
-					written += struct_write_helper(fd, &log_msg_PARM, &(scale.y_scale), "SENS_ACC_YSCALE");
-					written += struct_write_helper(fd, &log_msg_PARM, &(scale.z_offset), "SENS_ACC_ZOFF");
-					written += struct_write_helper(fd, &log_msg_PARM, &(scale.z_scale), "SENS_ACC_ZSCALE");
-					continue;
-				}
-				else if ( strcmp(prname, "SENS_GYRO_SCALE") == 0) {
-					struct gyro_scale scale;
-					param_get(param, &scale);
-
-					written += struct_write_helper(fd, &log_msg_PARM, &(scale.x_offset), "SENS_GYR_XOFF");
-					written += struct_write_helper(fd, &log_msg_PARM, &(scale.x_scale), "SENS_GYR_XSCALE");
-					written += struct_write_helper(fd, &log_msg_PARM, &(scale.y_offset), "SENS_GYR_YOFF");
-					written += struct_write_helper(fd, &log_msg_PARM, &(scale.y_scale), "SENS_GYR_YSCALE");
-					written += struct_write_helper(fd, &log_msg_PARM, &(scale.z_offset), "SENS_GYR_ZOFF");
-					written += struct_write_helper(fd, &log_msg_PARM, &(scale.z_scale), "SENS_GYR_ZSCALE");
-					continue;
-				}
-				else if ( strcmp(prname, "SENS_MAG_SCALE") == 0) {
-					struct mag_scale scale;
-					param_get(param, &scale);
-
-					written += struct_write_helper(fd, &log_msg_PARM, &(scale.x_offset), "SENS_MAG_XOFF");
-					written += struct_write_helper(fd, &log_msg_PARM, &(scale.x_scale), "SENS_MAG_XSCALE");
-					written += struct_write_helper(fd, &log_msg_PARM, &(scale.y_offset), "SENS_MAG_YOFF");
-					written += struct_write_helper(fd, &log_msg_PARM, &(scale.y_scale), "SENS_MAG_YSCALE");
-					written += struct_write_helper(fd, &log_msg_PARM, &(scale.z_offset), "SENS_MAG_ZOFF");
-					written += struct_write_helper(fd, &log_msg_PARM, &(scale.z_scale), "SENS_MAG_ZSCALE");
-					continue;
-				}
-				else { // replicate default behaviour - write just param name
-					strncpy(log_msg_PARM.body.name, param_name(param), sizeof(log_msg_PARM.body.name));
-				}
-				break;
-			}
 
 		default:
 			break;
