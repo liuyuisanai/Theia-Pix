@@ -53,6 +53,32 @@ struct handle<ModeId::SHORTCUT, EventKind::LONG_KEYPRESS, BTN_MASK_PLAY>
 	}
 };
 
+/*
+ * Follow Line: PLAY and POWER button.
+ */
+
+template <>
+struct handle<ModeId::SHORTCUT, EventKind::SHORT_KEYPRESS, BTN_MASK_PLAY>
+{
+	static void
+	exec(App & app)
+	{
+		say("SHORTCUT SHORT_KEYPRESS PLAY");
+		app.drone_cmd.send_command(REMOTE_CMD_SET_POINT);
+	}
+};
+
+template <>
+struct handle<ModeId::SHORTCUT, EventKind::SHORT_KEYPRESS, BTN_MASK_POWER>
+{
+	static void
+	exec(App & app)
+	{
+		say("SHORTCUT SHORT_KEYPRESS POWER");
+		app.drone_cmd.send_command(REMOTE_CMD_CLEAR_POINTS);
+	}
+};
+
 
 /*
  * FLIGHT mode.
