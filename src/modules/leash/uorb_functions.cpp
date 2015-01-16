@@ -4,6 +4,7 @@
 #include <uORB/uORB.h>
 #include <uORB/topics/vehicle_status.h>
 
+#include "settings.hpp"
 #include "uorb_functions.hpp"
 
 enum MAV_MODE_FLAG {
@@ -102,10 +103,14 @@ DroneStatus::~DroneStatus()
 }
 
 void
-DroneStatus::update()
+DroneStatus::update(hrt_abstime now)
 {
 	struct airdog_status_s x = airdog_status;
 	orb_copy(ORB_ID(airdog_status), sub, &x);
+
+	heartbeat_age_us = now - x.timestamp;
+	bool x_timeout = HEARTBEAT_TIMEOUT_us < heartbeat_age_us;
+
 	status_changed = (
 		   (x.main_mode     != airdog_status.main_mode)
 		or (x.sub_mode      != airdog_status.sub_mode)
@@ -127,12 +132,7 @@ DroneStatus::update()
 	}
 
 	airdog_status = x;
-}
-
-bool
-DroneStatus::copter_state_has_changed() const
-{
-	return status_changed;
+	signal_timeout = x_timeout;
 }
 
 bool

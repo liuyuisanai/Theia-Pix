@@ -31,7 +31,7 @@ struct PeriodicSayAlive : PeriodicAction
 {
 	unsigned n;
 	PeriodicSayAlive()
-	: PeriodicAction(1000000/*us*/), n(0)
+	: PeriodicAction(3600000/*us*/), n(0)
 	{}
 
 	void
@@ -68,12 +68,12 @@ struct Timeout
 		{
 		// Fast timeouts
 		case ModeId::CONFIRM_ARM:
-			duration =  5000000u; /*  5s */
+			duration =  5000000u; /*  5.0s */
 			break;
 		// Slow timeouts
 		case ModeId::FLIGHT_ALT:
 		case ModeId::SHORTCUT:
-			duration = 10000000u; /* 10s */
+			duration = 10000000u; /* 10.0s */
 			break;
 		// No timeout
 		default:
@@ -111,7 +111,7 @@ struct App
 	void check_drone_status();
 
 	App()
-		: mode(ModeId::PREFLIGHT)
+		: mode(ModeId::INIT)
 		, transition_next_mode(ModeId::NONE)
 		, transition_requested(false)
 		, last_button(BTN_NONE)
@@ -176,7 +176,7 @@ struct App
 			handle_event<EventKind::TIMEOUT>(*this, mode, BTN_NONE);
 			tone.timeout();
 		} else {
-			drone_status.update();
+			drone_status.update(now);
 			if (drone_status.copter_state_has_changed())
 				handle_event<EventKind::COPTER_CHANGED_STATE>(*this, mode, BTN_NONE);
 		}
@@ -191,7 +191,8 @@ struct App
 			fprintf(stderr, "Mode transition %i -> %i\n",
 					mode, transition_next_mode);
 
-			tone.mode_switch();
+			if (mode != transition_next_mode)
+				tone.mode_switch();
 			mode = transition_next_mode;
 			transition_requested = false;
 			timeout.restart(now, mode);

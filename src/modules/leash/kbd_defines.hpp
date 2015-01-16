@@ -1,7 +1,5 @@
 #pragma once
 
-#define LONG_PRESS_DURATION_us 1500000u
-
 #define BTN_NONE        0
 #define BTN_MASK_POWER  0x001
 #define BTN_MASK_PLAY   0x004
@@ -27,7 +25,7 @@ struct Default {};
  * Events
  */
 
-enum EventKind
+enum EventKind : uint8_t
 {
 	  SHORT_PRESS
 	, LONG_PRESS
@@ -51,27 +49,31 @@ template <> struct EventDebugName<EventKind::COPTER_CHANGED_STATE > { static con
  * Modes
  */
 
-enum class ModeId
+enum class ModeId : uint8_t
 {
 	NONE,
 	               LOWER_BOUND, // ValueRangeSwitch LOWER_BOUND
-	PREFLIGHT    = LOWER_BOUND,
+	INIT         = LOWER_BOUND,
+	PREFLIGHT,
 	MENU,
 	CONFIRM_ARM,
 	FLIGHT,
 	FLIGHT_ALT,
 	SHORTCUT,
+	FLIGHT_NO_SIGNAL,
 	               UPPER_BOUND // ValueRangeSwitch UPPER_BOUND
 };
 
 template <ModeId> struct ModeDebugName;
 template <> struct ModeDebugName<ModeId::NONE       > { static constexpr name_t name = "ModeId::NONE       "; };
+template <> struct ModeDebugName<ModeId::INIT       > { static constexpr name_t name = "ModeId::INIT       "; };
 template <> struct ModeDebugName<ModeId::PREFLIGHT  > { static constexpr name_t name = "ModeId::PREFLIGHT  "; };
+template <> struct ModeDebugName<ModeId::MENU       > { static constexpr name_t name = "ModeId::MENU       "; };
+template <> struct ModeDebugName<ModeId::CONFIRM_ARM> { static constexpr name_t name = "ModeId::CONFIRM_ARM"; };
 template <> struct ModeDebugName<ModeId::FLIGHT     > { static constexpr name_t name = "ModeId::FLIGHT     "; };
 template <> struct ModeDebugName<ModeId::FLIGHT_ALT > { static constexpr name_t name = "ModeId::FLIGHT_ALT "; };
 template <> struct ModeDebugName<ModeId::SHORTCUT   > { static constexpr name_t name = "ModeId::SHORTCUT   "; };
-template <> struct ModeDebugName<ModeId::MENU       > { static constexpr name_t name = "ModeId::MENU       "; };
-template <> struct ModeDebugName<ModeId::CONFIRM_ARM> { static constexpr name_t name = "ModeId::CONFIRM_ARM"; };
+template <> struct ModeDebugName<ModeId::FLIGHT_NO_SIGNAL> { static constexpr name_t name = "ModeId::FLIGHT_NO_SIGNAL"; };
 
 /* previous(ModeId) is required by ValueRangeSwitch implementation */
 constexpr ModeId previous(ModeId);
@@ -93,6 +95,10 @@ template <> struct ButtonDebugName<BTN_MASK_CENTER> { static constexpr name_t na
 template <> struct ButtonDebugName<BTN_MASK_LEFT  > { static constexpr name_t name = "BTN_MASK_LEFT  "; };
 template <> struct ButtonDebugName<BTN_MASK_RIGHT > { static constexpr name_t name = "BTN_MASK_RIGHT "; };
 
+
+/*
+ * Prototypes
+ */
 
 template <EventKind, typename State>
 void

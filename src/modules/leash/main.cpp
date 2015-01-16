@@ -8,11 +8,6 @@ extern "C" __EXPORT int main(int argc, const char *argv[]);
 #include <cstring>
 #include <cstdio>
 
-static void
-say(const char s[])
-{ fprintf(stderr, "%s\n", s); }
-
-
 #include <drivers/drv_airleash_kbd.h>
 #include <drivers/drv_hrt.h>
 #include <systemlib/systemlib.h>
@@ -21,6 +16,7 @@ say(const char s[])
 #include "kbd_defines.hpp"
 #include "kbd_handler.hpp"
 #include "kbd_reader.hpp"
+#include "settings.hpp"
 
 namespace {
 
@@ -75,10 +71,6 @@ handle_kbd_state(App & app, const KbdButtonState & btn, hrt_abstime now)
 		}
 	}
 }
-
-void
-handle_time(App & app, hrt_abstime now)
-{ app.handle_time(now); }
 
 static int
 daemon(int argc, char *argv[])

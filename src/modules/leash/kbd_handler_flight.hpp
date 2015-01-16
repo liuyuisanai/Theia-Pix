@@ -11,12 +11,8 @@ namespace kbd_handler {
 using namespace airleash;
 
 constexpr bool
-is_short_or_repeat_press(EventKind E)
+event_is_short_or_repeat_press(EventKind E)
 { return E == EventKind::SHORT_PRESS or E == EventKind::REPEAT_PRESS; }
-
-template <EventKind E>
-using enable_if_short_or_repeat_press = typename std::enable_if<is_short_or_repeat_press(E)>::type;
-
 
 /*
  * PLAY button.
@@ -28,19 +24,19 @@ struct handle<ModeId::FLIGHT, EventKind::SHORT_PRESS, BTN_MASK_PLAY>
 	static void
 	exec(App & app)
 	{
+		say("FLIGHT SHORT_PRESS PLAY");
 		app.drone_cmd.send_command(REMOTE_CMD_PLAY_PAUSE);
 	}
 };
 
-template <ModeId M>
-struct handle<M, EventKind::LONG_PRESS, BTN_MASK_PLAY,
-	typename std::enable_if<
-		M == ModeId::FLIGHT or M == ModeId::FLIGHT_ALT
-	>::type
-> {
+template <ModeId MODE>
+struct handle<MODE, EventKind::LONG_PRESS, BTN_MASK_PLAY, When<
+	MODE == ModeId::FLIGHT or MODE == ModeId::FLIGHT_ALT
+> > {
 	static void
 	exec(App & app)
 	{
+		say("FLIGHT or FLIGHT_ALT LONG_PRESS PLAY");
 		if (app.drone_status.in_air())
 			app.drone_cmd.send_command(REMOTE_CMD_LAND_DISARM);
 	}
@@ -52,7 +48,8 @@ struct handle<ModeId::SHORTCUT, EventKind::LONG_PRESS, BTN_MASK_PLAY>
 	static void
 	exec(App & app)
 	{
-		app.drone_cmd.send_command(REMOTE_CMD_LAND_DISARM);
+		say("SHORTCUT LONG_PRESS PLAY");
+		app.drone_cmd.send_rtl_command(app.drone_status);
 	}
 };
 
@@ -67,6 +64,7 @@ struct handle<ModeId::FLIGHT, EventKind::SHORT_PRESS, BTN_MASK_UP>
 	static void
 	exec(App & app)
 	{
+		say("A");
 		app.drone_cmd.send_command(REMOTE_CMD_FURTHER);
 	}
 };
@@ -77,30 +75,31 @@ struct handle<ModeId::FLIGHT, EventKind::SHORT_PRESS, BTN_MASK_DOWN>
 	static void
 	exec(App & app)
 	{
+		say("B");
 		app.drone_cmd.send_command(REMOTE_CMD_CLOSER);
 	}
 };
 
-template <EventKind E>
-struct handle<
-	ModeId::FLIGHT, E, BTN_MASK_LEFT,
-	enable_if_short_or_repeat_press<E>
-> {
+template <EventKind EVENT>
+struct handle< ModeId::FLIGHT, EVENT, BTN_MASK_LEFT, When<
+	event_is_short_or_repeat_press(EVENT)
+> > {
 	static void
 	exec(App & app)
 	{
+		say("C");
 		app.drone_cmd.send_command(REMOTE_CMD_LEFT);
 	}
 };
 
-template <EventKind E>
-struct handle<
-	ModeId::FLIGHT, E, BTN_MASK_RIGHT,
-	enable_if_short_or_repeat_press<E>
-> {
+template <EventKind EVENT>
+struct handle< ModeId::FLIGHT, EVENT, BTN_MASK_RIGHT, When<
+	event_is_short_or_repeat_press(EVENT)
+> > {
 	static void
 	exec(App & app)
 	{
+		say("D");
 		app.drone_cmd.send_command(REMOTE_CMD_RIGHT);
 	}
 };
@@ -111,25 +110,25 @@ struct handle<
  */
 
 template <EventKind EVENT>
-struct handle<
-	ModeId::FLIGHT_ALT, EVENT, BTN_MASK_UP,
-	enable_if_short_or_repeat_press<EVENT>
-> {
+struct handle< ModeId::FLIGHT_ALT, EVENT, BTN_MASK_UP, When<
+	event_is_short_or_repeat_press(EVENT)
+> > {
 	static void
 	exec(App & app)
 	{
+		say("E");
 		app.drone_cmd.send_command(REMOTE_CMD_FURTHER);
 	}
 };
 
 template <EventKind EVENT>
-struct handle<
-	ModeId::FLIGHT_ALT, EVENT, BTN_MASK_DOWN,
-	enable_if_short_or_repeat_press<EVENT>
-> {
+struct handle< ModeId::FLIGHT_ALT, EVENT, BTN_MASK_DOWN, When<
+	event_is_short_or_repeat_press(EVENT)
+> > {
 	static void
 	exec(App & app)
 	{
+		say("F");
 		app.drone_cmd.send_command(REMOTE_CMD_CLOSER);
 	}
 };
@@ -145,6 +144,7 @@ struct handle<ModeId::SHORTCUT, EventKind::SHORT_PRESS, BTN_MASK_UP>
 	static void
 	exec(App & app)
 	{
+		say("G");
 		app.drone_cmd.send_command(REMOTE_CMD_COME_TO_ME);
 	}
 };
@@ -155,6 +155,7 @@ struct handle<ModeId::SHORTCUT, EventKind::SHORT_PRESS, BTN_MASK_DOWN>
 	static void
 	exec(App & app)
 	{
+		say("H");
 		app.drone_cmd.send_command(REMOTE_CMD_LOOK_DOWN);
 	}
 };

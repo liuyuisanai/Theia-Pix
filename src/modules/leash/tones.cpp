@@ -4,7 +4,9 @@
 
 #include <drivers/drv_tone_alarm.h>
 
+#include "debug.hpp"
 #include "tones.hpp"
+
 
 Tone::Tone() : fd(open(TONEALARM_DEVICE_PATH, O_WRONLY)) {}
 
@@ -18,27 +20,27 @@ Tone::play(int tone) const
 void
 Tone::mode_switch() const
 {
-	fprintf(stderr, "TONE Mode Switch.\n");
+	say("TONE Mode Switch.");
 	play(TONE_NOTIFY_POSITIVE_TUNE);
 }
 
 void
 Tone::key_press() const
 {
-	fprintf(stderr, "TONE Key Press.\n");
+	say("TONE Key Press.");
 	play(TONE_NOTIFY_POSITIVE_TUNE);
 }
 
 void
 Tone::arm_failed() const
 {
-	fprintf(stderr, "TONE Arm Failed.\n");
+	say("TONE Arm Failed.");
 	play(TONE_NOTIFY_NEGATIVE_TUNE);
 }
 
 void
 Tone::timeout() const
 {
-	fprintf(stderr, "TONE Arm Failed.\n");
+	say("TONE timeout.");
 	play(TONE_NOTIFY_NEGATIVE_TUNE);
 }

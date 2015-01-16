@@ -41,7 +41,7 @@ struct call_handle_info
 };
 
 //template <ModeId MODE, ButtonId BUTTON, EventKind A, EventKind B, const char msg[]>
-//class assert_exclusive_event_pair<
+//class assert_exclusive_event_pair
 //{
 //	static constexpr bool
 //	a_default = call_handle_info<A, MODE, BUTTON>::is_default;
@@ -63,6 +63,9 @@ struct call_handle_info
 //	 * or AnyButton/AnyMode or enabled_if cases.
 //	 */
 //>;
+//
+//template <ModeId MODE, ButtonId BUTTON>
+//using assert_exclusive_long_and_repeated_press_type = assert_exclusive_presses<MODE, BUTTON>;
 
 template <ModeId MODE, ButtonId BUTTON>
 class assert_exclusive_long_and_repeated_press_type
@@ -157,7 +160,7 @@ struct resolve_handle_1
 			ButtonId,
 			switch_result_type,
 			switch_case_type,
-			-1,
+			BTN_NONE,
 			ALL_BUTTONS
 		>;
 		const auto call = value_switch_type::choose_by(b);
@@ -218,7 +221,7 @@ using bool_fun_1_pointer_t = bool(*)(T);
 template <EventKind EVENT, ModeId MODE, ButtonId BUTTON>
 struct is_default_0
 {
-	using info = call_handle_strict<EVENT, MODE, BUTTON>;
+	using info = call_handle_info<EVENT, MODE, BUTTON>;
 
 	constexpr explicit
 	operator bool () const
@@ -238,7 +241,7 @@ struct is_default_1
 			ButtonId,
 			bool,
 			switch_case_type,
-			-1,
+			BTN_NONE,
 			ALL_BUTTONS
 		>;
 		return value_switch_type::choose_by(b);
