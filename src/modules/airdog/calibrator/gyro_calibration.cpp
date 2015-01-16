@@ -1,11 +1,11 @@
 #include <nuttx/config.h>
 
 #include <drivers/drv_gyro.h> // report structure and ioctl commands
-#include <errno.h> // errno to check for poll errors
+#include <stdio.h> // close
 #include <fcntl.h> // open
 #include <math.h> // isfinite
 #include <poll.h>
-#include <stdio.h> // close
+#include <errno.h> // errno to check for poll errors
 #include <systemlib/param/param.h>
 #include <uORB/uORB.h>
 
@@ -42,7 +42,12 @@ CALIBRATION_RESULT do_gyro_calibration(const unsigned int sample_count, const un
 	}
 
 	// set offset and scale parameters. Scale parameters reset to 1, but that's the number we pass to the sensor driver.
-	if (param_set(param_find("SENS_GYRO_SCALE"), &calibration_scale)) {
+	if (param_set(param_find("SENS_GYRO_XOFF"), &(calibration_scale.x_offset))
+			|| param_set(param_find("SENS_GYRO_YOFF"), &(calibration_scale.y_offset))
+			|| param_set(param_find("SENS_GYRO_ZOFF"), &(calibration_scale.z_offset))
+			|| param_set(param_find("SENS_GYRO_XSCALE"), &(calibration_scale.x_scale))
+		    || param_set(param_find("SENS_GYRO_YSCALE"), &(calibration_scale.y_scale))
+		    || param_set(param_find("SENS_GYRO_ZSCALE"), &(calibration_scale.z_scale))) {
 		close(fd);
 		return CALIBRATION_RESULT::PARAMETER_SET_FAIL;
 	}
