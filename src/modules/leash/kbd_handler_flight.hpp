@@ -49,7 +49,7 @@ struct handle<ModeId::SHORTCUT, EventKind::LONG_KEYPRESS, BTN_MASK_PLAY>
 	exec(App & app)
 	{
 		say("SHORTCUT LONG_KEYPRESS PLAY");
-		app.drone_cmd.send_command(REMOTE_CMD_LAND_DISARM);
+		app.drone_cmd.send_rtl_command(app.drone_status);
 	}
 };
 
@@ -65,7 +65,7 @@ struct handle<ModeId::FLIGHT, EventKind::SHORT_KEYPRESS, BTN_MASK_UP>
 	exec(App & app)
 	{
 		say("A");
-		app.drone_cmd.send_command(REMOTE_CMD_FURTHER);
+		app.drone_cmd.send_command(REMOTE_CMD_UP);
 	}
 };
 
@@ -76,7 +76,7 @@ struct handle<ModeId::FLIGHT, EventKind::SHORT_KEYPRESS, BTN_MASK_DOWN>
 	exec(App & app)
 	{
 		say("B");
-		app.drone_cmd.send_command(REMOTE_CMD_CLOSER);
+		app.drone_cmd.send_command(REMOTE_CMD_DOWN);
 	}
 };
 
@@ -130,6 +130,18 @@ struct handle< ModeId::FLIGHT_ALT, EVENT, BTN_MASK_DOWN, When<
 	{
 		say("F");
 		app.drone_cmd.send_command(REMOTE_CMD_CLOSER);
+	}
+};
+
+template <ButtonId BUTTON>
+struct handle< ModeId::FLIGHT_ALT, EventKind::KEY_RELEASE, BUTTON, When<
+	BUTTON != BTN_MASK_CENTER
+> > {
+	static void
+	exec(App & app)
+	{
+		say("Alt Restart");
+		app.restart_key_timeout();
 	}
 };
 

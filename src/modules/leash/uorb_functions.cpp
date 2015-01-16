@@ -4,6 +4,7 @@
 #include <uORB/uORB.h>
 #include <uORB/topics/vehicle_status.h>
 
+#include "debug.hpp"
 #include "settings.hpp"
 #include "uorb_functions.hpp"
 
@@ -54,7 +55,7 @@ send_command(enum REMOTE_CMD command)
 	cmd.param1 = command;
 
 	orb_advertise(ORB_ID(vehicle_command), &cmd);
-	//say("remote cmd sent"); // TODO add the cmd itself.
+	say_f("Sent remote cmd %i", command);
 }
 
 void DroneCommand::
@@ -112,7 +113,8 @@ DroneStatus::update(hrt_abstime now)
 	bool x_timeout = HEARTBEAT_TIMEOUT_us < heartbeat_age_us;
 
 	status_changed = (
-		   (x.main_mode     != airdog_status.main_mode)
+		   (signal_timeout  != x_timeout)
+		or (x.main_mode     != airdog_status.main_mode)
 		or (x.sub_mode      != airdog_status.sub_mode)
 		or (x.state_main    != airdog_status.state_main)
 		or (x.state_aird    != airdog_status.state_aird)
@@ -122,13 +124,17 @@ DroneStatus::update(hrt_abstime now)
 
 	if (status_changed)
 	{
-		fprintf(stderr, "DroneStatus::update %x %x %x %x Base mode %x System status %x\n",
+		fprintf(stderr, "DroneStatus\n");
+		fprintf(stderr, "Heartbeat age %uus\n", heartbeat_age_us);
+		fprintf(stderr, "States %x %x %x %x Base mode %x System status %x Timeout %i\n",
 			airdog_status.main_mode, airdog_status.sub_mode,
 			airdog_status.state_main, airdog_status.state_aird,
-			airdog_status.base_mode, airdog_status.system_status);
-		fprintf(stderr, "%i ==>               %x %x %x %x Base mode %x System status %x\n",
+			airdog_status.base_mode, airdog_status.system_status,
+			signal_timeout);
+		fprintf(stderr, "%i ==>  %x %x %x %x Base mode %x System status %x Timeout %i\n",
 			status_changed,
-			x.main_mode, x.sub_mode, x.state_main, x.state_aird, x.base_mode, x.system_status);
+			x.main_mode, x.sub_mode, x.state_main, x.state_aird, x.base_mode, x.system_status,
+			x_timeout);
 	}
 
 	airdog_status = x;
@@ -138,7 +144,7 @@ DroneStatus::update(hrt_abstime now)
 bool
 DroneStatus::active() const
 {
-	bool r = airdog_status.timestamp > 0;
+	bool r = not signal_timeout;
 	fprintf(stderr, "DroneStatus %s.\n", r ? "is active." : "is NOT active.");
 	return r;
 }

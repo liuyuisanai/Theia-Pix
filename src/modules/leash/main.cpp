@@ -38,7 +38,7 @@ update_buttons(KbdButtonState & s, hrt_abstime now, int f_kbd)
 }
 
 void
-handle_kbd_state(App & app, const KbdButtonState & btn, hrt_abstime now)
+handle_kbd_state(App & app, KbdButtonState & btn, hrt_abstime now)
 {
 	using kbd_handler::EventKind;
 
@@ -59,10 +59,13 @@ handle_kbd_state(App & app, const KbdButtonState & btn, hrt_abstime now)
 		unsigned dt = now - btn.time_pressed;
 		if (long_press_min <= dt)
 		{
-			// Quick hack -- RepeatPress check is not supported yet.
-
 			if (app.has_repeated_press(btn.actual_button))
+			{
 				app.handle_press<EventKind::REPEAT_KEYPRESS>(btn.actual_button);
+				btn.time_pressed = now - long_press_min + REPEAT_KEYPRESS_INTERVAL_us;
+				/* pretend button was pressed later
+				 * then it will match long press dt again. */
+			}
 			else if (dt < long_press_max)
 			{
 				app.handle_press<EventKind::LONG_KEYPRESS>(btn.actual_button);

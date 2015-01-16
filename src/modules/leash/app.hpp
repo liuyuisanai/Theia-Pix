@@ -31,7 +31,7 @@ struct PeriodicSayAlive : PeriodicAction
 {
 	unsigned n;
 	PeriodicSayAlive()
-	: PeriodicAction(1000000/*us*/), n(0)
+	: PeriodicAction(3600000/*us*/), n(0)
 	{}
 
 	void
@@ -122,6 +122,13 @@ struct App
 	{
 		transition_requested = true;
 		transition_next_mode = m;
+	}
+
+	void
+	restart_key_timeout()
+	{
+		transition_requested = true;
+		transition_next_mode = mode;
 	}
 
 	void

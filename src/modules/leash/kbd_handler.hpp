@@ -182,19 +182,20 @@ struct handle<ModeId::FLIGHT_ALT, EventKind::KEY_TIMEOUT, BTN_NONE>
 	}
 };
 
-template <>
-struct handle<ModeId::FLIGHT, EventKind::LONG_KEYPRESS, BTN_MASK_CENTER>
-{
+template <ModeId MODE>
+struct handle< MODE, EventKind::LONG_KEYPRESS, BTN_MASK_CENTER, When<
+	MODE == ModeId::FLIGHT or MODE == ModeId::FLIGHT_ALT
+> > {
 	static void
 	exec(App & app)
 	{
-		say("FLIGHT_ALT LONG_KEYPRESS CENTER");
+		say("FLIGHT LONG_KEYPRESS CENTER");
 		app.set_mode_transition(ModeId::SHORTCUT);
 	}
 };
 
-template <EventKind EVENT>
-struct handle< ModeId::SHORTCUT, EVENT, BTN_NONE, When<
+template <EventKind EVENT, ButtonId AnyButton>
+struct handle< ModeId::SHORTCUT, EVENT, AnyButton, When<
 	EVENT == EventKind::KEY_RELEASE or EVENT == EventKind::KEY_TIMEOUT
 > > {
 	static void
