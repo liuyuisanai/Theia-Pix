@@ -105,7 +105,7 @@ struct handle<ModeId::PREFLIGHT, EventKind::LONG_KEYPRESS, BTN_MASK_PLAY>
 };
 
 template <>
-struct handle<ModeId::CONFIRM_ARM, EventKind::LONG_KEYPRESS, BTN_MASK_CENTER>
+struct handle<ModeId::CONFIRM_ARM, EventKind::SHORT_KEYPRESS, BTN_MASK_CENTER>
 {
 	static void
 	exec(App & app)
