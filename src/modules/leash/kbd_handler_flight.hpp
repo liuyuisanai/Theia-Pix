@@ -12,44 +12,44 @@ using namespace airleash;
 
 constexpr bool
 event_is_short_or_repeat_press(EventKind E)
-{ return E == EventKind::SHORT_PRESS or E == EventKind::REPEAT_PRESS; }
+{ return E == EventKind::SHORT_KEYPRESS or E == EventKind::REPEAT_KEYPRESS; }
 
 /*
  * PLAY button.
  */
 
 template <>
-struct handle<ModeId::FLIGHT, EventKind::SHORT_PRESS, BTN_MASK_PLAY>
+struct handle<ModeId::FLIGHT, EventKind::SHORT_KEYPRESS, BTN_MASK_PLAY>
 {
 	static void
 	exec(App & app)
 	{
-		say("FLIGHT SHORT_PRESS PLAY");
+		say("FLIGHT SHORT_KEYPRESS PLAY");
 		app.drone_cmd.send_command(REMOTE_CMD_PLAY_PAUSE);
 	}
 };
 
 template <ModeId MODE>
-struct handle<MODE, EventKind::LONG_PRESS, BTN_MASK_PLAY, When<
+struct handle<MODE, EventKind::LONG_KEYPRESS, BTN_MASK_PLAY, When<
 	MODE == ModeId::FLIGHT or MODE == ModeId::FLIGHT_ALT
 > > {
 	static void
 	exec(App & app)
 	{
-		say("FLIGHT or FLIGHT_ALT LONG_PRESS PLAY");
+		say("FLIGHT or FLIGHT_ALT LONG_KEYPRESS PLAY");
 		if (app.drone_status.in_air())
 			app.drone_cmd.send_command(REMOTE_CMD_LAND_DISARM);
 	}
 };
 
 template <>
-struct handle<ModeId::SHORTCUT, EventKind::LONG_PRESS, BTN_MASK_PLAY>
+struct handle<ModeId::SHORTCUT, EventKind::LONG_KEYPRESS, BTN_MASK_PLAY>
 {
 	static void
 	exec(App & app)
 	{
-		say("SHORTCUT LONG_PRESS PLAY");
-		app.drone_cmd.send_rtl_command(app.drone_status);
+		say("SHORTCUT LONG_KEYPRESS PLAY");
+		app.drone_cmd.send_command(REMOTE_CMD_LAND_DISARM);
 	}
 };
 
@@ -59,7 +59,7 @@ struct handle<ModeId::SHORTCUT, EventKind::LONG_PRESS, BTN_MASK_PLAY>
  */
 
 template <>
-struct handle<ModeId::FLIGHT, EventKind::SHORT_PRESS, BTN_MASK_UP>
+struct handle<ModeId::FLIGHT, EventKind::SHORT_KEYPRESS, BTN_MASK_UP>
 {
 	static void
 	exec(App & app)
@@ -70,7 +70,7 @@ struct handle<ModeId::FLIGHT, EventKind::SHORT_PRESS, BTN_MASK_UP>
 };
 
 template <>
-struct handle<ModeId::FLIGHT, EventKind::SHORT_PRESS, BTN_MASK_DOWN>
+struct handle<ModeId::FLIGHT, EventKind::SHORT_KEYPRESS, BTN_MASK_DOWN>
 {
 	static void
 	exec(App & app)
@@ -139,7 +139,7 @@ struct handle< ModeId::FLIGHT_ALT, EVENT, BTN_MASK_DOWN, When<
  */
 
 template <>
-struct handle<ModeId::SHORTCUT, EventKind::SHORT_PRESS, BTN_MASK_UP>
+struct handle<ModeId::SHORTCUT, EventKind::SHORT_KEYPRESS, BTN_MASK_UP>
 {
 	static void
 	exec(App & app)
@@ -150,7 +150,7 @@ struct handle<ModeId::SHORTCUT, EventKind::SHORT_PRESS, BTN_MASK_UP>
 };
 
 template <>
-struct handle<ModeId::SHORTCUT, EventKind::SHORT_PRESS, BTN_MASK_DOWN>
+struct handle<ModeId::SHORTCUT, EventKind::SHORT_KEYPRESS, BTN_MASK_DOWN>
 {
 	static void
 	exec(App & app)

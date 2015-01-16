@@ -18,10 +18,10 @@ Tone::play(int tone) const
 }
 
 void
-Tone::mode_switch() const
+Tone::arm_failed() const
 {
-	say("TONE Mode Switch.");
-	play(TONE_NOTIFY_POSITIVE_TUNE);
+	say("TONE Arm Failed.");
+	play(TONE_NOTIFY_NEGATIVE_TUNE);
 }
 
 void
@@ -32,15 +32,15 @@ Tone::key_press() const
 }
 
 void
-Tone::arm_failed() const
+Tone::key_press_timeout() const
 {
-	say("TONE Arm Failed.");
+	say("TONE key press Timeout.");
 	play(TONE_NOTIFY_NEGATIVE_TUNE);
 }
 
 void
-Tone::timeout() const
+Tone::mode_switch() const
 {
-	say("TONE timeout.");
-	play(TONE_NOTIFY_NEGATIVE_TUNE);
+	say("TONE Mode Switch.");
+	play(TONE_NOTIFY_POSITIVE_TUNE);
 }

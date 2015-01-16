@@ -31,7 +31,7 @@ struct handle : Default // Only this one should be inherited from Default.
  */
 
 template <ModeId MODE>
-struct handle<MODE, EventKind::LONG_PRESS, BTN_MASK_POWER, When<
+struct handle<MODE, EventKind::LONG_KEYPRESS, BTN_MASK_POWER, When<
 	MODE != ModeId::CONFIRM_ARM
 > > {
 	static void
@@ -84,12 +84,12 @@ struct handle< MODE, EventKind::COPTER_CHANGED_STATE, BTN_NONE, When<
 };
 
 template <>
-struct handle<ModeId::PREFLIGHT, EventKind::LONG_PRESS, BTN_MASK_PLAY>
+struct handle<ModeId::PREFLIGHT, EventKind::LONG_KEYPRESS, BTN_MASK_PLAY>
 {
 	static void
 	exec(App & app)
 	{
-		say("PREFLIGHT LONG_PRESS PLAY");
+		say("PREFLIGHT LONG_KEYPRESS PLAY");
 		if (app.drone_status.ready_to_arm())
 		{
 			// notify drone
@@ -105,12 +105,12 @@ struct handle<ModeId::PREFLIGHT, EventKind::LONG_PRESS, BTN_MASK_PLAY>
 };
 
 template <>
-struct handle<ModeId::CONFIRM_ARM, EventKind::LONG_PRESS, BTN_MASK_CENTER>
+struct handle<ModeId::CONFIRM_ARM, EventKind::LONG_KEYPRESS, BTN_MASK_CENTER>
 {
 	static void
 	exec(App & app)
 	{
-		say("CONFIRM_ARM LONG_PRESS OK");
+		say("CONFIRM_ARM LONG_KEYPRESS OK");
 		if (app.drone_status.ready_to_arm())
 		{
 			app.drone_cmd.send_arm_command(app.drone_status);
@@ -125,20 +125,20 @@ struct handle<ModeId::CONFIRM_ARM, EventKind::LONG_PRESS, BTN_MASK_CENTER>
 
 template <EventKind EVENT, ButtonId AnyButton>
 struct handle< ModeId::CONFIRM_ARM, EVENT, AnyButton, When<
-	EVENT == EventKind::RELEASE or EVENT == EventKind::TIMEOUT
+	EVENT == EventKind::KEY_RELEASE or EVENT == EventKind::KEY_TIMEOUT
 > > {
-//: Default // LONG_PRESS/REPEAT_PRESS does not matter
+//: Default // LONG_KEYPRESS/REPEAT_KEYPRESS does not matter
 	static void
 	exec(App & app)
 	{
-		say("CONFIRM_ARM RELEASE or TIMEOUT *");
+		say("CONFIRM_ARM KEY_RELEASE or KEY_TIMEOUT *");
 		say("Switching back to PREFLIGHT mode.");
 		app.set_mode_transition(ModeId::PREFLIGHT);
 	}
 };
 
 template <ModeId MODE>
-struct handle< MODE, EventKind::SHORT_PRESS, BTN_MASK_POWER, When<
+struct handle< MODE, EventKind::SHORT_KEYPRESS, BTN_MASK_POWER, When<
 	MODE != ModeId::CONFIRM_ARM
 > > {
 	static void
@@ -150,57 +150,57 @@ struct handle< MODE, EventKind::SHORT_PRESS, BTN_MASK_POWER, When<
 };
 
 template <>
-struct handle<ModeId::FLIGHT, EventKind::SHORT_PRESS, BTN_MASK_CENTER>
+struct handle<ModeId::FLIGHT, EventKind::SHORT_KEYPRESS, BTN_MASK_CENTER>
 {
 	static void
 	exec(App & app)
 	{
-		say("FLIGHT SHORT_PRESS CENTER");
+		say("FLIGHT SHORT_KEYPRESS CENTER");
 		app.set_mode_transition(ModeId::FLIGHT_ALT);
 	}
 };
 
 template <>
-struct handle<ModeId::FLIGHT_ALT, EventKind::SHORT_PRESS, BTN_MASK_CENTER>
+struct handle<ModeId::FLIGHT_ALT, EventKind::SHORT_KEYPRESS, BTN_MASK_CENTER>
 {
 	static void
 	exec(App & app)
 	{
-		say("FLIGHT_ALT SHORT_PRESS CENTER");
+		say("FLIGHT_ALT SHORT_KEYPRESS CENTER");
 		app.set_mode_transition(ModeId::FLIGHT);
 	}
 };
 
 template <>
-struct handle<ModeId::FLIGHT_ALT, EventKind::TIMEOUT, BTN_NONE>
+struct handle<ModeId::FLIGHT_ALT, EventKind::KEY_TIMEOUT, BTN_NONE>
 {
 	static void
 	exec(App & app)
 	{
-		say("FLIGHT_ALT TIMEOUT");
+		say("FLIGHT_ALT KEY_TIMEOUT");
 		app.set_mode_transition(ModeId::FLIGHT);
 	}
 };
 
 template <>
-struct handle<ModeId::FLIGHT, EventKind::LONG_PRESS, BTN_MASK_CENTER>
+struct handle<ModeId::FLIGHT, EventKind::LONG_KEYPRESS, BTN_MASK_CENTER>
 {
 	static void
 	exec(App & app)
 	{
-		say("FLIGHT_ALT LONG_PRESS CENTER");
+		say("FLIGHT_ALT LONG_KEYPRESS CENTER");
 		app.set_mode_transition(ModeId::SHORTCUT);
 	}
 };
 
 template <EventKind EVENT>
 struct handle< ModeId::SHORTCUT, EVENT, BTN_NONE, When<
-	EVENT == EventKind::RELEASE or EVENT == EventKind::TIMEOUT
+	EVENT == EventKind::KEY_RELEASE or EVENT == EventKind::KEY_TIMEOUT
 > > {
 	static void
 	exec(App & app)
 	{
-		say("SHORTCUT TIMEOUT or RELEASE");
+		say("SHORTCUT KEY_TIMEOUT or KEY_RELEASE");
 		app.set_mode_transition(ModeId::FLIGHT);
 	}
 };

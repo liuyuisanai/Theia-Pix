@@ -54,12 +54,12 @@ struct call_handle_info
 //
 //template <ModeId MODE, ButtonId BUTTON>
 //class assert_exclusive_presses = assert_exclusive_event_pair<
-//	MODE, BUTTON, EventKind::LONG_PRESS, EventKind::REPEAT_PRESS,
+//	MODE, BUTTON, EventKind::LONG_KEYPRESS, EventKind::REPEAT_KEYPRESS,
 //	"LongPress and RepeatPress can _not_ both be defined for"
 //	" the same button and mode."
 //	/*
 //	 * Note: If you got the error, check template specialisation for
-//	 *   handle<MODE, LONG_PRESS/REPEAT_PRESS, BUTTON>
+//	 *   handle<MODE, LONG_KEYPRESS/REPEAT_KEYPRESS, BUTTON>
 //	 * or AnyButton/AnyMode or enabled_if cases.
 //	 */
 //>;
@@ -71,9 +71,9 @@ template <ModeId MODE, ButtonId BUTTON>
 class assert_exclusive_long_and_repeated_press_type
 {
 	static constexpr bool
-	long_is_default = call_handle_info<EventKind::LONG_PRESS, MODE, BUTTON>::is_default;
+	long_is_default = call_handle_info<EventKind::LONG_KEYPRESS, MODE, BUTTON>::is_default;
 	static constexpr bool
-	repeat_is_default = call_handle_info<EventKind::REPEAT_PRESS, MODE, BUTTON>::is_default;
+	repeat_is_default = call_handle_info<EventKind::REPEAT_KEYPRESS, MODE, BUTTON>::is_default;
 
 	static_assert(long_is_default or repeat_is_default,
 		/* Note: default is opposite to defined. */
@@ -93,14 +93,14 @@ struct call_handle_strict : call_handle_info<EVENT, MODE, BUTTON>
 {};
 
 template <ModeId MODE, ButtonId BUTTON>
-struct call_handle_strict<EventKind::LONG_PRESS, MODE, BUTTON>
-	: call_handle_info<EventKind::LONG_PRESS, MODE, BUTTON>,
+struct call_handle_strict<EventKind::LONG_KEYPRESS, MODE, BUTTON>
+	: call_handle_info<EventKind::LONG_KEYPRESS, MODE, BUTTON>,
 	  assert_exclusive_long_and_repeated_press_type<MODE, BUTTON>
 {};
 
 template <ModeId MODE, ButtonId BUTTON>
-struct call_handle_strict<EventKind::REPEAT_PRESS, MODE, BUTTON>
-	: call_handle_info<EventKind::REPEAT_PRESS, MODE, BUTTON>,
+struct call_handle_strict<EventKind::REPEAT_KEYPRESS, MODE, BUTTON>
+	: call_handle_info<EventKind::REPEAT_KEYPRESS, MODE, BUTTON>,
 	  assert_exclusive_long_and_repeated_press_type<MODE, BUTTON>
 {};
 
@@ -297,7 +297,7 @@ bool
 has_repeated_press(ModeId m, ButtonId b)
 {
 	using namespace details::repeated_defined;
-	using is_default_type = is_default_2<REPEAT_PRESS>;
+	using is_default_type = is_default_2<REPEAT_KEYPRESS>;
 	return not is_default_type::resolve(m, b);
 }
 

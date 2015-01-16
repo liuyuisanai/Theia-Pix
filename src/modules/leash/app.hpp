@@ -31,7 +31,7 @@ struct PeriodicSayAlive : PeriodicAction
 {
 	unsigned n;
 	PeriodicSayAlive()
-	: PeriodicAction(3600000/*us*/), n(0)
+	: PeriodicAction(1000000/*us*/), n(0)
 	{}
 
 	void
@@ -106,7 +106,7 @@ struct App
 	airleash::DroneStatus  drone_status;
 
 	PeriodicSayAlive debug_heart_beat;
-	Timeout	         timeout;
+	Timeout	         timeout_keypress;
 
 	void check_drone_status();
 
@@ -130,7 +130,7 @@ struct App
 		using kbd_handler::handle_event;
 		if (last_button != BTN_NONE)
 		{
-			handle_event<EventKind::RELEASE>(*this, mode, last_button);
+			handle_event<EventKind::KEY_RELEASE>(*this, mode, last_button);
 			last_button = BTN_NONE;
 		}
 	}
@@ -146,11 +146,11 @@ struct App
 	handle_press(ButtonId btn)
 	{
 		static_assert(
-			   EVENT == EventKind::SHORT_PRESS
-			or EVENT == EventKind::LONG_PRESS
-			or EVENT == EventKind::REPEAT_PRESS,
-			"handle_press<...> is aplicable onlt to SHORT_PRESS,"
-			" LONG_PRESS and REPEAT_PRESS events."
+			   EVENT == EventKind::SHORT_KEYPRESS
+			or EVENT == EventKind::LONG_KEYPRESS
+			or EVENT == EventKind::REPEAT_KEYPRESS,
+			"handle_press<...> is aplicable onlt to SHORT_KEYPRESS,"
+			" LONG_KEYPRESS and REPEAT_KEYPRESS events."
 		);
 
 		if (last_button != btn)
@@ -171,10 +171,10 @@ struct App
 		using kbd_handler::handle_event;
 
 		debug_heart_beat.check_time(now);
-		if (timeout.expired(now)) {
-			timeout.disable();
-			handle_event<EventKind::TIMEOUT>(*this, mode, BTN_NONE);
-			tone.timeout();
+		if (timeout_keypress.expired(now)) {
+			timeout_keypress.disable();
+			handle_event<EventKind::KEY_TIMEOUT>(*this, mode, BTN_NONE);
+			tone.key_press_timeout();
 		} else {
 			drone_status.update(now);
 			if (drone_status.copter_state_has_changed())
@@ -195,7 +195,7 @@ struct App
 				tone.mode_switch();
 			mode = transition_next_mode;
 			transition_requested = false;
-			timeout.restart(now, mode);
+			timeout_keypress.restart(now, mode);
 		}
 	}
 };

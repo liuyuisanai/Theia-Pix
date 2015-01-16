@@ -42,16 +42,16 @@ handle_kbd_state(App & app, const KbdButtonState & btn, hrt_abstime now)
 {
 	using kbd_handler::EventKind;
 
-	unsigned long_press_min = LONG_PRESS_DURATION_us;
-	unsigned long_press_max = LONG_PRESS_DURATION_us + KBD_SCAN_INTERVAL_usec;
+	unsigned long_press_min = LONG_KEYPRESS_DURATION_us;
+	unsigned long_press_max = LONG_KEYPRESS_DURATION_us + KBD_SCAN_INTERVAL_usec;
 
 	if (btn.time_released)
 	{
 		unsigned dt = btn.time_released - btn.time_pressed;
 		if (dt < long_press_min)
-			app.handle_press<EventKind::SHORT_PRESS>(btn.actual_button);
+			app.handle_press<EventKind::SHORT_KEYPRESS>(btn.actual_button);
 		else if (dt < long_press_max)
-			app.handle_press<EventKind::LONG_PRESS>(btn.actual_button);
+			app.handle_press<EventKind::LONG_KEYPRESS>(btn.actual_button);
 		app.handle_release();
 	}
 	else
@@ -62,10 +62,10 @@ handle_kbd_state(App & app, const KbdButtonState & btn, hrt_abstime now)
 			// Quick hack -- RepeatPress check is not supported yet.
 
 			if (app.has_repeated_press(btn.actual_button))
-				app.handle_press<EventKind::REPEAT_PRESS>(btn.actual_button);
+				app.handle_press<EventKind::REPEAT_KEYPRESS>(btn.actual_button);
 			else if (dt < long_press_max)
 			{
-				app.handle_press<EventKind::LONG_PRESS>(btn.actual_button);
+				app.handle_press<EventKind::LONG_KEYPRESS>(btn.actual_button);
 				app.handle_release();
 			}
 		}

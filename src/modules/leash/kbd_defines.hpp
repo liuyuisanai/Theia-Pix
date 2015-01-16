@@ -27,21 +27,21 @@ struct Default {};
 
 enum EventKind : uint8_t
 {
-	  SHORT_PRESS
-	, LONG_PRESS
-	, REPEAT_PRESS
-	, RELEASE
-	, TIMEOUT
+	  SHORT_KEYPRESS
+	, LONG_KEYPRESS
+	, REPEAT_KEYPRESS
+	, KEY_RELEASE
+	, KEY_TIMEOUT
 	, COPTER_CHANGED_STATE
 };
 
 using name_t = const char * const;
 template <EventKind> struct EventDebugName;
-template <> struct EventDebugName<EventKind::SHORT_PRESS          > { static constexpr name_t name = "EventKind::SHORT_PRESS         "; };
-template <> struct EventDebugName<EventKind::LONG_PRESS           > { static constexpr name_t name = "EventKind::LONG_PRESS          "; };
-template <> struct EventDebugName<EventKind::REPEAT_PRESS         > { static constexpr name_t name = "EventKind::REPEAT_PRESS        "; };
-template <> struct EventDebugName<EventKind::RELEASE              > { static constexpr name_t name = "EventKind::RELEASE             "; };
-template <> struct EventDebugName<EventKind::TIMEOUT              > { static constexpr name_t name = "EventKind::TIMEOUT             "; };
+template <> struct EventDebugName<EventKind::SHORT_KEYPRESS       > { static constexpr name_t name = "EventKind::SHORT_KEYPRESS      "; };
+template <> struct EventDebugName<EventKind::LONG_KEYPRESS        > { static constexpr name_t name = "EventKind::LONG_KEYPRESS       "; };
+template <> struct EventDebugName<EventKind::REPEAT_KEYPRESS      > { static constexpr name_t name = "EventKind::REPEAT_KEYPRESS     "; };
+template <> struct EventDebugName<EventKind::KEY_RELEASE          > { static constexpr name_t name = "EventKind::KEY_RELEASE         "; };
+template <> struct EventDebugName<EventKind::KEY_TIMEOUT          > { static constexpr name_t name = "EventKind::KEY_TIMEOUT         "; };
 template <> struct EventDebugName<EventKind::COPTER_CHANGED_STATE > { static constexpr name_t name = "EventKind::COPTER_CHANGED_STATE"; };
 
 
