@@ -224,7 +224,12 @@ int do_accel_calibration(int mavlink_fd)
 		accel_scale.z_scale = accel_T_rotated(2, 2);
 
 		/* set parameters */
-		if (param_set(param_find("SENS_ACC_SCALE"), &accel_scale)) {
+		if (param_set(param_find("SENS_ACC_XOFF"), &(accel_scale.x_offset))
+		    || param_set(param_find("SENS_ACC_YOFF"), &(accel_scale.y_offset))
+		    || param_set(param_find("SENS_ACC_ZOFF"), &(accel_scale.z_offset))
+		    || param_set(param_find("SENS_ACC_XSCALE"), &(accel_scale.x_scale))
+		    || param_set(param_find("SENS_ACC_YSCALE"), &(accel_scale.y_scale))
+		    || param_set(param_find("SENS_ACC_ZSCALE"), &(accel_scale.z_scale))) {
 			mavlink_log_critical(mavlink_fd, CAL_FAILED_SET_PARAMS_MSG);
 			res = ERROR;
 		}

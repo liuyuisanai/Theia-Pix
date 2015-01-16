@@ -140,6 +140,16 @@ int do_gyro_calibration(int mavlink_fd)
 		}
 	}
 
+	if (res == OK) {
+		/* set offset parameters to new values */
+		if (param_set(param_find("SENS_GYRO_XOFF"), &(gyro_scale.x_offset))
+		    || param_set(param_find("SENS_GYRO_YOFF"), &(gyro_scale.y_offset))
+		    || param_set(param_find("SENS_GYRO_ZOFF"), &(gyro_scale.z_offset))) {
+			mavlink_log_critical(mavlink_fd, "ERROR: failed to set offset params");
+			res = ERROR;
+		}
+	}
+
 #if 0
 	/* beep on offset calibration end */
 	mavlink_log_info(mavlink_fd, "gyro offset calibration done");
@@ -258,7 +268,9 @@ int do_gyro_calibration(int mavlink_fd)
 
 	if (res == OK) {
 		/* set scale parameters to new values */
-		if (param_set(param_find("SENS_GYRO_SCALE"), &gyro_scale)) {
+		if (param_set(param_find("SENS_GYRO_XSCALE"), &(gyro_scale.x_scale))
+		    || param_set(param_find("SENS_GYRO_YSCALE"), &(gyro_scale.y_scale))
+		    || param_set(param_find("SENS_GYRO_ZSCALE"), &(gyro_scale.z_scale))) {
 			mavlink_log_critical(mavlink_fd, "ERROR: failed to set scale params");
 			res = ERROR;
 		}

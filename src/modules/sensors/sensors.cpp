@@ -271,9 +271,12 @@ private:
 		float dz[_rc_max_chan_count];
 		float scaling_factor[_rc_max_chan_count];
 
-		gyro_scale saved_gyro_scale;
-		mag_scale saved_mag_scale;
-		accel_scale saved_accel_scale;
+		float gyro_offset[3];
+		float gyro_scale[3];
+		float mag_offset[3];
+		float mag_scale[3];
+		float accel_offset[3];
+		float accel_scale[3];
 		float diff_pres_offset_pa;
 		float diff_pres_analog_scale;
 
@@ -336,9 +339,12 @@ private:
 		param_t rev[_rc_max_chan_count];
 		param_t dz[_rc_max_chan_count];
 
-		param_t param_gyro_scale;
-		param_t param_accel_scale;
-		param_t param_mag_scale;
+		param_t gyro_offset[3];
+		param_t gyro_scale[3];
+		param_t accel_offset[3];
+		param_t accel_scale[3];
+		param_t mag_offset[3];
+		param_t mag_scale[3];
 		param_t diff_pres_offset_pa;
 		param_t diff_pres_analog_scale;
 
@@ -600,11 +606,29 @@ Sensors::Sensors() :
 	_parameter_handles.rc_follow_th = param_find("RC_FOLLOW_TH");
 
 	/* gyro offsets */
-	_parameter_handles.param_gyro_scale = param_find("SENS_GYRO_SCALE");
+	_parameter_handles.gyro_offset[0] = param_find("SENS_GYRO_XOFF");
+	_parameter_handles.gyro_offset[1] = param_find("SENS_GYRO_YOFF");
+	_parameter_handles.gyro_offset[2] = param_find("SENS_GYRO_ZOFF");
+	_parameter_handles.gyro_scale[0] = param_find("SENS_GYRO_XSCALE");
+	_parameter_handles.gyro_scale[1] = param_find("SENS_GYRO_YSCALE");
+	_parameter_handles.gyro_scale[2] = param_find("SENS_GYRO_ZSCALE");
+
 	/* accel offsets */
-	_parameter_handles.param_accel_scale = param_find("SENS_ACC_SCALE");
+	_parameter_handles.accel_offset[0] = param_find("SENS_ACC_XOFF");
+	_parameter_handles.accel_offset[1] = param_find("SENS_ACC_YOFF");
+	_parameter_handles.accel_offset[2] = param_find("SENS_ACC_ZOFF");
+	_parameter_handles.accel_scale[0] = param_find("SENS_ACC_XSCALE");
+	_parameter_handles.accel_scale[1] = param_find("SENS_ACC_YSCALE");
+	_parameter_handles.accel_scale[2] = param_find("SENS_ACC_ZSCALE");
+
 	/* mag offsets */
-	_parameter_handles.param_mag_scale = param_find("SENS_MAG_SCALE");
+	_parameter_handles.mag_offset[0] = param_find("SENS_MAG_XOFF");
+	_parameter_handles.mag_offset[1] = param_find("SENS_MAG_YOFF");
+	_parameter_handles.mag_offset[2] = param_find("SENS_MAG_ZOFF");
+
+	_parameter_handles.mag_scale[0] = param_find("SENS_MAG_XSCALE");
+	_parameter_handles.mag_scale[1] = param_find("SENS_MAG_YSCALE");
+	_parameter_handles.mag_scale[2] = param_find("SENS_MAG_ZSCALE");
 
 	/* Differential pressure offset */
 	_parameter_handles.diff_pres_offset_pa = param_find("SENS_DPRES_OFF");
@@ -801,13 +825,29 @@ Sensors::parameters_update()
 	_rc.function[AUX_5] = _parameters.rc_map_aux5 - 1;
 
 	/* gyro offsets */
-	param_get(_parameter_handles.param_gyro_scale, &(_parameters.saved_gyro_scale));
+	param_get(_parameter_handles.gyro_offset[0], &(_parameters.gyro_offset[0]));
+	param_get(_parameter_handles.gyro_offset[1], &(_parameters.gyro_offset[1]));
+	param_get(_parameter_handles.gyro_offset[2], &(_parameters.gyro_offset[2]));
+	param_get(_parameter_handles.gyro_scale[0], &(_parameters.gyro_scale[0]));
+	param_get(_parameter_handles.gyro_scale[1], &(_parameters.gyro_scale[1]));
+	param_get(_parameter_handles.gyro_scale[2], &(_parameters.gyro_scale[2]));
 
 	/* accel offsets */
-	param_get(_parameter_handles.param_accel_scale, &(_parameters.saved_accel_scale));
+	param_get(_parameter_handles.accel_offset[0], &(_parameters.accel_offset[0]));
+	param_get(_parameter_handles.accel_offset[1], &(_parameters.accel_offset[1]));
+	param_get(_parameter_handles.accel_offset[2], &(_parameters.accel_offset[2]));
+	param_get(_parameter_handles.accel_scale[0], &(_parameters.accel_scale[0]));
+	param_get(_parameter_handles.accel_scale[1], &(_parameters.accel_scale[1]));
+	param_get(_parameter_handles.accel_scale[2], &(_parameters.accel_scale[2]));
 
 	/* mag offsets */
-	param_get(_parameter_handles.param_mag_scale, &(_parameters.saved_mag_scale));
+	param_get(_parameter_handles.mag_offset[0], &(_parameters.mag_offset[0]));
+	param_get(_parameter_handles.mag_offset[1], &(_parameters.mag_offset[1]));
+	param_get(_parameter_handles.mag_offset[2], &(_parameters.mag_offset[2]));
+	/* mag scaling */
+	param_get(_parameter_handles.mag_scale[0], &(_parameters.mag_scale[0]));
+	param_get(_parameter_handles.mag_scale[1], &(_parameters.mag_scale[1]));
+	param_get(_parameter_handles.mag_scale[2], &(_parameters.mag_scale[2]));
 
 	/* Airspeed offset */
 	param_get(_parameter_handles.diff_pres_offset_pa, &(_parameters.diff_pres_offset_pa));
@@ -1291,21 +1331,48 @@ Sensors::parameter_update_poll(bool forced)
 
 		/* update sensor offsets */
 		int fd = open(GYRO_DEVICE_PATH, 0);
-		if (OK != ioctl(fd, GYROIOCSSCALE, (long unsigned int)&(_parameters.saved_gyro_scale))) {
+		struct gyro_scale gscale = {
+			_parameters.gyro_offset[0],
+			_parameters.gyro_scale[0],
+			_parameters.gyro_offset[1],
+			_parameters.gyro_scale[1],
+			_parameters.gyro_offset[2],
+			_parameters.gyro_scale[2],
+		};
+
+		if (OK != ioctl(fd, GYROIOCSSCALE, (long unsigned int)&gscale)) {
 			warn("WARNING: failed to set scale / offsets for gyro");
 		}
 
 		close(fd);
 
 		fd = open(ACCEL_DEVICE_PATH, 0);
-		if (OK != ioctl(fd, ACCELIOCSSCALE, (long unsigned int)&(_parameters.saved_accel_scale))) {
+		struct accel_scale ascale = {
+			_parameters.accel_offset[0],
+			_parameters.accel_scale[0],
+			_parameters.accel_offset[1],
+			_parameters.accel_scale[1],
+			_parameters.accel_offset[2],
+			_parameters.accel_scale[2],
+		};
+
+		if (OK != ioctl(fd, ACCELIOCSSCALE, (long unsigned int)&ascale)) {
 			warn("WARNING: failed to set scale / offsets for accel");
 		}
 
 		close(fd);
 
 		fd = open(MAG_DEVICE_PATH, 0);
-		if (OK != ioctl(fd, MAGIOCSSCALE, (long unsigned int)&(_parameters.saved_mag_scale))) {
+		struct mag_scale mscale = {
+			_parameters.mag_offset[0],
+			_parameters.mag_scale[0],
+			_parameters.mag_offset[1],
+			_parameters.mag_scale[1],
+			_parameters.mag_offset[2],
+			_parameters.mag_scale[2],
+		};
+
+		if (OK != ioctl(fd, MAGIOCSSCALE, (long unsigned int)&mscale)) {
 			warn("WARNING: failed to set scale / offsets for mag");
 		}
 
