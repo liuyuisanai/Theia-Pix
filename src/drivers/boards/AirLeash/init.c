@@ -68,7 +68,6 @@
 #include <arch/board/board.h>
 
 #include <drivers/drv_hrt.h>
-#include <drivers/drv_led.h>
 
 #include <systemlib/cpuload.h>
 #include <systemlib/perf_counter.h>
@@ -167,17 +166,12 @@ __EXPORT int nsh_archinitialize(void)
 		       (hrt_callout)stm32_serial_dma_poll,
 		       NULL);
 
-	/* initial LED state */
-	drv_led_start();
-	led_off(LED_AMBER);
-
 	/* Configure SPI-based devices */
 
 	spi1 = up_spiinitialize(1);
 
 	if (!spi1) {
 		message("[boot] FAILED to initialize SPI port 1\n");
-		up_ledon(LED_AMBER);
 		return -ENODEV;
 	}
 
@@ -199,7 +193,6 @@ __EXPORT int nsh_archinitialize(void)
 
 	if (!spi2) {
 		message("[boot] FAILED to initialize SPI port 2\n");
-		up_ledon(LED_AMBER);
 		return -ENODEV;
 	}
 

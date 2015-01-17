@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (c) 2013 PX4 Development Team. All rights reserved.
+ *   Copyright (C) 2012 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -32,69 +32,26 @@
  ****************************************************************************/
 
 /**
- * @file px4fmu2_led.c
+ * @file drv_led.h
  *
- * PX4FMU LED backend.
+ * LED driver API
  */
 
-#include <nuttx/config.h>
+#pragma once
 
-#include <stdbool.h>
+#include <stdint.h>
+#include <board_config.h>
+#include <board_leds.h>
 
-#include <stm32.h>
-#include <arch/board/board.h>
+#if LED_GPIO_ACTIVE_LOW
+# define LED_GPIO_ON 0
+#else
+# define LED_GPIO_ON 1
+#endif
+#define LED_GPIO_OFF (1 - LED_GPIO_ON)
 
-#include "board_config.h"
-#include "board_leds.h"
-
-/*
- * Ideally we'd be able to get these from up_internal.h,
- * but since we want to be able to disable the NuttX use
- * of leds for system indication at will and there is no
- * separate switch, we need to build independent of the
- * CONFIG_ARCH_LEDS configuration switch.
- */
 __BEGIN_DECLS
-extern void led_init(void);
-// extern void led_on(int led);
-// extern void led_off(int led);
-// extern void led_toggle(int led);
+
+extern const uint32_t led_config[N_LEDS];
+
 __END_DECLS
-
-__EXPORT const uint32_t led_config[N_LEDS] = { GPIO_LED_RED, GPIO_LED_BLUE };
-
-__EXPORT void led_init()
-{
-	int i;
-	for (i = 0; i < N_LEDS; ++i)
-		stm32_configgpio(led_config[i]);
-}
-
-// __EXPORT void led_on(int led)
-// {
-// 	if (led == 1)
-// 	{
-// 		/* Pull down to switch on */
-// 		stm32_gpiowrite(GPIO_LED1, false);
-// 	}
-// }
-//
-// __EXPORT void led_off(int led)
-// {
-// 	if (led == 1)
-// 	{
-// 		/* Pull up to switch off */
-// 		stm32_gpiowrite(GPIO_LED1, true);
-// 	}
-// }
-//
-// __EXPORT void led_toggle(int led)
-// {
-// 	if (led == 1)
-// 	{
-// 		if (stm32_gpioread(GPIO_LED1))
-// 			stm32_gpiowrite(GPIO_LED1, false);
-// 		else
-// 			stm32_gpiowrite(GPIO_LED1, true);
-// 	}
-// }
