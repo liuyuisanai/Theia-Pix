@@ -144,6 +144,7 @@ fi
 commander start
 
 leash start
+indication start
 
 if [ $EXIT_ON_END == yes ]
 then

@@ -30,6 +30,7 @@ MODULES		+= drivers/stm32/tone_alarm
 MODULES		+= modules/airdog  # AIRD_LEASH_MODE parameter
 MODULES		+= modules/airdog/trajectory_calculator
 MODULES		+= modules/gpio_tool
+MODULES		+= modules/indication
 MODULES		+= modules/kbd_test
 MODULES		+= modules/leash
 MODULES		+= modules/sensors
