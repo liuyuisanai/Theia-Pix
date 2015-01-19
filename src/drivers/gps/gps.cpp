@@ -68,8 +68,8 @@
 #include <board_config.h>
 
 #include "ubx.h"
-#include "mtk.h"
-#include "ashtech.h"
+//#include "mtk.h"
+//#include "ashtech.h"
 
 
 #define TIMEOUT_5HZ 500
@@ -338,13 +338,13 @@ GPS::task_main()
 				_Helper = new UBX(_serial_fd, &_report_gps_pos, _p_report_sat_info);
 				break;
 
-			case GPS_DRIVER_MODE_MTK:
-				_Helper = new MTK(_serial_fd, &_report_gps_pos);
-				break;
-
-			case GPS_DRIVER_MODE_ASHTECH:
-				_Helper = new ASHTECH(_serial_fd, &_report_gps_pos, _p_report_sat_info);
-				break;
+			// case GPS_DRIVER_MODE_MTK:
+			// 	_Helper = new MTK(_serial_fd, &_report_gps_pos);
+			// 	break;
+			//
+			// case GPS_DRIVER_MODE_ASHTECH:
+			// 	_Helper = new ASHTECH(_serial_fd, &_report_gps_pos, _p_report_sat_info);
+			// 	break;
 
 			default:
 				break;
@@ -431,23 +431,23 @@ GPS::task_main()
 
 			lock();
 
-			/* select next mode */
-			switch (_mode) {
-			case GPS_DRIVER_MODE_UBX:
-				_mode = GPS_DRIVER_MODE_MTK;
-				break;
-
-			case GPS_DRIVER_MODE_MTK:
-				_mode = GPS_DRIVER_MODE_ASHTECH;
-				break;
-
-			case GPS_DRIVER_MODE_ASHTECH:
-				_mode = GPS_DRIVER_MODE_UBX;
-				break;
-
-			default:
-				break;
-			}
+			// /* select next mode */
+			// switch (_mode) {
+			// case GPS_DRIVER_MODE_UBX:
+			// 	_mode = GPS_DRIVER_MODE_MTK;
+			// 	break;
+			//
+			// case GPS_DRIVER_MODE_MTK:
+			// 	_mode = GPS_DRIVER_MODE_ASHTECH;
+			// 	break;
+			//
+			// case GPS_DRIVER_MODE_ASHTECH:
+			// 	_mode = GPS_DRIVER_MODE_UBX;
+			// 	break;
+			//
+			// default:
+			// 	break;
+			// }
 		}
 
 	}
