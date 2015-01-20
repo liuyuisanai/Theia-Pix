@@ -63,6 +63,7 @@
 #include <drivers/drv_device.h>
 #include <drivers/drv_pwm_output.h>
 #include <mavlink/mavlink_log.h>
+#include <position_estimator_inav/inertial_filter.h> // for initial position check
 
 #include "state_machine_helper.h"
 #include "commander_helper.h"
@@ -117,11 +118,6 @@ arming_state_transition(struct vehicle_status_s *status,		///< current vehicle s
 	arming_state_t current_arming_state = status->arming_state;
 	bool feedback_provided = false;
 
-	//Arm only if have valid GPS position
-	if (new_arming_state == ARMING_STATE_ARMED &&  status->require_gps && !status->condition_global_position_valid) {
-		ret = TRANSITION_DENIED;
-	}
-	else 
 	/* only check transition if the new state is actually different from the current one */
 	if (new_arming_state == current_arming_state) {
 		ret = TRANSITION_NOT_CHANGED;
@@ -862,6 +858,16 @@ int prearm_check(const struct vehicle_status_s *status, const int mavlink_fd)
 		/* this is frickin' fatal */
 		failed = true;
 		goto system_eval;
+	}
+
+
+    /* check valid GPS if required and controll if current local_position change rate is low
+     * this should be done due to specific lpos altitude calculation. Arm without low vertical speed
+     * (still correcting initial *without GPS* altitude) can result in wrong initial possition 
+     */
+	if (status->require_gps && !status->condition_global_position_valid) {
+        failed = true;
+        goto system_eval;
 	}
 
 	/* Perform airspeed check only if circuit breaker is not
