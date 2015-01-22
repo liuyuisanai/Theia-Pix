@@ -36,9 +36,6 @@
 #
 
 MODULE_COMMAND	 = config
-SRCS		 = config.c
+SRCS		 = config.cpp
 
 MODULE_STACKSIZE = 4096
-
-MAXOPTIMIZATION	 = -Os
-

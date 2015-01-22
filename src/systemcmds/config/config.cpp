@@ -59,7 +59,7 @@
 #include "systemlib/systemlib.h"
 #include "systemlib/err.h"
 
-__EXPORT int config_main(int argc, char *argv[]);
+extern "C" __EXPORT int config_main(int argc, char *argv[]);
 
 static void	do_gyro(int argc, char *argv[]);
 static void	do_accel(int argc, char *argv[]);
