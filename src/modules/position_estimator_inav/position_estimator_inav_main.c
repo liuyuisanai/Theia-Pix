@@ -79,6 +79,8 @@
 #define MIN_VALID_W 0.00001f
 #define PUB_INTERVAL 10000	// limit publish rate to 100 Hz
 #define EST_BUF_SIZE 250000 / PUB_INTERVAL		// buffer size is 0.5s
+#define XY_DRIFT_VALIDATION_TIMES 100
+#define Z_DRIFT_VALIDATION_TIMES 100
 
 static bool thread_should_exit = false; /**< Deamon exit flag */
 static bool thread_running = false; /**< Deamon status flag */
@@ -231,6 +233,7 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 	memset(R_buf, 0, sizeof(R_buf));
 	memset(R_gps, 0, sizeof(R_gps));
 	int buf_ptr = 0;
+    int no_drift_valid[2] = {XY_DRIFT_VALIDATION_TIMES , Z_DRIFT_VALIDATION_TIMES}; // validate xy drift 10 times, z drift 10 times
 
 	static const float min_eph_epv = 2.0f;	// min EPH/EPV, used for weight calculation
 	static const float max_eph_epv = 20.0f;	// max EPH/EPV acceptable for estimation
@@ -1220,6 +1223,36 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 				//flow_updates = 0;
 			}
 		}
+        if (vehicle_status.arming_state == ARMING_STATE_STANDBY
+                || vehicle_status.arming_state == ARMING_STATE_ARMED_ERROR) {
+            // Check if we are moving too fast while standing on the ground
+            // Preventing arm while GPS correction over initial position is happening
+            if (fabsf(x_est[1]) > params.ok_drift || fabsf(y_est[1]) > params.ok_drift) {
+                mavlink_log_info(mavlink_fd, "[inav] x:%.3f y:%.3f"
+                        , (double) x_est[1], (double) y_est[1]);
+                can_estimate_xy = false;
+                no_drift_valid[0] = XY_DRIFT_VALIDATION_TIMES;
+            } else {
+                if (no_drift_valid[0] > 0) {
+                    no_drift_valid[0]--;
+                    can_estimate_xy = false;
+                }
+            }
+
+            if (fabsf(z_est[1]) > params.ok_drift) {
+                mavlink_log_info(mavlink_fd, "[inav] z:%.3f"
+                        , (double) z_est[1]);
+                local_pos.z_valid = false;
+                no_drift_valid[1] = Z_DRIFT_VALIDATION_TIMES;
+            } else {
+                if (no_drift_valid[1] > 0) {
+                    no_drift_valid[1]--;
+                    local_pos.z_valid = false;
+                } else {
+                    local_pos.z_valid = true;
+                }
+            }
+        }
 
 		if (t > pub_last + PUB_INTERVAL) {
 			pub_last = t;

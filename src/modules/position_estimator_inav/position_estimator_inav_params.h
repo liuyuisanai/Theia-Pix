@@ -42,6 +42,7 @@
 #include <systemlib/param/param.h>
 
 struct position_estimator_inav_params {
+    float ok_drift;
 	float w_z_baro;
 	float w_z_gps_p;
 	float w_z_vision_p;
@@ -68,6 +69,7 @@ struct position_estimator_inav_params {
 };
 
 struct position_estimator_inav_param_handles {
+    param_t ok_drift;
 	param_t w_z_baro;
 	param_t w_z_gps_p;
 	param_t w_z_vision_p;
