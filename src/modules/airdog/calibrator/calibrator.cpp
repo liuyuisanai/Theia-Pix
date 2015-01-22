@@ -1,6 +1,7 @@
 #include <nuttx/config.h>
 
 #include <drivers/drv_accel.h>
+#include <drivers/drv_calibration_struct.h>
 #include <drivers/drv_gyro.h> // ioctl commands
 #include <drivers/drv_mag.h>
 #include <drivers/drv_tone_alarm.h>
@@ -257,7 +258,7 @@ inline void print_scales(SENSOR_TYPE sensor, int mavlink_fd) {
 		print_scales_helper <mag_scale> (MAG_DEVICE_PATH, MAGIOCGSCALE, mavlink_fd);
 		break;
 	case SENSOR_TYPE::ACCEL:
-		print_scales_helper <accel_scale> (ACCEL_DEVICE_PATH, ACCELIOCGSCALE, mavlink_fd);
+	//	print_scales_helper <accel_calibration_s> (ACCEL_DEVICE_PATH, ACCELIOCGSCALE, mavlink_fd);
 		break;
 	}
 }

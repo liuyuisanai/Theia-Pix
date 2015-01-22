@@ -2,6 +2,7 @@
 
 #include <conversion/rotation.h>
 #include <drivers/drv_accel.h>
+#include <drivers/drv_calibration_struct.h>
 #include <drivers/drv_hrt.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -33,16 +34,9 @@ CALIBRATION_RESULT AccelCalibrator::init() {
 	if (dev_fd == 0) {
 		dev_fd = open(ACCEL_DEVICE_PATH, O_RDONLY);
 	}
-	accel_scale zero_scale = {
-		0.0f,
-		1.0f,
-		0.0f,
-		1.0f,
-		0.0f,
-		1.0f
-	};
+	accel_calibration_s zero_calibration;
 	// Reset sensor scale
-	if (ioctl(dev_fd, ACCELIOCSSCALE, (unsigned long int) &zero_scale) != 0) {
+	if (ioctl(dev_fd, ACCELIOCSSCALE, (unsigned long int) &zero_calibration) != 0) {
 		return CALIBRATION_RESULT::SCALE_RESET_FAIL;
 	}
 
@@ -91,23 +85,18 @@ CALIBRATION_RESULT AccelCalibrator::calculate_and_save() {
 
 	// Main diagonal of the accel_T is responsible for the scaling, and other values - for "noisy" orientation
 	// Thus we use only the values on the main diagonal
-	accel_scale calibration_scale = {
-		accel_offs(0),
-		accel_T(0,0),
-		accel_offs(1),
-		accel_T(1,1),
-		accel_offs(2),
-		accel_T(2,2)
-	};
+	accel_calibration_s calibration_vals;
+	calibration_vals.offsets = accel_offs;
+	calibration_vals.scales = accel_T.diag_main();
 
 	// Set calibration parameters
-	if (param_set(param_find("SENS_ACC_SCALE"), &calibration_scale)) {
+	if (!set_calibration_parameters(calibration_vals)) {
 		return(CALIBRATION_RESULT::PARAMETER_SET_FAIL);
 	}
 	inprogress = false; // parameters are set, no need to roll back
 
 	// Apply new calibration values to the driver
-	if (ioctl(dev_fd, ACCELIOCSSCALE, (long unsigned int) &calibration_scale) != 0) {
+	if (ioctl(dev_fd, ACCELIOCSSCALE, (long unsigned int) &calibration_vals) != 0) {
 		return(CALIBRATION_RESULT::SCALE_APPLY_FAIL);
 	}
 
@@ -404,12 +393,12 @@ void AccelCalibrator::rotate_transformation(math::Matrix<3,3> &accel_T, math::Ve
 }
 
 void AccelCalibrator::restore() {
-	accel_scale saved_scale;
-	if (inprogress && !param_get(param_find("SENS_ACC_SCALE"), &saved_scale)) {
+	accel_calibration_s saved_calibration;
+	if (inprogress && get_calibration_parameters(&saved_calibration)) {
 		if (dev_fd == 0) {
 			dev_fd = open(ACCEL_DEVICE_PATH, O_RDONLY);
 		}
-		ioctl(dev_fd, ACCELIOCSSCALE, (unsigned long int) &saved_scale);
+		ioctl(dev_fd, ACCELIOCSSCALE, (unsigned long int) &saved_calibration);
 	}
 }
 

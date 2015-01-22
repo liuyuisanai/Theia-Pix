@@ -63,6 +63,7 @@
 
 #include <drivers/device/spi.h>
 #include <drivers/drv_accel.h>
+#include <drivers/drv_calibration_struct.h>
 #include <drivers/device/ringbuffer.h>
 
 
@@ -149,7 +150,7 @@ private:
 
 	RingBuffer		*_reports;
 
-	struct accel_scale	_accel_scale;
+	accel_calibration_s	_accel_calibration;
 	float			_accel_range_scale;
 	float			_accel_range_m_s2;
 	orb_advert_t		_accel_topic;
@@ -236,6 +237,7 @@ BMA180::BMA180(int bus, spi_dev_e device) :
 	SPI("BMA180", ACCEL_DEVICE_PATH, bus, device, SPIDEV_MODE3, 8000000),
 	_call_interval(0),
 	_reports(nullptr),
+	_accel_calibration(),
 	_accel_range_scale(0.0f),
 	_accel_range_m_s2(0.0f),
 	_accel_topic(-1),
@@ -246,14 +248,6 @@ BMA180::BMA180(int bus, spi_dev_e device) :
 {
 	// enable debug() calls
 	_debug_enabled = true;
-
-	// default scale factors
-	_accel_scale.x_offset = 0;
-	_accel_scale.x_scale  = 1.0f;
-	_accel_scale.y_offset = 0;
-	_accel_scale.y_scale  = 1.0f;
-	_accel_scale.z_offset = 0;
-	_accel_scale.z_scale  = 1.0f;
 }
 
 BMA180::~BMA180()
@@ -484,12 +478,14 @@ BMA180::ioctl(struct file *filp, int cmd, unsigned long arg)
 
 	case ACCELIOCSSCALE:
 		/* copy scale in */
-		memcpy(&_accel_scale, (struct accel_scale *) arg, sizeof(_accel_scale));
+		// memcpy(&_accel_calibration, (accel_calibration_s *) arg, sizeof(_accel_calibration));
+		_accel_calibration = *((accel_calibration_s*) arg);
 		return OK;
 
 	case ACCELIOCGSCALE:
 		/* copy scale out */
-		memcpy((struct accel_scale *) arg, &_accel_scale, sizeof(_accel_scale));
+		// memcpy((accel_calibration_s *) arg, &_accel_calibration, sizeof(_accel_calibration));
+		*((accel_calibration_s*) arg) = _accel_calibration;
 		return OK;
 
 	case ACCELIOCSRANGE:
@@ -721,9 +717,9 @@ BMA180::measure()
 	/* invert y axis, due to 14 bit data no overflow can occur in the negation */
 	report.y_raw = -report.y_raw;
 
-	report.x = ((report.x_raw * _accel_range_scale) - _accel_scale.x_offset) * _accel_scale.x_scale;
-	report.y = ((report.y_raw * _accel_range_scale) - _accel_scale.y_offset) * _accel_scale.y_scale;
-	report.z = ((report.z_raw * _accel_range_scale) - _accel_scale.z_offset) * _accel_scale.z_scale;
+	report.x = ((report.x_raw * _accel_range_scale) - _accel_calibration.offsets(0)) * _accel_calibration.scales(0);
+	report.y = ((report.y_raw * _accel_range_scale) - _accel_calibration.offsets(1)) * _accel_calibration.scales(1);
+	report.z = ((report.z_raw * _accel_range_scale) - _accel_calibration.offsets(2)) * _accel_calibration.scales(2);
 	report.scaling = _accel_range_scale;
 	report.range_m_s2 = _accel_range_m_s2;
 

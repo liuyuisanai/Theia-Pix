@@ -63,6 +63,7 @@
 #include <drivers/drv_hrt.h>
 #include <drivers/device/spi.h>
 #include <drivers/drv_accel.h>
+#include <drivers/drv_calibration_struct.h>
 #include <drivers/drv_mag.h>
 #include <drivers/device/ringbuffer.h>
 #include <drivers/drv_tone_alarm.h>
@@ -272,7 +273,7 @@ private:
 	RingBuffer		*_accel_reports;
 	RingBuffer		*_mag_reports;
 
-	struct accel_scale	_accel_scale;
+	accel_calibration_s	_accel_calibration;
 	unsigned		_accel_range_m_s2;
 	float			_accel_range_scale;
 	unsigned		_accel_samplerate;
@@ -512,7 +513,7 @@ LSM303D::LSM303D(int bus, const char* path, spi_dev_e device, enum Rotation rota
 	_call_mag_interval(0),
 	_accel_reports(nullptr),
 	_mag_reports(nullptr),
-	_accel_scale{},
+	_accel_calibration(),
 	_accel_range_m_s2(0.0f),
 	_accel_range_scale(0.0f),
 	_accel_samplerate(0),
@@ -550,14 +551,6 @@ LSM303D::LSM303D(int bus, const char* path, spi_dev_e device, enum Rotation rota
 
 	// enable debug() calls
 	_debug_enabled = true;
-
-	// default scale factors
-	_accel_scale.x_offset = 0.0f;
-	_accel_scale.x_scale  = 1.0f;
-	_accel_scale.y_offset = 0.0f;
-	_accel_scale.y_scale  = 1.0f;
-	_accel_scale.z_offset = 0.0f;
-	_accel_scale.z_scale  = 1.0f;
 
 	_mag_scale.x_offset = 0.0f;
 	_mag_scale.x_scale = 1.0f;
@@ -1039,10 +1032,11 @@ LSM303D::ioctl(struct file *filp, int cmd, unsigned long arg)
 
 	case ACCELIOCSSCALE: {
 		/* copy scale, but only if off by a few percent */
-		struct accel_scale *s = (struct accel_scale *) arg;
-		float sum = s->x_scale + s->y_scale + s->z_scale;
+		accel_calibration_s *s = (accel_calibration_s *) arg;
+		float sum = s->scales(0) + s->scales(1) + s->scales(2);
 		if (sum > 2.0f && sum < 4.0f) {
-			memcpy(&_accel_scale, s, sizeof(_accel_scale));
+			// memcpy(&_accel_calibration, s, sizeof(_accel_calibration));
+			_accel_calibration = *(s);
 			return OK;
 		} else {
 			return -EINVAL;
@@ -1059,7 +1053,8 @@ LSM303D::ioctl(struct file *filp, int cmd, unsigned long arg)
 
 	case ACCELIOCGSCALE:
 		/* copy scale out */
-		memcpy((struct accel_scale *) arg, &_accel_scale, sizeof(_accel_scale));
+		// memcpy((accel_calibration_s *) arg, &_accel_calibration, sizeof(_accel_calibration));
+		*((accel_calibration_s*) arg) = _accel_calibration;
 		return OK;
 
 	case ACCELIOCSELFTEST:
@@ -1198,19 +1193,19 @@ LSM303D::accel_self_test()
 		return 1;
 
 	/* inspect accel offsets */
-	if (fabsf(_accel_scale.x_offset) < 0.000001f)
+	if (fabsf(_accel_calibration.offsets(0)) < 0.000001f)
 		return 1;
-	if (fabsf(_accel_scale.x_scale - 1.0f) > 0.4f || fabsf(_accel_scale.x_scale - 1.0f) < 0.000001f)
-		return 1;
-
-	if (fabsf(_accel_scale.y_offset) < 0.000001f)
-		return 1;
-	if (fabsf(_accel_scale.y_scale - 1.0f) > 0.4f || fabsf(_accel_scale.y_scale - 1.0f) < 0.000001f)
+	if (fabsf(_accel_calibration.scales(0) - 1.0f) > 0.4f || fabsf(_accel_calibration.scales(0) - 1.0f) < 0.000001f)
 		return 1;
 
-	if (fabsf(_accel_scale.z_offset) < 0.000001f)
+	if (fabsf(_accel_calibration.offsets(1)) < 0.000001f)
 		return 1;
-	if (fabsf(_accel_scale.z_scale - 1.0f) > 0.4f || fabsf(_accel_scale.z_scale - 1.0f) < 0.000001f)
+	if (fabsf(_accel_calibration.scales(1) - 1.0f) > 0.4f || fabsf(_accel_calibration.scales(1) - 1.0f) < 0.000001f)
+		return 1;
+
+	if (fabsf(_accel_calibration.offsets(2)) < 0.000001f)
+		return 1;
+	if (fabsf(_accel_calibration.scales(2) - 1.0f) > 0.4f || fabsf(_accel_calibration.scales(2) - 1.0f) < 0.000001f)
 		return 1;
 
 	return 0;
@@ -1578,9 +1573,9 @@ LSM303D::measure()
 	accel_report.y_raw = raw_accel_report.y;
 	accel_report.z_raw = raw_accel_report.z;
 
-	float x_in_new = ((accel_report.x_raw * _accel_range_scale) - _accel_scale.x_offset) * _accel_scale.x_scale;
-	float y_in_new = ((accel_report.y_raw * _accel_range_scale) - _accel_scale.y_offset) * _accel_scale.y_scale;
-	float z_in_new = ((accel_report.z_raw * _accel_range_scale) - _accel_scale.z_offset) * _accel_scale.z_scale;
+	float x_in_new = ((accel_report.x_raw * _accel_range_scale) - _accel_calibration.offsets(0)) * _accel_calibration.scales(0);
+	float y_in_new = ((accel_report.y_raw * _accel_range_scale) - _accel_calibration.offsets(1)) * _accel_calibration.scales(1);
+	float z_in_new = ((accel_report.z_raw * _accel_range_scale) - _accel_calibration.offsets(2)) * _accel_calibration.scales(2);
 
 	accel_report.x = _accel_filter_x.apply(x_in_new);
 	accel_report.y = _accel_filter_y.apply(y_in_new);

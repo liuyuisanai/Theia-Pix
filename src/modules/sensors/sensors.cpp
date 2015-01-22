@@ -60,6 +60,7 @@
 
 #include <drivers/drv_hrt.h>
 #include <drivers/drv_accel.h>
+#include <drivers/drv_calibration_struct.h>
 #include <drivers/drv_gyro.h>
 #include <drivers/drv_mag.h>
 #include <drivers/drv_baro.h>
@@ -275,8 +276,7 @@ private:
 		float gyro_scale[3];
 		float mag_offset[3];
 		float mag_scale[3];
-		float accel_offset[3];
-		float accel_scale[3];
+		accel_calibration_s accel_calibration;
 		float diff_pres_offset_pa;
 		float diff_pres_analog_scale;
 
@@ -341,8 +341,6 @@ private:
 
 		param_t gyro_offset[3];
 		param_t gyro_scale[3];
-		param_t accel_offset[3];
-		param_t accel_scale[3];
 		param_t mag_offset[3];
 		param_t mag_scale[3];
 		param_t diff_pres_offset_pa;
@@ -613,14 +611,6 @@ Sensors::Sensors() :
 	_parameter_handles.gyro_scale[1] = param_find("SENS_GYRO_YSCALE");
 	_parameter_handles.gyro_scale[2] = param_find("SENS_GYRO_ZSCALE");
 
-	/* accel offsets */
-	_parameter_handles.accel_offset[0] = param_find("SENS_ACC_XOFF");
-	_parameter_handles.accel_offset[1] = param_find("SENS_ACC_YOFF");
-	_parameter_handles.accel_offset[2] = param_find("SENS_ACC_ZOFF");
-	_parameter_handles.accel_scale[0] = param_find("SENS_ACC_XSCALE");
-	_parameter_handles.accel_scale[1] = param_find("SENS_ACC_YSCALE");
-	_parameter_handles.accel_scale[2] = param_find("SENS_ACC_ZSCALE");
-
 	/* mag offsets */
 	_parameter_handles.mag_offset[0] = param_find("SENS_MAG_XOFF");
 	_parameter_handles.mag_offset[1] = param_find("SENS_MAG_YOFF");
@@ -833,12 +823,7 @@ Sensors::parameters_update()
 	param_get(_parameter_handles.gyro_scale[2], &(_parameters.gyro_scale[2]));
 
 	/* accel offsets */
-	param_get(_parameter_handles.accel_offset[0], &(_parameters.accel_offset[0]));
-	param_get(_parameter_handles.accel_offset[1], &(_parameters.accel_offset[1]));
-	param_get(_parameter_handles.accel_offset[2], &(_parameters.accel_offset[2]));
-	param_get(_parameter_handles.accel_scale[0], &(_parameters.accel_scale[0]));
-	param_get(_parameter_handles.accel_scale[1], &(_parameters.accel_scale[1]));
-	param_get(_parameter_handles.accel_scale[2], &(_parameters.accel_scale[2]));
+	get_calibration_parameters(&(_parameters.accel_calibration));
 
 	/* mag offsets */
 	param_get(_parameter_handles.mag_offset[0], &(_parameters.mag_offset[0]));
@@ -1347,16 +1332,8 @@ Sensors::parameter_update_poll(bool forced)
 		close(fd);
 
 		fd = open(ACCEL_DEVICE_PATH, 0);
-		struct accel_scale ascale = {
-			_parameters.accel_offset[0],
-			_parameters.accel_scale[0],
-			_parameters.accel_offset[1],
-			_parameters.accel_scale[1],
-			_parameters.accel_offset[2],
-			_parameters.accel_scale[2],
-		};
 
-		if (OK != ioctl(fd, ACCELIOCSSCALE, (long unsigned int)&ascale)) {
+		if (OK != ioctl(fd, ACCELIOCSSCALE, (long unsigned int)&(_parameters.accel_calibration))) {
 			warn("WARNING: failed to set scale / offsets for accel");
 		}
 

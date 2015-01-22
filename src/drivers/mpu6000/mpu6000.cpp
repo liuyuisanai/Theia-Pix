@@ -70,6 +70,7 @@
 #include <drivers/device/spi.h>
 #include <drivers/device/ringbuffer.h>
 #include <drivers/drv_accel.h>
+#include <drivers/drv_calibration_struct.h>
 #include <drivers/drv_gyro.h>
 #include <mathlib/math/filter/LowPassFilter2p.hpp>
 #include <lib/conversion/rotation.h>
@@ -211,7 +212,8 @@ private:
 
 	RingBuffer		*_accel_reports;
 
-	struct accel_scale	_accel_scale;
+	accel_calibration_s	_accel_calibration;
+
 	float			_accel_range_scale;
 	float			_accel_range_m_s2;
 	orb_advert_t		_accel_topic;
@@ -389,7 +391,7 @@ MPU6000::MPU6000(int bus, const char *path_accel, const char *path_gyro, spi_dev
 	_call{},
 	_call_interval(0),
 	_accel_reports(nullptr),
-	_accel_scale{},
+	_accel_calibration(),
 	_accel_range_scale(0.0f),
 	_accel_range_m_s2(0.0f),
 	_accel_topic(-1),
@@ -414,14 +416,6 @@ MPU6000::MPU6000(int bus, const char *path_accel, const char *path_gyro, spi_dev
 {
 	// disable debug() calls
 	_debug_enabled = false;
-
-	// default accel scale factors
-	_accel_scale.x_offset = 0;
-	_accel_scale.x_scale  = 1.0f;
-	_accel_scale.y_offset = 0;
-	_accel_scale.y_scale  = 1.0f;
-	_accel_scale.z_offset = 0;
-	_accel_scale.z_scale  = 1.0f;
 
 	// default gyro scale factors
 	_gyro_scale.x_offset = 0;
@@ -484,12 +478,8 @@ MPU6000::init()
 	reset();
 
 	/* Initialize offsets and scales */
-	_accel_scale.x_offset = 0;
-	_accel_scale.x_scale  = 1.0f;
-	_accel_scale.y_offset = 0;
-	_accel_scale.y_scale  = 1.0f;
-	_accel_scale.z_offset = 0;
-	_accel_scale.z_scale  = 1.0f;
+	_accel_calibration.offsets.zero();
+	_accel_calibration.scales.set(1.0f);
 
 	_gyro_scale.x_offset = 0;
 	_gyro_scale.x_scale  = 1.0f;
@@ -789,19 +779,19 @@ MPU6000::accel_self_test()
 		return 1;
 
 	/* inspect accel offsets */
-	if (fabsf(_accel_scale.x_offset) < 0.000001f)
+	if (fabsf(_accel_calibration.offsets(0)) < 0.000001f)
 		return 1;
-	if (fabsf(_accel_scale.x_scale - 1.0f) > 0.4f || fabsf(_accel_scale.x_scale - 1.0f) < 0.000001f)
-		return 1;
-
-	if (fabsf(_accel_scale.y_offset) < 0.000001f)
-		return 1;
-	if (fabsf(_accel_scale.y_scale - 1.0f) > 0.4f || fabsf(_accel_scale.y_scale - 1.0f) < 0.000001f)
+	if (fabsf(_accel_calibration.scales(0) - 1.0f) > 0.4f || fabsf(_accel_calibration.scales(0) - 1.0f) < 0.000001f)
 		return 1;
 
-	if (fabsf(_accel_scale.z_offset) < 0.000001f)
+	if (fabsf(_accel_calibration.offsets(1)) < 0.000001f)
 		return 1;
-	if (fabsf(_accel_scale.z_scale - 1.0f) > 0.4f || fabsf(_accel_scale.z_scale - 1.0f) < 0.000001f)
+	if (fabsf(_accel_calibration.scales(1) - 1.0f) > 0.4f || fabsf(_accel_calibration.scales(1) - 1.0f) < 0.000001f)
+		return 1;
+
+	if (fabsf(_accel_calibration.offsets(2)) < 0.000001f)
+		return 1;
+	if (fabsf(_accel_calibration.scales(2) - 1.0f) > 0.4f || fabsf(_accel_calibration.scales(2) - 1.0f) < 0.000001f)
 		return 1;
 
 	return 0;
@@ -985,10 +975,11 @@ MPU6000::ioctl(struct file *filp, int cmd, unsigned long arg)
 	case ACCELIOCSSCALE:
 		{
 			/* copy scale, but only if off by a few percent */
-			struct accel_scale *s = (struct accel_scale *) arg;
-			float sum = s->x_scale + s->y_scale + s->z_scale;
+			accel_calibration_s *s = (accel_calibration_s *) arg;
+			float sum = s->scales(0) + s->scales(1) + s->scales(2);
 			if (sum > 2.0f && sum < 4.0f) {
-				memcpy(&_accel_scale, s, sizeof(_accel_scale));
+				// memcpy(&_accel_calibration, s, sizeof(_accel_calibration));
+				_accel_calibration = *(s);
 				return OK;
 			} else {
 				return -EINVAL;
@@ -997,7 +988,8 @@ MPU6000::ioctl(struct file *filp, int cmd, unsigned long arg)
 
 	case ACCELIOCGSCALE:
 		/* copy scale out */
-		memcpy((struct accel_scale *) arg, &_accel_scale, sizeof(_accel_scale));
+		// memcpy((accel_calibration_s *) arg, &_accel_calibration, sizeof(_accel_calibration));
+		*((accel_calibration_s*) arg) = _accel_calibration;
 		return OK;
 
 	case ACCELIOCSRANGE:
@@ -1338,9 +1330,9 @@ MPU6000::measure()
 	arb.y_raw = report.accel_y;
 	arb.z_raw = report.accel_z;
 
-	float x_in_new = ((report.accel_x * _accel_range_scale) - _accel_scale.x_offset) * _accel_scale.x_scale;
-	float y_in_new = ((report.accel_y * _accel_range_scale) - _accel_scale.y_offset) * _accel_scale.y_scale;
-	float z_in_new = ((report.accel_z * _accel_range_scale) - _accel_scale.z_offset) * _accel_scale.z_scale;
+	float x_in_new = ((report.accel_x * _accel_range_scale) - _accel_calibration.offsets(0)) * _accel_calibration.scales(0);
+	float y_in_new = ((report.accel_y * _accel_range_scale) - _accel_calibration.offsets(1)) * _accel_calibration.scales(1);
+	float z_in_new = ((report.accel_z * _accel_range_scale) - _accel_calibration.offsets(2)) * _accel_calibration.scales(2);
 	
 	arb.x = _accel_filter_x.apply(x_in_new);
 	arb.y = _accel_filter_y.apply(y_in_new);

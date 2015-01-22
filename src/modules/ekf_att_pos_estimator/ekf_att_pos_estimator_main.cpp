@@ -210,7 +210,7 @@ private:
 	struct range_finder_report			_distance;		/**< distance estimate */
 
 	struct gyro_scale				_gyro_offsets;
-	struct accel_scale				_accel_offsets;
+//	struct accel_scale				_accel_offsets;
 	struct mag_scale				_mag_offsets;
 
 #ifdef SENSOR_COMBINED_SUB
@@ -385,7 +385,7 @@ FixedwingEstimator::FixedwingEstimator() :
 	_distance{},
 
 	_gyro_offsets({}),
-	_accel_offsets({}),
+//	_accel_offsets({}),
 	_mag_offsets({}),
 
 	#ifdef SENSOR_COMBINED_SUB
@@ -469,14 +469,14 @@ FixedwingEstimator::FixedwingEstimator() :
 
 	fd = open(ACCEL_DEVICE_PATH, O_RDONLY);
 
-	if (fd > 0) {
+/*	if (fd > 0) {
 		res = ioctl(fd, ACCELIOCGSCALE, (long unsigned int)&_accel_offsets);
 		close(fd);
 
 		if (res) {
 			warnx("A SCALE FAIL");
 		}
-	}
+	} */
 
 	fd = open(MAG_DEVICE_PATH, O_RDONLY);
 

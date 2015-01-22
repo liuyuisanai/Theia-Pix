@@ -136,6 +136,7 @@
 #include <drivers/drv_hrt.h>
 #include <uORB/topics/sensor_combined.h>
 #include <drivers/drv_accel.h>
+#include <drivers/drv_calibration_struct.h>
 #include <geo/geo.h>
 #include <conversion/rotation.h>
 #include <systemlib/param/param.h>
@@ -162,20 +163,13 @@ int do_accel_calibration(int mavlink_fd)
 
 	mavlink_log_info(mavlink_fd, CAL_STARTED_MSG, sensor_name);
 
-	struct accel_scale accel_scale = {
-		0.0f,
-		1.0f,
-		0.0f,
-		1.0f,
-		0.0f,
-		1.0f,
-	};
+	accel_calibration_s accel_calibration;
 
 	int res = OK;
 
 	/* reset all offsets to zero and all scales to one */
 	fd = open(ACCEL_DEVICE_PATH, 0);
-	res = ioctl(fd, ACCELIOCSSCALE, (long unsigned int)&accel_scale);
+	res = ioctl(fd, ACCELIOCSSCALE, (long unsigned int)&accel_calibration);
 	close(fd);
 
 	if (res != OK) {
@@ -216,20 +210,11 @@ int do_accel_calibration(int mavlink_fd)
 		math::Matrix<3, 3> accel_T_mat(&accel_T[0][0]);
 		math::Matrix<3, 3> accel_T_rotated = board_rotation_t *accel_T_mat * board_rotation;
 
-		accel_scale.x_offset = accel_offs_rotated(0);
-		accel_scale.x_scale = accel_T_rotated(0, 0);
-		accel_scale.y_offset = accel_offs_rotated(1);
-		accel_scale.y_scale = accel_T_rotated(1, 1);
-		accel_scale.z_offset = accel_offs_rotated(2);
-		accel_scale.z_scale = accel_T_rotated(2, 2);
+		accel_calibration.offsets = accel_offs_rotated;
+		accel_calibration.scales = accel_T_rotated.diag_main();
 
 		/* set parameters */
-		if (param_set(param_find("SENS_ACC_XOFF"), &(accel_scale.x_offset))
-		    || param_set(param_find("SENS_ACC_YOFF"), &(accel_scale.y_offset))
-		    || param_set(param_find("SENS_ACC_ZOFF"), &(accel_scale.z_offset))
-		    || param_set(param_find("SENS_ACC_XSCALE"), &(accel_scale.x_scale))
-		    || param_set(param_find("SENS_ACC_YSCALE"), &(accel_scale.y_scale))
-		    || param_set(param_find("SENS_ACC_ZSCALE"), &(accel_scale.z_scale))) {
+		if (!set_calibration_parameters(accel_calibration)) {
 			mavlink_log_critical(mavlink_fd, CAL_FAILED_SET_PARAMS_MSG);
 			res = ERROR;
 		}
@@ -238,7 +223,7 @@ int do_accel_calibration(int mavlink_fd)
 	if (res == OK) {
 		/* apply new scaling and offsets */
 		fd = open(ACCEL_DEVICE_PATH, 0);
-		res = ioctl(fd, ACCELIOCSSCALE, (long unsigned int)&accel_scale);
+		res = ioctl(fd, ACCELIOCSSCALE, (long unsigned int)&accel_calibration);
 		close(fd);
 
 		if (res != OK) {

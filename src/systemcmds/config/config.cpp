@@ -32,7 +32,7 @@
  ****************************************************************************/
 
 /**
- * @file config.c
+ * @file config.cpp
  * @author Lorenz Meier <lm@inf.ethz.ch>
  * @author Julian Oes <joes@student.ethz.ch>
  *
@@ -53,6 +53,7 @@
 
 #include <drivers/drv_gyro.h>
 #include <drivers/drv_accel.h>
+#include <drivers/drv_calibration_struct.h>
 #include <drivers/drv_mag.h>
 #include <drivers/drv_device.h>
 
@@ -317,15 +318,15 @@ do_accel(int argc, char *argv[])
 
 			if (ret) {
 				warnx("accel self test FAILED! Check calibration:");
-				struct accel_scale scale;
-				ret = ioctl(fd, ACCELIOCGSCALE, (long unsigned int)&scale);
+				accel_calibration_s calibration;
+				ret = ioctl(fd, ACCELIOCGSCALE, (long unsigned int)&calibration);
 
 				if (ret) {
 					err(ret, "failed getting accel scale");
 				}
 
-				warnx("offsets: X: % 9.6f Y: % 9.6f Z: % 9.6f", (double)scale.x_offset, (double)scale.y_offset, (double)scale.z_offset);
-				warnx("scale:   X: % 9.6f Y: % 9.6f Z: % 9.6f", (double)scale.x_scale, (double)scale.y_scale, (double)scale.z_scale);
+				warnx("offsets: X: % 9.6f Y: % 9.6f Z: % 9.6f", (double)calibration.offsets(0), (double)calibration.offsets(1), (double)calibration.offsets(2));
+				warnx("scale:   X: % 9.6f Y: % 9.6f Z: % 9.6f", (double)calibration.scales(0), (double)calibration.scales(1), (double)calibration.scales(2));
 			} else {
 				warnx("accel calibration and self test OK");
 			}
