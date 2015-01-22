@@ -295,6 +295,14 @@ public:
 		arm_mat_inverse_f32(&this->arm_mat, &res.arm_mat);
 		return res;
 	}
+	Vector< (M < N ? M : N) > diag_main() const {
+		constexpr unsigned int diag_len = (M < N ? M : N);
+		Vector< diag_len > res;
+		for (unsigned int i = 0; i < diag_len; ++i) {
+			res(i) = data[i][i];
+		}
+		return res;
+	}
 
 	/**
 	 * set zero matrix

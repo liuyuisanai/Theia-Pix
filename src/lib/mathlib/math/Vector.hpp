@@ -115,7 +115,7 @@ public:
 	/**
 	 * access to elements by index
 	 */
-	float operator()(const unsigned int i) const {
+	const float & operator()(const unsigned int i) const {
 		return data[i];
 	}
 
@@ -337,11 +337,17 @@ public:
 		memset(data, 0, sizeof(data));
 	}
 
+	void set(float value) {
+		for (unsigned int i = 0; i < N; ++i) {
+			data[i] = value;
+		}
+	}
+
 	void print(void) {
 		printf("[ ");
 
 		for (unsigned int i = 0; i < N; i++)
-			printf("%.3f\t", data[i]);
+			printf("%.3f\t", (double) data[i]);
 
 		printf("]\n");
 	}
@@ -396,6 +402,8 @@ public:
 		data[1] = d[1];
 	}
 
+	using VectorBase<2>::set;
+
 	/**
 	 * set to value
 	 */
@@ -440,6 +448,8 @@ public:
 		for (unsigned int i = 0; i < 3; i++)
 			data[i] = d[i];
 	}
+
+	using VectorBase<3>::set;
 
 	/**
 	 * set to value
@@ -490,6 +500,8 @@ public:
 		for (unsigned int i = 0; i < 4; i++)
 			data[i] = d[i];
 	}
+
+	using VectorBase<4>::set;
 
 	/**
 	 * set to value
