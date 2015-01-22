@@ -56,7 +56,7 @@
 /**
  * Start the top application.
  */
-__EXPORT int top_main(void);
+__EXPORT int top_main(int argc, char *argv[]);
 
 extern struct system_load_s system_load;
 
@@ -89,7 +89,7 @@ tstate_name(const tstate_t s)
 }
 
 int
-top_main(void)
+top_main(int argc, char *argv[])
 {
 	uint64_t total_user_time = 0;
 
@@ -106,6 +106,13 @@ top_main(void)
 		last_times[t] = 0;
 
 	float interval_time_ms_inv = 0.f;
+
+	bool once = false;
+
+	if (argc > 1) {
+		/* non-standard once argument: Prints load once and exits */
+		once = !strcmp(argv[1], "--once");
+	}
 
 	/* clear screen */
 	printf("\033[2J");
@@ -251,6 +258,10 @@ top_main(void)
 		}
 
 		interval_start_time = new_time;
+
+		if (once) {
+			return OK;
+		}
 
 		/* Sleep 200 ms waiting for user input five times ~ 1s */
 		for (int k = 0; k < 5; k++) {
