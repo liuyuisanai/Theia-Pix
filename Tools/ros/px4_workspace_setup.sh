@@ -25,6 +25,9 @@ git clone https://github.com/ethz-asl/glog_catkin.git
 git clone https://github.com/catkin/catkin_simple.git
 
 # drcsim (for scenery and models)
+hg clone https://bitbucket.org/osrf/osrf-common
+hg clone https://bitbucket.org/osrf/sandia-hand
+hg clone https://bitbucket.org/osrf/drcsim
 
 cd ..
 

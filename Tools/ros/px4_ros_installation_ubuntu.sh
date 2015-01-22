@@ -27,14 +27,3 @@ sudo apt-get -y install python-rosinstall
 
 # additional dependencies
 sudo apt-get -y install ros-indigo-octomap-msgs
-
-## drcsim setup (for models)
-### add osrf repository
-sudo sh -c 'echo "deb http://packages.osrfoundation.org/drc/ubuntu trusty main" > /etc/apt/sources.list.d/drc-latest.list'
-
-### add key
-wget http://packages.osrfoundation.org/drc.key -O - | sudo apt-key add -
-
-### install drcsim
-sudo apt-get update
-sudo apt-get -y install drcsim
