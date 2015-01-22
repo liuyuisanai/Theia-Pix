@@ -69,6 +69,13 @@ else
 fi
 
 #
+# Print load and memory usage
+#
+top --once
+free
+ls /dev
+
+#
 # The presence of this file suggests we're running a mount stress test
 #
 if [ -f /fs/microsd/mount_test_cmds.txt ]
