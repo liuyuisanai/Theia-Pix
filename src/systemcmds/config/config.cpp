@@ -325,8 +325,7 @@ do_accel(int argc, char *argv[])
 					err(ret, "failed getting accel scale");
 				}
 
-				warnx("offsets: X: % 9.6f Y: % 9.6f Z: % 9.6f", (double)calibration.offsets(0), (double)calibration.offsets(1), (double)calibration.offsets(2));
-				warnx("scale:   X: % 9.6f Y: % 9.6f Z: % 9.6f", (double)calibration.scales(0), (double)calibration.scales(1), (double)calibration.scales(2));
+				print_calibration(calibration, 0);
 			} else {
 				warnx("accel calibration and self test OK");
 			}
