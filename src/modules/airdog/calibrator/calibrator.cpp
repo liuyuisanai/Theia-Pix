@@ -258,7 +258,11 @@ inline void print_scales(SENSOR_TYPE sensor, int mavlink_fd) {
 		print_scales_helper <mag_scale> (MAG_DEVICE_PATH, MAGIOCGSCALE, mavlink_fd);
 		break;
 	case SENSOR_TYPE::ACCEL:
-	//	print_scales_helper <accel_calibration_s> (ACCEL_DEVICE_PATH, ACCELIOCGSCALE, mavlink_fd);
+		calibration_values_s calibration;
+		int dev_fd = open(ACCEL_DEVICE_PATH, O_RDONLY);
+		if (ioctl(dev_fd, ACCELIOCGSCALE, (unsigned long) &calibration) == 0) {
+			print_calibration(calibration, mavlink_fd);
+		}
 		break;
 	}
 }

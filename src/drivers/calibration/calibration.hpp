@@ -23,3 +23,5 @@ __EXPORT bool set_calibration_parameters (const accel_calibration_s &accel_calib
 __EXPORT bool get_calibration_parameters (const char* const offset_params[3], const char* const scale_params[3],
 		calibration_values_s *calibration);
 __EXPORT bool get_calibration_parameters (accel_calibration_s *accel_calibration);
+
+__EXPORT void print_calibration(calibration_values_s calibration, int mavlink_fd);
