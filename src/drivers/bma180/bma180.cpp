@@ -63,7 +63,7 @@
 
 #include <drivers/device/spi.h>
 #include <drivers/drv_accel.h>
-#include <drivers/drv_calibration_struct.h>
+#include <drivers/calibration/calibration.hpp>
 #include <drivers/device/ringbuffer.h>
 
 

@@ -53,7 +53,7 @@
 
 #include <drivers/drv_gyro.h>
 #include <drivers/drv_accel.h>
-#include <drivers/drv_calibration_struct.h>
+#include <drivers/calibration/calibration.hpp>
 #include <drivers/drv_mag.h>
 #include <drivers/drv_device.h>
 

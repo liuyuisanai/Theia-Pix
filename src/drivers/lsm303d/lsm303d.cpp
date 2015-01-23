@@ -63,7 +63,7 @@
 #include <drivers/drv_hrt.h>
 #include <drivers/device/spi.h>
 #include <drivers/drv_accel.h>
-#include <drivers/drv_calibration_struct.h>
+#include <drivers/calibration/calibration.hpp>
 #include <drivers/drv_mag.h>
 #include <drivers/device/ringbuffer.h>
 #include <drivers/drv_tone_alarm.h>

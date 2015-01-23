@@ -46,6 +46,7 @@ MODULES		+= modules/sensors
 #MODULES		+= drivers/mkblctrl
 #MODULES		+= drivers/pca8574
 #MODULES		+= drivers/px4flow
+MODULES		+= drivers/calibration
 
 MODULES		+= drivers/mb1230serial
 

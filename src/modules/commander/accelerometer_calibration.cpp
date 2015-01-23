@@ -136,7 +136,7 @@
 #include <drivers/drv_hrt.h>
 #include <uORB/topics/sensor_combined.h>
 #include <drivers/drv_accel.h>
-#include <drivers/drv_calibration_struct.h>
+#include <drivers/calibration/calibration.hpp>
 #include <geo/geo.h>
 #include <conversion/rotation.h>
 #include <systemlib/param/param.h>
