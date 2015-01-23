@@ -1202,6 +1202,8 @@ MulticopterPositionControl::control_auto_vel(float dt) {
 				_pos_sp_triplet.current.lat, _pos_sp_triplet.current.lon,
 				&_pos_sp.data[0], &_pos_sp.data[1]);
 
+        _pos_sp(2) = -(_pos_sp_triplet.current.alt - _ref_alt);
+
         math::Vector<3> pos_sp_delta = _pos_sp - _pos;
 
 		if (_pos_sp_triplet.current.abs_velocity_valid && _pos_sp != _pos) {
@@ -1219,6 +1221,7 @@ MulticopterPositionControl::control_auto_vel(float dt) {
                 _vel_sp(0) = move_direction(0) * _pos_sp_triplet.current.abs_velocity;
                 _vel_sp(1) = move_direction(1) * _pos_sp_triplet.current.abs_velocity;
                 _vel_sp(2) = pos_sp_delta(2) * _params.pos_p(2);
+
             }
 
             /* if (isfinite(_att_sp.yaw_body)) {

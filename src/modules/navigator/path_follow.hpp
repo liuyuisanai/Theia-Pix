@@ -86,7 +86,7 @@ private:
 	// Update position setpoint to desired values
 	inline void set_target_setpoint(position_setpoint_s &destination);
 	// Update position setpoint to desired values
-	inline void update_setpoint(const buffer_point_s &desired_point, position_setpoint_s &destination);
+	inline void put_buffer_point_into_setpoint(const buffer_point_s &desired_point, position_setpoint_s &destination);
 	// Update target velocity with a new value
 	inline void update_target_velocity();
 	// Update drone velocity with a new value

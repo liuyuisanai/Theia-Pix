@@ -1,8 +1,13 @@
 /**
- * Path follow mode implementation
+ * @file path_follow.cpp
+ *
+ * Path follow navigator mode implementation 
+ *
+ * @author Anthony Kenga <anton.k@airdog.vom>
+ * @author Martins Frolovs <martins.f@airdog.vom>
  */
-#include <nuttx/config.h>
 
+#include <nuttx/config.h>
 #include <geo/geo.h>
 #include <drivers/drv_tone_alarm.h>
 #include <fcntl.h>
@@ -13,13 +18,8 @@
 #include <sys/ioctl.h>
 #include <systemlib/err.h>
 #include <uORB/topics/external_trajectory.h>
-
-
 #include "navigator.h"
 #include "path_follow.hpp"
-
-// TODO! Unify velocity/speed naming convention... at least in the scope of a single mode. Duh...
-// TODO! Add target signal monitoring
 
 PathFollow::PathFollow(Navigator *navigator, const char *name):
 		NavigatorMode(navigator, name),
@@ -165,11 +165,11 @@ void PathFollow::on_active() {
                     pos_sp_triplet->previous.alt = global_pos->alt;
                     pos_sp_triplet->previous.position_valid = true;
                     pos_sp_triplet->previous.valid = true;
-                    update_setpoint(_actual_point, pos_sp_triplet->current);
+                    put_buffer_point_into_setpoint(_actual_point, pos_sp_triplet->current);
                     
-                    /* mc_pos_control is not yet using next sp for velocity sp
+                    /* mc_pos_control is not yet using next sp for control_auto_velvelocity_sp
                     if (_saved_trajectory.peek(0, _future_point)) {
-                        update_setpoint(_future_point, pos_sp_triplet->next);
+                        put_buffer_point_into_setpoint(_future_point, pos_sp_triplet->next);
                     }
                     else {
                         pos_sp_triplet->next.valid = false;
@@ -199,14 +199,13 @@ void PathFollow::on_active() {
                     // Having both previous and next waypoint allows L1 algorithm
                     memcpy(&(pos_sp_triplet->previous),&(pos_sp_triplet->current),sizeof(position_setpoint_s));
                     // Trying to prevent L1 algorithm
-                     pos_sp_triplet->previous.valid = false;
+                    pos_sp_triplet->previous.valid = false;
 
-                    update_setpoint(_actual_point, pos_sp_triplet->current);
-                    current_point_passed = false;
+                    put_buffer_point_into_setpoint(_actual_point, pos_sp_triplet->current);
 
                     /* mc_pos_control is not yet using next sp for velocity sp
                     if (_saved_trajectory.peek(0, _future_point)) {
-                        update_setpoint(_future_point, pos_sp_triplet->next);
+                        put_buffer_point_into_setpoint(_future_point, pos_sp_triplet->next);
                     }
                     else {
                         pos_sp_triplet->next.valid = false;
@@ -237,8 +236,6 @@ void PathFollow::on_active() {
         pos_sp_triplet->current.abs_velocity = _desired_speed;
         pos_sp_triplet->current.abs_velocity_valid = true;
 
-
-
         if (_desired_speed < 1e-6f && _drone_velocity < _parameters.pafol_stop_speed ) {
 
             zero_setpoint = true;
@@ -255,7 +252,7 @@ void PathFollow::on_active() {
             pos_sp_triplet->current.valid = true;
             pos_sp_triplet->current.position_valid = true;
             //mavlink_log_critical(_mavlink_fd, "Zero point on.");
-        
+            //
         }
     }
 
@@ -322,7 +319,7 @@ void PathFollow::update_saved_trajectory() {
 	}
 }
 
-void PathFollow::update_setpoint(const buffer_point_s &desired_point, position_setpoint_s &destination) {
+void PathFollow::put_buffer_point_into_setpoint(const buffer_point_s &desired_point, position_setpoint_s &destination) {
 
 	// mavlink_log_info(_mavlink_fd, "New point %.8f %.8f", (double)desired_point.alt);
 
