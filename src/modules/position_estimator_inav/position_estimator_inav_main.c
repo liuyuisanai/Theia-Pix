@@ -537,15 +537,12 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                                         if (fabsf(range_finder.distance - sonar_prev) < params.sonar_err) {
                                             // Accepted difference - enabling LPF and stuff
                                             
-                                            //if (fabsf(corr_sonar_filtered - range_finder.distance) > params.sonar_err)
-                                            //    mavlink_log_info(mavlink_fd, "New ground: val%.3f corr: %.3f", (double)range_finder.distance, (double)corr_sonar_filtered);
                                             corr_sonar_filtered += (range_finder.distance - corr_sonar_filtered) * params.sonar_filt;
                                             // sonar_filt could have high tolerance for row value now
                                             sonar_valid = true;
                                             sonar_valid_time = t;
                                             dist_bottom = corr_sonar_filtered;
                                             sonar_prev = range_finder.distance;
-                                            //mavlink_log_info(mavlink_fd, "Sonar: %.3f", (double)dist_bottom);
                                         }
                                         else {
                                             // This difference in not accepted, considering as a spike for now
@@ -555,16 +552,10 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                                                 dist_bottom = corr_sonar_filtered;
                                                 sonar_valid = true;
                                                 sonar_valid_time = t;
-                                                //mavlink_log_info(mavlink_fd,"Lat time spike: %.3f filt: %.3f", 
-                                                //        (double)sonar_prev,
-                                                //        (double)corr_sonar_filtered);
                                             }
                                             else {
                                                 // This is spike! Busted!
                                                 // BUT if it is the new ground level it will pass the IF on the next read
-                                                //mavlink_log_info(mavlink_fd, "Spike! filt: %.3f, son: %.3f", 
-                                                //        (double)corr_sonar_filtered, 
-                                                //        (double)range_finder.distance);
                                                 sonar_valid = true;
                                                 dist_bottom = corr_sonar_filtered;
                                             }
@@ -573,7 +564,6 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                                         break;
                                }
                             case RANGE_FINDER_TYPE_LASER: {
-                                    //fprintf(stderr, "This is laser publishing %.3f\n", (double)range_finder.distance);
 
                                         float angle_correction = 1;
                                         if (att.R[2][2] < 0.85f) {
@@ -586,15 +576,12 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                                         if (fabsf(range_finder.distance - sonar_prev) < params.sonar_err) {
                                             // Accepted difference - enabling LPF and stuff
                                             
-                                            //if (fabsf(corr_sonar_filtered - range_finder.distance) > params.sonar_err)
-                                            //    mavlink_log_info(mavlink_fd, "New ground: val%.3f corr: %.3f", (double)range_finder.distance, (double)corr_sonar_filtered);
                                             corr_sonar_filtered += (range_finder.distance - corr_sonar_filtered) * params.sonar_filt;
                                             // sonar_filt could have high tolerance for row value now
                                             sonar_valid = true;
                                             sonar_valid_time = t;
                                             dist_bottom = corr_sonar_filtered;
                                             sonar_prev = range_finder.distance;
-                                            //mavlink_log_info(mavlink_fd, "Sonar: %.3f", (double)dist_bottom);
                                         }
                                         else {
                                             // This difference in not accepted, considering as a spike for now
@@ -604,16 +591,10 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                                                 dist_bottom = corr_sonar_filtered;
                                                 sonar_valid = true;
                                                 sonar_valid_time = t;
-                                                //mavlink_log_info(mavlink_fd,"Lat time spike: %.3f filt: %.3f", 
-                                                //        (double)sonar_prev,
-                                                //        (double)corr_sonar_filtered);
                                             }
                                             else {
                                                 // This is spike! Busted!
                                                 // BUT if it is the new ground level it will pass the IF on the next read
-                                                //mavlink_log_info(mavlink_fd, "Spike! filt: %.3f, son: %.3f", 
-                                                //        (double)corr_sonar_filtered, 
-                                                //        (double)range_finder.distance);
                                                 sonar_valid = true;
                                                 dist_bottom = corr_sonar_filtered;
                                             }
@@ -868,8 +849,6 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 			sonar_valid = false;
 			warnx("SONAR timeout");
             sonar_prev = 0.0f;
-		}
-		else if (sonar_valid) {
 		}
 
 		float dt = t_prev > 0 ? (t - t_prev) / 1000000.0f : 0.0f;
