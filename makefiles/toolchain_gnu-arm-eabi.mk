@@ -129,8 +129,8 @@ ARCHOPTIMIZATION	 = $(MAXOPTIMIZATION) \
 			   -fomit-frame-pointer \
 			   -funsafe-math-optimizations \
 			   -fno-builtin-printf \
-			   # -ffunction-sections \
-			   # -fdata-sections
+			   -ffunction-sections \
+			   -fdata-sections
 
 # enable precise stack overflow tracking
 # note - requires corresponding support in NuttX
