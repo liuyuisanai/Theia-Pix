@@ -81,10 +81,11 @@
 #define LL905_MEASURE_REG		0x00		/* Measure range register */
 #define LL905_MSRREG_ACQUIRE	0x04		/* Value to initiate a measurement, varies based on sensor revision */
 #define LL905_DISTHIGH_REG		0x8F		/* High byte of distance register, auto increment */
+#define LL905_RESET_FPGA        0x0         /* Reset FPGA. Reloads FPGA from internal Flash memory – all registers return to default values */
 
 /* Device limits */
 #define LL905_MIN_DISTANCE (0.10f)
-#define LL905_MAX_DISTANCE (19.00f)
+#define LL905_MAX_DISTANCE (10.00f)
 
 #define LL905_CONVERSION_INTERVAL 100000 /* 100ms */
 
@@ -141,6 +142,13 @@ private:
 	* @return		True if the device is present.
 	*/
 	int					probe_address(uint8_t address);
+    
+    /**
+     * Reset the device and start a new cycle
+     *
+     * @author Max <max@airdog.com>
+     */
+    int                reset_device();
 
 	/**
 	* Initialise the automatic measurement state machine and start it.
@@ -551,6 +559,25 @@ LL905::collect()
 	return ret;
 }
 
+int
+LL905::reset_device()
+{
+	int ret = OK;
+
+	/*
+	 * Send the command to reset a device.
+	 */
+	const uint8_t cmd[2] = { LL905_MEASURE_REG, LL905_RESET_FPGA };
+	ret = transfer(cmd, sizeof(cmd), nullptr, 0);
+
+	if (OK != ret) {
+		perf_count(_comms_errors);
+		log("i2c::transfer returned %d", ret);
+		return ret;
+	}
+
+    return ret;
+}
 void
 LL905::start()
 {
