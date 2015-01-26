@@ -63,19 +63,20 @@ SubscriberExample::SubscriberExample() :
 
 	/* Do some subscriptions */
 	/* Function */
-	_n.subscribe<px4_rc_channels>(std::bind(rc_channels_callback_function, std::placeholders::_1), _interval);
+	// _n.subscribe<px4_rc_channels>(std::bind(rc_channels_callback_function, std::placeholders::_1), _interval);
 
 	/* No callback */
 	_sub_rc_chan = _n.subscribe<px4_rc_channels>(500);
-
-	/* Class Method */
-	_n.subscribe<px4_rc_channels>(std::bind(&SubscriberExample::rc_channels_callback, this, std::placeholders::_1), 1000);
 
 /* Class Method 2 */
 	_n.subscribe<px4_vehicle_attitude>(std::bind(&SubscriberExample::vehicle_attitude_callback, this, std::placeholders::_1), 1000);
 
 	/* Class Method 3 */
-	// _n.subscribe<px4_vehicle_rates_setpoint>(std::bind(&SubscriberExample::vehicle_rates_setpoint_callback, this, std::placeholders::_1), 1000);
+	_n.subscribe<px4_vehicle_rates_setpoint>(std::bind(&SubscriberExample::vehicle_rates_setpoint_callback, this, std::placeholders::_1), 1000);
+
+	// [> Class Method <]
+	// _n.subscribe<px4_rc_channels>(std::bind(&SubscriberExample::rc_channels_callback, this, std::placeholders::_1), 1000);
+
 
 	PX4_INFO("subscribed");
 }
