@@ -59,6 +59,8 @@ protected:
 	px4::Subscriber<px4_rc_channels> * _sub_rc_chan;
 
 	void rc_channels_callback(const px4_rc_channels &msg);
+	void vehicle_attitude_callback(const px4_vehicle_attitude &msg);
+	void vehicle_rates_setpoint_callback(const px4_vehicle_rates_setpoint &msg);
 
 
 };

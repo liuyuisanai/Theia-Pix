@@ -56,9 +56,9 @@ MODULES		+= systemcmds/ver
 # Example modules
 #
 MODULES		+= examples/matlab_csv_serial
-# MODULES		+= examples/subscriber
-# MODULES		+= examples/publisher
-MODULES		+= modules/mc_att_control_multiplatform
+MODULES		+= examples/subscriber
+MODULES		+= examples/publisher
+# MODULES		+= modules/mc_att_control_multiplatform
 
 #
 # Library modules

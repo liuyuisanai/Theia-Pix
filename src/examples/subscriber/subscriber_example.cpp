@@ -71,6 +71,12 @@ SubscriberExample::SubscriberExample() :
 	/* Class Method */
 	_n.subscribe<px4_rc_channels>(std::bind(&SubscriberExample::rc_channels_callback, this, std::placeholders::_1), 1000);
 
+/* Class Method 2 */
+	_n.subscribe<px4_vehicle_attitude>(std::bind(&SubscriberExample::vehicle_attitude_callback, this, std::placeholders::_1), 1000);
+
+	/* Class Method 3 */
+	// _n.subscribe<px4_vehicle_rates_setpoint>(std::bind(&SubscriberExample::vehicle_rates_setpoint_callback, this, std::placeholders::_1), 1000);
+
 	PX4_INFO("subscribed");
 }
 
@@ -83,4 +89,14 @@ void SubscriberExample::rc_channels_callback(const px4_rc_channels &msg) {
 			msg.data().timestamp_last_valid);
 	PX4_INFO("Callback (method): value of _sub_rc_chan: [%llu]",
 			_sub_rc_chan->data().timestamp_last_valid);
+}
+
+void SubscriberExample::vehicle_attitude_callback(const px4_vehicle_attitude &msg) {
+	PX4_INFO("Callback (method): [%llu]",
+			msg.data().timestamp);
+}
+
+void SubscriberExample::vehicle_rates_setpoint_callback(const px4_vehicle_rates_setpoint &msg) {
+	PX4_INFO("Callback (method): [%llu]",
+			msg.data().timestamp);
 }
