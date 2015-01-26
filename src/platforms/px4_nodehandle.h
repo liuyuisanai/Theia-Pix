@@ -42,6 +42,7 @@
 #include "px4_subscriber.h"
 #include "px4_publisher.h"
 #include "px4_middleware.h"
+#include "px4_includes.h"
 
 #if defined(__PX4_ROS)
 /* includes when building for ros */
@@ -80,9 +81,9 @@ public:
 	 * @param fb		Callback, executed on receiving a new message
 	 */
 	template<typename T>
-	Subscriber<T> *subscribe(void(*fp)(const T &), unsigned interval)
+	Subscriber<T> *subscribe(std::function<void(const T &)> cbf, unsigned interval)
 	{
-		SubscriberBase *sub = new SubscriberROS<T>((ros::NodeHandle*)this, std::bind(fp, std::placeholders::_1));
+		SubscriberBase *sub = new SubscriberROS<T>((ros::NodeHandle*)this, cbf);
 		_subs.push_back(sub);
 		return (Subscriber<T> *)sub;
 	}
@@ -92,13 +93,13 @@ public:
 	 * @param fb		Callback, executed on receiving a new message
 	 * @param obj	        pointer class instance
 	 */
-	template<typename T, typename C>
-	Subscriber<T> *subscribe(void(C::*fp)(const T &), C *obj, unsigned interval)
-	{
-		SubscriberBase *sub = new SubscriberROS<T>((ros::NodeHandle*)this, std::bind(fp, obj, std::placeholders::_1));
-		_subs.push_back(sub);
-		return (Subscriber<T> *)sub;
-	}
+	// template<typename T, typename C>
+	// Subscriber<T> *subscribe(void(C::*fp)(const T &), C *obj, unsigned interval)
+	// {
+		// SubscriberBase *sub = new SubscriberROS<T>((ros::NodeHandle*)this, std::bind(fp, obj, std::placeholders::_1));
+		// _subs.push_back(sub);
+		// return (Subscriber<T> *)sub;
+	// }
 
 	/**
 	 * Subscribe with no callback, just the latest value is stored on updates
@@ -187,10 +188,10 @@ public:
 	 */
 
 	template<typename T>
-	Subscriber<T> *subscribe(void(*fp)(const T &),  unsigned interval)
+	Subscriber<T> *subscribe(std::function<void(const T &)> cbf,  unsigned interval)
 	{
 		(void)interval;
-		SubscriberUORBCallback<T> *sub_px4 = new SubscriberUORBCallback<T>(interval, std::bind(fp, std::placeholders::_1));
+		SubscriberUORBCallback<T> *sub_px4 = new SubscriberUORBCallback<T>(interval, cbf);
 		update_sub_min_interval(interval, sub_px4);
 		_subs.add((SubscriberNode *)sub_px4);
 		return (Subscriber<T> *)sub_px4;
@@ -201,15 +202,15 @@ public:
 	 * @param fb		Callback, executed on receiving a new message
 	 * @param obj	        pointer class instance
 	 */
-	template<typename T, typename C>
-	Subscriber<T> *subscribe(void(C::*fp)(const T &), C *obj, unsigned interval)
-	{
-		(void)interval;
-		SubscriberUORBCallback<T> *sub_px4 = new SubscriberUORBCallback<T>(interval, std::bind(fp, obj, std::placeholders::_1));
-		update_sub_min_interval(interval, sub_px4);
-		_subs.add((SubscriberNode *)sub_px4);
-		return (Subscriber<T> *)sub_px4;
-	}
+	// template<typename T, typename C>
+	// Subscriber<T> *subscribe(void(C::*fp)(const T &), C *obj, unsigned interval)
+	// {
+		// (void)interval;
+		// SubscriberUORBCallback<T> *sub_px4 = new SubscriberUORBCallback<T>(interval, std::bind(fp, obj, std::placeholders::_1));
+		// update_sub_min_interval(interval, sub_px4);
+		// _subs.add((SubscriberNode *)sub_px4);
+		// return (Subscriber<T> *)sub_px4;
+	// }
 
 	/**
 	 * Subscribe without callback to function

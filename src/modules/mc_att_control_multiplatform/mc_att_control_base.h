@@ -64,7 +64,7 @@
 
 using namespace px4;
 
-class MulticopterAttitudeControlBase
+class __EXPORT MulticopterAttitudeControlBase
 {
 public:
 	/**

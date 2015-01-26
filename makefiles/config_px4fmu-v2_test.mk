@@ -56,8 +56,9 @@ MODULES		+= systemcmds/ver
 # Example modules
 #
 MODULES		+= examples/matlab_csv_serial
-MODULES		+= examples/subscriber
-MODULES		+= examples/publisher
+# MODULES		+= examples/subscriber
+# MODULES		+= examples/publisher
+MODULES		+= modules/mc_att_control_multiplatform
 
 #
 # Library modules
@@ -65,6 +66,7 @@ MODULES		+= examples/publisher
 MODULES		+= modules/systemlib
 MODULES		+= modules/systemlib/mixer
 MODULES		+= modules/uORB
+MODULES		+= lib/geo
 MODULES		+= lib/mathlib
 MODULES		+= lib/mathlib/math/filter
 MODULES		+= lib/conversion

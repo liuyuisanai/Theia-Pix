@@ -40,6 +40,7 @@
 
 #include "subscriber_params.h"
 #include "subscriber_example.h"
+#include <functional>
 
 using namespace px4;
 
@@ -62,13 +63,13 @@ SubscriberExample::SubscriberExample() :
 
 	/* Do some subscriptions */
 	/* Function */
-	_n.subscribe<px4_rc_channels>(rc_channels_callback_function, _interval);
+	_n.subscribe<px4_rc_channels>(std::bind(rc_channels_callback_function, std::placeholders::_1), _interval);
 
 	/* No callback */
 	_sub_rc_chan = _n.subscribe<px4_rc_channels>(500);
 
 	/* Class Method */
-	_n.subscribe<px4_rc_channels>(&SubscriberExample::rc_channels_callback, this, 1000);
+	_n.subscribe<px4_rc_channels>(std::bind(&SubscriberExample::rc_channels_callback, this, std::placeholders::_1), 1000);
 
 	PX4_INFO("subscribed");
 }

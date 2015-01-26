@@ -63,8 +63,9 @@
 #include <lib/mathlib/mathlib.h>
 
 #include "mc_att_control_base.h"
+using namespace px4;
 
-class MulticopterAttitudeControl :
+class __EXPORT MulticopterAttitudeControl :
 	public MulticopterAttitudeControlBase
 {
 public:
