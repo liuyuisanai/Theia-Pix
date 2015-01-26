@@ -81,7 +81,7 @@ ARCHCPUFLAGS_CORTEXM3	 = -mcpu=cortex-m3 \
 			   -mfloat-abi=soft
 
 #
-# Tool to test a Nuttx Config value from config.h 
+# Tool to test a Nuttx Config value from config.h
 #
 
 NUTTX_CONFIG_H=$(WORK_DIR)nuttx-export/include/nuttx/config.h
@@ -94,7 +94,7 @@ nuttx_config_2true:="0 0"
 #
 # Enabling stack checks if OS was build with them
 #
-	   
+
 ENABLE_STACK_CHECKS=$(call check_nuttx_config ,"CONFIG_ARMV7M_STACKCHECK 1", $(NUTTX_CONFIG_H))
 ifeq ("$(ENABLE_STACK_CHECKS)",$(nuttx_config_true))
 ARCHINSTRUMENTATIONDEFINES_CORTEXM4F = -finstrument-functions -ffixed-r10
@@ -184,8 +184,7 @@ ARCHWARNINGSXX		 = $(ARCHWARNINGS) \
 
 # pull in *just* libm from the toolchain ... this is grody
 LIBM			:= $(shell $(CC) $(ARCHCPUFLAGS) -print-file-name=libm.a)
-LIBC			:= $(shell $(CC) $(ARCHCPUFLAGS) -print-file-name=libc.a)
-EXTRA_LIBS		+= $(LIBM) $(LIBC)
+EXTRA_LIBS		+= $(LIBM)
 
 # Flags we pass to the C compiler
 #
