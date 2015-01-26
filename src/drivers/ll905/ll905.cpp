@@ -84,7 +84,7 @@
 
 /* Device limits */
 #define LL905_MIN_DISTANCE (0.10f)
-#define LL905_MAX_DISTANCE (60.00f)
+#define LL905_MAX_DISTANCE (19.00f)
 
 #define LL905_CONVERSION_INTERVAL 100000 /* 100ms */
 

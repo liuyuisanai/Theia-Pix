@@ -1228,8 +1228,6 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
             // Check if we are moving too fast while standing on the ground
             // Preventing arm while GPS correction over initial position is happening
             if (fabsf(x_est[1]) > params.ok_drift || fabsf(y_est[1]) > params.ok_drift) {
-                mavlink_log_info(mavlink_fd, "[inav] x:%.3f y:%.3f"
-                        , (double) x_est[1], (double) y_est[1]);
                 can_estimate_xy = false;
                 no_drift_valid[0] = XY_DRIFT_VALIDATION_TIMES;
             } else {
@@ -1240,8 +1238,6 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
             }
 
             if (fabsf(z_est[1]) > params.ok_drift) {
-                mavlink_log_info(mavlink_fd, "[inav] z:%.3f"
-                        , (double) z_est[1]);
                 local_pos.z_valid = false;
                 no_drift_valid[1] = Z_DRIFT_VALIDATION_TIMES;
             } else {
