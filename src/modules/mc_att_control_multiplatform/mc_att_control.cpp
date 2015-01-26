@@ -110,8 +110,8 @@ MulticopterAttitudeControl::MulticopterAttitudeControl() :
 	_v_att_sp = _n.subscribe<px4_vehicle_attitude_setpoint>(0);
 	_v_rates_sp = _n.subscribe<px4_vehicle_rates_setpoint>(0);
 	_v_control_mode = _n.subscribe<px4_vehicle_control_mode>(0);
-	// _parameter_update = _n.subscribe<px4_parameter_update>(
-			// std::bind(&MulticopterAttitudeControl::handle_parameter_update, this, std::placeholders::_1), 1000);
+	_parameter_update = _n.subscribe<px4_parameter_update>(
+			std::bind(&MulticopterAttitudeControl::handle_parameter_update, this, std::placeholders::_1), 1000);
 	_manual_control_sp = _n.subscribe<px4_manual_control_setpoint>(0);
 	_armed = _n.subscribe<px4_actuator_armed>(0);
 	_v_status = _n.subscribe<px4_vehicle_status>(0);
