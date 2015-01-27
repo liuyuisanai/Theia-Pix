@@ -244,15 +244,14 @@ do_mag(int argc, char *argv[])
 
 			if (ret) {
 				warnx("mag self test FAILED! Check calibration:");
-				struct mag_scale scale;
-				ret = ioctl(fd, MAGIOCGSCALE, (long unsigned int)&scale);
+				mag_calibration_s calibration;
+				ret = ioctl(fd, MAGIOCGSCALE, (long unsigned int)&calibration);
 
 				if (ret) {
 					err(ret, "failed getting mag scale");
 				}
 
-				warnx("offsets: X: % 9.6f Y: % 9.6f Z: % 9.6f", (double)scale.x_offset, (double)scale.y_offset, (double)scale.z_offset);
-				warnx("scale:   X: % 9.6f Y: % 9.6f Z: % 9.6f", (double)scale.x_scale, (double)scale.y_scale, (double)scale.z_scale);
+				print_calibration(calibration, 0);
 			} else {
 				warnx("mag calibration and self test OK");
 			}

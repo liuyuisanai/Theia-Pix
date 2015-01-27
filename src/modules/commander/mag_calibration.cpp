@@ -51,6 +51,7 @@
 #include <drivers/drv_hrt.h>
 #include <uORB/topics/sensor_combined.h>
 #include <drivers/drv_mag.h>
+#include <drivers/calibration/calibration.hpp>
 #include <mavlink/mavlink_log.h>
 #include <systemlib/param/param.h>
 #include <systemlib/err.h>
@@ -75,20 +76,13 @@ int do_mag_calibration(int mavlink_fd)
 	const unsigned int calibration_maxcount = 240;
 	unsigned int calibration_counter;
 
-	struct mag_scale mscale_null = {
-		0.0f,
-		1.0f,
-		0.0f,
-		1.0f,
-		0.0f,
-		1.0f,
-	};
+	mag_calibration_s calib_null;
 
 	int res = OK;
 
 	/* erase old calibration */
 	int fd = open(MAG_DEVICE_PATH, O_RDONLY);
-	res = ioctl(fd, MAGIOCSSCALE, (long unsigned int)&mscale_null);
+	res = ioctl(fd, MAGIOCSSCALE, (long unsigned int)&calib_null);
 
 	if (res != OK) {
 		mavlink_log_critical(mavlink_fd, CAL_FAILED_RESET_CAL_MSG);
@@ -228,21 +222,21 @@ int do_mag_calibration(int mavlink_fd)
 
 	if (res == OK) {
 		/* apply calibration and set parameters */
-		struct mag_scale mscale;
+		mag_calibration_s calibration;
 
 		fd = open(MAG_DEVICE_PATH, 0);
-		res = ioctl(fd, MAGIOCGSCALE, (long unsigned int)&mscale);
+		res = ioctl(fd, MAGIOCGSCALE, (long unsigned int)&calibration);
 
 		if (res != OK) {
 			mavlink_log_critical(mavlink_fd, "ERROR: failed to get current calibration");
 		}
 
 		if (res == OK) {
-			mscale.x_offset = sphere_x;
-			mscale.y_offset = sphere_y;
-			mscale.z_offset = sphere_z;
+			calibration.offsets(0) = sphere_x;
+			calibration.offsets(1) = sphere_y;
+			calibration.offsets(2) = sphere_z;
 
-			res = ioctl(fd, MAGIOCSSCALE, (long unsigned int)&mscale);
+			res = ioctl(fd, MAGIOCSSCALE, (long unsigned int)&calibration);
 
 			if (res != OK) {
 				mavlink_log_critical(mavlink_fd, CAL_FAILED_APPLY_CAL_MSG);
@@ -253,27 +247,7 @@ int do_mag_calibration(int mavlink_fd)
 
 		if (res == OK) {
 			/* set parameters */
-			if (param_set(param_find("SENS_MAG_XOFF"), &(mscale.x_offset))) {
-				res = ERROR;
-			}
-
-			if (param_set(param_find("SENS_MAG_YOFF"), &(mscale.y_offset))) {
-				res = ERROR;
-			}
-
-			if (param_set(param_find("SENS_MAG_ZOFF"), &(mscale.z_offset))) {
-				res = ERROR;
-			}
-
-			if (param_set(param_find("SENS_MAG_XSCALE"), &(mscale.x_scale))) {
-				res = ERROR;
-			}
-
-			if (param_set(param_find("SENS_MAG_YSCALE"), &(mscale.y_scale))) {
-				res = ERROR;
-			}
-
-			if (param_set(param_find("SENS_MAG_ZSCALE"), &(mscale.z_scale))) {
+			if (!set_calibration_parameters(calibration)) {
 				res = ERROR;
 			}
 
@@ -293,10 +267,7 @@ int do_mag_calibration(int mavlink_fd)
 			}
 		}
 
-		mavlink_log_info(mavlink_fd, "mag off: x:%.2f y:%.2f z:%.2f Ga", (double)mscale.x_offset,
-				 (double)mscale.y_offset, (double)mscale.z_offset);
-		mavlink_log_info(mavlink_fd, "mag scale: x:%.2f y:%.2f z:%.2f", (double)mscale.x_scale,
-				 (double)mscale.y_scale, (double)mscale.z_scale);
+		print_calibration(calibration, mavlink_fd);
 
 		if (res == OK) {
 			mavlink_log_info(mavlink_fd, CAL_DONE_MSG, sensor_name);

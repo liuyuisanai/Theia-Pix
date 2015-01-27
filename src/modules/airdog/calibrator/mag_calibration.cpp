@@ -1,6 +1,7 @@
 #include <nuttx/config.h>
 
 #include <drivers/drv_mag.h>
+#include <drivers/calibration/calibration.hpp>
 #include <errno.h>
 #include <fcntl.h>
 #include <float.h>
@@ -36,20 +37,20 @@ inline void calc_stats(mag_report &report, sample_stat_s &res_stats);
 inline void average_stats(sample_stat_s &res_stats);
 
 // Original method trying to fit the samples into a sphere
-bool sphere_fit_least_squares(sample_stat_s res_stats, float &sphere_x, float &sphere_y, float &sphere_z);
+bool sphere_fit_least_squares(sample_stat_s &res_stats, math::Vector<3> &sphere_center);
 
 /**
  * Try to restore sensor to the state before the calibration
  * If reset_scale is true, then magnetometer scale will be reset to parameter values
  */
-inline void cleanup(int fd, bool reset_scale) {
-	mag_scale saved_scale;
-	if (reset_scale && !param_get(param_find("SENS_MAG_SCALE"), &saved_scale)) {
+inline void cleanup(int fd, bool reset_calibration) {
+	mag_calibration_s saved_calibration;
+	if (reset_calibration && get_calibration_parameters(&saved_calibration)) {
 		if (fd <= 0) {
 			fd = open(MAG_DEVICE_PATH, O_RDONLY);
 		}
 		// Errors are ignored - there is not much we can do about them.
-		ioctl(fd, MAGIOCSSCALE, (long unsigned int) &saved_scale);
+		ioctl(fd, MAGIOCSSCALE, (long unsigned int) &saved_calibration);
 	}
 	if (fd > 0) {
 		close(fd);
@@ -61,15 +62,8 @@ CALIBRATION_RESULT do_mag_builtin_calibration() {
 	if (ioctl(fd, MAGIOCCALIBRATE, fd) != 0) {
 		// This still is not critical - it is possible internal calibration is not available
 		// Internal calibration routines should reset calibration to previous values in case of failure
-		mag_scale zero_scale = {
-			0.0f,
-			1.0f,
-			0.0f,
-			1.0f,
-			0.0f,
-			1.0f
-		};
-		if (ioctl(fd, MAGIOCSSCALE, (unsigned long int) &zero_scale) != 0) {
+		mag_calibration_s zero_calibration;
+		if (ioctl(fd, MAGIOCSSCALE, (unsigned long int) &zero_calibration) != 0) {
 			// This is critical, but still no need to reset the calibration to previous values
 			cleanup(fd,false);
 			return (CALIBRATION_RESULT::SCALE_RESET_FAIL);
@@ -82,13 +76,13 @@ CALIBRATION_RESULT do_mag_builtin_calibration() {
 
 CALIBRATION_RESULT do_mag_offset_calibration(unsigned int sample_count, unsigned int max_error_count, unsigned int total_time, int poll_timeout_gap) {
 
-	mag_scale calibration_scale;
+	mag_calibration_s calibration;
 	int fd;
-	sample_stat_s res_stats = {};
+	sample_stat_s res_stats;
 
 	// Get calibration values
 	fd = open(MAG_DEVICE_PATH, O_RDONLY);
-	if (ioctl(fd, MAGIOCGSCALE, (long unsigned int) &calibration_scale) != 0) {
+	if (ioctl(fd, MAGIOCGSCALE, (long unsigned int) &calibration) != 0) {
 		cleanup(fd, true);
 		return(CALIBRATION_RESULT::SCALE_READ_FAIL);
 	}
@@ -99,16 +93,16 @@ CALIBRATION_RESULT do_mag_offset_calibration(unsigned int sample_count, unsigned
 		return(CALIBRATION_RESULT::SENSOR_DATA_FAIL);
 	}
 
-	sphere_fit_least_squares(res_stats, calibration_scale.x_offset, calibration_scale.y_offset, calibration_scale.z_offset);
+	sphere_fit_least_squares(res_stats, calibration.offsets);
 
 	// Set calibration parameters
-	if (param_set(param_find("SENS_MAG_SCALE"), &calibration_scale)) {
+	if (!set_calibration_parameters(calibration)) {
 		cleanup(fd, true);
 		return(CALIBRATION_RESULT::PARAMETER_SET_FAIL);
 	}
 
 	// Apply new calibration values to the driver
-	if (ioctl(fd, MAGIOCSSCALE, (long unsigned int) &calibration_scale) != 0) {
+	if (ioctl(fd, MAGIOCSSCALE, (long unsigned int) &calibration) != 0) {
 		cleanup(fd, false);
 		return(CALIBRATION_RESULT::SCALE_APPLY_FAIL);
 	}
@@ -222,7 +216,7 @@ inline void average_stats(sample_stat_s &res_stats) {
 	res_stats.z2y_sum /= res_stats.sample_count;
 }
 
-bool sphere_fit_least_squares(sample_stat_s res_stats, float &sphere_x, float &sphere_y, float &sphere_z)
+bool sphere_fit_least_squares(sample_stat_s &res_stats, math::Vector<3> &sphere_center)
 {
 	//
 	//Least Squares Fit a sphere A,B,C with radius squared Rsq to 3D data
@@ -319,9 +313,9 @@ bool sphere_fit_least_squares(sample_stat_s res_stats, float &sphere_x, float &s
 		Q2 = 8.0f * (QS - Rsq + QB + F0);
 	}
 
-	sphere_x = A;
-	sphere_y = B;
-	sphere_z = C;
+	sphere_center(0) = A;
+	sphere_center(1) = B;
+	sphere_center(2) = C;
 	// *sphere_radius = sqrtf(Rsq);
 
 	return true;

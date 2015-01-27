@@ -251,45 +251,28 @@ inline void print_results(CALIBRATION_RESULT res, const char* sensor_type, const
 
 inline void print_scales(SENSOR_TYPE sensor, int mavlink_fd) {
 	calibration_values_s calibration;
-	int dev_fd;
+	int dev_fd = 0;
+	int ioctl_cmd = 0;
 
 	switch (sensor) {
 	case SENSOR_TYPE::GYRO:
 		dev_fd = open(GYRO_DEVICE_PATH, O_RDONLY);
-		if (ioctl(dev_fd, GYROIOCGSCALE, (unsigned long) &calibration) == 0) {
-			print_calibration(calibration, mavlink_fd);
-		}
+		ioctl_cmd = GYROIOCGSCALE;
 		break;
 	case SENSOR_TYPE::MAG:
-		print_scales_helper <mag_scale> (MAG_DEVICE_PATH, MAGIOCGSCALE, mavlink_fd);
+		dev_fd = open(MAG_DEVICE_PATH, O_RDONLY);
+		ioctl_cmd = MAGIOCGSCALE;
 		break;
 	case SENSOR_TYPE::ACCEL:
 		dev_fd = open(ACCEL_DEVICE_PATH, O_RDONLY);
-		if (ioctl(dev_fd, ACCELIOCGSCALE, (unsigned long) &calibration) == 0) {
-			print_calibration(calibration, mavlink_fd);
-		}
+		ioctl_cmd = ACCELIOCGSCALE;
 		break;
 	}
-}
-
-template <class scale_T> void print_scales_helper(const char* device_path, int command, int mavlink_fd) {
-	scale_T scale;
-	int dev_fd = open(device_path, O_RDONLY);
-	if (ioctl(dev_fd, command, (unsigned long) &scale) == 0) {
-		printf("Result offsets: X: % 9.6f, Y: % 9.6f, Z: % 9.6f.\nResult scales:  X: % 9.6f, Y: % 9.6f, Z: % 9.6f.\n",
-				(double) scale.x_offset, (double) scale.y_offset, (double) scale.z_offset,
-				(double) scale.x_scale, (double) scale.y_scale, (double) scale.z_scale);
-		if (mavlink_fd != 0) {
-			mavlink_log_info(mavlink_fd, "Result offsets:\n");
-			mavlink_log_info(mavlink_fd, "X: % 9.6f, Y: % 9.6f, Z: % 9.6f.\n",
-				(double) scale.x_offset, (double) scale.y_offset, (double) scale.z_offset);
-			mavlink_log_info(mavlink_fd, "Result scales:\n");
-			mavlink_log_info(mavlink_fd, "X: % 9.6f, Y: % 9.6f, Z: % 9.6f.\n",
-				(double) scale.x_scale, (double) scale.y_scale, (double) scale.z_scale);
-		}
+	if (ioctl(dev_fd, ioctl_cmd, (unsigned long) &calibration) == 0) {
+		print_calibration(calibration, mavlink_fd);
 	}
-
 }
+
 } // End calibration namespace
 
 // Execution messages

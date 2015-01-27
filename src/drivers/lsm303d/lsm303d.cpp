@@ -279,7 +279,7 @@ private:
 	unsigned		_accel_samplerate;
 	unsigned		_accel_onchip_filter_bandwith;
 
-	struct mag_scale	_mag_scale;
+	mag_calibration_s _mag_calibration;
 	unsigned		_mag_range_ga;
 	float			_mag_range_scale;
 	unsigned		_mag_samplerate;
@@ -518,7 +518,7 @@ LSM303D::LSM303D(int bus, const char* path, spi_dev_e device, enum Rotation rota
 	_accel_range_scale(0.0f),
 	_accel_samplerate(0),
 	_accel_onchip_filter_bandwith(0),
-	_mag_scale{},
+	_mag_calibration{},
 	_mag_range_ga(0.0f),
 	_mag_range_scale(0.0f),
 	_mag_samplerate(0),
@@ -551,13 +551,6 @@ LSM303D::LSM303D(int bus, const char* path, spi_dev_e device, enum Rotation rota
 
 	// enable debug() calls
 	_debug_enabled = true;
-
-	_mag_scale.x_offset = 0.0f;
-	_mag_scale.x_scale = 1.0f;
-	_mag_scale.y_offset = 0.0f;
-	_mag_scale.y_scale = 1.0f;
-	_mag_scale.z_offset = 0.0f;
-	_mag_scale.z_scale = 1.0f;
 }
 
 LSM303D::~LSM303D()
@@ -1159,12 +1152,14 @@ LSM303D::mag_ioctl(struct file *filp, int cmd, unsigned long arg)
 
 	case MAGIOCSSCALE:
 		/* copy scale in */
-		memcpy(&_mag_scale, (struct mag_scale *) arg, sizeof(_mag_scale));
+		// memcpy(&_mag_scale, (struct mag_scale *) arg, sizeof(_mag_scale));
+		_mag_calibration = *((mag_calibration_s *) arg);
 		return OK;
 
 	case MAGIOCGSCALE:
 		/* copy scale out */
-		memcpy((struct mag_scale *) arg, &_mag_scale, sizeof(_mag_scale));
+		// memcpy((struct mag_scale *) arg, &_mag_scale, sizeof(_mag_scale));
+		*((mag_calibration_s *) arg) = _mag_calibration;
 		return OK;
 
 	case MAGIOCSRANGE:
@@ -1221,13 +1216,13 @@ LSM303D::mag_self_test()
 	 * inspect mag offsets
 	 * don't check mag scale because it seems this is calibrated on chip
 	 */
-	if (fabsf(_mag_scale.x_offset) < 0.000001f)
+	if (fabsf(_mag_calibration.offsets(0)) < 0.000001f)
 		return 1;
 
-	if (fabsf(_mag_scale.y_offset) < 0.000001f)
+	if (fabsf(_mag_calibration.offsets(1)) < 0.000001f)
 		return 1;
 
-	if (fabsf(_mag_scale.z_offset) < 0.000001f)
+	if (fabsf(_mag_calibration.offsets(2)) < 0.000001f)
 		return 1;
 
 	return 0;
@@ -1654,9 +1649,9 @@ LSM303D::mag_measure()
 	mag_report.x_raw = raw_mag_report.x;
 	mag_report.y_raw = raw_mag_report.y;
 	mag_report.z_raw = raw_mag_report.z;
-	mag_report.x = ((mag_report.x_raw * _mag_range_scale) - _mag_scale.x_offset) * _mag_scale.x_scale;
-	mag_report.y = ((mag_report.y_raw * _mag_range_scale) - _mag_scale.y_offset) * _mag_scale.y_scale;
-	mag_report.z = ((mag_report.z_raw * _mag_range_scale) - _mag_scale.z_offset) * _mag_scale.z_scale;
+	mag_report.x = ((mag_report.x_raw * _mag_range_scale) - _mag_calibration.offsets(0)) * _mag_calibration.scales(0);
+	mag_report.y = ((mag_report.y_raw * _mag_range_scale) - _mag_calibration.offsets(1)) * _mag_calibration.scales(1);
+	mag_report.z = ((mag_report.z_raw * _mag_range_scale) - _mag_calibration.offsets(2)) * _mag_calibration.scales(2);
 	mag_report.scaling = _mag_range_scale;
 	mag_report.range_ga = (float)_mag_range_ga;
 

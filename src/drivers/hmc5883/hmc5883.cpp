@@ -64,6 +64,7 @@
 #include <systemlib/err.h>
 
 #include <drivers/drv_mag.h>
+#include <drivers/calibration/calibration.hpp>
 #include <drivers/drv_hrt.h>
 #include <drivers/device/ringbuffer.h>
 
@@ -166,7 +167,7 @@ private:
 	unsigned		_measure_ticks;
 
 	RingBuffer		*_reports;
-	mag_scale		_scale;
+	mag_calibration_s		_calibration;
 	float 			_range_scale;
 	float 			_range_ga;
 	bool			_collect_phase;
@@ -366,7 +367,7 @@ HMC5883::HMC5883(int bus, const char *path, enum Rotation rotation) :
 	_work{},
 	_measure_ticks(0),
 	_reports(nullptr),
-	_scale{},
+	_calibration{},
 	_range_scale(0), /* default range scale from counts to gauss */
 	_range_ga(1.3f),
 	_collect_phase(false),
@@ -391,14 +392,6 @@ HMC5883::HMC5883(int bus, const char *path, enum Rotation rotation) :
 
 	// enable debug() calls
 	_debug_enabled = false;
-
-	// default scaling
-	_scale.x_offset = 0;
-	_scale.x_scale = 1.0f;
-	_scale.y_offset = 0;
-	_scale.y_scale = 1.0f;
-	_scale.z_offset = 0;
-	_scale.z_scale = 1.0f;
 
 	// work_cancel in the dtor will explode if we don't do this...
 	memset(&_work, 0, sizeof(_work));
@@ -760,14 +753,16 @@ HMC5883::ioctl(struct file *filp, int cmd, unsigned long arg)
 
 	case MAGIOCSSCALE:
 		/* set new scale factors */
-		memcpy(&_scale, (mag_scale *)arg, sizeof(_scale));
+		// memcpy(&_scale, (mag_scale *)arg, sizeof(_scale));
+		_calibration = *((mag_calibration_s *) arg);
 		/* check calibration, but not actually return an error */
 		(void)check_calibration();
 		return 0;
 
 	case MAGIOCGSCALE:
 		/* copy out scale factors */
-		memcpy((mag_scale *)arg, &_scale, sizeof(_scale));
+		// memcpy((mag_scale *)arg, &_scale, sizeof(_scale));
+		*((mag_calibration_s *) arg) = _calibration;
 		return 0;
 
 	case MAGIOCCALIBRATE:
@@ -970,11 +965,11 @@ HMC5883::collect()
 	/* the standard external mag by 3DR has x pointing to the
 	 * right, y pointing backwards, and z down, therefore switch x
 	 * and y and invert y */
-	new_report.x = ((-report.y * _range_scale) - _scale.x_offset) * _scale.x_scale;
+	new_report.x = ((-report.y * _range_scale) - _calibration.offsets(0)) * _calibration.scales(0);
 	/* flip axes and negate value for y */
-	new_report.y = ((report.x * _range_scale) - _scale.y_offset) * _scale.y_scale;
+	new_report.y = ((report.x * _range_scale) - _calibration.offsets(1)) * _calibration.scales(1);
 	/* z remains z */
-	new_report.z = ((report.z * _range_scale) - _scale.z_offset) * _scale.z_scale;
+	new_report.z = ((report.z * _range_scale) - _calibration.offsets(2)) * _calibration.scales(2);
 
 	// apply user specified rotation
 	rotate_3f(_rotation, new_report.x, new_report.y, new_report.z);
@@ -1034,23 +1029,9 @@ int HMC5883::calibrate(struct file *filp, unsigned enable)
 	// XXX do something smarter here
 	int fd = (int)enable;
 
-	struct mag_scale mscale_previous = {
-		0.0f,
-		1.0f,
-		0.0f,
-		1.0f,
-		0.0f,
-		1.0f,
-	};
+	mag_calibration_s calib_previous;
 
-	struct mag_scale mscale_null = {
-		0.0f,
-		1.0f,
-		0.0f,
-		1.0f,
-		0.0f,
-		1.0f,
-	};
+	mag_calibration_s calib_null;
 
 	float sum_excited[3] = {0.0f, 0.0f, 0.0f};
 
@@ -1084,13 +1065,13 @@ int HMC5883::calibrate(struct file *filp, unsigned enable)
 		goto out;
 	}
 
-	if (OK != ioctl(filp, MAGIOCGSCALE, (long unsigned int)&mscale_previous)) {
+	if (OK != ioctl(filp, MAGIOCGSCALE, (long unsigned int)&calib_previous)) {
 		warn("WARNING: failed to get scale / offsets for mag");
 		ret = 1;
 		goto out;
 	}
 
-	if (OK != ioctl(filp, MAGIOCSSCALE, (long unsigned int)&mscale_null)) {
+	if (OK != ioctl(filp, MAGIOCSSCALE, (long unsigned int)&calib_null)) {
 		warn("WARNING: failed to set null scale / offsets for mag");
 		ret = 1;
 		goto out;
@@ -1182,15 +1163,15 @@ int HMC5883::calibrate(struct file *filp, unsigned enable)
 	warnx("axes scaling: %.6f  %.6f  %.6f", (double)scaling[0], (double)scaling[1], (double)scaling[2]);
 
 	/* set scaling in device */
-	mscale_previous.x_scale = scaling[0];
-	mscale_previous.y_scale = scaling[1];
-	mscale_previous.z_scale = scaling[2];
+	calib_previous.scales(0) = scaling[0];
+	calib_previous.scales(1) = scaling[1];
+	calib_previous.scales(2) = scaling[2];
 
 	ret = OK;
 
 out:
 
-	if (OK != ioctl(filp, MAGIOCSSCALE, (long unsigned int)&mscale_previous)) {
+	if (OK != ioctl(filp, MAGIOCSSCALE, (long unsigned int)&calib_previous)) {
 		warn("failed to set new scale / offsets for mag");
 	}
 
@@ -1223,9 +1204,9 @@ int HMC5883::check_scale()
 {
 	bool scale_valid;
 
-	if ((-FLT_EPSILON + 1.0f < _scale.x_scale && _scale.x_scale < FLT_EPSILON + 1.0f) &&
-		(-FLT_EPSILON + 1.0f < _scale.y_scale && _scale.y_scale < FLT_EPSILON + 1.0f) &&
-		(-FLT_EPSILON + 1.0f < _scale.z_scale && _scale.z_scale < FLT_EPSILON + 1.0f)) {
+	if ((-FLT_EPSILON + 1.0f < _calibration.scales(0) && _calibration.scales(0) < FLT_EPSILON + 1.0f) &&
+		(-FLT_EPSILON + 1.0f < _calibration.scales(1) && _calibration.scales(1) < FLT_EPSILON + 1.0f) &&
+		(-FLT_EPSILON + 1.0f < _calibration.scales(2) && _calibration.scales(2) < FLT_EPSILON + 1.0f)) {
 		/* scale is one */
 		scale_valid = false;
 	} else {
@@ -1240,9 +1221,9 @@ int HMC5883::check_offset()
 {
 	bool offset_valid;
 
-	if ((-2.0f * FLT_EPSILON < _scale.x_offset && _scale.x_offset < 2.0f * FLT_EPSILON) &&
-		(-2.0f * FLT_EPSILON < _scale.y_offset && _scale.y_offset < 2.0f * FLT_EPSILON) &&
-		(-2.0f * FLT_EPSILON < _scale.z_offset && _scale.z_offset < 2.0f * FLT_EPSILON)) {
+	if ((-2.0f * FLT_EPSILON < _calibration.offsets(0) && _calibration.offsets(0) < 2.0f * FLT_EPSILON) &&
+		(-2.0f * FLT_EPSILON < _calibration.offsets(1) && _calibration.offsets(1) < 2.0f * FLT_EPSILON) &&
+		(-2.0f * FLT_EPSILON < _calibration.offsets(2) && _calibration.offsets(2) < 2.0f * FLT_EPSILON)) {
 		/* offset is zero */
 		offset_valid = false;
 	} else {
@@ -1355,9 +1336,9 @@ HMC5883::print_info()
 	perf_print_counter(_buffer_overflows);
 	printf("poll interval:  %u ticks\n", _measure_ticks);
 	printf("output  (%.2f %.2f %.2f)\n", (double)_last_report.x, (double)_last_report.y, (double)_last_report.z);
-	printf("offsets (%.2f %.2f %.2f)\n", (double)_scale.x_offset, (double)_scale.y_offset, (double)_scale.z_offset);
-	printf("scaling (%.2f %.2f %.2f) 1/range_scale %.2f range_ga %.2f\n",
-	       (double)_scale.x_scale, (double)_scale.y_scale, (double)_scale.z_scale,
+	printf("offsets (%.2f %.2f %.2f)\n", (double)_calibration.offsets(0), (double)_calibration.offsets(1), (double)_calibration.offsets(2));
+	printf("scaling (%.2f %.2f %.2f) 1/range_scale %.2f range_ga %.2f\n", 
+	       (double)_calibration.scales(0), (double)_calibration.scales(1), (double)_calibration.scales(2),
 	       (double)(1.0f/_range_scale), (double)_range_ga);
 	_reports->print_info("report queue");
 }

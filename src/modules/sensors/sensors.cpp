@@ -273,8 +273,7 @@ private:
 		float scaling_factor[_rc_max_chan_count];
 
 		gyro_calibration_s gyro_calibration;
-		float mag_offset[3];
-		float mag_scale[3];
+		mag_calibration_s mag_calibration;
 		accel_calibration_s accel_calibration;
 		float diff_pres_offset_pa;
 		float diff_pres_analog_scale;
@@ -338,8 +337,6 @@ private:
 		param_t rev[_rc_max_chan_count];
 		param_t dz[_rc_max_chan_count];
 
-		param_t mag_offset[3];
-		param_t mag_scale[3];
 		param_t diff_pres_offset_pa;
 		param_t diff_pres_analog_scale;
 
@@ -600,15 +597,6 @@ Sensors::Sensors() :
 	_parameter_handles.rc_offboard_th = param_find("RC_OFFB_TH");
 	_parameter_handles.rc_follow_th = param_find("RC_FOLLOW_TH");
 
-	/* mag offsets */
-	_parameter_handles.mag_offset[0] = param_find("SENS_MAG_XOFF");
-	_parameter_handles.mag_offset[1] = param_find("SENS_MAG_YOFF");
-	_parameter_handles.mag_offset[2] = param_find("SENS_MAG_ZOFF");
-
-	_parameter_handles.mag_scale[0] = param_find("SENS_MAG_XSCALE");
-	_parameter_handles.mag_scale[1] = param_find("SENS_MAG_YSCALE");
-	_parameter_handles.mag_scale[2] = param_find("SENS_MAG_ZSCALE");
-
 	/* Differential pressure offset */
 	_parameter_handles.diff_pres_offset_pa = param_find("SENS_DPRES_OFF");
 	_parameter_handles.diff_pres_analog_scale = param_find("SENS_DPRES_ANSC");
@@ -810,13 +798,7 @@ Sensors::parameters_update()
 	get_calibration_parameters(&(_parameters.accel_calibration));
 
 	/* mag offsets */
-	param_get(_parameter_handles.mag_offset[0], &(_parameters.mag_offset[0]));
-	param_get(_parameter_handles.mag_offset[1], &(_parameters.mag_offset[1]));
-	param_get(_parameter_handles.mag_offset[2], &(_parameters.mag_offset[2]));
-	/* mag scaling */
-	param_get(_parameter_handles.mag_scale[0], &(_parameters.mag_scale[0]));
-	param_get(_parameter_handles.mag_scale[1], &(_parameters.mag_scale[1]));
-	param_get(_parameter_handles.mag_scale[2], &(_parameters.mag_scale[2]));
+	get_calibration_parameters(&(_parameters.mag_calibration));
 
 	/* Airspeed offset */
 	param_get(_parameter_handles.diff_pres_offset_pa, &(_parameters.diff_pres_offset_pa));
@@ -1316,16 +1298,8 @@ Sensors::parameter_update_poll(bool forced)
 		close(fd);
 
 		fd = open(MAG_DEVICE_PATH, 0);
-		struct mag_scale mscale = {
-			_parameters.mag_offset[0],
-			_parameters.mag_scale[0],
-			_parameters.mag_offset[1],
-			_parameters.mag_scale[1],
-			_parameters.mag_offset[2],
-			_parameters.mag_scale[2],
-		};
 
-		if (OK != ioctl(fd, MAGIOCSSCALE, (long unsigned int)&mscale)) {
+		if (OK != ioctl(fd, MAGIOCSSCALE, (long unsigned int)&(_parameters.mag_calibration))) {
 			warn("WARNING: failed to set scale / offsets for mag");
 		}
 

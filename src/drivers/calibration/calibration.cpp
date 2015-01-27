@@ -30,6 +30,12 @@ bool set_calibration_parameters (const gyro_calibration_s &gyro_calibration) {
 	return set_calibration_parameters(offset_params, scale_params, gyro_calibration);
 }
 
+bool set_calibration_parameters (const mag_calibration_s &mag_calibration) {
+	constexpr char *offset_params[3] = {"SENS_MAG_XOFF", "SENS_MAG_YOFF", "SENS_MAG_ZOFF"};
+	constexpr char *scale_params[3] = {"SENS_MAG_XSCALE", "SENS_MAG_YSCALE", "SENS_MAG_ZSCALE"};
+	return set_calibration_parameters(offset_params, scale_params, mag_calibration);
+}
+
 bool get_calibration_parameters (const char* const offset_params[3], const char* const scale_params[3],
 		calibration_values_s *calibration) {
 	for (int i = 0; i < 3; ++i) {
@@ -53,6 +59,12 @@ bool get_calibration_parameters (gyro_calibration_s *gyro_calibration) {
 	constexpr char *offset_params[3] = {"SENS_GYRO_XOFF", "SENS_GYRO_YOFF", "SENS_GYRO_ZOFF"};
 	constexpr char *scale_params[3] = {"SENS_GYRO_XSCALE", "SENS_GYRO_YSCALE", "SENS_GYRO_ZSCALE"};
 	return get_calibration_parameters(offset_params, scale_params, gyro_calibration);
+}
+
+bool get_calibration_parameters (mag_calibration_s *mag_calibration) {
+	constexpr char *offset_params[3] = {"SENS_MAG_XOFF", "SENS_MAG_YOFF", "SENS_MAG_ZOFF"};
+	constexpr char *scale_params[3] = {"SENS_MAG_XSCALE", "SENS_MAG_YSCALE", "SENS_MAG_ZSCALE"};
+	return get_calibration_parameters(offset_params, scale_params, mag_calibration);
 }
 
 void print_calibration(calibration_values_s calibration, int mavlink_fd) {
