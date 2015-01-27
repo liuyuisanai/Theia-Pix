@@ -272,8 +272,7 @@ private:
 		float dz[_rc_max_chan_count];
 		float scaling_factor[_rc_max_chan_count];
 
-		float gyro_offset[3];
-		float gyro_scale[3];
+		gyro_calibration_s gyro_calibration;
 		float mag_offset[3];
 		float mag_scale[3];
 		accel_calibration_s accel_calibration;
@@ -339,8 +338,6 @@ private:
 		param_t rev[_rc_max_chan_count];
 		param_t dz[_rc_max_chan_count];
 
-		param_t gyro_offset[3];
-		param_t gyro_scale[3];
 		param_t mag_offset[3];
 		param_t mag_scale[3];
 		param_t diff_pres_offset_pa;
@@ -603,14 +600,6 @@ Sensors::Sensors() :
 	_parameter_handles.rc_offboard_th = param_find("RC_OFFB_TH");
 	_parameter_handles.rc_follow_th = param_find("RC_FOLLOW_TH");
 
-	/* gyro offsets */
-	_parameter_handles.gyro_offset[0] = param_find("SENS_GYRO_XOFF");
-	_parameter_handles.gyro_offset[1] = param_find("SENS_GYRO_YOFF");
-	_parameter_handles.gyro_offset[2] = param_find("SENS_GYRO_ZOFF");
-	_parameter_handles.gyro_scale[0] = param_find("SENS_GYRO_XSCALE");
-	_parameter_handles.gyro_scale[1] = param_find("SENS_GYRO_YSCALE");
-	_parameter_handles.gyro_scale[2] = param_find("SENS_GYRO_ZSCALE");
-
 	/* mag offsets */
 	_parameter_handles.mag_offset[0] = param_find("SENS_MAG_XOFF");
 	_parameter_handles.mag_offset[1] = param_find("SENS_MAG_YOFF");
@@ -815,12 +804,7 @@ Sensors::parameters_update()
 	_rc.function[AUX_5] = _parameters.rc_map_aux5 - 1;
 
 	/* gyro offsets */
-	param_get(_parameter_handles.gyro_offset[0], &(_parameters.gyro_offset[0]));
-	param_get(_parameter_handles.gyro_offset[1], &(_parameters.gyro_offset[1]));
-	param_get(_parameter_handles.gyro_offset[2], &(_parameters.gyro_offset[2]));
-	param_get(_parameter_handles.gyro_scale[0], &(_parameters.gyro_scale[0]));
-	param_get(_parameter_handles.gyro_scale[1], &(_parameters.gyro_scale[1]));
-	param_get(_parameter_handles.gyro_scale[2], &(_parameters.gyro_scale[2]));
+	get_calibration_parameters(&(_parameters.gyro_calibration));
 
 	/* accel offsets */
 	get_calibration_parameters(&(_parameters.accel_calibration));
@@ -1316,16 +1300,8 @@ Sensors::parameter_update_poll(bool forced)
 
 		/* update sensor offsets */
 		int fd = open(GYRO_DEVICE_PATH, 0);
-		struct gyro_scale gscale = {
-			_parameters.gyro_offset[0],
-			_parameters.gyro_scale[0],
-			_parameters.gyro_offset[1],
-			_parameters.gyro_scale[1],
-			_parameters.gyro_offset[2],
-			_parameters.gyro_scale[2],
-		};
 
-		if (OK != ioctl(fd, GYROIOCSSCALE, (long unsigned int)&gscale)) {
+		if (OK != ioctl(fd, GYROIOCSSCALE, (long unsigned int)&(_parameters.gyro_calibration))) {
 			warn("WARNING: failed to set scale / offsets for gyro");
 		}
 

@@ -250,16 +250,21 @@ inline void print_results(CALIBRATION_RESULT res, const char* sensor_type, const
 }
 
 inline void print_scales(SENSOR_TYPE sensor, int mavlink_fd) {
+	calibration_values_s calibration;
+	int dev_fd;
+
 	switch (sensor) {
 	case SENSOR_TYPE::GYRO:
-		print_scales_helper <gyro_scale> (GYRO_DEVICE_PATH, GYROIOCGSCALE, mavlink_fd);
+		dev_fd = open(GYRO_DEVICE_PATH, O_RDONLY);
+		if (ioctl(dev_fd, GYROIOCGSCALE, (unsigned long) &calibration) == 0) {
+			print_calibration(calibration, mavlink_fd);
+		}
 		break;
 	case SENSOR_TYPE::MAG:
 		print_scales_helper <mag_scale> (MAG_DEVICE_PATH, MAGIOCGSCALE, mavlink_fd);
 		break;
 	case SENSOR_TYPE::ACCEL:
-		calibration_values_s calibration;
-		int dev_fd = open(ACCEL_DEVICE_PATH, O_RDONLY);
+		dev_fd = open(ACCEL_DEVICE_PATH, O_RDONLY);
 		if (ioctl(dev_fd, ACCELIOCGSCALE, (unsigned long) &calibration) == 0) {
 			print_calibration(calibration, mavlink_fd);
 		}

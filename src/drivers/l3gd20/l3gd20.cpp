@@ -66,6 +66,7 @@
 #include <drivers/device/spi.h>
 #include <drivers/drv_gyro.h>
 #include <drivers/device/ringbuffer.h>
+#include <drivers/calibration/calibration.hpp>
 
 #include <board_config.h>
 #include <mathlib/math/filter/LowPassFilter2p.hpp>
@@ -209,7 +210,7 @@ private:
 	
 	RingBuffer		*_reports;
 
-	struct gyro_scale	_gyro_scale;
+	gyro_calibration_s	_gyro_calibration;
 	float			_gyro_range_scale;
 	float			_gyro_range_rad_s;
 	orb_advert_t		_gyro_topic;
@@ -342,7 +343,7 @@ L3GD20::L3GD20(int bus, const char* path, spi_dev_e device, enum Rotation rotati
 	_call{},
 	_call_interval(0),
 	_reports(nullptr),
-	_gyro_scale{},
+	_gyro_calibration{},
 	_gyro_range_scale(0.0f),
 	_gyro_range_rad_s(0.0f),
 	_gyro_topic(-1),
@@ -362,14 +363,6 @@ L3GD20::L3GD20(int bus, const char* path, spi_dev_e device, enum Rotation rotati
 {
 	// enable debug() calls
 	_debug_enabled = true;
-
-	// default scale factors
-	_gyro_scale.x_offset = 0;
-	_gyro_scale.x_scale  = 1.0f;
-	_gyro_scale.y_offset = 0;
-	_gyro_scale.y_scale  = 1.0f;
-	_gyro_scale.z_offset = 0;
-	_gyro_scale.z_scale  = 1.0f;
 }
 
 L3GD20::~L3GD20()
@@ -622,12 +615,14 @@ L3GD20::ioctl(struct file *filp, int cmd, unsigned long arg)
 
 	case GYROIOCSSCALE:
 		/* copy scale in */
-		memcpy(&_gyro_scale, (struct gyro_scale *) arg, sizeof(_gyro_scale));
+		// memcpy(&_gyro_calibration, (gyro_calibration_s *) arg, sizeof(_gyro_calibration));
+		_gyro_calibration = *((gyro_calibration_s *) arg);
 		return OK;
 
 	case GYROIOCGSCALE:
 		/* copy scale out */
-		memcpy((struct gyro_scale *) arg, &_gyro_scale, sizeof(_gyro_scale));
+		// memcpy((gyro_calibration_s *) arg, &_gyro_calibration, sizeof(_gyro_calibration));
+		*((gyro_calibration_s *) arg) = _gyro_calibration;
 		return OK;
 
 	case GYROIOCSRANGE:
@@ -930,9 +925,9 @@ L3GD20::measure()
 
 	report.z_raw = raw_report.z;
 
-	report.x = ((report.x_raw * _gyro_range_scale) - _gyro_scale.x_offset) * _gyro_scale.x_scale;
-	report.y = ((report.y_raw * _gyro_range_scale) - _gyro_scale.y_offset) * _gyro_scale.y_scale;
-	report.z = ((report.z_raw * _gyro_range_scale) - _gyro_scale.z_offset) * _gyro_scale.z_scale;
+	report.x = ((report.x_raw * _gyro_range_scale) - _gyro_calibration.offsets(0)) * _gyro_calibration.scales(0);
+	report.y = ((report.y_raw * _gyro_range_scale) - _gyro_calibration.offsets(1)) * _gyro_calibration.scales(1);
+	report.z = ((report.z_raw * _gyro_range_scale) - _gyro_calibration.offsets(2)) * _gyro_calibration.scales(2);
 
 	report.x = _gyro_filter_x.apply(report.x);
 	report.y = _gyro_filter_y.apply(report.y);
@@ -975,19 +970,19 @@ int
 L3GD20::self_test()
 {
 	/* evaluate gyro offsets, complain if offset -> zero or larger than 6 dps */
-	if (fabsf(_gyro_scale.x_offset) > 0.1f || fabsf(_gyro_scale.x_offset) < 0.000001f)
+	if (fabsf(_gyro_calibration.offsets(0)) > 0.1f || fabsf(_gyro_calibration.offsets(0)) < 0.000001f)
 		return 1;
-	if (fabsf(_gyro_scale.x_scale - 1.0f) > 0.3f)
-		return 1;
-
-	if (fabsf(_gyro_scale.y_offset) > 0.1f || fabsf(_gyro_scale.y_offset) < 0.000001f)
-		return 1;
-	if (fabsf(_gyro_scale.y_scale - 1.0f) > 0.3f)
+	if (fabsf(_gyro_calibration.scales(0) - 1.0f) > 0.3f)
 		return 1;
 
-	if (fabsf(_gyro_scale.z_offset) > 0.1f || fabsf(_gyro_scale.z_offset) < 0.000001f)
+	if (fabsf(_gyro_calibration.offsets(1)) > 0.1f || fabsf(_gyro_calibration.offsets(1)) < 0.000001f)
 		return 1;
-	if (fabsf(_gyro_scale.z_scale - 1.0f) > 0.3f)
+	if (fabsf(_gyro_calibration.scales(1) - 1.0f) > 0.3f)
+		return 1;
+
+	if (fabsf(_gyro_calibration.offsets(2)) > 0.1f || fabsf(_gyro_calibration.offsets(2)) < 0.000001f)
+		return 1;
+	if (fabsf(_gyro_calibration.scales(2) - 1.0f) > 0.3f)
 		return 1;
 
 	return 0;

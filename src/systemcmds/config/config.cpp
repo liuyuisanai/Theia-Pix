@@ -172,15 +172,14 @@ do_gyro(int argc, char *argv[])
 
 			if (ret) {
 				warnx("gyro self test FAILED! Check calibration:");
-				struct gyro_scale scale;
-				ret = ioctl(fd, GYROIOCGSCALE, (long unsigned int)&scale);
+				gyro_calibration_s calibration;
+				ret = ioctl(fd, GYROIOCGSCALE, (long unsigned int)&calibration);
 
 				if (ret) {
-					err(1, "failed getting gyro scale");
+					err(1, "failed getting gyro calibration");
 				}
 
-				warnx("offsets: X: % 9.6f Y: % 9.6f Z: % 9.6f", (double)scale.x_offset, (double)scale.y_offset, (double)scale.z_offset);
-				warnx("scale:   X: % 9.6f Y: % 9.6f Z: % 9.6f", (double)scale.x_scale, (double)scale.y_scale, (double)scale.z_scale);
+				print_calibration(calibration, 0);
 			} else {
 				warnx("gyro calibration and self test OK");
 			}
@@ -322,7 +321,7 @@ do_accel(int argc, char *argv[])
 				ret = ioctl(fd, ACCELIOCGSCALE, (long unsigned int)&calibration);
 
 				if (ret) {
-					err(ret, "failed getting accel scale");
+					err(ret, "failed getting accel calibration");
 				}
 
 				print_calibration(calibration, 0);

@@ -209,9 +209,9 @@ private:
 	struct wind_estimate_s				_wind;			/**< wind estimate */
 	struct range_finder_report			_distance;		/**< distance estimate */
 
-	struct gyro_scale				_gyro_offsets;
+//	struct gyro_scale				_gyro_offsets;
 //	struct accel_scale				_accel_offsets;
-	struct mag_scale				_mag_offsets;
+//	struct mag_scale				_mag_offsets;
 
 #ifdef SENSOR_COMBINED_SUB
 	struct sensor_combined_s			_sensor_combined;
@@ -384,9 +384,9 @@ FixedwingEstimator::FixedwingEstimator() :
 	_wind({}),
 	_distance{},
 
-	_gyro_offsets({}),
+//	_gyro_offsets({}),
 //	_accel_offsets({}),
-	_mag_offsets({}),
+//	_mag_offsets({}),
 
 	#ifdef SENSOR_COMBINED_SUB
 	_sensor_combined{},
@@ -454,40 +454,40 @@ FixedwingEstimator::FixedwingEstimator() :
 
 	/* get offsets */
 
-	int fd, res;
-
-	fd = open(GYRO_DEVICE_PATH, O_RDONLY);
-
-	if (fd > 0) {
-		res = ioctl(fd, GYROIOCGSCALE, (long unsigned int)&_gyro_offsets);
-		close(fd);
-
-		if (res) {
-			warnx("G SCALE FAIL");
-		}
-	}
-
-	fd = open(ACCEL_DEVICE_PATH, O_RDONLY);
-
-/*	if (fd > 0) {
-		res = ioctl(fd, ACCELIOCGSCALE, (long unsigned int)&_accel_offsets);
-		close(fd);
-
-		if (res) {
-			warnx("A SCALE FAIL");
-		}
-	} */
-
-	fd = open(MAG_DEVICE_PATH, O_RDONLY);
-
-	if (fd > 0) {
-		res = ioctl(fd, MAGIOCGSCALE, (long unsigned int)&_mag_offsets);
-		close(fd);
-
-		if (res) {
-			warnx("M SCALE FAIL");
-		}
-	}
+//	int fd, res;
+//
+//	fd = open(GYRO_DEVICE_PATH, O_RDONLY);
+//
+//	if (fd > 0) {
+//		res = ioctl(fd, GYROIOCGSCALE, (long unsigned int)&_gyro_offsets);
+//		close(fd);
+//
+//		if (res) {
+//			warnx("G SCALE FAIL");
+//		}
+//	}
+//
+//	fd = open(ACCEL_DEVICE_PATH, O_RDONLY);
+//
+//	if (fd > 0) {
+//		res = ioctl(fd, ACCELIOCGSCALE, (long unsigned int)&_accel_offsets);
+//		close(fd);
+//
+//		if (res) {
+//			warnx("A SCALE FAIL");
+//		}
+//	}
+//
+//	fd = open(MAG_DEVICE_PATH, O_RDONLY);
+//
+//	if (fd > 0) {
+//		res = ioctl(fd, MAGIOCGSCALE, (long unsigned int)&_mag_offsets);
+//		close(fd);
+//
+//		if (res) {
+//			warnx("M SCALE FAIL");
+//		}
+//	}
 }
 
 FixedwingEstimator::~FixedwingEstimator()

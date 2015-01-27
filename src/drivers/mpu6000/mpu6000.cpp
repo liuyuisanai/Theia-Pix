@@ -222,7 +222,7 @@ private:
 
 	RingBuffer		*_gyro_reports;
 
-	struct gyro_scale	_gyro_scale;
+	gyro_calibration_s	_gyro_calibration;
 	float			_gyro_range_scale;
 	float			_gyro_range_rad_s;
 
@@ -398,7 +398,7 @@ MPU6000::MPU6000(int bus, const char *path_accel, const char *path_gyro, spi_dev
 	_accel_orb_id(nullptr),
 	_accel_class_instance(-1),
 	_gyro_reports(nullptr),
-	_gyro_scale{},
+	_gyro_calibration{},
 	_gyro_range_scale(0.0f),
 	_gyro_range_rad_s(0.0f),
 	_sample_rate(1000),
@@ -416,14 +416,6 @@ MPU6000::MPU6000(int bus, const char *path_accel, const char *path_gyro, spi_dev
 {
 	// disable debug() calls
 	_debug_enabled = false;
-
-	// default gyro scale factors
-	_gyro_scale.x_offset = 0;
-	_gyro_scale.x_scale  = 1.0f;
-	_gyro_scale.y_offset = 0;
-	_gyro_scale.y_scale  = 1.0f;
-	_gyro_scale.z_offset = 0;
-	_gyro_scale.z_scale  = 1.0f;
 
 	memset(&_call, 0, sizeof(_call));
 }
@@ -481,12 +473,8 @@ MPU6000::init()
 	_accel_calibration.offsets.zero();
 	_accel_calibration.scales.set(1.0f);
 
-	_gyro_scale.x_offset = 0;
-	_gyro_scale.x_scale  = 1.0f;
-	_gyro_scale.y_offset = 0;
-	_gyro_scale.y_scale  = 1.0f;
-	_gyro_scale.z_offset = 0;
-	_gyro_scale.z_scale  = 1.0f;
+	_gyro_calibration.offsets.zero();
+	_gyro_calibration.scales.set(1.0f);
 
 	/* do CDev init for the gyro device node, keep it optional */
 	ret = _gyro->init();
@@ -804,19 +792,19 @@ MPU6000::gyro_self_test()
 		return 1;
 
 	/* evaluate gyro offsets, complain if offset -> zero or larger than 6 dps */
-	if (fabsf(_gyro_scale.x_offset) > 0.1f || fabsf(_gyro_scale.x_offset) < 0.000001f)
+	if (fabsf(_gyro_calibration.offsets(0)) > 0.1f || fabsf(_gyro_calibration.offsets(0)) < 0.000001f)
 		return 1;
-	if (fabsf(_gyro_scale.x_scale - 1.0f) > 0.3f)
-		return 1;
-
-	if (fabsf(_gyro_scale.y_offset) > 0.1f || fabsf(_gyro_scale.y_offset) < 0.000001f)
-		return 1;
-	if (fabsf(_gyro_scale.y_scale - 1.0f) > 0.3f)
+	if (fabsf(_gyro_calibration.scales(0) - 1.0f) > 0.3f)
 		return 1;
 
-	if (fabsf(_gyro_scale.z_offset) > 0.1f || fabsf(_gyro_scale.z_offset) < 0.000001f)
+	if (fabsf(_gyro_calibration.offsets(1)) > 0.1f || fabsf(_gyro_calibration.offsets(1)) < 0.000001f)
 		return 1;
-	if (fabsf(_gyro_scale.z_scale - 1.0f) > 0.3f)
+	if (fabsf(_gyro_calibration.scales(1) - 1.0f) > 0.3f)
+		return 1;
+
+	if (fabsf(_gyro_calibration.offsets(2)) > 0.1f || fabsf(_gyro_calibration.offsets(2)) < 0.000001f)
+		return 1;
+	if (fabsf(_gyro_calibration.scales(2) - 1.0f) > 0.3f)
 		return 1;
 
 	return 0;
@@ -1058,12 +1046,14 @@ MPU6000::gyro_ioctl(struct file *filp, int cmd, unsigned long arg)
 
 	case GYROIOCSSCALE:
 		/* copy scale in */
-		memcpy(&_gyro_scale, (struct gyro_scale *) arg, sizeof(_gyro_scale));
+		// memcpy(&_gyro_calibration, (gyro_calibration_s *) arg, sizeof(_gyro_calibration));
+		_gyro_calibration = *((gyro_calibration_s *) arg);
 		return OK;
 
 	case GYROIOCGSCALE:
 		/* copy scale out */
-		memcpy((struct gyro_scale *) arg, &_gyro_scale, sizeof(_gyro_scale));
+		// memcpy((gyro_calibration_s *) arg, &_gyro_calibration, sizeof(_gyro_calibration));
+		*((gyro_calibration_s *) arg) = _gyro_calibration;
 		return OK;
 
 	case GYROIOCSRANGE:
@@ -1351,9 +1341,9 @@ MPU6000::measure()
 	grb.y_raw = report.gyro_y;
 	grb.z_raw = report.gyro_z;
 
-	float x_gyro_in_new = ((report.gyro_x * _gyro_range_scale) - _gyro_scale.x_offset) * _gyro_scale.x_scale;
-	float y_gyro_in_new = ((report.gyro_y * _gyro_range_scale) - _gyro_scale.y_offset) * _gyro_scale.y_scale;
-	float z_gyro_in_new = ((report.gyro_z * _gyro_range_scale) - _gyro_scale.z_offset) * _gyro_scale.z_scale;
+	float x_gyro_in_new = ((report.gyro_x * _gyro_range_scale) - _gyro_calibration.offsets(0)) * _gyro_calibration.scales(0);
+	float y_gyro_in_new = ((report.gyro_y * _gyro_range_scale) - _gyro_calibration.offsets(1)) * _gyro_calibration.scales(1);
+	float z_gyro_in_new = ((report.gyro_z * _gyro_range_scale) - _gyro_calibration.offsets(2)) * _gyro_calibration.scales(2);
 	
 	grb.x = _gyro_filter_x.apply(x_gyro_in_new);
 	grb.y = _gyro_filter_y.apply(y_gyro_in_new);
