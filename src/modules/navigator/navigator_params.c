@@ -44,12 +44,22 @@
 
 #include <systemlib/param/param.h>
 
+/* Parameters to save cable park poits coordinates */
 PARAM_DEFINE_INT32(NAV_CP_FIR_LA, 0);
 PARAM_DEFINE_INT32(NAV_CP_FIR_LO, 0);
 PARAM_DEFINE_FLOAT(NAV_CP_FIR_AL, 0.0);
 PARAM_DEFINE_INT32(NAV_CP_LAS_LA, 0);
 PARAM_DEFINE_INT32(NAV_CP_LAS_LO, 0);
 PARAM_DEFINE_FLOAT(NAV_CP_LAS_AL, 0.0);
+
+/*
+ * Parameters for steps for all navigator modes
+ *
+ * @unit meters
+ */
+PARAM_DEFINE_FLOAT(NAV_UP_STEP, 3.0f);
+PARAM_DEFINE_FLOAT(NAV_DOWN_STEP, 1.0f);
+PARAM_DEFINE_FLOAT(NAV_HOR_STEP, 5.0f);
 
 /**
  * Loiter radius (FW only)

@@ -33,26 +33,6 @@ PARAM_DEFINE_FLOAT(PAFOL_MIN_OK_D, 10.0f);
  */
 PARAM_DEFINE_FLOAT(PAFOL_ALT_OFF, 3.0f);
 
-/**
- * Step for "closer" and "farther" commands
- *
- * @unit meters
- * @min 0.2
- * @max 50
- * @group PathFollow
- */
-PARAM_DEFINE_FLOAT(PAFOL_DIST_STEP, 1.0f);
-
-/**
- * Step for "up" and "down" commands
- *
- * @unit meters
- * @min 0.2
- * @max 20
- * @group PathFollow
- */
-PARAM_DEFINE_FLOAT(PAFOL_ALT_STEP, 1.0f);
-
 
 /**
  * Velocity error coif.

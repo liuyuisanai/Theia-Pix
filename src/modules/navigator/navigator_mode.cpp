@@ -107,20 +107,21 @@ NavigatorMode::updateParamHandles() {
     _parameter_handles.last_point_lat = param_find("NAV_CP_LAS_LA");
     _parameter_handles.last_point_lon = param_find("NAV_CP_LAS_LO");
     _parameter_handles.last_point_alt = param_find("NAV_CP_LAS_AL");
+
+    _parameter_handles.down_button_step = param_find("NAV_DOWN_STEP");
+    _parameter_handles.up_button_step = param_find("NAV_UP_STEP");
+    _parameter_handles.horizon_button_step = param_find("NAV_HOR_STEP");
 	_parameter_handles.takeoff_alt = param_find("NAV_TAKEOFF_ALT");
 	_parameter_handles.takeoff_acceptance_radius = param_find("NAV_TAKEOFF_ACR");
 	_parameter_handles.acceptance_radius = param_find("NAV_ACC_RAD");
 
 	_parameter_handles.afol_mode = param_find("NAV_AFOL_MODE");
-	_parameter_handles.loi_step_len = param_find("LOI_STEP_LEN");
 
 	_parameter_handles.rtl_ret_alt = param_find("RTL_RET_ALT");
 
 	_parameter_handles.pafol_buf_size = param_find("PAFOL_BUFF_SIZE");
 	_parameter_handles.pafol_min_ok_dist = param_find("PAFOL_MIN_OK_D");
 	_parameter_handles.pafol_min_alt_off = param_find("PAFOL_ALT_OFF");
-	_parameter_handles.pafol_dist_step = param_find("PAFOL_DIST_STEP");
-	_parameter_handles.pafol_alt_step = param_find("PAFOL_ALT_STEP");
     _parameter_handles.pafol_vel_err_coif = param_find("PAFOL_VEL_E_C");
     _parameter_handles.pafol_vel_reaction_time = param_find("PAFOL_VEL_R_T");
     _parameter_handles.pafol_vel_err_growth_power = param_find("PAFOL_VEL_E_GP");
@@ -152,20 +153,19 @@ NavigatorMode::updateParamValues() {
     param_get(_parameter_handles.last_point_lat, &(_parameters.last_point_lat));
     param_get(_parameter_handles.last_point_lon, &(_parameters.last_point_lon));
     param_get(_parameter_handles.last_point_alt, &(_parameters.last_point_alt));
+    param_get(_parameter_handles.down_button_step, &(_parameters.down_button_step));
+    param_get(_parameter_handles.up_button_step, &(_parameters.up_button_step));
+    param_get(_parameter_handles.horizon_button_step, &(_parameters.horizon_button_step));
 	param_get(_parameter_handles.takeoff_alt, &(_parameters.takeoff_alt));
 	param_get(_parameter_handles.takeoff_acceptance_radius, &(_parameters.takeoff_acceptance_radius));
 	param_get(_parameter_handles.acceptance_radius, &(_parameters.acceptance_radius));
 	param_get(_parameter_handles.afol_mode, &(_parameters.afol_mode));
 
-	param_get(_parameter_handles.loi_step_len, &(_parameters.loi_step_len));
-    
 	param_get(_parameter_handles.rtl_ret_alt, &(_parameters.rtl_ret_alt));
 
 	param_get(_parameter_handles.pafol_buf_size, &(_parameters.pafol_buf_size));
 	param_get(_parameter_handles.pafol_min_ok_dist, &(_parameters.pafol_min_ok_dist));
 	param_get(_parameter_handles.pafol_min_alt_off, &(_parameters.pafol_min_alt_off));
-	param_get(_parameter_handles.pafol_dist_step, &(_parameters.pafol_dist_step));
-	param_get(_parameter_handles.pafol_alt_step, &(_parameters.pafol_alt_step));
     param_get(_parameter_handles.pafol_vel_err_coif, &(_parameters.pafol_vel_err_coif)); 
 	param_get(_parameter_handles.pafol_vel_reaction_time, &(_parameters.pafol_vel_reaction_time));
 	param_get(_parameter_handles.pafol_vel_err_growth_power, &(_parameters.pafol_vel_err_growth_power));

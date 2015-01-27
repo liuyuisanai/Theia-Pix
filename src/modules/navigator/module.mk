@@ -45,7 +45,6 @@ SRCS		= navigator_main.cpp \
 		  mission.cpp \
 		  mission_params.c \
 		  loiter.cpp \
-		  loiter_params.c \
 		  rtl.cpp \
 		  rtl_params.c \
 		  mission_feasibility_checker.cpp \

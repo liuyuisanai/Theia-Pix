@@ -300,21 +300,21 @@ void PathFollow::execute_vehicle_command() {
 				break;
 			}
 			case REMOTE_CMD_FURTHER:
-				_ok_distance += _parameters.pafol_dist_step;
+				_ok_distance += _parameters.horizon_button_step;
 				break;
 			case REMOTE_CMD_CLOSER: {
-				_ok_distance -= _parameters.pafol_dist_step;
+				_ok_distance -= _parameters.horizon_button_step;
 				if (_ok_distance < _parameters.pafol_min_ok_dist) {
 					_ok_distance = _parameters.pafol_min_ok_dist;
 				}
 				break;
 			}
 			case REMOTE_CMD_UP: {
-				_vertical_offset += _parameters.pafol_alt_step;
+				_vertical_offset += _parameters.up_button_step;
 				break;
 			}
 			case REMOTE_CMD_DOWN: {
-				_vertical_offset -= _parameters.pafol_alt_step;
+				_vertical_offset -= _parameters.down_button_step;
 				if (_vertical_offset < _parameters.pafol_min_alt_off) {
 					_vertical_offset = _parameters.pafol_min_alt_off;
 				}

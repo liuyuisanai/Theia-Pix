@@ -345,7 +345,7 @@ Loiter::execute_command_in_aim_and_shoot(vehicle_command_s cmd){
             }
 			case REMOTE_CMD_UP: {
 
-				pos_sp_triplet->current.alt = global_pos->alt + _parameters.loi_step_len;
+				pos_sp_triplet->current.alt = global_pos->alt + _parameters.up_button_step;
 				pos_sp_triplet->current.lat = global_pos->lat;
 				pos_sp_triplet->current.lon = global_pos->lon;
 				pos_sp_triplet->current.position_valid = true;
@@ -356,7 +356,7 @@ Loiter::execute_command_in_aim_and_shoot(vehicle_command_s cmd){
 			}
 			case REMOTE_CMD_DOWN: {
 
-				pos_sp_triplet->current.alt = global_pos->alt - _parameters.loi_step_len;
+				pos_sp_triplet->current.alt = global_pos->alt - _parameters.down_button_step;
 				pos_sp_triplet->current.lat = global_pos->lat;
 				pos_sp_triplet->current.lon = global_pos->lon;
 				pos_sp_triplet->current.position_valid = true;
@@ -375,7 +375,7 @@ Loiter::execute_command_in_aim_and_shoot(vehicle_command_s cmd){
 				// circumference C: (radius * 2* PI)
 				// step length fraction of C: step/C
 				// angle of step fraction in radians: step/C * 2PI
-				double alpha = (double)_parameters.loi_step_len / radius;
+				double alpha = (double)_parameters.horizon_button_step / radius;
 
 				// vector yaw rotation +alpha or -alpha depending on left or right
 				R_phi.from_euler(0.0f, 0.0f, -alpha);
@@ -409,7 +409,7 @@ Loiter::execute_command_in_aim_and_shoot(vehicle_command_s cmd){
 				// circumference C: (radius * 2* PI)
 				// step length fraction of C: step/C
 				// angle of step fraction in radians: step/C * 2PI
-				double alpha = (double)_parameters.loi_step_len / radius;
+				double alpha = (double)_parameters.horizon_button_step / radius;
 
 				// vector yaw rotation +alpha or -alpha depending on left or right
 				R_phi.from_euler(0.0f, 0.0f, +alpha);
@@ -439,8 +439,8 @@ Loiter::execute_command_in_aim_and_shoot(vehicle_command_s cmd){
 
 				// Create vector in the same direction, with loiter_step length
 				math::Vector<3> offset_delta(
-						cosf(alpha) * _parameters.loi_step_len,
-						sinf(alpha) * _parameters.loi_step_len,
+						cosf(alpha) * _parameters.horizon_button_step,
+						sinf(alpha) * _parameters.horizon_button_step,
 						0);
 
 				math::Vector<3> offset_new = offset - offset_delta;
@@ -471,8 +471,8 @@ Loiter::execute_command_in_aim_and_shoot(vehicle_command_s cmd){
 
 				// Create vector in the same direction, with loiter_step length
 				math::Vector<3> offset_delta(
-						cosf(alpha) * _parameters.loi_step_len,
-						sinf(alpha) * _parameters.loi_step_len,
+						cosf(alpha) * _parameters.horizon_button_step,
+						sinf(alpha) * _parameters.horizon_button_step,
 						0);
 
 				math::Vector<3> offset_new = offset + offset_delta;

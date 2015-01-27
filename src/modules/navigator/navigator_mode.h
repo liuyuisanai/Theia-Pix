@@ -117,21 +117,20 @@ public:
         int last_point_lat;
         int last_point_lon;
         float last_point_alt;
+        float down_button_step;
+        float up_button_step;
+        float horizon_button_step;
 		float takeoff_alt;
 		float takeoff_acceptance_radius;
 		float acceptance_radius;
 
         int afol_mode;
 
-		float loi_step_len;
-
 		float rtl_ret_alt;
 
 		ssize_t pafol_buf_size;
 		float pafol_min_ok_dist;
 		float pafol_min_alt_off;
-		float pafol_dist_step;
-		float pafol_alt_step;
         float pafol_vel_err_coif;
         float pafol_vel_reaction_time;
         float pafol_vel_err_growth_power;
@@ -164,21 +163,20 @@ public:
         param_t last_point_lat;
         param_t last_point_lon;
         param_t last_point_alt;
+        param_t down_button_step;
+        param_t up_button_step;
+        param_t horizon_button_step;
 		param_t takeoff_alt;
 		param_t takeoff_acceptance_radius;
 		param_t acceptance_radius;
 
         param_t afol_mode;
 
-		param_t loi_step_len;
-
 		param_t rtl_ret_alt;
 
 		param_t pafol_buf_size;
 		param_t pafol_min_ok_dist;
 		param_t pafol_min_alt_off;
-		param_t pafol_dist_step;
-		param_t pafol_alt_step;
         param_t pafol_vel_err_coif;
         param_t pafol_vel_reaction_time;
         param_t pafol_vel_err_growth_power;
