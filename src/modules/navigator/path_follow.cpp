@@ -283,6 +283,14 @@ void PathFollow::execute_vehicle_command() {
 	if (_vcommand.command == VEHICLE_CMD_NAV_REMOTE_CMD) {
 		REMOTE_CMD remote_cmd = (REMOTE_CMD)_vcommand.param1;
 		switch (remote_cmd) {
+			case  REMOTE_CMD_LAND_DISARM: {
+
+                commander_request_s *commander_request = _navigator->get_commander_request();
+                commander_request->request_type = V_MAIN_STATE_CHANGE;
+                commander_request->main_state = MAIN_STATE_EMERGENCY_LAND;
+                _navigator->set_commander_request_updated();
+                break;
+            }
 			// Switch to loiter
 			case REMOTE_CMD_PLAY_PAUSE: {
 				commander_request_s *commander_request = _navigator->get_commander_request();
