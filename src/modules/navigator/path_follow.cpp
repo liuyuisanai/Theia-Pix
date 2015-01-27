@@ -69,7 +69,7 @@ void PathFollow::on_activation() {
 
     }
 
-    mavlink_log_info(_mavlink_fd, "%.5f", (double)_ok_distance);
+   // mavlink_log_info(_mavlink_fd, "%.5f", (double)_ok_distance);
 
     if (_parameters.follow_rpt_alt == 0) {
         _alt = global_pos->alt;
@@ -249,10 +249,15 @@ void PathFollow::on_active() {
             pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
             pos_sp_triplet->current.lat = global_pos->lat;
             pos_sp_triplet->current.lon = global_pos->lon;
+
+            if (_parameters.follow_rpt_alt == 1) { // in case of alt changes fix altitude to current altitude
+                pos_sp_triplet->current.alt = global_pos->alt;
+            }
+            
             pos_sp_triplet->current.valid = true;
             pos_sp_triplet->current.position_valid = true;
-            //mavlink_log_critical(_mavlink_fd, "Zero point on.");
-            //
+            mavlink_log_critical(_mavlink_fd, "Zero point on.");
+            
         }
     }
 
@@ -321,7 +326,7 @@ void PathFollow::update_saved_trajectory() {
 
 void PathFollow::put_buffer_point_into_setpoint(const buffer_point_s &desired_point, position_setpoint_s &destination) {
 
-	// mavlink_log_info(_mavlink_fd, "New point %.8f %.8f", (double)desired_point.alt);
+	//mavlink_log_info(_mavlink_fd, "New trajectory point %.8f", (double)desired_point.alt);
 
 	destination.type = SETPOINT_TYPE_VELOCITY;
 	destination.lat = desired_point.lat;
@@ -338,6 +343,8 @@ void PathFollow::put_buffer_point_into_setpoint(const buffer_point_s &desired_po
 }
 
 void PathFollow::set_target_setpoint(position_setpoint_s &destination) {
+
+    //mavlink_log_info(_mavlink_fd, "Set target setpoint.")
 
     target_pos = _navigator->get_target_position();
 

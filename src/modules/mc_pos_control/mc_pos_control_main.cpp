@@ -1203,31 +1203,38 @@ MulticopterPositionControl::control_auto_vel(float dt) {
 				&_pos_sp.data[0], &_pos_sp.data[1]);
 
         _pos_sp(2) = -(_pos_sp_triplet.current.alt - _ref_alt);
-
-        math::Vector<3> pos_sp_delta = _pos_sp - _pos;
+        math::Vector<3> pos_delta = _pos_sp - _pos;
 
 		if (_pos_sp_triplet.current.abs_velocity_valid && _pos_sp != _pos) {
 
-            math::Vector<2> move_direction;
-            math::Vector<2> pos_sp_delta_xy(pos_sp_delta(0), pos_sp_delta(1));
+            math::Vector<2> xy_move_direction;
+            math::Vector<2> xy_pos_delta(pos_delta(0), pos_delta(1));
 
-            move_direction = pos_sp_delta_xy.normalized();
+            xy_move_direction = xy_pos_delta.normalized();
 
             if (_pos_sp_triplet.next.valid) {
-
+                // TODO:  L1 implementation using next/ prev setpoints 
             }
             else 
             {
-                _vel_sp(0) = move_direction(0) * _pos_sp_triplet.current.abs_velocity;
-                _vel_sp(1) = move_direction(1) * _pos_sp_triplet.current.abs_velocity;
-                _vel_sp(2) = pos_sp_delta(2) * _params.pos_p(2);
+
+                float z_delta_len = pos_delta(2);
+                float xy_delta_len = xy_pos_delta.length();
+
+                float xy_speed = _pos_sp_triplet.current.abs_velocity;
+
+                // calculate z_speed based on the position delta vector direction (xy_delta_len, z_delta_len), when we 
+                // already know xy_speed from (xy_speed, z_speed) - use triangle similarity
+                float z_speed = (z_delta_len * xy_speed) / xy_delta_len; 
+
+                _vel_sp(0) = xy_move_direction(0) * xy_speed;
+                _vel_sp(1) = xy_move_direction(1) * xy_speed;
+                _vel_sp(2) = z_speed;
+
+                //mavlink_log_info(_mavlink_fd, "zspd: %.2f, zl: %.2f, xyspd: %.2f, xyl: %.2f", (double)z_speed, (double)z_delta_len, (double)xy_speed, (double)xy_delta_len);
 
             }
 
-            /* if (isfinite(_att_sp.yaw_body)) {
-                _att_sp.yaw_body = _pos_sp_triplet.current.yaw;
-            } */
-            
         } else {
             _vel_sp.zero();
         }
