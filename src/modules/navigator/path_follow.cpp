@@ -266,6 +266,20 @@ void PathFollow::on_active() {
 }
 
 void PathFollow::execute_vehicle_command() {
+	if (_vcommand.command == VEHICLE_CMD_DO_SET_MODE){
+
+		//uint8_t base_mode = (uint8_t)cmd.param1;
+		uint8_t main_mode = (uint8_t)_vcommand.param2;
+
+		if (main_mode == PX4_CUSTOM_MAIN_MODE_RTL) {
+
+			commander_request_s *commander_request = _navigator->get_commander_request();
+			commander_request->request_type = V_MAIN_STATE_CHANGE;
+			commander_request->main_state = MAIN_STATE_RTL;
+			_navigator->set_commander_request_updated();
+
+		}
+	}
 	if (_vcommand.command == VEHICLE_CMD_NAV_REMOTE_CMD) {
 		REMOTE_CMD remote_cmd = (REMOTE_CMD)_vcommand.param1;
 		switch (remote_cmd) {
