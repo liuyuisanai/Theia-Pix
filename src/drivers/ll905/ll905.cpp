@@ -84,7 +84,7 @@
 #define LL905_RESET_FPGA        0x0         /* Reset FPGA. Reloads FPGA from internal Flash memory – all registers return to default values */
 
 /* Device limits */
-#define LL905_MIN_DISTANCE (0.10f)
+#define LL905_MIN_DISTANCE (0.20f)
 #define LL905_MAX_DISTANCE (10.00f)
 
 #define LL905_CONVERSION_INTERVAL 100000 /* 100ms */
