@@ -1,5 +1,6 @@
 #include <nuttx/config.h>
 
+#include <stdio.h>
 #include <systemlib/param/param.h>
 #include <mavlink/mavlink_log.h>
 
@@ -72,11 +73,11 @@ void print_calibration(calibration_values_s calibration, int mavlink_fd) {
 			(double) calibration.offsets(0), (double) calibration.offsets(1), (double) calibration.offsets(2),
 			(double) calibration.scales(0), (double) calibration.scales(1), (double) calibration.scales(2));
 	if (mavlink_fd != 0) {
-		mavlink_log_info(mavlink_fd, "Offsets:\n");
-		mavlink_log_info(mavlink_fd, "X: % 9.6f, Y: % 9.6f, Z: % 9.6f.\n",
-			(double) calibration.offsets(0), (double) calibration.offsets(1), (double) calibration.offsets(2));
-		mavlink_log_info(mavlink_fd, "Scales:\n");
-		mavlink_log_info(mavlink_fd, "X: % 9.6f, Y: % 9.6f, Z: % 9.6f.\n",
-			(double) calibration.scales(0), (double) calibration.scales(1), (double) calibration.scales(2));
+		mavlink_log_info(mavlink_fd, "Offsets: "
+				"X: % 9.6f, Y: % 9.6f, Z: % 9.6f.",
+				(double) calibration.offsets(0), (double) calibration.offsets(1), (double) calibration.offsets(2));
+		mavlink_log_info(mavlink_fd, "Scales:  "
+				"X: % 9.6f, Y: % 9.6f, Z: % 9.6f.",
+				(double) calibration.scales(0), (double) calibration.scales(1), (double) calibration.scales(2));
 	}
 }

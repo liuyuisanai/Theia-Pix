@@ -179,7 +179,7 @@ do_gyro(int argc, char *argv[])
 					err(1, "failed getting gyro calibration");
 				}
 
-				print_calibration(calibration, 0);
+				print_calibration(calibration);
 			} else {
 				warnx("gyro calibration and self test OK");
 			}
@@ -248,10 +248,10 @@ do_mag(int argc, char *argv[])
 				ret = ioctl(fd, MAGIOCGSCALE, (long unsigned int)&calibration);
 
 				if (ret) {
-					err(ret, "failed getting mag scale");
+					err(ret, "failed getting mag calibration");
 				}
 
-				print_calibration(calibration, 0);
+				print_calibration(calibration);
 			} else {
 				warnx("mag calibration and self test OK");
 			}
@@ -323,7 +323,7 @@ do_accel(int argc, char *argv[])
 					err(ret, "failed getting accel calibration");
 				}
 
-				print_calibration(calibration, 0);
+				print_calibration(calibration);
 			} else {
 				warnx("accel calibration and self test OK");
 			}

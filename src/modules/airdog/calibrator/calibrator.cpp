@@ -62,7 +62,7 @@ __EXPORT bool calibrate_gyroscope(int mavlink_fd, const unsigned int sample_coun
 	printf("Parameters: samples=%d, error count=%d, timeout=%d\n", sample_count, max_error_count, timeout);
 	fflush(stdout);
 	res = do_gyro_calibration(sample_count, max_error_count, timeout);
-	print_results(res, "Gyro", beeper_fd, mavlink_fd);
+	print_results(res, "gyro", beeper_fd, mavlink_fd);
 	close(beeper_fd);
 	if (res == CALIBRATION_RESULT::SUCCESS) {
 		print_scales(SENSOR_TYPE::GYRO, mavlink_fd);
@@ -96,7 +96,7 @@ __EXPORT bool calibrate_magnetometer(int mavlink_fd, unsigned int sample_count,
 		fflush(stdout); // ensure print finishes before calibration pauses the screen
 		res = do_mag_offset_calibration(sample_count, max_error_count, total_time, poll_timeout_gap);
 	}
-	print_results(res, "Mag", beeper_fd, mavlink_fd);
+	print_results(res, "mag", beeper_fd, mavlink_fd);
 	close(beeper_fd);
 	if (res == CALIBRATION_RESULT::SUCCESS) {
 		print_scales(SENSOR_TYPE::MAG, mavlink_fd);
@@ -165,7 +165,7 @@ __EXPORT bool calibrate_accelerometer(int mavlink_fd) {
 		}
 	}
 
-	print_results(res, "Accel", beeper_fd, mavlink_fd);
+	print_results(res, "accel", beeper_fd, mavlink_fd);
 	close(beeper_fd);
 	if (res == CALIBRATION_RESULT::SUCCESS) {
 		print_scales(SENSOR_TYPE::ACCEL, mavlink_fd);
@@ -241,9 +241,10 @@ inline void print_results(CALIBRATION_RESULT res, const char* sensor_type, const
 		}
 	}
 	else {
-		printf("%s calibration finished successfully.\n", sensor_type);
+		// QGround uses text matching to detect success, so don't change the message as long as we are using QGround
+		printf("%s calibration: done\n", sensor_type);
 		if (mavlink_fd != 0) {
-			mavlink_log_info(mavlink_fd, "%s calibration finished successfully.\n", sensor_type);
+			mavlink_log_info(mavlink_fd, "%s calibration: done", sensor_type);
 		}
 		beep(beeper_fd, TONES::FINISHED);
 	}
