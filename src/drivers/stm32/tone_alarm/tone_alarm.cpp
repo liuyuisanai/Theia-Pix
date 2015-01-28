@@ -327,6 +327,7 @@ ToneAlarm::ToneAlarm() :
 	//_debug_enabled = true;
 	_default_tunes[TONE_STARTUP_TUNE] = "MFT240L8 O4aO5dc O4aO5dc O4aO5dc L16dcdcdcdc";		// startup tune
 	// _default_tunes[TONE_STARTUP_TUNE] = "MFT150L8 O3def1e4.c.O2f1";		// startup tune (Terminator style)
+	// _default_tunes[TONE_STARTUP_TUNE] = "MFT150L8 O3bbb4bbb4bO4dO3g.a16b4O4P4ccc.c16cO3bbb16b16baaga4"; // startup tune (Christmas style)
 	_default_tunes[TONE_ERROR_TUNE] = "MBT200a8a8a8PaaaP";						// ERROR tone
 	_default_tunes[TONE_NOTIFY_POSITIVE_TUNE] = "MFT200e8a8a";					// Notify Positive tone
 	_default_tunes[TONE_NOTIFY_NEUTRAL_TUNE] = "MFT200e8e";						// Notify Neutral tone
