@@ -44,6 +44,7 @@ MODULES		+= modules/sensors_switch
 #MODULES		+= modules/SiKUploader
 MODULES		+= modules/spi_exchange
 MODULES		+= drivers/ll905
+MODULES		+= drivers/calibration
 #MODULES		+= drivers/airspeed
 #MODULES		+= drivers/blinkm
 #MODULES		+= drivers/ets_airspeed
@@ -82,6 +83,7 @@ MODULES		+= systemcmds/mtd
 MODULES		+= systemcmds/dumpfile
 MODULES		+= systemcmds/ver
 MODULES		+= systemcmds/writefile
+MODULES		+= modules/airdog/calibrator
 
 #
 # General system control
