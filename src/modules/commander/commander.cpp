@@ -3039,7 +3039,7 @@ void *commander_low_prio_loop(void *arg)
 				if ((int)(cmd.param1) == 1) {
 					/* gyro calibration */
 					answer_command(cmd, VEHICLE_CMD_RESULT_ACCEPTED);
-					param_get(param_find("ARD_MOD_CALIB"), &modified_calibration);
+					param_get(param_find("A_CALIB_MODE"), &modified_calibration);
 					if (modified_calibration) {
 						if (calibration::calibrate_gyroscope(mavlink_fd)) {
 							calib_ret = OK;
@@ -3055,7 +3055,7 @@ void *commander_low_prio_loop(void *arg)
 				} else if ((int)(cmd.param2) == 1) {
 					/* magnetometer calibration */
 					answer_command(cmd, VEHICLE_CMD_RESULT_ACCEPTED);
-					param_get(param_find("ARD_MOD_CALIB"), &modified_calibration);
+					param_get(param_find("A_CALIB_MODE"), &modified_calibration);
 					if (modified_calibration) {
 						if (calibration::calibrate_magnetometer(mavlink_fd)) {
 							calib_ret = OK;
@@ -3088,7 +3088,7 @@ void *commander_low_prio_loop(void *arg)
 				} else if ((int)(cmd.param5) == 1) {
 					/* accelerometer calibration */
 					answer_command(cmd, VEHICLE_CMD_RESULT_ACCEPTED);
-					param_get(param_find("ARD_MOD_CALIB"), &modified_calibration);
+					param_get(param_find("A_CALIB_MODE"), &modified_calibration);
 					if (modified_calibration) {
 						if (calibration::calibrate_accelerometer(mavlink_fd)) {
 							calib_ret = OK;

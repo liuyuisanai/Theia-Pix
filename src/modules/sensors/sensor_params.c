@@ -205,7 +205,7 @@ PARAM_DEFINE_FLOAT(SENS_SON_SMOT, 0.5f);
  * @max 1
  * @group Sensor Calibration
  */
-PARAM_DEFINE_INT32(ARD_MOD_CALIB, 0);
+PARAM_DEFINE_INT32(A_CALIB_MODE, 0);
 
 /**
  * Accelerometer X-axis offset
