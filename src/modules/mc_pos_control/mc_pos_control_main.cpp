@@ -233,7 +233,7 @@ private:
         float yaw_gradient_zone_r;
 
 		float yaw_rate_max;					/**< max yaw rate */
-        
+
 		math::Vector<3> pos_p;
 		math::Vector<3> vel_p;
 		math::Vector<3> vel_i;
@@ -258,6 +258,7 @@ private:
 	bool _reset_follow_offset;
     hrt_abstime landed_time = 0;
 
+    math::Vector<4> first_ground_correction;
 	math::Vector<3> _pos;
 	math::Vector<3> _pos_sp;
 	math::Vector<3> _vel;
@@ -2541,16 +2542,44 @@ bool MulticopterPositionControl::ground_dist_correction(){
 
 	bool alt_corrected = false;
 
+    //fprintf(stderr, "first_ground_correction %.3f %.3f %.3f %.3f\n"
+    //        ,(double) first_ground_correction(0)
+    //        ,(double) first_ground_correction(1)
+    //        ,(double) first_ground_correction(2)
+    //        ,(double) first_ground_correction(3)
+    //       );
 	if (available_drop < 0){
-	//must go up
-		// if (desired_drop <= available_drop){
-		// //want go up ok - don't limit	
-		// }
-		// else {
-		// //want go up to little - help it
-		// 	_pos_sp(2) = _pos(2) + available_drop - _params.sonar_safe_belt ;
-		// 	alt_corrected = true;
-		// }
+        //must go up
+        if (first_ground_correction(3) == 0.0f) {
+            /* if this is first ground correction - remember this
+             * @description: this feature is implemented in case range finder is biased
+             *               physicly for some reason (dirsty lenses, elecronics bug)
+             */
+            first_ground_correction(0) = _pos(0);
+            first_ground_correction(1) = _pos(1);
+            first_ground_correction(2) = _pos(2);
+            first_ground_correction(3) = available_drop;
+            fprintf(stderr, "[pos] First time range correction, drop %.3f\n"
+                    ,(double) -available_drop);
+        } else {
+            // This is not a first time we are correcting altitude
+            //if (_pos(2) - available_drop < first_ground_correction(2)) {
+            if (first_ground_correction(2) + first_ground_correction(3) > _pos(2)) {
+                // According to position_estimator we already corrected vertical drop
+                // If we are still in the acceptance radius - disable ground distance correction
+                //math::Vector<2> cur_xy(_pos(0), _pos(1));
+                //math::Vector<2> first_xy(first_ground_correction(0), first_ground_correction(1));
+                fprintf(stderr, "[pos] %.3f > %.3f\n"
+                        ,(double) (first_ground_correction(2) + first_ground_correction(3))
+                        ,(double) _pos(2));
+                //fprintf(stderr, "[nav] radius: %.3f, accept_radius: %.3f\n"
+                //        ,(double) (cur_xy - first_xy).length(), (double) (_params.accept_radius * 3.0f));
+                //if ( (cur_xy - first_xy).length() < _params.accept_radius * 0.3f ) {
+                    return false;
+                //}
+            }
+        }
+
         if ( - desired_drop < - available_drop )
             // If we want to go up not sufficiently
         {
@@ -2561,6 +2590,10 @@ bool MulticopterPositionControl::ground_dist_correction(){
         }
 	}
 	else {
+        if (first_ground_correction(3) != 0.0f) {
+            fprintf(stderr, "[pos] reseting first_ground_correction\n");
+            first_ground_correction.zero();
+        }
 	//can go down
 		if (desired_drop > 0){
 		//want to go down
