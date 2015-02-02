@@ -97,9 +97,22 @@ static const uint32_t updates_counter_len = 1000000;
 //static const float max_flow = 1.0f;	// max flow value that can be used, rad/s
 static bool mag_declination_set = false;
 
+// TODO [Max] temp
+typedef struct {
+    int range_reading;
+    float estimate;
+    float variance;
+    float st_deviation;
+}range_finder_analytics;
+
+range_finder_analytics temp;
+//temp.range_reading = 0;
+//temp.estimate = 0.0f;
+
 __EXPORT int position_estimator_inav_main(int argc, char *argv[]);
 
 int position_estimator_inav_thread_main(int argc, char *argv[]);
+float range_finder_func(struct range_finder_report range_finder);
 
 static void usage(const char *reason);
 
@@ -565,6 +578,7 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                                }
                             case RANGE_FINDER_TYPE_LASER: {
 
+                                        //range_finder_func(range_finder);
                                         float angle_correction = 1;
                                         if (att.R[2][2] < 0.85f) {
                                             angle_correction = 0.95; //cos(15) <- maximal correction if we are flying with pi/4 angle
@@ -1310,4 +1324,20 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 	mavlink_log_info(mavlink_fd, "[inav] stopped");
 	thread_running = false;
 	return 0;
+}
+/*
+ * author:      Max Shvetsov <max@airdog.com>
+ * description: this function is used to validate sensor based on reading prediction
+ *              and previous reading analysis 
+ * group:       range finder
+ */
+float range_finder_func(struct range_finder_report range_finder) {
+    temp.estimate = (temp.range_reading * temp.estimate + range_finder.distance) / ++temp.range_reading;
+
+    temp.variance = (1.0f/(float) temp.range_reading) * ( temp.variance * (temp.range_reading - 1) + ( (range_finder.distance - temp.estimate) * (range_finder.distance - temp.estimate) )); 
+    temp.st_deviation = sqrt(temp.variance * temp.range_reading / (temp.range_reading - 1) );
+    fprintf(stderr, " real %.3f estimate %.3f variance %.7f st_deviation %.7f reading %d\n"
+            ,(double) range_finder.distance ,(double) temp.estimate, (double) temp.variance, (double) temp.st_deviation, temp.range_reading
+           );
+    return 0;
 }
