@@ -167,6 +167,17 @@ struct handle<ModeId::FLIGHT_ALT, EventKind::SHORT_KEYPRESS, BTN_MASK_CENTER>
 	exec(App & app)
 	{
 		say("FLIGHT_ALT SHORT_KEYPRESS CENTER");
+		app.set_mode_transition(ModeId::FLIGHT_CAM);
+	}
+};
+
+template <>
+struct handle<ModeId::FLIGHT_CAM, EventKind::SHORT_KEYPRESS, BTN_MASK_CENTER>
+{
+	static void
+	exec(App & app)
+	{
+		say("FLIGHT_CAM SHORT_KEYPRESS CENTER");
 		app.set_mode_transition(ModeId::FLIGHT);
 	}
 };
@@ -178,6 +189,17 @@ struct handle<ModeId::FLIGHT_ALT, EventKind::KEY_TIMEOUT, BTN_NONE>
 	exec(App & app)
 	{
 		say("FLIGHT_ALT KEY_TIMEOUT");
+		app.set_mode_transition(ModeId::FLIGHT);
+	}
+};
+
+template <>
+struct handle<ModeId::FLIGHT_CAM, EventKind::KEY_TIMEOUT, BTN_NONE>
+{
+	static void
+	exec(App & app)
+	{
+		say("FLIGHT_CAM KEY_TIMEOUT");
 		app.set_mode_transition(ModeId::FLIGHT);
 	}
 };

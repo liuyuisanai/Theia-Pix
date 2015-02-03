@@ -171,6 +171,57 @@ struct handle< ModeId::FLIGHT_ALT, EventKind::KEY_RELEASE, BUTTON, When<
 	}
 };
 
+/*
+ * FLIGHT_CAM mode.
+ */
+
+template <EventKind EVENT>
+struct handle< ModeId::FLIGHT_CAM, EVENT, BTN_MASK_UP, When<
+	event_is_short_or_repeat_press(EVENT)
+> > {
+	static void
+	exec(App & app)
+	{
+		say("Camera up");
+		app.drone_cmd.send_command(REMOTE_CMD_CAM_UP);
+	}
+};
+
+template <EventKind EVENT>
+struct handle< ModeId::FLIGHT_CAM, EVENT, BTN_MASK_DOWN, When<
+	event_is_short_or_repeat_press(EVENT)
+> > {
+	static void
+	exec(App & app)
+	{
+		say("Camera down");
+		app.drone_cmd.send_command(REMOTE_CMD_CAM_DOWN);
+	}
+};
+
+template <EventKind EVENT>
+struct handle< ModeId::FLIGHT_CAM, EVENT, BTN_MASK_LEFT, When<
+	event_is_short_or_repeat_press(EVENT)
+> > {
+	static void
+	exec(App & app)
+	{
+		say("Camera left");
+		app.drone_cmd.send_command(REMOTE_CMD_CAM_LEFT);
+	}
+};
+
+template <EventKind EVENT>
+struct handle< ModeId::FLIGHT_CAM, EVENT, BTN_MASK_RIGHT, When<
+	event_is_short_or_repeat_press(EVENT)
+> > {
+	static void
+	exec(App & app)
+	{
+		say("Camera right");
+		app.drone_cmd.send_command(REMOTE_CMD_CAM_RIGHT);
+	}
+};
 
 /*
  * SHORTCUT mode.

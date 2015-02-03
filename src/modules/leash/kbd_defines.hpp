@@ -59,6 +59,7 @@ enum class ModeId : uint8_t
 	CONFIRM_ARM,
 	FLIGHT,
 	FLIGHT_ALT,
+    FLIGHT_CAM,
 	SHORTCUT,
 	FLIGHT_NO_SIGNAL,
 	               UPPER_BOUND // ValueRangeSwitch UPPER_BOUND
@@ -72,6 +73,7 @@ template <> struct ModeDebugName<ModeId::MENU       > { static constexpr name_t 
 template <> struct ModeDebugName<ModeId::CONFIRM_ARM> { static constexpr name_t name = "ModeId::CONFIRM_ARM"; };
 template <> struct ModeDebugName<ModeId::FLIGHT     > { static constexpr name_t name = "ModeId::FLIGHT     "; };
 template <> struct ModeDebugName<ModeId::FLIGHT_ALT > { static constexpr name_t name = "ModeId::FLIGHT_ALT "; };
+template <> struct ModeDebugName<ModeId::FLIGHT_CAM > { static constexpr name_t name = "ModeId::FLIGHT_CAM "; };
 template <> struct ModeDebugName<ModeId::SHORTCUT   > { static constexpr name_t name = "ModeId::SHORTCUT   "; };
 template <> struct ModeDebugName<ModeId::FLIGHT_NO_SIGNAL> { static constexpr name_t name = "ModeId::FLIGHT_NO_SIGNAL"; };
 
