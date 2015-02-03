@@ -66,6 +66,13 @@ __EXPORT bool calibrate_gyroscope(int mavlink_fd, const unsigned int sample_coun
 		return (false);
 	}
 	prepare("Gyro", beeper_fd);
+	if (!check_resting_state(1000, 500, mavlink_fd, 0.1f)) {
+		warnx("Vehicle is not standing still! Check accel calibration.");
+		mavlink_log_critical(mavlink_fd, "Vehicle is not standing still! Check accel calibration.");
+		beep(beeper_fd, TONES::NEGATIVE);
+		usleep(1500000); // Allow the tune to play out
+		return (false);
+	}
 	printf("Parameters: samples=%d, error count=%d, timeout=%d\n", sample_count, max_error_count, timeout);
 	fflush(stdout);
 	beep(beeper_fd, TONES::WORKING);
