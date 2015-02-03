@@ -863,7 +863,7 @@ int prearm_check(const struct vehicle_status_s *status, const int mavlink_fd)
 
 	/* Launch gyro calibration in cases where prearm checks are required */
 	// TODO! Consider removing the sanity checks above - gyro has stricter accel checks
-	if (!calibration::calibrate_gyroscope(mavlink_fd, 1000)) { // Sample count reduced to provide faster arming
+	if (!calibration::calibrate_gyroscope(mavlink_fd, 1000, 20, 100)) { // Parameters reduced to allow faster results
 		mavlink_log_critical(mavlink_fd, "Prearm gyro calibration failed!");
 		failed = true;
 		goto system_eval;
