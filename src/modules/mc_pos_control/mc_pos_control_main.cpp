@@ -402,6 +402,11 @@ private:
 	void		set_camera_pitch(float pitch);
 
 	/**
+	 * Set camera yaw (smooth speed)
+	 */
+    void        set_camera_yaw();
+
+	/**
 	 * Shim for calling task_main from task_create.
 	 */
 	static void	task_main_trampoline(int argc, char *argv[]);
@@ -1699,14 +1704,15 @@ MulticopterPositionControl::control_follow(float dt)
 	}
 }
 
+void MulticopterPositionControl::set_camera_yaw(){
+    /* Adjust yaw by user offset from leash */
+    _att_sp.yaw_body += _params.cam_yaw_step * _cam_offset.yaw_offset;
+}
+
 static float last_pitch = 0.0f;
 static float pitch_change_speed = 0.005f;
 void MulticopterPositionControl::set_camera_pitch(float pitch){
-    if (_cam_offset.pitch_offset != 0.0f) {
-        mavlink_log_info(_mavlink_fd, "cam_offset.pitch %d\n", _cam_offset.pitch_offset);
-    } else {
-        mavlink_log_info(_mavlink_fd, "no cam_offset.pitch\n");
-    }
+    /* Adjust pitch by user offset from leash */
 	float pitch_delta = pitch - last_pitch + _params.cam_pitch_step * _cam_offset.pitch_offset;
 	float pitch_delta_20th = pitch_delta/12.f;
 	if (fabsf(pitch_delta) > pitch_change_speed){
@@ -1974,6 +1980,7 @@ MulticopterPositionControl::task_main()
 				_reset_follow_offset = true;
 			}
 
+            set_camera_yaw();
 			/* fill local position setpoint */
 			_local_pos_sp.timestamp = hrt_absolute_time();
 			_local_pos_sp.x = _pos_sp(0);
