@@ -35,4 +35,13 @@ __EXPORT bool calibrate_magnetometer(int mavlink_fd=0, unsigned int sample_count
  * @return true if calibration was successful, false otherwise
  */
 __EXPORT bool calibrate_accelerometer(int mavlink_fd=0);
+
+/* Checks if the copter is in rest state (aka standing still)
+ * timeout - timeout after which the function will consider copter to be moving
+ * minimal_time - minimal time in ms that copter has to stand still, if 0 then only one sample will be read
+ * mavlink_fd - if not zero, then warnings will be sent trough specified mavlink channel
+ * threshold - in m/s - the function will be true only if difference between measurement and g will be less
+ * @return true if the copter is still, false - if copter is moving or accel fails self-test
+ */
+__EXPORT bool check_resting_state(unsigned int timeout, unsigned int minimal_time = 0, int mavlink_fd = 0, float threshold = 0.1f);
 } // End calibration namespace

@@ -13,6 +13,12 @@
 #include <string.h>
 #include <unistd.h>
 
+// TODO! Still detector includes, not needed when still detector is moved to a seprate file
+#include <modules/uORB/topics/sensor_combined.h>
+#include <drivers/drv_hrt.h>
+#include <geo/geo.h>
+#include <errno.h>
+
 #include "calibrator.hpp"
 #include "calibration_commons.hpp"
 #include "accel_calibration.hpp"
@@ -182,6 +188,95 @@ __EXPORT bool calibrate_accelerometer(int mavlink_fd) {
 	else {
 		return false;
 	}
+}
+
+// TODO! Get rid of copy-paste with optional mavlink reporting
+__EXPORT bool check_resting_state(unsigned int timeout, unsigned int minimal_time, int mavlink_fd, float threshold) {
+	int fd = open(ACCEL_DEVICE_PATH, O_RDONLY);
+	if (fd < 0) {
+		printf("Failed to open accel to check stillness");
+		if (mavlink_fd != 0) {
+			mavlink_log_critical(mavlink_fd, "Failed to open accel to check stillness");
+		}
+		return false;
+	}
+	if (ioctl(fd, ACCELIOCSELFTEST, 0) != 0) {
+		printf("Accel self test failed. Check calibration");
+		if (mavlink_fd != 0) {
+			mavlink_log_critical(mavlink_fd, "Accel self test failed. Check calibration");
+		}
+		close(fd);
+		return false;
+	}
+	close (fd);
+	// TODO! ^ Would become SENSOR_DATA_FAIL while timeouts -> just FAIL
+
+	// set up the poller
+	int sensor_topic = orb_subscribe(ORB_ID(sensor_combined));
+	sensor_combined_s report;
+	pollfd poll_data;
+	poll_data.fd = sensor_topic;
+	poll_data.events = POLLIN;
+
+	int poll_res = 0;
+
+	// Squared for comparison a > g + threshold or a < g - threshold, we get: |a^2 - g^2 - threshold^2| > 2 * g * threshold
+	const float acc_diff = CONSTANTS_ONE_G * CONSTANTS_ONE_G + threshold * threshold;
+	const float to_compare = 2.0f * CONSTANTS_ONE_G * threshold;
+
+	unsigned int error_count = 0;
+	hrt_abstime end_time = hrt_absolute_time() + timeout * 1000;
+	minimal_time *= 1000;
+	hrt_abstime still_start = 0;
+	if (minimal_time == 0) {
+		still_start = 1; // Allows to use the same logic as "repeated still measurement"
+	}
+	unsigned int max_error_count = 100;
+	bool res = false;
+	float tot_acc;
+	while (error_count <= max_error_count && hrt_absolute_time() < end_time) {
+		// poll expects an array of length 1, but single pointer will work too
+		poll_res = poll(&poll_data, 1, 100);
+		if (poll_res == 1) {
+			if (orb_copy(ORB_ID(sensor_combined), sensor_topic, &report) == 0) {
+				tot_acc = 0.0f;
+				for (int i = 0; i < 3; ++i) {
+					tot_acc += report.accelerometer_m_s2[i] * report.accelerometer_m_s2[i];
+				}
+				// Moving
+				if (fabsf(tot_acc - acc_diff) > to_compare) {
+					res = false;
+					if (still_start != 0) {
+						// printf("Not still! Acc: % 9.6f\n", (double) sqrtf(tot_acc)); // TODO! Debug output
+						still_start = 0;
+					}
+					if (minimal_time == 0) {
+						break; // Quit instantly in single sample mode
+					}
+				}
+				// First still measurement
+				else if (still_start == 0) {
+					still_start = hrt_absolute_time();
+				}
+				// Single sample mode or repeated still measurement with enough time passed
+				else if (minimal_time == 0 || (hrt_absolute_time() - still_start >= minimal_time)) {
+					res = true;
+					break;
+				}
+			}
+			else {
+				++error_count;
+			}
+		}
+		else { // res == 0 - timeout, res < 0 - errors, res > 1 - most probably, corrupted memory.
+			++error_count;
+			printf("Kuso! Poll error! Return: %d, errno: %d, errcnt: %d\n", poll_res, errno, error_count); // TODO! Debug output. "Kuso!" in Japanese is roughly equivalent to "shit!"
+		}
+
+	}
+	close(sensor_topic);
+
+	return res;
 }
 
 inline void prepare(const char* sensor_type, const int beeper_fd) {
@@ -377,6 +472,22 @@ extern "C" __EXPORT int calibrator_main(int argc, char ** argv)
 	else if (strcmp(sensname,"all") == 0) {
 		fprintf(stderr, MSG_CALIBRATION_NOT_IMPLEMENTED);
 		return 1;
+	}
+	// TODO! TMP HACK!
+	else if (strcmp(sensname,"still") == 0) {
+		unsigned int timeout;
+		unsigned int minimal_timeout;
+		float threshold;
+		timeout = strtol(argv[2], nullptr, 0);
+		minimal_timeout = strtol(argv[3], nullptr, 0);
+		threshold = (float) strtod(argv[4], nullptr);
+		bool res = check_resting_state(timeout, minimal_timeout, 0, threshold);
+		if (res) {
+			printf("Yes!\n");
+		}
+		else {
+			printf("No!\n");
+		}
 	}
 	else {
 		fprintf(stderr, MSG_CALIBRATION_WRONG_MODULE, sensname);
