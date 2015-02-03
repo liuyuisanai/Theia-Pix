@@ -71,6 +71,7 @@
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/target_global_position.h>
 #include <uORB/topics/position_restriction.h>
+#include <uORB/topics/user_camera_offsets.h>
 #include <systemlib/param/param.h>
 #include <systemlib/err.h>
 #include <systemlib/systemlib.h>
@@ -123,6 +124,7 @@ private:
 	int		_control_task;			/**< task handle for task */
 	int		_mavlink_fd;			/**< mavlink fd */
 
+    int     _cam_offset_sub;         /**< defined from leash camera offset subscription */
 	int		_att_sub;				/**< vehicle attitude subscription */
 	int		_att_sp_sub;			/**< vehicle attitude setpoint */
 	int		_control_mode_sub;		/**< vehicle control mode subscription */
@@ -155,9 +157,11 @@ private:
 	struct target_global_position_s		_target_pos;	/**< target global position */
 	struct actuator_controls_s			_cam_control;	/**< camera control */
 	struct position_restriction_s		_pos_restrict;	/**< position restriction*/
-
+    struct camera_user_offsets_s        _cam_offset;    /**< user defined camera offset */
 
 	struct {
+        param_t cam_pitch_step;
+        param_t cam_yaw_step;
 		param_t thr_min;
 		param_t thr_max;
 		param_t z_p;
@@ -204,6 +208,8 @@ private:
 	}		_params_handles;		/**< handles for interesting parameters */
 
 	struct {
+        float cam_pitch_step;
+        float cam_yaw_step;
 		float thr_min;
 		float thr_max;
 		float tilt_max_air;
@@ -450,6 +456,7 @@ MulticopterPositionControl::MulticopterPositionControl() :
 	_mavlink_fd(-1),
 
 /* subscriptions */
+    _cam_offset_sub(-1),
 	_att_sub(-1),
 	_att_sp_sub(-1),
 	_control_mode_sub(-1),
@@ -479,6 +486,7 @@ MulticopterPositionControl::MulticopterPositionControl() :
 	_loop_perf(perf_alloc(PC_ELAPSED, "mc_pos_control")),
 	_pitchLPF ()
 {
+    memset(&_cam_offset, 0, sizeof(_cam_offset));
 	memset(&_att, 0, sizeof(_att));
 	memset(&_att_sp, 0, sizeof(_att_sp));
 	memset(&_manual, 0, sizeof(_manual));
@@ -522,6 +530,8 @@ MulticopterPositionControl::MulticopterPositionControl() :
 	_tpos_predictor.set_min_latency(20000);
 	_tpos_predictor.set_max_latency(1000000);
 
+    _params_handles.cam_pitch_step = param_find("CAM_PITCH_STEP");
+    _params_handles.cam_yaw_step = param_find("CAM_YAW_STEP");
 	_params_handles.thr_min		= param_find("MPC_THR_MIN");
 	_params_handles.thr_max		= param_find("MPC_THR_MAX");
 	_params_handles.z_p			= param_find("MPC_Z_P");
@@ -614,6 +624,8 @@ MulticopterPositionControl::parameters_update(bool force)
 	}
 
 	if (updated || force) {
+		param_get(_params_handles.cam_pitch_step, &_params.cam_pitch_step);
+		param_get(_params_handles.cam_yaw_step, &_params.cam_yaw_step);
 		param_get(_params_handles.thr_min, &_params.thr_min);
 		param_get(_params_handles.thr_max, &_params.thr_max);
 		param_get(_params_handles.tilt_max_air, &_params.tilt_max_air);
@@ -724,6 +736,12 @@ void
 MulticopterPositionControl::poll_subscriptions()
 {
 	bool updated;
+
+    orb_check(_cam_offset_sub, &updated);
+
+    if (updated) {
+        orb_copy(ORB_ID(camera_user_offsets), _cam_offset_sub, &_cam_offset);
+    }
 
 	orb_check(_att_sub, &updated);
 
@@ -1684,7 +1702,12 @@ MulticopterPositionControl::control_follow(float dt)
 static float last_pitch = 0.0f;
 static float pitch_change_speed = 0.005f;
 void MulticopterPositionControl::set_camera_pitch(float pitch){
-	float pitch_delta = pitch - last_pitch;
+    if (_cam_offset.pitch_offset != 0.0f) {
+        mavlink_log_info(_mavlink_fd, "cam_offset.pitch %d\n", _cam_offset.pitch_offset);
+    } else {
+        mavlink_log_info(_mavlink_fd, "no cam_offset.pitch\n");
+    }
+	float pitch_delta = pitch - last_pitch + _params.cam_pitch_step * _cam_offset.pitch_offset;
 	float pitch_delta_20th = pitch_delta/12.f;
 	if (fabsf(pitch_delta) > pitch_change_speed){
 		if (pitch_delta > 0.0f) {
@@ -1750,6 +1773,7 @@ MulticopterPositionControl::task_main()
 	/*
 	 * do subscriptions
 	 */
+    _cam_offset_sub = orb_subscribe(ORB_ID(camera_user_offsets));
 	_att_sub = orb_subscribe(ORB_ID(vehicle_attitude));
 	_att_sp_sub = orb_subscribe(ORB_ID(vehicle_attitude_setpoint));
 	_control_mode_sub = orb_subscribe(ORB_ID(vehicle_control_mode));

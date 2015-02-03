@@ -42,6 +42,24 @@
 #include <systemlib/param/param.h>
 
 /**
+ * Camera pitch correction step
+ *
+ * @min 0.0
+ * @max 1.0
+ * @group camera
+ * */
+PARAM_DEFINE_FLOAT(CAM_PITCH_STEP, 0.05f);
+
+/**
+ * Camera yaw correction step
+ *
+ * @min 0.0
+ * @max 1.0
+ * @group camera
+ * */
+PARAM_DEFINE_FLOAT(CAM_YAW_STEP, 5.0f);
+
+/**
  * Allowed landing speed
  *
  * @min max unlimited

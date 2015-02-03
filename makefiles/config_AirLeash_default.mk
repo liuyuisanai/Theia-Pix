@@ -37,6 +37,7 @@ MODULES		+= modules/sensors
 MODULES		+= modules/sensors_probe
 MODULES		+= modules/sensors_switch
 MODULES		+= modules/spi_exchange
+MODULES		+= drivers/calibration
 #MODULES		+= drivers/airspeed
 #MODULES		+= drivers/blinkm
 #MODULES		+= drivers/ets_airspeed
@@ -79,6 +80,7 @@ MODULES		+= systemcmds/ver
 #MODULES		+= systemcmds/pwm
 #MODULES		+= systemcmds/tests
 #MODULES		+= systemcmds/writefile
+MODULES		+= modules/airdog/calibrator
 
 #
 # General system control

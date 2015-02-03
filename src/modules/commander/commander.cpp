@@ -671,11 +671,11 @@ bool handle_command(struct vehicle_status_s *status_local
                     || cmd->param1 == REMOTE_CMD_CAM_LEFT
                     || cmd->param1 == REMOTE_CMD_CAM_RIGHT ) {
 
-                bool updated;
-                orb_check(_user_camera_offset_sub, &updated);
-                if (updated) {
-                    orb_copy(ORB_ID(camera_user_offsets), _user_camera_offset_sub, &camera_offset);
-                }
+                //bool updated;
+                //orb_check(_user_camera_offset_sub, &updated);
+                //if (updated) {
+                //    orb_copy(ORB_ID(camera_user_offsets), _user_camera_offset_sub, &camera_offset);
+                //}
                 switch((int)(cmd->param1)) {
                     case REMOTE_CMD_CAM_UP:
                         camera_offset->pitch_offset++;
