@@ -264,5 +264,8 @@ ORB_DEFINE(debug_data, struct debug_data_s);
 #include "topics/position_restriction.h"
 ORB_DEFINE(position_restriction, struct position_restriction_s);
 
+#include "topics/user_camera_offsets.h"
+ORB_DEFINE(camera_user_offsets, struct camera_user_offsets_s);
+
 #include "topics/mavlink_receive_stats.h"
 ORB_DEFINE(mavlink_receive_stats, struct mavlink_receive_stats_s);

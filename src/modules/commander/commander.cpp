@@ -85,6 +85,7 @@
 #include <uORB/topics/telemetry_status.h>
 #include <uORB/topics/commander_request.h>
 #include <uORB/topics/position_restriction.h>
+#include <uORB/topics/user_camera_offsets.h>
 
 
 #include <drivers/drv_led.h>
@@ -217,7 +218,7 @@ void usage(const char *reason);
 /**
  * React to commands that are sent e.g. from the mavlink module.
  */
-bool handle_command(struct vehicle_status_s *status, const struct safety_s *safety, struct vehicle_command_s *cmd, struct actuator_armed_s *armed, struct home_position_s *home, struct vehicle_global_position_s *global_pos, orb_advert_t *home_pub);
+bool handle_command(struct vehicle_status_s *status, const struct safety_s *safety, struct vehicle_command_s *cmd, struct actuator_armed_s *armed, struct home_position_s *home, struct vehicle_global_position_s *global_pos, orb_advert_t *home_pub, orb_advert_t *camera_offset_pub, int _user_camera_offset_sub, struct camera_user_offsets_s camera_offset);
 
 /**
  * Mainloop of commander.
@@ -419,9 +420,16 @@ transition_result_t arm_disarm(bool arm, const int mavlink_fd_local, const char 
 	return arming_res;
 }
 
-bool handle_command(struct vehicle_status_s *status_local, const struct safety_s *safety_local,
-	struct vehicle_command_s *cmd, struct actuator_armed_s *armed_local,
-	struct home_position_s *home, struct vehicle_global_position_s *global_pos, orb_advert_t *home_pub)
+bool handle_command(struct vehicle_status_s *status_local
+        , const struct safety_s *safety_local
+        , struct vehicle_command_s *cmd
+        , struct actuator_armed_s *armed_local
+        , struct home_position_s *home
+        , struct vehicle_global_position_s *global_pos
+        , orb_advert_t *home_pub
+        , orb_advert_t *camera_offset_pub
+        , int _user_camera_offset_sub
+        , struct camera_user_offsets_s *camera_offset)
 {
 	/* only handle commands that are meant to be handled by this system and component */
 	if (cmd->target_system != status_local->system_id || ((cmd->target_component != status_local->component_id) && (cmd->target_component != 0))) { // component_id 0: valid for all components
@@ -656,6 +664,43 @@ bool handle_command(struct vehicle_status_s *status_local, const struct safety_s
 				}
 			}
 			*/
+
+            /* process user camera controll */
+            if (cmd->param1 == REMOTE_CMD_CAM_UP
+                    || cmd->param1 == REMOTE_CMD_CAM_DOWN
+                    || cmd->param1 == REMOTE_CMD_CAM_LEFT
+                    || cmd->param1 == REMOTE_CMD_CAM_RIGHT ) {
+
+                bool updated;
+                orb_check(_user_camera_offset_sub, &updated);
+                if (updated) {
+                    orb_copy(ORB_ID(camera_user_offsets), _user_camera_offset_sub, &camera_offset);
+                }
+                switch((int)(cmd->param1)) {
+                    case REMOTE_CMD_CAM_UP:
+                        camera_offset->pitch_offset++;
+                        break;
+                    case REMOTE_CMD_CAM_DOWN:
+                        camera_offset->pitch_offset--;
+                        break;
+                    case REMOTE_CMD_CAM_LEFT:
+                        camera_offset->yaw_offset--;
+                        break;
+                    case REMOTE_CMD_CAM_RIGHT:
+                        camera_offset->yaw_offset++;
+                        break;
+                }
+
+                /* announce new camera offset */
+                if (*camera_offset_pub > 0) {
+                    orb_publish(ORB_ID(camera_user_offsets), *camera_offset_pub, camera_offset);
+
+                } else {
+                    *camera_offset_pub = orb_advertise(ORB_ID(camera_user_offsets), camera_offset);
+                }
+            }
+
+            
 			if (main_ret != TRANSITION_DENIED){
 				cmd_result = VEHICLE_CMD_RESULT_ACCEPTED;
 			} else {
@@ -965,6 +1010,9 @@ int commander_thread_main(int argc, char *argv[])
 	struct home_position_s home;
 	memset(&home, 0, sizeof(home));
 
+    /* user camera offset */
+    orb_advert_t camera_offset_pub = -1;
+
 	/* init mission state, do it here to allow navigator to use stored mission even if mavlink failed to start */
 	orb_advert_t mission_pub = -1;
 	mission_s mission;
@@ -1141,6 +1189,11 @@ int commander_thread_main(int argc, char *argv[])
 	int _pos_restrict_sub = orb_subscribe(ORB_ID(position_restriction)); 
     struct position_restriction_s pos_restrict;	/**< position restriction*/
 	memset(&pos_restrict, 0, sizeof(pos_restrict));
+
+    /* Subscribe to user camera offset topic */
+    int _user_camera_offset_sub = orb_subscribe(ORB_ID(camera_user_offsets));
+    struct camera_user_offsets_s camera_offset;
+	memset(&camera_offset, 0, sizeof(camera_offset));
 
 	control_status_leds(&status, &armed, true);
 
@@ -2095,7 +2148,16 @@ int commander_thread_main(int argc, char *argv[])
 			orb_copy(ORB_ID(vehicle_command), cmd_sub, &cmd);
 
 			/* handle it */
-			if (handle_command(&status, &safety, &cmd, &armed, &home, &global_position, &home_pub)) {
+			if (handle_command(&status
+                        , &safety
+                        , &cmd
+                        , &armed
+                        , &home
+                        , &global_position
+                        , &home_pub
+                        , &camera_offset_pub
+                        , _user_camera_offset_sub
+                        , &camera_offset)) {
 				status_changed = true;
 			}
 		}
