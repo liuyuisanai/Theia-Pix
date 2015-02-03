@@ -71,6 +71,7 @@ __EXPORT bool calibrate_gyroscope(int mavlink_fd, const unsigned int sample_coun
 		mavlink_log_critical(mavlink_fd, "Vehicle is not standing still! Check accel calibration.");
 		beep(beeper_fd, TONES::NEGATIVE);
 		usleep(1500000); // Allow the tune to play out
+		close(beeper_fd);
 		return (false);
 	}
 	printf("Parameters: samples=%d, error count=%d, timeout=%d\n", sample_count, max_error_count, timeout);
@@ -201,14 +202,14 @@ __EXPORT bool calibrate_accelerometer(int mavlink_fd) {
 __EXPORT bool check_resting_state(unsigned int timeout, unsigned int minimal_time, int mavlink_fd, float threshold) {
 	int fd = open(ACCEL_DEVICE_PATH, O_RDONLY);
 	if (fd < 0) {
-		printf("Failed to open accel to check stillness");
+		printf("Failed to open accel to check stillness\n");
 		if (mavlink_fd != 0) {
 			mavlink_log_critical(mavlink_fd, "Failed to open accel to check stillness");
 		}
 		return false;
 	}
 	if (ioctl(fd, ACCELIOCSELFTEST, 0) != 0) {
-		printf("Accel self test failed. Check calibration");
+		printf("Accel self test failed. Check calibration\n");
 		if (mavlink_fd != 0) {
 			mavlink_log_critical(mavlink_fd, "Accel self test failed. Check calibration");
 		}
@@ -385,6 +386,7 @@ inline void print_scales(SENSOR_TYPE sensor, int mavlink_fd) {
 	if (ioctl(dev_fd, ioctl_cmd, (unsigned long) &calibration) == 0) {
 		print_calibration(calibration, mavlink_fd);
 	}
+	close(dev_fd);
 }
 
 } // End calibration namespace
