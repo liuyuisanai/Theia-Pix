@@ -28,7 +28,8 @@ enum class TONES : uint8_t {
 	NEGATIVE,
 	FINISHED,
 	ERROR,
-	STOP // stops the current tune
+	STOP, // stops the current tune
+	WORKING
 };
 
 // TODO! Consider using this class for prepare and print_results functions too
@@ -61,8 +62,12 @@ __EXPORT bool calibrate_gyroscope(int mavlink_fd, const unsigned int sample_coun
 	prepare("Gyro", beeper_fd);
 	printf("Parameters: samples=%d, error count=%d, timeout=%d\n", sample_count, max_error_count, timeout);
 	fflush(stdout);
+	beep(beeper_fd, TONES::WORKING);
 	res = do_gyro_calibration(sample_count, max_error_count, timeout);
+	beep(beeper_fd, TONES::STOP);
 	print_results(res, "gyro", beeper_fd, mavlink_fd);
+	// TODO! Consider implementing different times inside print_result
+	usleep(1500000); // Allow the tune to play out
 	close(beeper_fd);
 	if (res == CALIBRATION_RESULT::SUCCESS) {
 		print_scales(SENSOR_TYPE::GYRO, mavlink_fd);
@@ -85,16 +90,18 @@ __EXPORT bool calibrate_magnetometer(int mavlink_fd, unsigned int sample_count,
 	}
 	prepare("Mag", beeper_fd);
 	res = do_mag_builtin_calibration();
+	// Could possibly fail in the future if "no internal calibration" warning will be implemented
 	if (res == CALIBRATION_RESULT::SUCCESS) {
-		// Could possibly fail in the future if "no internal calibration" warning will be implemented
-		beep(beeper_fd, TONES::WAITING_FOR_USER);
-		sleep(3); // hack because we don't detect if rotation has started
-		beep(beeper_fd, TONES::STOP);
 		printf("Sampling magnetometer offsets. Do a full rotation around each axis.\n");
 		printf("Parameters: samples=%d, max_errors=%d,\n\ttotal_time=%d ms, timeout_gap=%d ms\n",
 				sample_count, max_error_count, total_time, poll_timeout_gap);
 		fflush(stdout); // ensure print finishes before calibration pauses the screen
+		beep(beeper_fd, TONES::WAITING_FOR_USER);
+		sleep(3); // hack because we don't detect if rotation has started
+		beep(beeper_fd, TONES::STOP);
+		beep(beeper_fd, TONES::WORKING);
 		res = do_mag_offset_calibration(sample_count, max_error_count, total_time, poll_timeout_gap);
+		beep(beeper_fd, TONES::STOP);
 	}
 	print_results(res, "mag", beeper_fd, mavlink_fd);
 	close(beeper_fd);
@@ -139,9 +146,11 @@ __EXPORT bool calibrate_accelerometer(int mavlink_fd) {
 			fflush(stdout); // ensure puts finished before calibration pauses the screen
 			beep(beeper_fd, TONES::WAITING_FOR_USER);
 			res = calib.sample_axis();
+			beep(beeper_fd, TONES::STOP);
 			if (res == CALIBRATION_RESULT::SUCCESS) {
-				beep(beeper_fd, TONES::STOP);
+				beep(beeper_fd, TONES::WORKING);
 				res = calib.read_samples();
+				beep(beeper_fd, TONES::STOP);
 				if (res == CALIBRATION_RESULT::SUCCESS) {
 					printf("Successfully sampled the axis.\n");
 				}
@@ -150,7 +159,6 @@ __EXPORT bool calibrate_accelerometer(int mavlink_fd) {
 				}
 			}
 			else if (res == CALIBRATION_RESULT::AXIS_DONE_FAIL) {
-				beep(beeper_fd, TONES::STOP);
 				sleep(1); // ensures the tunes don't blend too much
 				beep(beeper_fd, TONES::NEGATIVE);
 				printf("Axis has been sampled already.\n");
@@ -210,6 +218,9 @@ inline void beep(const int beeper_fd, TONES tone) {
 		break;
 	case TONES::STOP: // used to stop the "WAITING_FOR_USER" tune
 		mapped_tone = TONE_STOP_TUNE;
+		break;
+	case TONES::WORKING:
+		mapped_tone = TONE_PROCESSING; // should be continuous - tune string starts with MB
 		break;
 	}
 	// currently errors are ignored

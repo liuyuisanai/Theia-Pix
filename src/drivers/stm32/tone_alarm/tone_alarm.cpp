@@ -345,6 +345,7 @@ ToneAlarm::ToneAlarm() :
 	_default_tunes[TONE_WRONG_INPUT] = "MFT200 <a4.<<c2.";		// wrong input by the user
 	_default_tunes[TONE_WAITING_INPUT] = "MBT200 O5c8c8p4"; // waiting for input from user
 	_default_tunes[TONE_GENERAL_ERROR] = "MFT200 O2f#8d8g#8<b8"; // general error tune different from battery error
+	_default_tunes[TONE_PROCESSING] = "MBT200 O2a16>c16p2"; // general "processing data" tune that requires NO input from user
 
 	_tune_names[TONE_STARTUP_TUNE] = "startup";			// startup tune
 	_tune_names[TONE_ERROR_TUNE] = "error";				// ERROR tone
@@ -364,6 +365,7 @@ ToneAlarm::ToneAlarm() :
 	_tune_names[TONE_WRONG_INPUT] = "wrong_input";		// wrong input by the user
 	_tune_names[TONE_WAITING_INPUT] = "waiting_input";	// waiting for input from user
 	_tune_names[TONE_GENERAL_ERROR] = "general_error";	// general error tune different from battery error
+	_tune_names[TONE_PROCESSING] = "processing";		// general "processing data" tune that requires NO input from user
 }
 
 ToneAlarm::~ToneAlarm()
