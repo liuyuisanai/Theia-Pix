@@ -62,6 +62,7 @@
 #include <drivers/drv_airspeed.h>
 #include <drivers/drv_device.h>
 #include <drivers/drv_pwm_output.h>
+#include <airdog/calibrator/calibrator.hpp>
 #include <mavlink/mavlink_log.h>
 #include <position_estimator_inav/inertial_filter.h> // for initial position check
 
@@ -860,6 +861,13 @@ int prearm_check(const struct vehicle_status_s *status, const int mavlink_fd)
 		goto system_eval;
 	}
 
+	/* Launch gyro calibration in cases where prearm checks are required */
+	// TODO! Consider removing the sanity checks above - gyro has stricter accel checks
+	if (!calibration::calibrate_gyroscope(mavlink_fd, 1000)) { // Sample count reduced to provide faster arming
+		mavlink_log_critical(mavlink_fd, "Prearm gyro calibration failed!");
+		failed = true;
+		goto system_eval;
+	}
 
     /* check valid GPS if required and controll if current local_position change rate is low
      * this should be done due to specific lpos altitude calculation. Arm without low vertical speed
