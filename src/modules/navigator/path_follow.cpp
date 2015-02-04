@@ -311,13 +311,21 @@ void PathFollow::execute_vehicle_command() {
 			}
 			case REMOTE_CMD_UP: {
 				_vertical_offset += _parameters.up_button_step;
+
+                pos_sp_triplet->current.alt += _parameters.up_button_step;
+
 				break;
 			}
 			case REMOTE_CMD_DOWN: {
+
+                float tmp_offset = _vertical_offset;
+
 				_vertical_offset -= _parameters.down_button_step;
 				if (_vertical_offset < _parameters.pafol_min_alt_off) {
 					_vertical_offset = _parameters.pafol_min_alt_off;
 				}
+
+                pos_sp_triplet->current.alt+= (_vertical_offset - tmp_offset); //decrease by difference
 			}
 		}
 	}
