@@ -39,6 +39,7 @@ define_timeout<TimeoutKind::KEY_PRESS>(ModeId m, hrt_abstime & duration)
 		break;
 	// Slow timeouts
 	case ModeId::FLIGHT_ALT:
+    case ModeId::FLIGHT_CAM:
 	case ModeId::SHORTCUT:
 		duration = 10000000u; /* 10.0s */
 		break;
