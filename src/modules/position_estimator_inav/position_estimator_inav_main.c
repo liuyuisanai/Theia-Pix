@@ -82,6 +82,12 @@
 #define XY_DRIFT_VALIDATION_TIMES 100
 #define Z_DRIFT_VALIDATION_TIMES 100
 
+#if defined CONFIG_ARCH_BOARD_AIRLEASH 
+const bool is_airleash = true;
+#else
+const bool is_airleash = false;
+#endif
+
 static bool thread_should_exit = false; /**< Deamon exit flag */
 static bool thread_running = false; /**< Deamon status flag */
 static int position_estimator_inav_task; /**< Handle of deamon task / thread */
@@ -1221,10 +1227,12 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 				//flow_updates = 0;
 			}
 		}
-        if (vehicle_status.arming_state == ARMING_STATE_STANDBY
-                || vehicle_status.arming_state == ARMING_STATE_ARMED_ERROR) {
+        if (!is_airleash &&
+                ( vehicle_status.arming_state == ARMING_STATE_STANDBY
+                || vehicle_status.arming_state == ARMING_STATE_ARMED_ERROR)) {
             // Check if we are moving too fast while standing on the ground
             // Preventing arm while GPS correction over initial position is happening
+            
             if (fabsf(x_est[1]) > params.ok_drift || fabsf(y_est[1]) > params.ok_drift) {
                 can_estimate_xy = false;
                 no_drift_valid[0] = XY_DRIFT_VALIDATION_TIMES;

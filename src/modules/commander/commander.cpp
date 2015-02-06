@@ -689,6 +689,10 @@ bool handle_command(struct vehicle_status_s *status_local
                     case REMOTE_CMD_CAM_RIGHT:
                         camera_offset->yaw_offset++;
                         break;
+                    case REMOTE_CMD_CAM_RESET:
+                        camera_offset->yaw_offset = 0;
+                        camera_offset->pitch_offset = 0;
+                        break;
                 }
 
                 /* announce new camera offset */

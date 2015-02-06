@@ -31,19 +31,19 @@ struct handle<ModeId::FLIGHT, EventKind::SHORT_KEYPRESS, BTN_MASK_PLAY>
 
 template <ModeId MODE>
 struct handle<MODE, EventKind::LONG_KEYPRESS, BTN_MASK_PLAY, When<
-	MODE == ModeId::FLIGHT or MODE == ModeId::FLIGHT_ALT
+	MODE == ModeId::FLIGHT or MODE == ModeId::FLIGHT_ALT or MODE == ModeId::FLIGHT_CAM
 > > {
 	static void
 	exec(App & app)
 	{
-		say("FLIGHT or FLIGHT_ALT LONG_KEYPRESS PLAY");
+		say("FLIGHT/FLIGHT_ALT/FLIGHT_CAM LONG_KEYPRESS PLAY");
 		if (app.drone_status.in_air())
 			app.drone_cmd.send_command(REMOTE_CMD_LAND_DISARM);
 	}
 };
 
 template <>
-struct handle<ModeId::SHORTCUT, EventKind::LONG_KEYPRESS, BTN_MASK_PLAY>
+struct handle<ModeId::SHORTCUT, EventKind::SHORT_KEYPRESS, BTN_MASK_PLAY>
 {
 	static void
 	exec(App & app)
@@ -58,12 +58,12 @@ struct handle<ModeId::SHORTCUT, EventKind::LONG_KEYPRESS, BTN_MASK_PLAY>
  */
 
 template <>
-struct handle<ModeId::SHORTCUT, EventKind::SHORT_KEYPRESS, BTN_MASK_PLAY>
+struct handle<ModeId::SHORTCUT, EventKind::LONG_KEYPRESS, BTN_MASK_PLAY>
 {
 	static void
 	exec(App & app)
 	{
-		say("SHORTCUT SHORT_KEYPRESS PLAY");
+		say("SHORTCUT LONG_KEYPRESS PLAY");
 		app.drone_cmd.send_command(REMOTE_CMD_SET_POINT);
 	}
 };
@@ -220,6 +220,17 @@ struct handle< ModeId::FLIGHT_CAM, EVENT, BTN_MASK_RIGHT, When<
 	{
 		say("Camera right");
 		app.drone_cmd.send_command(REMOTE_CMD_CAM_RIGHT);
+	}
+};
+
+template <>
+struct handle<ModeId::FLIGHT_CAM, EventKind::LONG_KEYPRESS, BTN_MASK_CENTER>
+{
+	static void
+	exec(App & app)
+	{
+		say("FLIGHT_CAM LONG_KEYPRESS CENTER");
+		app.drone_cmd.send_command(REMOTE_CMD_CAM_RESET);
 	}
 };
 
