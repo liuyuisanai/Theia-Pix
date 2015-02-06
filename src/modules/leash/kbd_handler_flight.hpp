@@ -223,6 +223,17 @@ struct handle< ModeId::FLIGHT_CAM, EVENT, BTN_MASK_RIGHT, When<
 	}
 };
 
+template <>
+struct handle<ModeId::FLIGHT_CAM, EventKind::LONG_KEYPRESS, BTN_MASK_CENTER>
+{
+	static void
+	exec(App & app)
+	{
+		say("FLIGHT_CAM LONG_KEYPRESS CENTER");
+		app.drone_cmd.send_command(REMOTE_CMD_CAM_RESET);
+	}
+};
+
 /*
  * SHORTCUT mode.
  */
