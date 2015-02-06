@@ -669,7 +669,8 @@ bool handle_command(struct vehicle_status_s *status_local
             if (cmd->param1 == REMOTE_CMD_CAM_UP
                     || cmd->param1 == REMOTE_CMD_CAM_DOWN
                     || cmd->param1 == REMOTE_CMD_CAM_LEFT
-                    || cmd->param1 == REMOTE_CMD_CAM_RIGHT ) {
+                    || cmd->param1 == REMOTE_CMD_CAM_RIGHT
+                    || cmd->param1 == REMOTE_CMD_CAM_RESET) {
 
                 //bool updated;
                 //orb_check(_user_camera_offset_sub, &updated);
