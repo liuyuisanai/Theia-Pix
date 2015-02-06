@@ -82,10 +82,10 @@
 #define XY_DRIFT_VALIDATION_TIMES 100
 #define Z_DRIFT_VALIDATION_TIMES 100
 
-#if defined CONFIG_ARCH_BOARD_AIRLEASH
-const bool is_airleash = true;
+#ifdef CONFIG_ARCH_BOARD_AIRLEASH
+#define is_airleash true
 #else
-const bool is_airleash = false;
+#define is_airleash false
 #endif
 
 static bool thread_should_exit = false; /**< Deamon exit flag */
