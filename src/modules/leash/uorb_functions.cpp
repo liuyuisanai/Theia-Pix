@@ -94,6 +94,22 @@ send_rtl_command(const DroneStatus & s)
 	//say("RTL command sent.");
 }
 
+LeashStatus::LeashStatus() {
+}
+
+LeashStatus::~LeashStatus() {
+}
+
+void
+LeashStatus::set_mode(leash_mode mode) {
+    l_status.menu_mode = mode;
+    if (leash_status_pub > 0) {
+        orb_publish(ORB_ID(leash_status), leash_status_pub, &l_status);
+    } else {
+        leash_status_pub = orb_advertise(ORB_ID(leash_status), &l_status);
+    }
+}
+
 DroneStatus::DroneStatus()
 	: sub(orb_subscribe(ORB_ID(airdog_status)))
 {}

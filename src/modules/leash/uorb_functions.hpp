@@ -6,6 +6,7 @@
 #include <systemlib/param/param.h>
 #include <uORB/topics/airdog_status.h>
 #include <uORB/topics/vehicle_command.h>
+#include <uORB/topics/leash_status.h>
 
 namespace airleash {
 
@@ -49,6 +50,18 @@ private:
 	bool signal_timeout;
 	bool status_changed;
 	void read_status(struct airdog_status_s &) const;
+};
+
+class LeashStatus
+{
+    public:
+        LeashStatus();
+        ~LeashStatus();
+        void set_mode(leash_mode mode);
+    private:
+        orb_advert_t leash_status_pub;	
+        struct leash_status_s l_status;
+
 };
 
 } // end of namespace airleash

@@ -13,6 +13,7 @@
 #include <systemlib/param/param.h>
 #include <uORB/topics/airdog_status.h>
 #include <uORB/topics/vehicle_status.h>
+#include <uORB/topics/leash_status.h>
 
 #include "leds.hpp"
 
@@ -20,6 +21,7 @@ namespace indication { namespace status {
 
 static int status_sub;
 static int airdog_sub;
+static int leash_sub;
 
 static param_t param_use_blue_led;
 static int32_t use_blue_led;
@@ -32,6 +34,7 @@ init()
 {
 	status_sub = orb_subscribe(ORB_ID(vehicle_status));
 	airdog_sub = orb_subscribe(ORB_ID(airdog_status));
+    leash_sub = orb_subscribe(ORB_ID(leash_status));
 	param_use_blue_led = param_find("LEASH_USE_BLUE_LED");
 	force_update = true;
 	pos_valid = false;
@@ -48,6 +51,9 @@ update(hrt_abstime now)
 
 	airdog_status_s airdog_status;
 	orb_copy(ORB_ID(airdog_status), airdog_sub, &airdog_status);
+
+    leash_status_s l_status;
+    orb_copy(ORB_ID(leash_status), leash_sub, &l_status);
 
 	bool changed_pos_valid = pos_valid != status.condition_global_position_valid;
 	pos_valid = status.condition_global_position_valid;
@@ -73,10 +79,25 @@ update(hrt_abstime now)
 	if (force_update or changed_use_blue_led
 	or changed_link_valid or changed_pos_valid or changed_mode
 	) {
-		uint32_t pattern;
+        uint32_t pattern;
 
 		if (use_blue_led) {
-			pattern = pos_valid ? 0xFFFFFFFe : 0x80000000;
+			//pattern = pos_valid ? 0xFFFFFFFe : 0x80000000;
+            if (pos_valid) {
+                switch(l_status.menu_mode) {
+                    case LEASH_MODE_FLY:
+                        pattern = 0xFFFFFFFe;
+                        break;
+                    case LEASH_MODE_FLY_1:
+                        pattern = 0xFFFFFFFa;
+                        break;
+                    case LEASH_MODE_CAM:
+                        pattern = 0xFFFFFFea;
+                        break;
+                }
+            } else {
+                pattern = 0x80000000;
+            }
 			leds::set_pattern_repeat(LED_STATUS, pattern);
 
 			if (link_valid)
@@ -88,13 +109,24 @@ update(hrt_abstime now)
 		}
 		else
 		{
-			if (pos_valid and link_valid)
-				pattern = loiter_mode ? 0xFF00FF00 : 0xFFFFFFFe;
-			else if (pos_valid or link_valid)
-				pattern = 0x88000000;
-			else
-				pattern = 0x80000000;
+			//if (pos_valid and link_valid)
+			//	pattern = loiter_mode ? 0xFF00FF00 : 0xFFFFFFFe;
+			//else if (pos_valid or link_valid)
+			//	pattern = 0x88000000;
+			//else
+			//	pattern = 0x80000000;
 			printf("pattern %x\n", pattern);
+            switch(l_status.menu_mode) {
+                case LEASH_MODE_FLY:
+                    pattern = 0x00001000;
+                    break;
+                case LEASH_MODE_FLY_1:
+                    pattern = 0x00005000;
+                    break;
+                case LEASH_MODE_CAM:
+                    pattern = 0x00015000;
+                    break;
+            }
 			leds::set_pattern_repeat(LED_STATUS, pattern);
 			leds::set_pattern_repeat(LED_LEASHED, 0xFFFFFFFF);
 		}

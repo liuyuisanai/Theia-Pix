@@ -105,6 +105,7 @@ struct App
 
 	airleash::DroneCommand drone_cmd;
 	airleash::DroneStatus  drone_status;
+    airleash::LeashStatus  leash_status;
 
 	PeriodicSayAlive debug_heart_beat;
 	Timeout	         timeout_keypress;
