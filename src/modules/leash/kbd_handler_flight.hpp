@@ -159,18 +159,6 @@ struct handle< ModeId::FLIGHT_ALT, EVENT, BTN_MASK_DOWN, When<
 	}
 };
 
-template <ButtonId BUTTON>
-struct handle< ModeId::FLIGHT_ALT, EventKind::KEY_RELEASE, BUTTON, When<
-	BUTTON != BTN_MASK_CENTER
-> > {
-	static void
-	exec(App & app)
-	{
-		say("Alt Restart");
-		app.restart_key_timeout();
-	}
-};
-
 /*
  * FLIGHT_CAM mode.
  */
@@ -231,6 +219,22 @@ struct handle<ModeId::FLIGHT_CAM, EventKind::LONG_KEYPRESS, BTN_MASK_CENTER>
 	{
 		say("FLIGHT_CAM LONG_KEYPRESS CENTER");
 		app.drone_cmd.send_command(REMOTE_CMD_CAM_RESET);
+	}
+};
+
+/*
+ * FLIGHT_ALT and FLIGHT_CAM timeout handle
+ */
+template <ModeId MODE, ButtonId BUTTON>
+struct handle< MODE, EventKind::KEY_RELEASE, BUTTON, When<
+    BUTTON != BTN_MASK_CENTER 
+	and (MODE == ModeId::FLIGHT_ALT or MODE == ModeId::FLIGHT_CAM)
+> > {
+	static void
+	exec(App & app)
+	{
+		say("FLIGHT_ALT/FLIGHT_CAM Restart");
+		app.restart_key_timeout();
 	}
 };
 

@@ -7,6 +7,7 @@
 #include <uORB/topics/airdog_status.h>
 #include <uORB/topics/vehicle_command.h>
 #include <uORB/topics/leash_status.h>
+#include "kbd_defines.hpp"
 
 namespace airleash {
 
@@ -57,7 +58,7 @@ class LeashStatus
     public:
         LeashStatus();
         ~LeashStatus();
-        void set_mode(leash_mode mode);
+        void set_mode(kbd_handler::ModeId mode);
     private:
         orb_advert_t leash_status_pub;	
         struct leash_status_s l_status;

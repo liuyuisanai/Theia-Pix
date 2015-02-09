@@ -158,7 +158,7 @@ struct handle<ModeId::FLIGHT, EventKind::SHORT_KEYPRESS, BTN_MASK_CENTER>
 	{
 		say("FLIGHT SHORT_KEYPRESS CENTER");
 		app.set_mode_transition(ModeId::FLIGHT_ALT);
-        app.leash_status.set_mode(LEASH_MODE_FLY_1);
+        //app.leash_status.set_mode(LEASH_MODE_FLY_1);
 	}
 };
 
@@ -170,7 +170,7 @@ struct handle<ModeId::FLIGHT_ALT, EventKind::SHORT_KEYPRESS, BTN_MASK_CENTER>
 	{
 		say("FLIGHT_ALT SHORT_KEYPRESS CENTER");
 		app.set_mode_transition(ModeId::FLIGHT_CAM);
-        app.leash_status.set_mode(LEASH_MODE_CAM);
+        //app.leash_status.set_mode(LEASH_MODE_CAM);
 	}
 };
 
@@ -182,7 +182,7 @@ struct handle<ModeId::FLIGHT_CAM, EventKind::SHORT_KEYPRESS, BTN_MASK_CENTER>
 	{
 		say("FLIGHT_CAM SHORT_KEYPRESS CENTER");
 		app.set_mode_transition(ModeId::FLIGHT);
-        app.leash_status.set_mode(LEASH_MODE_FLY);
+        //app.leash_status.set_mode(LEASH_MODE_FLY);
 	}
 };
 
@@ -195,7 +195,7 @@ struct handle< MODE, EventKind::KEY_TIMEOUT, BTN_NONE, When<
 	{
 		say("FLIGHT_ALT/FLIGHT_CAM KEY_TIMEOUT");
 		app.set_mode_transition(ModeId::FLIGHT);
-        app.leash_status.set_mode(LEASH_MODE_FLY);
+        //app.leash_status.set_mode(LEASH_MODE_FLY);
 	}
 };
 
