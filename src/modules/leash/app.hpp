@@ -105,6 +105,7 @@ struct App
 
 	airleash::DroneCommand drone_cmd;
 	airleash::DroneStatus  drone_status;
+    airleash::LeashStatus  leash_status;
 
 	PeriodicSayAlive debug_heart_beat;
 	Timeout	         timeout_keypress;
@@ -199,8 +200,11 @@ struct App
 			fprintf(stderr, "Mode transition %i -> %i\n",
 					mode, transition_next_mode);
 
-			if (mode != transition_next_mode)
+			if (mode != transition_next_mode) 
+            {
 				tone.mode_switch();
+                leash_status.set_mode(transition_next_mode);
+            }
 			mode = transition_next_mode;
 			transition_requested = false;
 			timeout_keypress.restart(now, mode);

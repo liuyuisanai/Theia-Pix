@@ -94,6 +94,24 @@ send_rtl_command(const DroneStatus & s)
 	//say("RTL command sent.");
 }
 
+LeashStatus::LeashStatus() :
+        leash_status_pub(-1)
+{
+    struct leash_status_s l_status;
+    l_status.menu_mode = (int8_t) kbd_handler::ModeId::NONE;
+    leash_status_pub = orb_advertise(ORB_ID(leash_status), &l_status);
+}
+
+LeashStatus::~LeashStatus() {
+}
+
+void
+LeashStatus::set_mode(kbd_handler::ModeId mode) {
+    struct leash_status_s l_status;
+    l_status.menu_mode = (int8_t) mode; //TODO[max] key_mode
+    orb_publish(ORB_ID(leash_status), leash_status_pub, &l_status);
+}
+
 DroneStatus::DroneStatus()
 	: sub(orb_subscribe(ORB_ID(airdog_status)))
 {}

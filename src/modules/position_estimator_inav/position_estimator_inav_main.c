@@ -82,10 +82,10 @@
 #define XY_DRIFT_VALIDATION_TIMES 100
 #define Z_DRIFT_VALIDATION_TIMES 100
 
-#if defined CONFIG_ARCH_BOARD_AIRLEASH 
-const bool is_airleash = true;
+#ifdef CONFIG_ARCH_BOARD_AIRLEASH
+#define is_airleash true
 #else
-const bool is_airleash = false;
+#define is_airleash false
 #endif
 
 static bool thread_should_exit = false; /**< Deamon exit flag */
@@ -311,13 +311,13 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 	};
 	float w_gps_xy = 1.0f;
 	float w_gps_z = 1.0f;
-	
+
 	float corr_vision[3][2] = {
 		{ 0.0f, 0.0f },		// N (pos, vel)
 		{ 0.0f, 0.0f },		// E (pos, vel)
 		{ 0.0f, 0.0f },		// D (pos, vel)
 	};
-	
+
 	//float corr_sonar = 0.0f;
 	float corr_sonar_filtered = 0.0f;
 
@@ -392,7 +392,7 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
     //    float sonar_err;
     //    float sonar_filt;
     //}   _params;
-    
+
 	/* initialize parameter handles */
 	parameters_init(&pos_inav_param_handles);
 
@@ -544,7 +544,7 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                         switch(range_finder.type)
                         {
                             case RANGE_FINDER_TYPE_ULTRASONIC: {
-                                
+
                                         float angle_correction = 1;
                                         if (att.R[2][2] < 0.85f) {
                                             angle_correction = 0.95; //cos(15) <- maximal correction if we are flying with pi/4 angle
@@ -555,7 +555,7 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 
                                         if (fabsf(range_finder.distance - sonar_prev) < params.sonar_err) {
                                             // Accepted difference - enabling LPF and stuff
-                                            
+
                                             corr_sonar_filtered += (range_finder.distance - corr_sonar_filtered) * params.sonar_filt;
                                             // sonar_filt could have high tolerance for row value now
                                             sonar_valid = true;
@@ -595,7 +595,7 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 
                                         if (fabsf(range_finder.distance - sonar_prev) < params.sonar_err) {
                                             // Accepted difference - enabling LPF and stuff
-                                            
+
                                             corr_sonar_filtered += (range_finder.distance - corr_sonar_filtered) * params.sonar_filt;
                                             // sonar_filt could have high tolerance for row value now
                                             sonar_valid = true;
@@ -680,13 +680,13 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 						x_est[1] = vision.vx;
 						y_est[0] = vision.y;
 						y_est[1] = vision.vy;
-						/* only reset the z estimate if the z weight parameter is not zero */ 
+						/* only reset the z estimate if the z weight parameter is not zero */
 						if (params.w_z_vision_p > MIN_VALID_W)
 						{
 							z_est[0] = vision.z;
 							z_est[1] = vision.vz;
 						}
-						
+
 						vision_valid = true;
 						warnx("VISION estimate valid");
 						mavlink_log_info(mavlink_fd, "[inav] VISION estimate valid");
@@ -735,7 +735,7 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                         if (!mag_declination_set) {
                         	mag_declination_set = true;
                             param_t param = param_find("AIRD_AUTO_MAG");
-                            bool should_set_decl = false; 
+                            bool should_set_decl = false;
                             param_get(param, &should_set_decl);
                             if (should_set_decl) {
                             	float lat = gps.lat * 1e-7;
@@ -744,7 +744,7 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                                 param = param_find("ATT_MAG_DECL");
                                 param_set(param, &decl);
                                 mavlink_log_info(mavlink_fd, "Declination calculated: %4.7f", (double)decl);
-	                          	
+
                             	//Write parameter to permanent memory only if gps is required to arm and thus is not in air
                             	param = param_find("A_REQUIRE_GPS");
                             	param_get(param, &should_set_decl);
@@ -906,7 +906,7 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 		// }
 
 		bool dist_bottom_valid = sonar_valid && (t < sonar_valid_time + sonar_valid_timeout);
-		
+
 		float w_xy_gps_p = params.w_xy_gps_p * w_gps_xy;
 		float w_xy_gps_v = params.w_xy_gps_v * w_gps_xy;
 		float w_z_gps_p = params.w_z_gps_p * w_gps_z;
@@ -1111,7 +1111,7 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 //        if (updated) {
 //            orb_copy(ORB_ID(vehicle_status), vehicle_status_sub, &vehicle_status);
 //            accel_filt += (sensor.accelerometer_m_s2[2] - accel_filt)*0.8f;
-//        
+//
 //            //mavlink_log_info(mavlink_fd, "Landed %d",landed);
 //            float thrust = armed.armed ? actuator.control[3] : 0.0f;
 //            if (landed) {
@@ -1135,7 +1135,7 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 //
 //                    /*==regular landing==*/
 //                    if (thrust <= params.land_thr) {
-//                        /* If thrust is less or equal to landed thrust 
+//                        /* If thrust is less or equal to landed thrust
 //                         * than we are either on the ground or falling down
 //                         */
 //                        float accepted_accel_rate = 0.3f;
@@ -1154,7 +1154,7 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 //                               }
 //                            }
 //                            else {
-//                            // Sufficient time has passed and within this time range our velocity change is negligible 
+//                            // Sufficient time has passed and within this time range our velocity change is negligible
 //                                landed = true;
 //                                landed_time = 0.0f;
 //                            }
@@ -1232,7 +1232,7 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                 || vehicle_status.arming_state == ARMING_STATE_ARMED_ERROR)) {
             // Check if we are moving too fast while standing on the ground
             // Preventing arm while GPS correction over initial position is happening
-            
+
             if (fabsf(x_est[1]) > params.ok_drift || fabsf(y_est[1]) > params.ok_drift) {
                 can_estimate_xy = false;
                 no_drift_valid[0] = XY_DRIFT_VALIDATION_TIMES;
@@ -1336,13 +1336,13 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 /*
  * author:      Max Shvetsov <max@airdog.com>
  * description: this function is used to validate sensor based on reading prediction
- *              and previous reading analysis 
+ *              and previous reading analysis
  * group:       range finder
  */
 float range_finder_func(struct range_finder_report range_finder) {
     temp.estimate = (temp.range_reading * temp.estimate + range_finder.distance) / ++temp.range_reading;
 
-    temp.variance = (1.0f/(float) temp.range_reading) * ( temp.variance * (temp.range_reading - 1) + ( (range_finder.distance - temp.estimate) * (range_finder.distance - temp.estimate) )); 
+    temp.variance = (1.0f/(float) temp.range_reading) * ( temp.variance * (temp.range_reading - 1) + ( (range_finder.distance - temp.estimate) * (range_finder.distance - temp.estimate) ));
     temp.st_deviation = sqrt(temp.variance * temp.range_reading / (temp.range_reading - 1) );
     fprintf(stderr, " real %.3f estimate %.3f variance %.7f st_deviation %.7f reading %d\n"
             ,(double) range_finder.distance ,(double) temp.estimate, (double) temp.variance, (double) temp.st_deviation, temp.range_reading

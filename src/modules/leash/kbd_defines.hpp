@@ -1,5 +1,8 @@
 #pragma once
 
+#include "kbd_mode.hpp"
+#include <drivers/drv_airleash_kbd.h>
+
 #define BTN_NONE        0
 #define BTN_MASK_POWER  0x001
 #define BTN_MASK_PLAY   0x004
@@ -43,27 +46,6 @@ template <> struct EventDebugName<EventKind::REPEAT_KEYPRESS      > { static con
 template <> struct EventDebugName<EventKind::KEY_RELEASE          > { static constexpr name_t name = "EventKind::KEY_RELEASE         "; };
 template <> struct EventDebugName<EventKind::KEY_TIMEOUT          > { static constexpr name_t name = "EventKind::KEY_TIMEOUT         "; };
 template <> struct EventDebugName<EventKind::COPTER_CHANGED_STATE > { static constexpr name_t name = "EventKind::COPTER_CHANGED_STATE"; };
-
-
-/*
- * Modes
- */
-
-enum class ModeId : uint8_t
-{
-	NONE,
-	               LOWER_BOUND, // ValueRangeSwitch LOWER_BOUND
-	INIT         = LOWER_BOUND,
-	PREFLIGHT,
-	MENU,
-	CONFIRM_ARM,
-	FLIGHT,
-	FLIGHT_ALT,
-    FLIGHT_CAM,
-	SHORTCUT,
-	FLIGHT_NO_SIGNAL,
-	               UPPER_BOUND // ValueRangeSwitch UPPER_BOUND
-};
 
 template <ModeId> struct ModeDebugName;
 template <> struct ModeDebugName<ModeId::NONE       > { static constexpr name_t name = "ModeId::NONE       "; };
