@@ -93,16 +93,16 @@ update(hrt_abstime now)
 		if (use_blue_led) {
             switch((ModeId) l_status.menu_mode) {
                 case ModeId::FLIGHT:
-                    pattern = pos_valid ? 0xFFFFe : 0x1000;
+                    pattern = pos_valid ? 0x1000 : 0xFFFFe;
                     break;
                 case ModeId::FLIGHT_ALT:
-                    pattern = pos_valid ? 0xFFFFa : 0x5000;
+                    pattern = pos_valid ? 0x5000 : 0xFFFFa;
                     break;
                 case ModeId::FLIGHT_CAM:
-                    pattern = pos_valid ? 0xFFFea : 0x1500;
+                    pattern = pos_valid ? 0x1500 : 0xFFFea;
                     break;
                 default:
-                    pattern = pos_valid ? 0xFFFF7 : 0x80000000;
+                    pattern = pos_valid ? 0x80000000 : 0xFFFF7;
                     break;
             }
 			leds::set_pattern_repeat(LED_STATUS, pattern);
