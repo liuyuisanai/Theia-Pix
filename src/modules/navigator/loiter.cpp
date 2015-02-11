@@ -515,13 +515,23 @@ Loiter::execute_command_in_aim_and_shoot(vehicle_command_s cmd){
                 start_follow();
 				break;
 			}
-            case REMOTE_CMD_SET_POINT: {
+            case REMOTE_CMD_SET_FIRST_POINT: {
                     double point[3] = {
                           global_pos->lat
                         , global_pos->lon
                         , global_pos->alt
                     };
-                    _navigator->set_next_path_point(point);
+                    _navigator->set_next_path_point(point, true, 0);
+                    _navigator->publish_position_restriction();
+                    break;
+            }
+            case REMOTE_CMD_SET_SECOND_POINT: {
+                    double point[3] = {
+                          global_pos->lat
+                        , global_pos->lon
+                        , global_pos->alt
+                    };
+                    _navigator->set_next_path_point(point, true, 1);
                     _navigator->publish_position_restriction();
                     break;
             }

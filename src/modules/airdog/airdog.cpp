@@ -389,9 +389,6 @@ bool cAirdog::button_clicked_i2c(uint8_t button, bool long_press)
             
                 if (current_button_state == BUTTON_STATE_DEFAULT) {
                     send_command(REMOTE_CMD_PLAY_PAUSE);
-                } else if (current_button_state == BUTTON_STATE_CHOOSE_FUNCTION){
-                    send_command(REMOTE_CMD_SET_POINT);
-                    set_current_button_state(BUTTON_STATE_DEFAULT);
                 } else if (current_button_state == BUTTON_STATE_CONFIRM_TAKEOFF) {
                     set_current_button_state(BUTTON_STATE_DEFAULT);
                 }

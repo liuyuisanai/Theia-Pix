@@ -48,23 +48,34 @@ struct handle<ModeId::SHORTCUT, EventKind::SHORT_KEYPRESS, BTN_MASK_PLAY>
 	static void
 	exec(App & app)
 	{
-		say("SHORTCUT LONG_KEYPRESS PLAY");
+		say("SHORTCUT SHORT_KEYPRESS PLAY");
 		app.drone_cmd.send_rtl_command(app.drone_status);
 	}
 };
 
 /*
- * Follow Line: PLAY and POWER button.
+ * Follow Line: LEFT/RIGHT and POWER button.
  */
 
 template <>
-struct handle<ModeId::SHORTCUT, EventKind::LONG_KEYPRESS, BTN_MASK_PLAY>
+struct handle<ModeId::SHORTCUT, EventKind::SHORT_KEYPRESS, BTN_MASK_LEFT>
 {
 	static void
 	exec(App & app)
 	{
-		say("SHORTCUT LONG_KEYPRESS PLAY");
-		app.drone_cmd.send_command(REMOTE_CMD_SET_POINT);
+		say("SHORTCUT SHORT_LEFT");
+		app.drone_cmd.send_command(REMOTE_CMD_SET_FIRST_POINT);
+	}
+};
+
+template <>
+struct handle<ModeId::SHORTCUT, EventKind::SHORT_KEYPRESS, BTN_MASK_RIGHT>
+{
+	static void
+	exec(App & app)
+	{
+		say("SHORTCUT SHORT_RIGHT");
+		app.drone_cmd.send_command(REMOTE_CMD_SET_SECOND_POINT);
 	}
 };
 
