@@ -377,7 +377,9 @@ BATT_SMBUS::cycle()
 			orb_publish(_batt_orb_id, _batt_topic, &new_report);
 
 		} else {
-			_batt_topic = orb_advertise(_batt_orb_id, &new_report);
+			/* advertise battery status as multi topic */
+			int dummy;
+			_batt_topic = orb_advertise_multi(_batt_orb_id, &dummy, &new_report);
 
 			if (_batt_topic < 0) {
 				errx(1, "ADVERT FAIL");
