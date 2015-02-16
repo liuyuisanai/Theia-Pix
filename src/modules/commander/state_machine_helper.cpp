@@ -863,6 +863,9 @@ int prearm_check(const struct vehicle_status_s *status, const int mavlink_fd)
 	}
 
 	param_get(param_find("A_CALIB_GYRO_ARM"), &gyro_calib_on_arm);
+	if (status->hil_state == HIL_STATE_ON) {
+		gyro_calib_on_arm = 0; // Don't calibrate in HIL
+	}
 	/* Launch gyro calibration in cases where prearm checks are required */
 	// TODO! Consider removing the sanity checks above - gyro has stricter accel checks
 	if (gyro_calib_on_arm == 1 && !calibration::calibrate_gyroscope(mavlink_fd, 1000, 20, 100)) { // Parameters reduced to allow faster results
