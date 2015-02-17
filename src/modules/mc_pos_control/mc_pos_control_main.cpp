@@ -2094,16 +2094,25 @@ MulticopterPositionControl::task_main()
                 //Ground distance correction
                 if (_params.sonar_correction_on) {
                     if (_ground_position_invalid) {
-                            float drop = _pos(2) - _pos_sp(2) ;
+                            float drop = _pos(2) - _pos_sp(2);
                             if (drop >= 0) {
+                                if (drop < _params.sonar_min_dist) {
 
-                                float coef = (_params.sonar_min_dist - _local_pos.dist_bottom)/(_params.sonar_min_dist * _params.sonar_smooth_coef);
+                                    float coef = 1 - (_local_pos.dist_bottom/_params.sonar_min_dist);
+                                    coef = pow(coef, _params.sonar_smooth_coef); 
 
-                                coef *= coef;
-                                float max_vel_z = - _params.vel_max(2) * coef;
+                                    float max_vel_z = - _params.vel_max(2) * coef;
 
-                                _vel_sp(2) = max_vel_z;
-                                _sp_move_rate(2)= 0.0f;
+                                    _vel_sp(2) = max_vel_z;
+                                    _sp_move_rate(2)= 0.0f;
+                                    //fprintf(stderr, "max_vel_z %.3f coef %.3f, drop %.3f\n"
+                                    //        ,(double) max_vel_z, (double) coef, (double) drop);
+                                } else {
+                                    // Max throttle in case we are "uderground"
+                                    // Just a safety limit
+                                    _vel_sp(2) = - _params.vel_max(2);
+                                    _sp_move_rate(2)= 0.0f;
+                                }
                             }
                     }
                     else if (_ground_setpoint_corrected && (_vel(2) > _params.vel_max(2) || _vel_sp(2) > _params.vel_max(2))) {
