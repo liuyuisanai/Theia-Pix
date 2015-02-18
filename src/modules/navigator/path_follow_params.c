@@ -56,7 +56,7 @@ PARAM_DEFINE_FLOAT(PAFOL_VEL_E_C, 0.5f);
 PARAM_DEFINE_FLOAT(PAFOL_VEL_R_T, 0.5f);
 
 /**
- * Velocity error growth power.
+ * Velocity error function growth power.
  *
  * @unit meters
  * @min 0.1
@@ -64,6 +64,27 @@ PARAM_DEFINE_FLOAT(PAFOL_VEL_R_T, 0.5f);
  * @group PathFollow
  */
 PARAM_DEFINE_FLOAT(PAFOL_VEL_E_GP, 1.0f);
+
+
+/**
+ * Velocity reaction time when speed should be decreased
+ *
+ * @unit meters
+ * @min 0.1
+ * @max 20
+ * @group PathFollow
+ */
+PARAM_DEFINE_FLOAT(PAFOL_VEL_R_TD, 0.3f);
+
+/**
+ * Velocity error function growth power when speed should be decreased
+ *
+ * @unit meters
+ * @min 0.1
+ * @max 20
+ * @group PathFollow
+ */
+PARAM_DEFINE_FLOAT(PAFOL_VEL_E_GPD, 2.5f);
 
 
 /**
@@ -106,3 +127,4 @@ PARAM_DEFINE_FLOAT(PAFOL_AC_DST_PT, 8.0f);
  * @group PathFollow
  */
 PARAM_DEFINE_FLOAT(PAFOL_STOP_SPD, 2.0f);
+

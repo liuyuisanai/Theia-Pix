@@ -139,6 +139,9 @@ public:
         float pafol_acc_dst_to_point;
         float pafol_stop_speed;
 
+        float pafol_vel_err_growth_power_decr;
+        float pafol_vel_reaction_time_decr;
+
 		float mpc_max_speed;
 
         float airdog_dst_inv; 
@@ -184,6 +187,9 @@ public:
         param_t pafol_acc_dst_to_line;
         param_t pafol_acc_dst_to_point;
         param_t pafol_stop_speed;
+
+        param_t pafol_vel_err_growth_power_decr;
+        param_t pafol_vel_reaction_time_decr;
 
 		param_t mpc_max_speed;
 

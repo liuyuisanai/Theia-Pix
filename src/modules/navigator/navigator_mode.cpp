@@ -126,6 +126,9 @@ NavigatorMode::updateParamHandles() {
     _parameter_handles.pafol_vel_reaction_time = param_find("PAFOL_VEL_R_T");
     _parameter_handles.pafol_vel_err_growth_power = param_find("PAFOL_VEL_E_GP");
 
+    _parameter_handles.pafol_vel_err_growth_power_decr = param_find("PAFOL_VEL_E_GPD");
+    _parameter_handles.pafol_vel_reaction_time_decr = param_find("PAFOL_VEL_R_TD");
+
     _parameter_handles.pafol_acc_dst_to_line = param_find("PAFOL_AC_DST_LN");
     _parameter_handles.pafol_acc_dst_to_point = param_find("PAFOL_AC_DST_PT");
 
@@ -172,6 +175,9 @@ NavigatorMode::updateParamValues() {
 	param_get(_parameter_handles.pafol_acc_rad, &(_parameters.pafol_acc_rad));
 	param_get(_parameter_handles.pafol_acc_dst_to_line, &(_parameters.pafol_acc_dst_to_line));
 	param_get(_parameter_handles.pafol_acc_dst_to_point, &(_parameters.pafol_acc_dst_to_point));
+
+	param_get(_parameter_handles.pafol_vel_err_growth_power_decr, &(_parameters.pafol_vel_err_growth_power_decr));
+	param_get(_parameter_handles.pafol_vel_reaction_time_decr, &(_parameters.pafol_vel_reaction_time_decr));
 
 	param_get(_parameter_handles.pafol_stop_speed, &(_parameters.pafol_stop_speed));
 
