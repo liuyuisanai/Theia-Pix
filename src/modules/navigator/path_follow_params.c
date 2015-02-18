@@ -24,6 +24,17 @@ PARAM_DEFINE_FLOAT(PAFOL_MIN_OK_D, 10.0f);
 
 
 /**
+ * Desired distance from target
+ *
+ * @unit meters
+ * @min 5
+ * @max 100
+ * @group PathFollow
+ */
+PARAM_DEFINE_FLOAT(PAFOL_OK_D, 10.0f);
+
+
+/**
  * Minimum altitude offset from target trajectory
  *
  * @unit meters

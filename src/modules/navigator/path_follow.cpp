@@ -57,19 +57,12 @@ void PathFollow::on_activation() {
 
 	global_pos = _navigator->get_global_position();
 	target_pos = _navigator->get_target_position();
+    
+    _navigator->set_flag_reset_pfol_offs(false);
 
-    if (_navigator->get_flag_reset_pfol_offs() == true) {
+    _ok_distance = _parameters.pafol_ok_dist;
 
-        _ok_distance = get_distance_to_next_waypoint(global_pos->lat, global_pos->lon, target_pos->lat, target_pos->lon);
-        if (_ok_distance < _parameters.pafol_min_ok_dist) {
-            _ok_distance = _parameters.pafol_min_ok_dist;
-        }
-
-        _navigator->set_flag_reset_pfol_offs(false);
-
-    }
-
-   // mavlink_log_info(_mavlink_fd, "%.5f", (double)_ok_distance);
+    //mavlink_log_info(_mavlink_fd, "%.5f", (double)_ok_distance);
 
     if (_parameters.follow_rpt_alt == 0) {
         _alt = global_pos->alt;

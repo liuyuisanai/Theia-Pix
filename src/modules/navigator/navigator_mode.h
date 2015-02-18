@@ -130,6 +130,7 @@ public:
 
 		ssize_t pafol_buf_size;
 		float pafol_min_ok_dist;
+		float pafol_ok_dist;
 		float pafol_min_alt_off;
         float pafol_vel_err_coif;
         float pafol_vel_reaction_time;
@@ -179,6 +180,7 @@ public:
 
 		param_t pafol_buf_size;
 		param_t pafol_min_ok_dist;
+		param_t pafol_ok_dist;
 		param_t pafol_min_alt_off;
         param_t pafol_vel_err_coif;
         param_t pafol_vel_reaction_time;

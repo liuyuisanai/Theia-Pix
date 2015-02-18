@@ -121,6 +121,7 @@ NavigatorMode::updateParamHandles() {
 
 	_parameter_handles.pafol_buf_size = param_find("PAFOL_BUFF_SIZE");
 	_parameter_handles.pafol_min_ok_dist = param_find("PAFOL_MIN_OK_D");
+	_parameter_handles.pafol_ok_dist = param_find("PAFOL_OK_D");
 	_parameter_handles.pafol_min_alt_off = param_find("PAFOL_ALT_OFF");
     _parameter_handles.pafol_vel_err_coif = param_find("PAFOL_VEL_E_C");
     _parameter_handles.pafol_vel_reaction_time = param_find("PAFOL_VEL_R_T");
@@ -168,6 +169,7 @@ NavigatorMode::updateParamValues() {
 
 	param_get(_parameter_handles.pafol_buf_size, &(_parameters.pafol_buf_size));
 	param_get(_parameter_handles.pafol_min_ok_dist, &(_parameters.pafol_min_ok_dist));
+	param_get(_parameter_handles.pafol_ok_dist, &(_parameters.pafol_ok_dist));
 	param_get(_parameter_handles.pafol_min_alt_off, &(_parameters.pafol_min_alt_off));
     param_get(_parameter_handles.pafol_vel_err_coif, &(_parameters.pafol_vel_err_coif)); 
 	param_get(_parameter_handles.pafol_vel_reaction_time, &(_parameters.pafol_vel_reaction_time));
