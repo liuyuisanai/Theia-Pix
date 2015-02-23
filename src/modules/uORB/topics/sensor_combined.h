@@ -91,8 +91,8 @@ struct sensor_combined_s {
 	uint64_t accelerometer_timestamp;	/**< Accelerometer timestamp        */
 	unsigned accelerometer_errcount;	/**< Error counter for accel 0 */
 
-	int16_t	magnetometer_raw[3];		/**< Raw magnetic field in NED body frame         */
-	float magnetometer_ga[3];		/**< Magnetic field in NED body frame, in Gauss   */
+	int16_t	magnetometer_raw[3][3];		/**< Raw magnetic field in NED body frame         */
+	float magnetometer_ga[3][3];		/**< Magnetic field in NED body frame, in Gauss   */
 	int magnetometer_mode;			/**< Magnetometer measurement mode */
 	float magnetometer_range_ga;		/**< ± measurement range in Gauss */
 	float magnetometer_cuttoff_freq_hz;	/**< Internal analog low pass frequency of sensor */

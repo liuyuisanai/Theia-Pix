@@ -62,7 +62,6 @@
 #include <poll.h>
 #include <time.h>
 #include <drivers/drv_hrt.h>
-#include <drivers/drv_accel.h>
 #include <arch/board/board.h>
 #include <uORB/uORB.h>
 #include <uORB/topics/airspeed.h>

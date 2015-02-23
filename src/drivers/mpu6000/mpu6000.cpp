@@ -482,7 +482,7 @@ private:
 extern "C" { __EXPORT int mpu6000_main(int argc, char *argv[]); }
 
 MPU6000::MPU6000(int bus, const char *path_accel, const char *path_gyro, spi_dev_e device, enum Rotation rotation) :
-	SPI("MPU6000", path_accel, bus, device, SPIDEV_MODE3, MPU6000_LOW_BUS_SPEED),
+	SPI("MPU6000", path_accel, bus, device, SPIDEV_MODE3, MPU6000_HIGH_BUS_SPEED),
 	_gyro(new MPU6000_gyro(this, path_gyro)),
 	_product(0),
 	_call{},
@@ -658,6 +658,7 @@ out:
 
 int MPU6000::reset()
 {
+	set_frequency(MPU6000_LOW_BUS_SPEED);
 	// if the mpu6000 is initialised after the l3gd20 and lsm303d
 	// then if we don't do an irqsave/irqrestore here the mpu6000
 	// frequenctly comes up in a bad state where all transfers
