@@ -228,9 +228,7 @@ void PathFollow::on_active() {
     }
     else if (zero_setpoint == false) {
 
-
         if (_desired_speed < 1e-6f && _drone_velocity < _parameters.pafol_stop_speed ) {
-
 
             if (_desired_speed < 0.0f)
                 _desired_speed = 0.0f;
@@ -429,28 +427,19 @@ float PathFollow::calculate_desired_velocity(float dst_to_ok) {
         float ch_rate_dt = global_pos->timestamp - _global_pos_timestamp_last;
 
         if (_global_pos_timestamp_last == 0) {
-
             ch_rate_dt = 0.0f; 
             _vel_ch_rate_f = 0.0f;
             _vel_ch_rate = 0.0f;
-
         } else {
-
             ch_rate_dt /= 1000000.0f;
-
             float delta_vel = _drone_velocity_f - _last_drone_velocity_f;
-
             _vel_ch_rate = delta_vel / ch_rate_dt;
-
             _vel_ch_rate_f = _vel_ch_rate_lpf.apply(global_pos->timestamp, _vel_ch_rate);
-
         }
         
         _global_pos_timestamp_last = global_pos->timestamp;
-
         _last_drone_velocity_f = _drone_velocity_f ;
         _last_drone_velocity = _drone_velocity;
-
     }
 
 
@@ -460,39 +449,28 @@ float PathFollow::calculate_desired_velocity(float dst_to_ok) {
 
     calc_vel_dt/= 1000000.0f;
 
-    //float vel_err_coif = 0.5f;
     float vel_err_coif = _parameters.pafol_vel_err_coif;
-    //float vel_err_growth_power = 1.2f;
     float vel_err_growth_power = _parameters.pafol_vel_err_growth_power;
     float max_vel_err;
 
- //   float vel_err_growth_power_decr = 2.5f; 
     float vel_err_growth_power_decr = _parameters.pafol_vel_err_growth_power_decr;
-
 
     if (dst_to_ok >= 0.0f){
         max_vel_err = (float)pow(dst_to_ok, vel_err_growth_power ) * vel_err_coif;
 
         if (max_vel_err > _parameters.mpc_max_speed - _target_velocity)
             max_vel_err = _parameters.mpc_max_speed - _target_velocity;
-
     } else {
         max_vel_err = (float)pow(-dst_to_ok, vel_err_growth_power_decr);
-        
     }
-    
 
-//    float reaction_time_decr = 0.3f; // time in seconds when we increase speed from _target_velocity till _target_velocity + max_vel_err
     float reaction_time_decr = _parameters.pafol_vel_reaction_time_decr; // time in seconds when we increase speed from _target_velocity till _target_velocity + max_vel_err
-
     float fraction_decr = calc_vel_dt / reaction_time_decr; // full increase will happen in reaction_time time, so we calculate how much we need to increase in dt time
 
     float reaction_time = _parameters.pafol_vel_reaction_time; // time in seconds when we increase speed from _target_velocity till _target_velocity + max_vel_err
     float fraction = calc_vel_dt / reaction_time; // full increase will happen in reaction_time time, so we calculate how much we need to increase in dt time
 
-
     float sp_velocity = pos_sp_triplet->current.abs_velocity;
-
     float vel_new = 0.0f;
 
     if (dst_to_ok >= 0.0f) {
@@ -502,7 +480,6 @@ float PathFollow::calculate_desired_velocity(float dst_to_ok) {
                 vel_new = _drone_velocity;
         } else {
             vel_new = sp_velocity + fraction * max_vel_err;  // while speed is increasing we can smoothly increase velocity if setoibt
-
         }
 
         if (vel_new > _target_velocity_f + max_vel_err)  
@@ -510,13 +487,12 @@ float PathFollow::calculate_desired_velocity(float dst_to_ok) {
 
     } else {
         vel_new = sp_velocity - fraction_decr * max_vel_err; // Do the same calculation also when we are to close// maybe we should make this more smooth
-
-        if (vel_new > _target_velocity_f - max_vel_err)  
-            vel_new = _target_velocity_f - max_vel_err;
-
     }
 
-    if (vel_new < 0.0f && zero_setpoint) vel_new = 0.0f; 
+    if (vel_new < 0.0f) vel_new = 0.0f; 
+
+	if (vel_new > _parameters.mpc_max_speed) 
+        vel_new = _parameters.mpc_max_speed;
 
     dd_log.log(0,(double)_target_velocity);
     dd_log.log(1,(double)_drone_velocity);
@@ -524,10 +500,8 @@ float PathFollow::calculate_desired_velocity(float dst_to_ok) {
     dd_log.log(3,(double)dst_to_ok);
     dd_log.log(4,(double)max_vel_err);
     dd_log.log(5,(double)_trajectory_distance);
-    dd_log.log(6,(double)zero_setpoint);
-
-	if (vel_new > _parameters.mpc_max_speed) 
-        vel_new = _parameters.mpc_max_speed;
+    dd_log.log(6,(double)_vel_ch_rate_f);
+    dd_log.log(7,(double)vel_new);
 
 	return vel_new;
 }
