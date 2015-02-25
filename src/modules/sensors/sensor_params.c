@@ -98,6 +98,21 @@ PARAM_DEFINE_FLOAT(SENS_GYRO_YSCALE, 1.0f);
  */
 PARAM_DEFINE_FLOAT(SENS_GYRO_ZSCALE, 1.0f);
 
+// TODO! Provide correct "since" reference point
+/**
+ * Date of the last gyro calibration in hours since ???
+ *
+ * @group Sensor Calibration
+ */
+PARAM_DEFINE_INT32(SENS_GYRO_CDATE, 0);
+
+/**
+ * Temperature at the time of the last gyro calibration in degrees Celsius
+ * By default set to -5 degrees relative to 0K to trigger recalibration even at absolute zero. :-)
+ *
+ * @group Sensor Calibration
+ */
+PARAM_DEFINE_FLOAT(SENS_GYRO_CTEMP, -278.15f);
 
 /**
  * Magnetometer X-axis offset
@@ -146,6 +161,22 @@ PARAM_DEFINE_FLOAT(SENS_MAG_YSCALE, 1.0f);
  * @group Sensor Calibration
  */
 PARAM_DEFINE_FLOAT(SENS_MAG_ZSCALE, 1.0f);
+
+// TODO! Provide correct "since" reference point
+/**
+ * Date of the last mag calibration in hours since ???
+ *
+ * @group Sensor Calibration
+ */
+PARAM_DEFINE_INT32(SENS_MAG_CDATE, 0);
+
+/**
+ * Temperature at the time of the last mag calibration in degrees Celsius
+ * By default set to -5 degrees relative to 0K to trigger recalibration even at absolute zero. :-)
+ *
+ * @group Sensor Calibration
+ */
+PARAM_DEFINE_FLOAT(SENS_MAG_CTEMP, -278.15f);
 
 /**
  * Weight for sonar filter
@@ -248,6 +279,22 @@ PARAM_DEFINE_FLOAT(SENS_ACC_YSCALE, 1.0f);
  * @group Sensor Calibration
  */
 PARAM_DEFINE_FLOAT(SENS_ACC_ZSCALE, 1.0f);
+
+// TODO! Provide correct "since" reference point
+/**
+ * Date of the last acc calibration in hours since ???
+ *
+ * @group Sensor Calibration
+ */
+PARAM_DEFINE_INT32(SENS_ACC_CDATE, 0);
+
+/**
+ * Temperature at the time of the last acc calibration in degrees Celsius
+ * By default set to -5 degrees relative to 0K to trigger recalibration even at absolute zero. :-)
+ *
+ * @group Sensor Calibration
+ */
+PARAM_DEFINE_FLOAT(SENS_ACC_CTEMP, -278.15f);
 
 
 /**
