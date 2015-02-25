@@ -85,7 +85,7 @@ PARAM_DEFINE_FLOAT(PAFOL_VEL_E_GP, 1.0f);
  * @max 20
  * @group PathFollow
  */
-PARAM_DEFINE_FLOAT(PAFOL_VEL_R_TD, 0.3f);
+PARAM_DEFINE_FLOAT(PAFOL_VEL_R_TD, 0.5f);
 
 /**
  * Velocity error function growth power when speed should be decreased
@@ -95,7 +95,7 @@ PARAM_DEFINE_FLOAT(PAFOL_VEL_R_TD, 0.3f);
  * @max 20
  * @group PathFollow
  */
-PARAM_DEFINE_FLOAT(PAFOL_VEL_E_GPD, 2.5f);
+PARAM_DEFINE_FLOAT(PAFOL_VEL_E_GPD, 2.0f);
 
 
 /**
