@@ -461,7 +461,7 @@ float PathFollow::calculate_desired_velocity(float dst_to_ok) {
         if (max_vel_err > _parameters.mpc_max_speed - _target_velocity)
             max_vel_err = _parameters.mpc_max_speed - _target_velocity;
     } else {
-        max_vel_err = (float)pow(-dst_to_ok, vel_err_growth_power_decr);
+        max_vel_err = (float)pow(-dst_to_ok, vel_err_growth_power_decr) * vel_err_coif;
     }
 
     float reaction_time_decr = _parameters.pafol_vel_reaction_time_decr; // time in seconds when we increase speed from _target_velocity till _target_velocity + max_vel_err
@@ -482,12 +482,12 @@ float PathFollow::calculate_desired_velocity(float dst_to_ok) {
             vel_new = sp_velocity + fraction * max_vel_err;  // while speed is increasing we can smoothly increase velocity if setoibt
         }
 
-        if (vel_new > _target_velocity_f + max_vel_err)  
-            vel_new = _target_velocity_f + max_vel_err;
-
     } else {
         vel_new = sp_velocity - fraction_decr * max_vel_err; // Do the same calculation also when we are to close// maybe we should make this more smooth
     }
+
+    if (vel_new > _target_velocity_f + max_vel_err)  
+        vel_new = _target_velocity_f + max_vel_err;
 
     if (vel_new < 0.0f) vel_new = 0.0f; 
 
