@@ -54,6 +54,8 @@
 #include <uORB/topics/actuator_controls.h>
 #include <uORB/topics/differential_pressure.h>
 #include <uORB/topics/airspeed.h>
+#include <uORB/topics/vehicle_gps_position.h>
+#include <uORB/topics/sensor_combined.h>
 #include <systemlib/systemlib.h>
 #include <systemlib/param/param.h>
 #include <systemlib/err.h>
@@ -824,6 +826,13 @@ int prearm_check(const struct vehicle_status_s *status, const int mavlink_fd)
 	int ret;
 	bool failed = false;
 	int gyro_calib_on_arm = 0;
+	float gyro_calib_temp;
+	unsigned int gyro_calib_date;
+	uint64_t gyro_calib_usec;
+	vehicle_gps_position_s gps_data;
+	sensor_combined_s sensors;
+	int recalibration_date_diff;
+	float recalibration_temp_diff;
 
 	int fd = open(ACCEL_DEVICE_PATH, O_RDONLY);
 
@@ -861,11 +870,35 @@ int prearm_check(const struct vehicle_status_s *status, const int mavlink_fd)
 		failed = true;
 		goto system_eval;
 	}
+	close(fd);
 
 	param_get(param_find("A_CALIB_GYRO_ARM"), &gyro_calib_on_arm);
+	param_get(param_find("SENS_GYRO_CTEMP"), &gyro_calib_temp);
+	param_get(param_find("SENS_GYRO_CDATE"), &gyro_calib_date);
+	param_get(param_find("A_RECALIB_TEMP"), &recalibration_temp_diff);
+	param_get(param_find("A_RECALIB_DATE"), &recalibration_date_diff);
 	if (status->hil_state == HIL_STATE_ON) {
 		gyro_calib_on_arm = 0; // Don't calibrate in HIL
 	}
+
+	fd = orb_subscribe(ORB_ID(vehicle_gps_position));
+	// Should fail if GPS fix is not obtained yet
+	ret = orb_copy(ORB_ID(vehicle_gps_position), fd, &gps_data);
+	close(fd);
+	gyro_calib_usec = ((uint64_t) gyro_calib_date) * 60 * 60 * 1000000;
+
+	// Consider not calibrating gyro if GPS time went forwards but was less than N hours away from the last calibration
+	if (ret == 0 && gps_data.time_gps_usec > gyro_calib_usec &&
+			(gyro_calib_usec + ((uint64_t)recalibration_date_diff) * 24*60*60*1000000 > gps_data.time_gps_usec)) {
+		fd = orb_subscribe(ORB_ID(sensor_combined));
+		ret = orb_copy(ORB_ID(sensor_combined), fd, &sensors);
+		close(fd);
+		// Don't calibrate gyro if temperature difference from the last calibration was less than N degrees
+		if (ret == 0 && (fabsf(sensors.baro_temp_celcius - gyro_calib_temp) < recalibration_temp_diff)) {
+			gyro_calib_on_arm = 0;
+		}
+	}
+
 	/* Launch gyro calibration in cases where prearm checks are required */
 	// TODO! Consider removing the sanity checks above - gyro has stricter accel checks
 	if (gyro_calib_on_arm == 1 && !calibration::calibrate_gyroscope(mavlink_fd, 1000, 20, 100)) { // Parameters reduced to allow faster results
@@ -886,8 +919,6 @@ int prearm_check(const struct vehicle_status_s *status, const int mavlink_fd)
 	/* Perform airspeed check only if circuit breaker is not
 	 * engaged and it's not a rotary wing */
 	if (!status->circuit_breaker_engaged_airspd_check && !status->is_rotary_wing) {
-		/* accel done, close it */
-		close(fd);
 		fd = orb_subscribe(ORB_ID(airspeed));
 
 		struct airspeed_s airspeed;
@@ -898,6 +929,7 @@ int prearm_check(const struct vehicle_status_s *status, const int mavlink_fd)
 			failed = true;
 			goto system_eval;
 		}
+		close(fd);
 
 		if (fabsf(airspeed.indicated_airspeed_m_s > 6.0f)) {
 			mavlink_log_critical(mavlink_fd, "AIRSPEED WARNING: WIND OR CALIBRATION MISSING");

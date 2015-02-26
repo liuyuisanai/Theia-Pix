@@ -237,6 +237,24 @@ PARAM_DEFINE_FLOAT(SENS_SON_SMOT, 0.5f);
 PARAM_DEFINE_INT32(A_CALIB_MODE, 0);
 
 /**
+ * Defines minimal difference in hours between current date and last calibration date
+ * That triggers an automatic gyro recalibration on arm
+ *
+ * @min 0
+ * @group Sensor Calibration
+ */
+PARAM_DEFINE_INT32(A_RECALIB_DATE, 5*24);
+
+/**
+ * Defines minimal difference in degrees Celsius between current temperature and last calibration temperature
+ * That triggers an automatic gyro recalibration on arm
+ *
+ * @min 0
+ * @group Sensor Calibration
+ */
+PARAM_DEFINE_FLOAT(A_RECALIB_TEMP, 3.0f);
+
+/**
  * Accelerometer X-axis offset
  *
  * @group Sensor Calibration
