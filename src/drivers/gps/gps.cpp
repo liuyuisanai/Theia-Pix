@@ -123,7 +123,7 @@ private:
 	orb_advert_t			_report_sat_info_pub;				///< uORB pub for satellite info
 	float				_rate;						///< position update rate
 	bool				_fake_gps;					///< fake gps output
-	uint64_t			_fake_gps_time;				///< time in usec to use in a report of a fake gps
+	uint64_t			_fake_gps_time;				///< initial time in usec to use in a report of a fake gps
 
 
 	/**
@@ -316,7 +316,7 @@ GPS::task_main()
 			_report_gps_pos.vel_ned_valid = true;
 
 			// constant time provided at start is reported
-			_report_gps_pos.time_gps_usec = _fake_gps_time;
+			_report_gps_pos.time_gps_usec = _fake_gps_time + hrt_absolute_time();
 
 			// no satellite information simulated
 
