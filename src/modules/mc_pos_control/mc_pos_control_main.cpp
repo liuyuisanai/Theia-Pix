@@ -1264,7 +1264,7 @@ MulticopterPositionControl::control_auto_vel(float dt) {
                 //
                 float z_speed = ( (z_delta_len * xy_speed) / xy_delta_len ); 
 
-                float tmp_speed = z_speed;
+                //float tmp_speed = z_speed;
 
                 z_speed *= z_speed > 0.0f ? _params.vel_control_z_p_down : _params.vel_control_z_p_up;
 
