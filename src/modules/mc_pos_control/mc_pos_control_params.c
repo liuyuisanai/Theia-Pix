@@ -351,3 +351,19 @@ PARAM_DEFINE_FLOAT(A_YAW_GRAD_Z_R, 2.0f);
  * If set positive, then LPF + delta correction will be used
  */
 PARAM_DEFINE_FLOAT(MPC_PITCH_LPF, 0.0f);
+
+
+/**
+ * control_auto_vel Z speed proportion to XY speed when drone goes up
+ * 
+ * @group Multicopter Position Control
+ */
+PARAM_DEFINE_FLOAT(MPC_CVEL_ZP_UP, 1.0f);
+
+
+/**
+ * control_auto_vel Z speed proportion to XY speed when drone goes down 
+ * 
+ * @group Multicopter Position Control
+ */
+PARAM_DEFINE_FLOAT(MPC_CVEL_ZP_DWN, 1.0f);
