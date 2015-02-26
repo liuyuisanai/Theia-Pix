@@ -98,9 +98,8 @@ PARAM_DEFINE_FLOAT(SENS_GYRO_YSCALE, 1.0f);
  */
 PARAM_DEFINE_FLOAT(SENS_GYRO_ZSCALE, 1.0f);
 
-// TODO! Provide correct "since" reference point
 /**
- * Date of the last gyro calibration in hours since ???
+ * Date of the last gyro calibration in hours since 1970.01.01
  *
  * @group Sensor Calibration
  */
@@ -162,9 +161,8 @@ PARAM_DEFINE_FLOAT(SENS_MAG_YSCALE, 1.0f);
  */
 PARAM_DEFINE_FLOAT(SENS_MAG_ZSCALE, 1.0f);
 
-// TODO! Provide correct "since" reference point
 /**
- * Date of the last mag calibration in hours since ???
+ * Date of the last mag calibration in hours since 1970.01.01
  *
  * @group Sensor Calibration
  */
@@ -280,9 +278,8 @@ PARAM_DEFINE_FLOAT(SENS_ACC_YSCALE, 1.0f);
  */
 PARAM_DEFINE_FLOAT(SENS_ACC_ZSCALE, 1.0f);
 
-// TODO! Provide correct "since" reference point
 /**
- * Date of the last acc calibration in hours since ???
+ * Date of the last acc calibration in hours since 1970.01.01
  *
  * @group Sensor Calibration
  */

@@ -92,7 +92,7 @@ public:
 class GPS : public device::CDev
 {
 public:
-	GPS(const char *uart_path, bool fake_gps, bool enable_sat_info);
+	GPS(const char *uart_path, bool fake_gps, bool enable_sat_info, uint64_t fake_gps_time);
 	virtual ~GPS();
 
 	virtual int			init();
@@ -123,6 +123,7 @@ private:
 	orb_advert_t			_report_sat_info_pub;				///< uORB pub for satellite info
 	float				_rate;						///< position update rate
 	bool				_fake_gps;					///< fake gps output
+	uint64_t			_fake_gps_time;				///< time in usec to use in a report of a fake gps
 
 
 	/**
@@ -167,7 +168,7 @@ GPS	*g_dev;
 }
 
 
-GPS::GPS(const char *uart_path, bool fake_gps, bool enable_sat_info) :
+GPS::GPS(const char *uart_path, bool fake_gps, bool enable_sat_info, uint64_t fake_gps_time) :
 	CDev("gps", GPS_DEVICE_PATH),
 	_task_should_exit(false),
 	_healthy(false),
@@ -179,8 +180,10 @@ GPS::GPS(const char *uart_path, bool fake_gps, bool enable_sat_info) :
 	_p_report_sat_info(nullptr),
 	_report_sat_info_pub(-1),
 	_rate(0.0f),
-	_fake_gps(fake_gps)
+	_fake_gps(fake_gps),
+	_fake_gps_time(fake_gps_time)
 {
+
 	/* store port name */
 	strncpy(_port, uart_path, sizeof(_port));
 	/* enforce null termination */
@@ -312,7 +315,10 @@ GPS::task_main()
 			_report_gps_pos.cog_rad = 0.0f;
 			_report_gps_pos.vel_ned_valid = true;
 
-			//no time and satellite information simulated
+			// constant time provided at start is reported
+			_report_gps_pos.time_gps_usec = _fake_gps_time;
+
+			// no satellite information simulated
 
 			if (!(_pub_blocked)) {
 				if (_report_gps_pos_pub > 0) {
@@ -510,6 +516,7 @@ GPS::print_info()
 		warnx("rate velocity: \t%6.2f Hz", (double)_Helper->get_velocity_update_rate());
 		warnx("rate publication:\t%6.2f Hz", (double)_rate);
 
+		warnx("gps time (usec): %llu", _report_gps_pos.time_gps_usec);
 	}
 
 	usleep(100000);
@@ -523,7 +530,7 @@ namespace gps
 
 GPS	*g_dev;
 
-void	start(const char *uart_path, bool fake_gps, bool enable_sat_info);
+void	start(const char *uart_path, bool fake_gps, bool enable_sat_info, uint64_t fake_gps_time);
 void	stop();
 void	test();
 void	reset();
@@ -533,7 +540,7 @@ void	info();
  * Start the driver.
  */
 void
-start(const char *uart_path, bool fake_gps, bool enable_sat_info)
+start(const char *uart_path, bool fake_gps, bool enable_sat_info, uint64_t fake_gps_time)
 {
 	int fd;
 
@@ -541,7 +548,7 @@ start(const char *uart_path, bool fake_gps, bool enable_sat_info)
 		errx(1, "already started");
 
 	/* create the driver */
-	g_dev = new GPS(uart_path, fake_gps, enable_sat_info);
+	g_dev = new GPS(uart_path, fake_gps, enable_sat_info, fake_gps_time);
 
 	if (g_dev == nullptr)
 		goto fail;
@@ -635,6 +642,7 @@ gps_main(int argc, char *argv[])
 	const char *device_name = GPS_DEFAULT_UART_PORT;
 	bool fake_gps = false;
 	bool enable_sat_info = false;
+	uint64_t fake_gps_time = 0;
 
 	/*
 	 * Start/load the driver.
@@ -645,15 +653,18 @@ gps_main(int argc, char *argv[])
 			if (!strcmp(argv[2], "-d")) {
 				device_name = argv[3];
 
-			} else {
-				goto out;
 			}
+			// else-clause is no longer an error if -f with time is supplied
 		}
 
 		/* Detect fake gps option */
 		for (int i = 2; i < argc; i++) {
-			if (!strcmp(argv[i], "-f"))
+			if (!strcmp(argv[i], "-f")) {
 				fake_gps = true;
+				if (argv[i+1][0] != '-') {
+					fake_gps_time = ((uint64_t) strtoul(argv[i+1], nullptr, 0)) * 60 * 60 * 1000000; // convert hours to usec
+				}
+			}
 		}
 
 		/* Detect sat info option */
@@ -662,7 +673,7 @@ gps_main(int argc, char *argv[])
 				enable_sat_info = true;
 		}
 
-		gps::start(device_name, fake_gps, enable_sat_info);
+		gps::start(device_name, fake_gps, enable_sat_info, fake_gps_time);
 	}
 
 	if (!strcmp(argv[1], "stop"))
@@ -687,5 +698,5 @@ gps_main(int argc, char *argv[])
 		gps::info();
 
 out:
-	errx(1, "unrecognized command, try 'start', 'stop', 'test', 'reset' or 'status' [-d /dev/ttyS0-n][-f][-s]");
+	errx(1, "unrecognized command, try 'start', 'stop', 'test', 'reset' or 'status' [-d /dev/ttyS0-n][-f [fake_gps_date_in_hours]][-s]");
 }

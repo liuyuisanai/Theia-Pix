@@ -29,7 +29,6 @@ bool set_calibration_parameters (const char* const offset_params[3], const char*
 
 	// Should fail if GPS fix is not obtained yet
 	if (orb_copy(ORB_ID(vehicle_gps_position), gps_topic, &gps_data) == 0) {
-		// TODO! Check if the fit to uint32 is correct!
 		gps_time_trimmed = gps_data.time_gps_usec / 1000000 / 60 / 60; // Convert to hours to avoid overflow longer
 		param_set(param_find(date_param), &(gps_time_trimmed));
 	}
