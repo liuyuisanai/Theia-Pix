@@ -33,12 +33,12 @@ then
 
 	if param compare SENS_SON_ON 1
 	then
-		if ll905 start
-		then
-		    echo "[init] Using LIDAR-Lite Laser Ranging Module"
-		else
-		    echo "Error starting range finders"
-		fi
+        if pwm_input start full
+        then
+            echo "[init] Using LIDAR-Lite Laser Ranging Module"
+        else
+            echo "Error starting range finders"
+        fi
 	fi
 
 	#

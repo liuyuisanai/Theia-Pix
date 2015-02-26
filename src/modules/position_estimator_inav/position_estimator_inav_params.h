@@ -42,6 +42,9 @@
 #include <systemlib/param/param.h>
 
 struct position_estimator_inav_params {
+    float lid_cut;
+    float lid_h_lpf;
+    float lid_l_lpf;
     float ok_drift;
 	float w_z_baro;
 	float w_z_gps_p;
@@ -57,7 +60,6 @@ struct position_estimator_inav_params {
 	float w_acc_bias;
 	float flow_k;
 	float flow_q_min;
-	float sonar_filt;
 	float sonar_err;
     int32_t sonar_on;
 	float land_t;
@@ -69,6 +71,9 @@ struct position_estimator_inav_params {
 };
 
 struct position_estimator_inav_param_handles {
+    param_t lid_cut;
+    param_t lid_h_lpf;
+    param_t lid_l_lpf;
     param_t ok_drift;
 	param_t w_z_baro;
 	param_t w_z_gps_p;
@@ -84,7 +89,6 @@ struct position_estimator_inav_param_handles {
 	param_t w_acc_bias;
 	param_t flow_k;
 	param_t flow_q_min;
-	param_t sonar_filt;
 	param_t sonar_err;
     param_t sonar_on;
 	param_t land_t;

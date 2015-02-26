@@ -9,7 +9,7 @@ extern "C" __EXPORT int main(int argc, const char * const * const argv);
 #include <fcntl.h>
 #include <unistd.h>
 
-#include <cctype>
+#include <ctype.h>
 #include <cstdlib>
 #include <cstring>
 #include <cstdio>
@@ -67,6 +67,59 @@ usage(const char * name)
 			"\n", name, name);
 }
 
+bool
+show(const char *argv) {
+    
+    uint32_t port, pin;
+    const char * tail;
+    if (not parse_port_pin(argv, port, pin, tail) or *tail != 0)
+    {
+        fprintf(stderr, "Invalid pin: %s\n", argv);
+        return false;
+    }
+    printf("show: %s = %i\n", argv, stm32_gpioread(pin_ref(port, pin)));
+    return true;
+}
+
+bool
+wait(const char *argv) {
+    uint32_t n;
+    const char * tail;
+    if (not parse_uint(argv, n, tail)) {
+        fprintf(stderr, "Invalid waiting time %s\n", argv);
+        return false;
+    }
+    usleep(n*1000);
+    return true;
+}
+
+bool
+set(const char *argv) {
+    uint32_t port, pin;
+    const char * tail;
+    if (not parse_port_pin(argv, port, pin, tail))
+    {
+        fprintf(stderr, "Invalid pin: %s\n", argv);
+        return false;
+    }
+    if (tail[0] == '\0')
+    {
+        fprintf(stderr, "Use %s=0 or %s=1.\n",
+                argv, argv);
+        return false;
+    }
+    if (tail[0] != '='
+    or not (tail[1] == '0' or tail[1] == '1')
+    or tail[2] != '\0')
+    {
+        fprintf(stderr, "Invalid set %s\n", argv);
+        return false;
+    }
+    printf("%s\n", argv);
+    stm32_gpiowrite(pin_ref(port, pin), tail[1] == '1');
+    return true;
+}
+
 } // end of namespace
 
 int
@@ -77,64 +130,39 @@ main(int argc, const char * const * const argv)
 		usage(argv[1]);
 		return 1;
 	}
-
-	if (streq(argv[1], "show"))
-	{
-		uint32_t mask = 0;
-		for (int i=2; i < argc; ++i)
-		{
-			mask <<= 1;
-
-			uint32_t port, pin;
-			const char * tail;
-			if (not parse_port_pin(argv[i], port, pin, tail) or *tail != 0)
-			{
-				fprintf(stderr, "Invalid pin: %s\n", argv[i]);
-				continue;
-			}
-			mask |= stm32_gpioread(pin_ref(port, pin));
-		}
-
-		printf("show:");
-		uint32_t one = 1 << (argc - 3);
-		while (one)
-		{
-			printf(" %i", (mask & one) != 0);
-			one >>= 1;
-		}
-		printf("\n");
-	}
-	else if (streq(argv[1], "set")) {
-		for (int i=2; i < argc; ++i)
-		{
-			uint32_t port, pin;
-			const char * tail;
-			if (not parse_port_pin(argv[i], port, pin, tail))
-			{
-				fprintf(stderr, "Invalid pin: %s\n", argv[i]);
-				continue;
-			}
-			if (tail[0] == '\0')
-			{
-				fprintf(stderr, "Use %s=0 or %s=1.\n",
-						argv[i], argv[i]);
-				continue;
-			}
-			if (tail[0] != '='
-			or not (tail[1] == '0' or tail[1] == '1')
-			or tail[2] != '\0')
-			{
-				fprintf(stderr, "Invalid set %s\n", argv[i]);
-				continue;
-			}
-			printf("%s\n", argv[i]);
-			stm32_gpiowrite(pin_ref(port, pin), tail[1] == '1');
-		}
-	}
-	else {
-		usage(argv[1]);
-		return 1;
-	}
+    char *current_cmd = "NONE";
+    bool next = false;
+    for (int i = 2; i < argc; i++) {
+        if (next) {
+            if (streq(current_cmd, "show")) {
+                next = show(argv[i]);
+            }
+            else if (streq(current_cmd, "set")) {
+                next = set(argv[i]);
+            }
+            else if (streq(current_cmd, "wait")) {
+                next = wait(argv[i]);
+            }
+            else {
+                if (streq(argv[i], "set")) {
+                    current_cmd = "set";
+                    next = true;
+                }
+                else if (streq(argv[i], "show")) {
+                    current_cmd = "show";
+                    next = true;
+                }
+                else if (streq(argv[i], "wait")) {
+                    current_cmd = "wait";
+                    next = true;
+                }
+                else {
+                    usage(argv[1]);
+                    return 1;
+                }
+            }
+        }
+    }
 
 	return 0;
 }

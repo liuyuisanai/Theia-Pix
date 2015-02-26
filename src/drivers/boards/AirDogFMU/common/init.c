@@ -333,6 +333,9 @@ adc_init()
 
 	/* power supply control pins */
 	stm32_configgpio(GPIO_VDD_3V3_SENSORS_EN);
+	stm32_configgpio(GPIO_VDD_RANGEFINDER_PWR);
+	stm32_configgpio(GPIO_VDD_RANGE_START_RES);
+	stm32_configgpio(GPIO_VDD_RANGEFINDER_EN);
 	stm32_configgpio(GPIO_VDD_BRICK_VALID);
 #undef ADC1_N_X
 #undef ADC1_N

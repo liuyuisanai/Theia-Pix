@@ -217,10 +217,9 @@
  #error PWMIN_TIMER_CHANNEL must be either 1 and 2.
 #endif
 
-#define TIMEOUT     300000 /* timeout after this time in microseconds [0.3 secs] */
+#define TIMEOUT     300000 /* reset after no responce over this time in microseconds [0.3 secs] */
 
 float lpf_value;
-
 
 class PWMIN : device::CDev
 {
@@ -235,6 +234,7 @@ public:
 
 	void _publish(uint16_t status, uint32_t period, uint32_t pulse_width);
 	void _print_info(void);
+    void hard_reset();
 
 private:
 	uint32_t error_count;
@@ -243,8 +243,10 @@ private:
 	uint32_t last_width;
 
     uint32_t list_width[5];
-    uint32_t *pointer_to_last;
     uint64_t last_poll_time;
+
+    float low_filtering_coeff;
+    float hight_filtering_coeff;
 
 	RingBuffer *reports;
 	bool timer_started;
@@ -252,7 +254,15 @@ private:
     range_finder_report data;
 	orb_advert_t		range_finder_pub;
 
+	hrt_call hard_reset_call;	// HRT callout for note completion
+	hrt_call freeze_test_call;	// HRT callout for note completion
+
 	void timer_init(void);
+
+    void turn_on();
+    void turn_off();
+    void freeze_test();
+
 };
 
 static int pwmin_tim_isr(int irq, void *context);
@@ -261,7 +271,7 @@ static void pwmin_info(void);
 static void pwmin_test(void);
 static void pwmin_reset(void);
 uint32_t pwm_median_filtering(uint32_t*, uint16_t);
-float pwm_lpf_filtering(float, float, float);
+float pwm_lpf_filtering(float, float, float, float);
 
 static PWMIN *g_dev;
 
@@ -275,11 +285,7 @@ PWMIN::PWMIN() :
 	timer_started(false),
     range_finder_pub(-1)
 {
-    //uint16_t list_size = sizeof(list_width) / sizeof(uint16_t);
-    //for (; list_size>0; list_size--) {
-    //    list_width[list_size-1] = 0;
-    //}
-    pointer_to_last = &list_width[0];
+	memset(&data, 0, sizeof(data));
 }
 
 PWMIN::~PWMIN()
@@ -303,7 +309,7 @@ PWMIN::init()
 
     data.type = RANGE_FINDER_TYPE_LASER;
     data.minimum_distance = 0.20f;
-    data.maximum_distance = 9.0f;
+    data.maximum_distance = 7.0f;
 
     range_finder_pub = orb_advertise(ORB_ID(sensor_range_finder), &data);
     fprintf(stderr, "[pwm_input] advertising %d\n"
@@ -313,6 +319,9 @@ PWMIN::init()
 	if (reports == nullptr) {
 		return -ENOMEM;
 	}
+
+    // Schedule freeze check to invoke periodically
+    hrt_call_every(&freeze_test_call, 0, TIMEOUT, reinterpret_cast<hrt_callout>(&PWMIN::freeze_test), this);
 
 	return OK;
 }
@@ -373,6 +382,31 @@ void PWMIN::timer_init(void)
 	irqrestore(flags);
 
 	timer_started = true;
+}
+
+void
+PWMIN::freeze_test()
+{
+    /* timeout is true if least read was away back */
+    bool timeout = false;
+    timeout = (hrt_absolute_time() - last_poll_time > TIMEOUT) ? true : false;
+    if (timeout) {
+        fprintf(stderr, "[pwm_input] Lidar is down, reseting\n");
+        hard_reset();
+    }
+}
+
+void
+PWMIN::turn_on() { stm32_gpiowrite(GPIO_VDD_RANGEFINDER_EN, 1); }
+
+void
+PWMIN::turn_off() { stm32_gpiowrite(GPIO_VDD_RANGEFINDER_EN, 0); }
+
+void
+PWMIN::hard_reset()
+{
+    turn_off();
+    hrt_call_after(&hard_reset_call, 9000, reinterpret_cast<hrt_callout>(&PWMIN::turn_on), this);
 }
 
 /*
@@ -469,47 +503,20 @@ void PWMIN::_publish(uint16_t status, uint32_t period, uint32_t pulse_width)
 		return;
 	}
 
-
-    /* timeout is true if least read was away back */
-    bool timeout = false;
-    timeout = (hrt_absolute_time() - last_poll_time > TIMEOUT) ? true : false;
-    if (timeout) {
-        fprintf(stderr, "[pwm_input] Lidar timeout\n");
-    }
-
     last_poll_time = hrt_absolute_time();
+
 	struct pwm_input_s pwmin_report;
 	pwmin_report.timestamp = last_poll_time;
 	pwmin_report.error_count = error_count;
 	pwmin_report.period = period;
 	pwmin_report.pulse_width = pulse_width;
 
-    // ===== MEDIAN filtering ====
-    /* TODO[max]: make this properly */
-    //uint16_t list_size = sizeof(list_width)/sizeof(uint32_t);
-    //*pointer_to_last = pulse_width;
-    //pointer_to_last++;
-    //if (pointer_to_last == &list_width[list_size-1]) {
-    //    pointer_to_last = &list_width[0];
-    //}
-    //data.distance = pwm_median_filtering(list_width, list_size); 
-
-    // ===== LPF filtering ====
-    data.distance = pwm_lpf_filtering(pulse_width * 1e-3f, 0.01f, 0.5f);
-    //data.distance = pulse_width * 1e-3f;
+    data.distance = pulse_width * 1e-3f;
     data.timestamp = pwmin_report.timestamp;
     data.error_count = error_count;
-    //data.distance = pulse_width * 1e-3f;
-    //data.distance *= 1e-3f;
 
-    if (data.distance < data.minimum_distance
-            || data.distance > data.maximum_distance
-            || timeout) {
+    if (data.distance < data.minimum_distance || data.distance > data.maximum_distance) {
         data.valid = false;
-        fprintf(stderr,
-                "[pwm_input] pwidth: %d setting data.valid to false reason: %d, %x.%06x\n"
-                , pulse_width, timeout, int(floor(data.distance)), int(1e6*((double)data.distance - floor(data.distance))));
-        return;
     } else {
         data.valid = true;
     }
@@ -540,15 +547,16 @@ void PWMIN::_print_info(void)
 }
 
 /*
- * Low pass filter filterin
+ * Low pass filter filtering
+ * applies LPF with 2 coeffs depending on changes
  */
-float pwm_lpf_filtering(float current_value, float filtering_coeff, float epsilon) {
+float pwm_lpf_filtering(float current_value, float low_filtering_coeff, float hight_filtering_coeff, float epsilon) {
     float delta = fabsf(lpf_value - current_value);
     if ( delta > epsilon) {
-        lpf_value = current_value;
-        return current_value;
-    } 
-    lpf_value += filtering_coeff*(current_value - lpf_value);
+        lpf_value += hight_filtering_coeff*(current_value - lpf_value);
+    } else { 
+        lpf_value += low_filtering_coeff*(current_value - lpf_value);
+    }
     return lpf_value;
 }
 /*
@@ -564,7 +572,6 @@ uint32_t pwm_median_filtering(uint32_t *list_width, uint16_t size) {
                 temp = list_width[j];
                 list_width[j] = list_width[j+1];
                 list_width[j+1] = temp;
-                //printf("swaped %d with %d\n", list_width[j], list_width[j+1]);
                 was_swaped = true;
             }
         }
@@ -572,7 +579,6 @@ uint32_t pwm_median_filtering(uint32_t *list_width, uint16_t size) {
             break;
     }
     for (i=0;i < size;i++)
-        printf("%d ",list_width[i]);
     return list_width[size/2];
 }
 /*
@@ -589,8 +595,7 @@ static int pwmin_tim_isr(int irq, void *context)
 
 	if (g_dev != nullptr) {
 		g_dev->_publish(status, period, pulse_width);
-	}
-
+	} 
 	return OK;
 }
 
@@ -646,11 +651,13 @@ static void pwmin_test(void)
 	exit(0);
 }
 
+
 /*
   reset the timer
  */
 static void pwmin_reset(void)
 {
+    g_dev->hard_reset();
 	int fd = open(PWMIN0_DEVICE_PATH, O_RDONLY);
 	if (fd == -1) {
 		errx(1, "Failed to open device");

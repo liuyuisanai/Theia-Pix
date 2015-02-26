@@ -41,6 +41,22 @@
 
 #include "position_estimator_inav_params.h"
 
+/* Delta of range finder noise.
+ * Changes smaller that this will be considered as noise and LPFed with coeff SENS_LID_L_LPF
+ * Changes higher that this will be considered as height change and LPFed with coeff SENS_LID_L_LPF
+ */
+PARAM_DEFINE_FLOAT(SENS_LID_CUT, 0.3f);
+
+/* LPF coefficient to use for great incoming changes
+ * (GREATER than SENS_LID_CUT)
+ */
+PARAM_DEFINE_FLOAT(SENS_LID_H_LPF, 0.5f);
+
+/* LPF coefficient to use for small incoming changes
+ * (SMALLER than SENS_LID_CUT)
+ */
+PARAM_DEFINE_FLOAT(SENS_LID_L_LPF, 0.05f);
+
 /**
  * Accepted for arming drift speed over all axes
  *
@@ -265,6 +281,9 @@ PARAM_DEFINE_INT32(CBRK_NO_VISION, 0);
 
 int parameters_init(struct position_estimator_inav_param_handles *h)
 {
+    h->lid_cut = param_find("SENS_LID_CUT");
+    h->lid_h_lpf = param_find("SENS_LID_H_LPF");
+    h->lid_l_lpf = param_find("SENS_LID_L_LPF");
     h->ok_drift = param_find("INAV_OK_DRIFT");
 	h->w_z_baro = param_find("INAV_W_Z_BARO");
 	h->w_z_gps_p = param_find("INAV_W_Z_GPS_P");
@@ -280,7 +299,6 @@ int parameters_init(struct position_estimator_inav_param_handles *h)
 	h->w_acc_bias = param_find("INAV_W_ACC_BIAS");
 	h->flow_k = param_find("INAV_FLOW_K");
 	h->flow_q_min = param_find("INAV_FLOW_Q_MIN");
-	h->sonar_filt = param_find("SENS_SON_FILT");
 	h->sonar_err = param_find("SENS_SON_ERR");
     h->sonar_on = param_find("SENS_SON_ON");
 	h->land_t = param_find("INAV_LAND_T");
@@ -295,6 +313,9 @@ int parameters_init(struct position_estimator_inav_param_handles *h)
 
 int parameters_update(const struct position_estimator_inav_param_handles *h, struct position_estimator_inav_params *p)
 {
+    param_get(h->lid_cut, &(p->lid_cut));
+    param_get(h->lid_h_lpf, &(p->lid_h_lpf));
+    param_get(h->lid_l_lpf, &(p->lid_l_lpf));
     param_get(h->ok_drift, &(p->ok_drift));
 	param_get(h->w_z_baro, &(p->w_z_baro));
 	param_get(h->w_z_gps_p, &(p->w_z_gps_p));
@@ -310,7 +331,6 @@ int parameters_update(const struct position_estimator_inav_param_handles *h, str
 	param_get(h->w_acc_bias, &(p->w_acc_bias));
 	param_get(h->flow_k, &(p->flow_k));
 	param_get(h->flow_q_min, &(p->flow_q_min));
-	param_get(h->sonar_filt, &(p->sonar_filt));
 	param_get(h->sonar_err, &(p->sonar_err));
     param_get(h->sonar_on, &(p->sonar_on));
 	param_get(h->land_t, &(p->land_t));

@@ -149,6 +149,13 @@ __BEGIN_DECLS
 /* Power supply control and monitoring GPIOs */
 #define GPIO_VDD_3V3_SENSORS_EN	(GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_2MHz|GPIO_OUTPUT_SET|GPIO_PORTE|GPIO_PIN3)
 #define GPIO_VDD_BRICK_VALID	(GPIO_INPUT|GPIO_PULLUP|GPIO_PORTB|GPIO_PIN5)
+
+/* Utility devices */
+// Lidar is currently using this
+#define GPIO_VDD_RANGEFINDER_PWR	(GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_2MHz|GPIO_OUTPUT_SET|GPIO_PORTD|GPIO_PIN15)
+#define GPIO_VDD_RANGEFINDER_EN	(GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_2MHz|GPIO_OUTPUT_SET|GPIO_PORTD|GPIO_PIN14)
+#define GPIO_VDD_RANGE_START_RES	(GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_2MHz|GPIO_OUTPUT_CLEAR|GPIO_PORTE|GPIO_PIN8)
+
 // PX4 uses GPIO_OTGFS_VBUS in place of GPIO_VDD_VBUS_VALID.
 
 #define N_ADC_CHANNELS			5
@@ -177,6 +184,11 @@ __BEGIN_DECLS
 /* High-resolution timer */
 #define HRT_TIMER		8	/* use timer8 for the HRT */
 #define HRT_TIMER_CHANNEL	1	/* use capture/compare channel */
+
+/* PWM input driver. Use FMU AUX5 pins attached to timer4 channel 2 */
+#define PWMIN_TIMER		4
+#define PWMIN_TIMER_CHANNEL	2
+#define GPIO_PWM_IN		GPIO_TIM4_CH2IN_2
 
 /****************************************************************************************************
  * Public Types

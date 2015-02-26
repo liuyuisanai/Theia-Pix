@@ -102,17 +102,7 @@ static const uint32_t updates_counter_len = 1000000;
 //static const float max_flow = 1.0f;	// max flow value that can be used, rad/s
 static bool mag_declination_set = false;
 
-// TODO [Max] temp
-typedef struct {
-    int range_reading;
-    float estimate;
-    float variance;
-    float st_deviation;
-}range_finder_analytics;
-
-range_finder_analytics temp;
-//temp.range_reading = 0;
-//temp.estimate = 0.0f;
+float corr_sonar_filtered;
 
 __EXPORT int position_estimator_inav_main(int argc, char *argv[]);
 
@@ -319,7 +309,6 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 
     /* define range finder for previous and current report */
     struct range_finder_report prev_range, current_range;
-    float corr_sonar_filtered;
 
 	bool gps_valid = false;			// GPS is valid
 	bool vision_valid = false;
@@ -371,17 +360,6 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 
 	struct position_estimator_inav_params params;
 	struct position_estimator_inav_param_handles pos_inav_param_handles;
-    //struct {
-    //    param_t sonar_error;
-    //    param_t sonar_filtering;
-    //}   _param_handles;
-
-    //_param_handles.sonar_error      = param_find("SENS_SONAR_ERR");
-    //_param_handles.sonar_filtering  = param_find("SENS_SONAR_FILT");
-    //struct {
-    //    float sonar_err;
-    //    float sonar_filt;
-    //}   _params;
 
 	/* initialize parameter handles */
 	parameters_init(&pos_inav_param_handles);
@@ -391,11 +369,6 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 	orb_copy(ORB_ID(parameter_update), parameter_update_sub, &param_update); /* read from param topic to clear updated flag */
 	/* first parameters update */
 	parameters_update(&pos_inav_param_handles, &params);
-    //float v;
-    //param_get(_param_handles.sonar_error, &v);
-    //_params.sonar_err = v;
-    //param_get(_param_handles.sonar_filtering, &v);
-    //_params.sonar_filt = v;
 
 	struct pollfd fds_init[1] = {
 		{ .fd = sensor_combined_sub, .events = POLLIN },
@@ -558,17 +531,15 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                                         if (fabsf(range_finder.distance - prev_range.distance) < params.sonar_err) {
                                             // Accepted difference - enabling LPF and stuff
 
-                                            corr_sonar_filtered += (range_finder.distance - corr_sonar_filtered) * params.sonar_filt;
-                                            current_range.distance = range_finder.distance;
+                                            // TODO[Max] there should be parameters for leidar noise, l_lpf and h_lpf
+                                            current_range.distance = pwm_lpf_filtering(range_finder.distance, params.lid_l_lpf, params.lid_h_lpf, params.lid_cut);
                                             current_range.valid = true;
                                         }
                                         else {
                                             // This difference in not accepted, considering as a spike for now
                                             if (fabsf(corr_sonar_filtered - range_finder.distance) < params.sonar_err) {
                                                 // No, this is not spike, the spike was last time!
-                                                corr_sonar_filtered += (range_finder.distance - corr_sonar_filtered) * params.sonar_filt;
-                                                current_range.distance = range_finder.distance;
-                                                current_range.valid = true;
+                                                current_range.distance = pwm_lpf_filtering(range_finder.distance, params.lid_l_lpf, params.lid_h_lpf, params.lid_cut);                                            current_range.valid = true;
                                             }
                                             else {
                                                 // This is spike! Busted!
@@ -1277,19 +1248,18 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 	thread_running = false;
 	return 0;
 }
-/*
- * author:      Max Shvetsov <max@airdog.com>
- * description: this function is used to validate sensor based on reading prediction
- *              and previous reading analysis
- * group:       range finder
- */
-float range_finder_func(struct range_finder_report range_finder) {
-    temp.estimate = (temp.range_reading * temp.estimate + range_finder.distance) / ++temp.range_reading;
 
-    temp.variance = (1.0f/(float) temp.range_reading) * ( temp.variance * (temp.range_reading - 1) + ( (range_finder.distance - temp.estimate) * (range_finder.distance - temp.estimate) ));
-    temp.st_deviation = sqrt(temp.variance * temp.range_reading / (temp.range_reading - 1) );
-    fprintf(stderr, " real %.3f estimate %.3f variance %.7f st_deviation %.7f reading %d\n"
-            ,(double) range_finder.distance ,(double) temp.estimate, (double) temp.variance, (double) temp.st_deviation, temp.range_reading
-           );
-    return 0;
+/*
+ * Low pass filter filtering
+ * applies LPF with 2 coeffs depending on changes
+ */
+float pwm_lpf_filtering(float current_value, float low_filtering_coeff, float high_filtering_coeff, float epsilon) {
+    float delta = fabsf(corr_sonar_filtered - current_value);
+
+    if ( delta > epsilon) {
+        corr_sonar_filtered = high_filtering_coeff * current_value + (1 - high_filtering_coeff) * corr_sonar_filtered;
+    } else { 
+        corr_sonar_filtered = low_filtering_coeff * current_value + (1 - low_filtering_coeff) * corr_sonar_filtered;
+    }
+    return corr_sonar_filtered;
 }

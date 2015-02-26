@@ -48,7 +48,8 @@ MODULES		+= modules/sensors
 #MODULES		+= drivers/px4flow
 MODULES		+= drivers/calibration
 
-MODULES		+= drivers/mb1230serial
+#MODULES 	+= drivers/pwm_input
+#MODULES		+= drivers/mb1230serial
 
 # Needs to be burned to the ground and re-written; for now,
 # just don't build it.
