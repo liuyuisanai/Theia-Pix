@@ -200,8 +200,8 @@ private:
         param_t accept_radius;
         param_t pitch_lpf_cut;
 
-        param_t control_vel_z_p_down;
-        param_t control_vel_z_p_up;
+        param_t vel_control_z_p_down;
+        param_t vel_control_z_p_up;
 
 		param_t yaw_rate_max;
 
@@ -238,8 +238,8 @@ private:
         int pafol_mode;
         float accept_radius;
 
-        float control_vel_z_p_down;
-        float control_vel_z_p_up;
+        float vel_control_z_p_down;
+        float vel_control_z_p_up;
 
         float yaw_dead_zone_r;
         float yaw_gradient_zone_r;
@@ -593,8 +593,8 @@ MulticopterPositionControl::MulticopterPositionControl() :
 
     _params_handles.pitch_lpf_cut = param_find("MPC_PITCH_LPF");
 
-    _params_handles.control_vel_z_p_up = param_find("MPC_CVEL_ZP_UP");
-    _params_handles.control_vel_z_p_down = param_find("MPC_CVEL_ZP_DWN");
+    _params_handles.vel_control_z_p_up = param_find("MPC_CVEL_ZP_UP");
+    _params_handles.vel_control_z_p_down = param_find("MPC_CVEL_ZP_DWN");
 
 	/* fetch initial parameter values */
 	parameters_update(true);
@@ -741,8 +741,8 @@ MulticopterPositionControl::parameters_update(bool force)
 			_pitchLPF.set_cutoff_frequency(_params.pitch_lpf_cut);
 		}
 
-        param_get(_params_handles.control_vel_z_p_up, &_params.control_vel_z_p_up);
-        param_get(_params_handles.control_vel_z_p_down, &_params.control_vel_z_p_down);
+        param_get(_params_handles.vel_control_z_p_up, &_params.vel_control_z_p_up);
+        param_get(_params_handles.vel_control_z_p_down, &_params.vel_control_z_p_down);
 
 	}
 
@@ -1262,15 +1262,17 @@ MulticopterPositionControl::control_auto_vel(float dt) {
                 // calculate z_speed based on the position delta vector direction (xy_delta_len, z_delta_len), when we 
                 // already know xy_speed from (xy_speed, z_speed) - use triangle similarity
                 //
-                float z_speed = ( (z_delta_len * xy_speed) / xy_delta_len ) * _params.vel_z_p; 
+                float z_speed = ( (z_delta_len * xy_speed) / xy_delta_len ); 
 
-                z_speed *= z_speed > 0.0f ? _params.auto_vel_z_p_down : _params.auto_vel_z_p_up;
+                float tmp_speed = z_speed;
 
+                z_speed *= z_speed > 0.0f ? _params.vel_control_z_p_down : _params.vel_control_z_p_up;
+
+                //mavlink_log_info(_mavlink_fd, "up:%.2f,down:%.2f,spdb:%.2f,spd:%.2f", (double)_params.vel_control_z_p_up,(double)_params.vel_control_z_p_down, (double)z_speed, (double)tmp_speed);
+                
                 _vel_sp(0) = xy_move_direction(0) * xy_speed;
                 _vel_sp(1) = xy_move_direction(1) * xy_speed;
                 _vel_sp(2) = z_speed;
-
-                //mavlink_log_info(_mavlink_fd, "zspd: %.2f, zl: %.2f, xyspd: %.2f, xyl: %.2f", (double)z_speed, (double)z_delta_len, (double)xy_speed, (double)xy_delta_len);
 
             }
 
