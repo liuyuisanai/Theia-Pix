@@ -61,10 +61,9 @@ close(FAR struct file * filp)
 	channel_index_t ch = priv_to_channel_index(filp);
 	if (ch == INVALID_CHANNEL_INDEX) { return -ENXIO; }
 
-	opened_release(get_multiplexer(filp), ch);
+	bool ok = opened_release(get_multiplexer(filp), ch);
 	// TODO drain xt
-
-	return 0;
+	return ok ? 0 : -EBADF;
 }
 
 static ssize_t

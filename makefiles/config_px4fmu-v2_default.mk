@@ -23,6 +23,7 @@ MODULES		+= drivers/led
 MODULES		+= drivers/px4fmu
 MODULES		+= drivers/px4io
 MODULES		+= drivers/bluetooth21
+MODULES		+= drivers/bluetooth21/tests/bluetooth21_devtest
 MODULES		+= drivers/boards/px4fmu-v2
 MODULES		+= drivers/rgbled
 MODULES		+= drivers/mpu6000

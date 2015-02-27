@@ -24,7 +24,7 @@ struct MultiPlexer
 
 bool
 opened_acquare(MultiPlexer & mp, channel_index_t ch);
-void
+bool
 opened_release(MultiPlexer & mp, channel_index_t ch);
 
 }
