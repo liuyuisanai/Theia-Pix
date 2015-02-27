@@ -875,8 +875,8 @@ int prearm_check(const struct vehicle_status_s *status, const int mavlink_fd)
 	param_get(param_find("A_CALIB_GYRO_ARM"), &gyro_calib_on_arm);
 	param_get(param_find("SENS_GYRO_CTEMP"), &gyro_calib_temp);
 	param_get(param_find("SENS_GYRO_CDATE"), &gyro_calib_date);
-	param_get(param_find("A_RECALIB_TEMP"), &recalibration_temp_diff);
-	param_get(param_find("A_RECALIB_DATE"), &recalibration_date_diff);
+	param_get(param_find("A_CALIB_dTEMP_C"), &recalibration_temp_diff);
+	param_get(param_find("A_CALIB_dDATE_H"), &recalibration_date_diff);
 	if (status->hil_state == HIL_STATE_ON) {
 		gyro_calib_on_arm = 0; // Don't calibrate in HIL
 	}

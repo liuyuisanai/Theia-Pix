@@ -243,7 +243,7 @@ PARAM_DEFINE_INT32(A_CALIB_MODE, 0);
  * @min 0
  * @group Sensor Calibration
  */
-PARAM_DEFINE_INT32(A_RECALIB_DATE, 5*24);
+PARAM_DEFINE_INT32(A_CALIB_dTIME_H, 5*24);
 
 /**
  * Defines minimal difference in degrees Celsius between current temperature and last calibration temperature
@@ -252,7 +252,7 @@ PARAM_DEFINE_INT32(A_RECALIB_DATE, 5*24);
  * @min 0
  * @group Sensor Calibration
  */
-PARAM_DEFINE_FLOAT(A_RECALIB_TEMP, 3.0f);
+PARAM_DEFINE_FLOAT(A_CALIB_dTEMP_C, 3.0f);
 
 /**
  * Accelerometer X-axis offset
