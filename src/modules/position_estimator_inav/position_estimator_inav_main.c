@@ -97,7 +97,6 @@ static const hrt_abstime vision_topic_timeout = 500000;	// Vision topic timeout 
 static const hrt_abstime gps_topic_timeout = 500000;		// GPS topic timeout = 0.5s
 //static const hrt_abstime flow_topic_timeout = 1000000;	// optical flow topic timeout = 1s
 static const hrt_abstime sonar_timeout = 150000;	// sonar timeout = 150ms
-static const hrt_abstime sonar_valid_timeout = 1000000;	// estimate sonar distance during this time after sonar loss
 static const hrt_abstime xy_src_timeout = 2000000;	// estimate position during this time after position sources loss
 static const uint32_t updates_counter_len = 1000000;
 //static const float max_flow = 1.0f;	// max flow value that can be used, rad/s
@@ -118,7 +117,7 @@ range_finder_analytics temp;
 __EXPORT int position_estimator_inav_main(int argc, char *argv[]);
 
 int position_estimator_inav_thread_main(int argc, char *argv[]);
-float range_finder_func(struct range_finder_report range_finder);
+float pwm_lpf_filtering(float , float , float , float );
 
 static void usage(const char *reason);
 
@@ -318,20 +317,11 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 		{ 0.0f, 0.0f },		// D (pos, vel)
 	};
 
-	//float corr_sonar = 0.0f;
-	float corr_sonar_filtered = 0.0f;
-
-	//float corr_flow[] = { 0.0f, 0.0f };	// N E
-	//float w_flow = 0.0f;
-
-	float sonar_prev = 0.0f;
-	float dist_bottom = 0.0f;
-	//hrt_abstime flow_prev = 0;			// time of last flow measurement
-	hrt_abstime sonar_time = 0;			// time of last sonar measurement (not filtered)
-	hrt_abstime sonar_valid_time = 0;	// time of last sonar measurement used for correction (filtered)
+    /* define range finder for previous and current report */
+    struct range_finder_report prev_range, current_range;
+    float corr_sonar_filtered;
 
 	bool gps_valid = false;			// GPS is valid
-	bool sonar_valid = false;		// sonar is valid
 	bool vision_valid = false;
 	//bool flow_valid = false;		// flow is valid
 	//bool flow_accurate = false;		// flow should be accurate (this flag not updated if flow_valid == false)
@@ -543,82 +533,49 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                 if (range_finder.valid) {
                         switch(range_finder.type)
                         {
-                            case RANGE_FINDER_TYPE_ULTRASONIC: {
-
-                                        float angle_correction = 1;
-                                        if (att.R[2][2] < 0.85f) {
-                                            angle_correction = 0.95; //cos(15) <- maximal correction if we are flying with pi/4 angle
-                                            range_finder.distance *= angle_correction;
-                                        }
-                                        sonar_time = t;
-                                        /* hack by max */
-
-                                        if (fabsf(range_finder.distance - sonar_prev) < params.sonar_err) {
-                                            // Accepted difference - enabling LPF and stuff
-
-                                            corr_sonar_filtered += (range_finder.distance - corr_sonar_filtered) * params.sonar_filt;
-                                            // sonar_filt could have high tolerance for row value now
-                                            sonar_valid = true;
-                                            sonar_valid_time = t;
-                                            dist_bottom = corr_sonar_filtered;
-                                            sonar_prev = range_finder.distance;
-                                        }
-                                        else {
-                                            // This difference in not accepted, considering as a spike for now
-                                            if (fabsf(corr_sonar_filtered - range_finder.distance) < params.sonar_err) {
-                                                // No, this is not spike, the spike was last time!
-                                                corr_sonar_filtered += (range_finder.distance - corr_sonar_filtered) * params.sonar_filt;
-                                                dist_bottom = corr_sonar_filtered;
-                                                sonar_valid = true;
-                                                sonar_valid_time = t;
-                                            }
-                                            else {
-                                                // This is spike! Busted!
-                                                // BUT if it is the new ground level it will pass the IF on the next read
-                                                sonar_valid = true;
-                                                dist_bottom = corr_sonar_filtered;
-                                            }
-                                            sonar_prev = range_finder.distance;
-                                        }
-                                        break;
-                               }
+                            case RANGE_FINDER_TYPE_ULTRASONIC: 
                             case RANGE_FINDER_TYPE_LASER: {
+                                        
+                                        prev_range = current_range;
 
-                                        //range_finder_func(range_finder);
-                                        float angle_correction = 1;
-                                        if (att.R[2][2] < 0.85f) {
-                                            angle_correction = 0.95; //cos(15) <- maximal correction if we are flying with pi/4 angle
-                                            range_finder.distance *= angle_correction;
-                                        }
-                                        sonar_time = t;
+                                        current_range.timestamp = t;
+
+                                        //float angle_correction = 1;
+                                        //if (att.R[2][2] < 0.85f) {
+                                        //    angle_correction = 0.95; //cos(15) <- maximal correction if we are flying with pi/4 angle
+                                        //    range_finder.distance *= angle_correction;
+                                        //}
                                         /* hack by max */
 
-                                        if (fabsf(range_finder.distance - sonar_prev) < params.sonar_err) {
+                                        if (t > prev_range.timestamp + sonar_timeout && prev_range.valid == false) {
+                                            // If we were not working some time already - don't consider first measurment true
+                                            // We are resetting corr_sonar_filtered here
+                                            corr_sonar_filtered = current_range.distance = range_finder.distance;
+                                            current_range.valid = false;
+                                            break;
+                                        }
+
+                                        if (fabsf(range_finder.distance - prev_range.distance) < params.sonar_err) {
                                             // Accepted difference - enabling LPF and stuff
 
                                             corr_sonar_filtered += (range_finder.distance - corr_sonar_filtered) * params.sonar_filt;
-                                            // sonar_filt could have high tolerance for row value now
-                                            sonar_valid = true;
-                                            sonar_valid_time = t;
-                                            dist_bottom = corr_sonar_filtered;
-                                            sonar_prev = range_finder.distance;
+                                            current_range.distance = range_finder.distance;
+                                            current_range.valid = true;
                                         }
                                         else {
                                             // This difference in not accepted, considering as a spike for now
                                             if (fabsf(corr_sonar_filtered - range_finder.distance) < params.sonar_err) {
                                                 // No, this is not spike, the spike was last time!
                                                 corr_sonar_filtered += (range_finder.distance - corr_sonar_filtered) * params.sonar_filt;
-                                                dist_bottom = corr_sonar_filtered;
-                                                sonar_valid = true;
-                                                sonar_valid_time = t;
+                                                current_range.distance = range_finder.distance;
+                                                current_range.valid = true;
                                             }
                                             else {
                                                 // This is spike! Busted!
                                                 // BUT if it is the new ground level it will pass the IF on the next read
-                                                sonar_valid = true;
-                                                dist_bottom = corr_sonar_filtered;
+                                                current_range.distance = range_finder.distance;
+                                                current_range.valid = false;
                                             }
-                                            sonar_prev = range_finder.distance;
                                         }
                                         break;
                                }
@@ -865,11 +822,10 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 		}
 
 		/* check for sonar measurement timeout */
-		if (sonar_valid && t > sonar_time + sonar_timeout) {
-			//corr_sonar = 0.0f;
-			sonar_valid = false;
+		if (current_range.valid && t > current_range.timestamp + sonar_timeout) {
+            current_range.distance = 0.0f;
+			current_range.valid = false;
 			warnx("SONAR timeout");
-            sonar_prev = 0.0f;
 		}
 
 		float dt = t_prev > 0 ? (t - t_prev) / 1000000.0f : 0.0f;
@@ -894,19 +850,6 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 		// bool use_flow = flow_valid && (flow_accurate || !use_gps_xy);
 
 		bool can_estimate_xy = (eph < max_eph_epv) || use_gps_xy || use_vision_xy; //|| use_flow;
-
-		// if (dist_bottom_valid) {
-		// 	/* surface distance prediction */
-		// 	surface_offset += surface_offset_rate * dt;
-
-		// 	/* surface distance correction */
-		// 	if (sonar_valid) {
-		// 		surface_offset_rate -= corr_sonar * 0.5f * params.w_z_sonar * params.w_z_sonar * dt;
-		// 		surface_offset -= corr_sonar * params.w_z_sonar * dt;
-		// 	}
-		// }
-
-		bool dist_bottom_valid = sonar_valid && (t < sonar_valid_time + sonar_valid_timeout);
 
 		float w_xy_gps_p = params.w_xy_gps_p * w_gps_xy;
 		float w_xy_gps_v = params.w_xy_gps_v * w_gps_xy;
@@ -1288,8 +1231,8 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 			local_pos.vz = z_est[1];
 			local_pos.landed = landed;
 			local_pos.yaw = att.yaw;
-			local_pos.dist_bottom = dist_bottom;
-			local_pos.dist_bottom_valid = dist_bottom_valid;
+			local_pos.dist_bottom = current_range.distance;
+			local_pos.dist_bottom_valid = current_range.valid;
             local_pos.dist_bottom_min = range_finder.minimum_distance;
             local_pos.dist_bottom_max = range_finder.maximum_distance;
             local_pos.eph = eph;
