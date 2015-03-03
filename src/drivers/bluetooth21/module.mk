@@ -8,7 +8,7 @@ SRCS = \
 	mutex.cpp \
 	# end of SRCS
 
-EXTRACXXFLAGS += -std=c++11 -DMODULE_COMMAND=${MODULE_COMMAND}
+EXTRACXXFLAGS += -std=c++11 -DMODULE_COMMAND=${MODULE_COMMAND} -Werror
 
 ifneq ($(DEBUG_BLUETOOTH21),)
 #
