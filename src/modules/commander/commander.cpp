@@ -494,11 +494,17 @@ bool handle_command(struct vehicle_status_s *status_local
 
 					} else if (custom_main_mode == PX4_CUSTOM_MAIN_MODE_LOITER) {
 						//* AIRDOG AUTO */
-						bool need_auto_takeoff = (status_local->main_state == MAIN_STATE_AUTO_STANDBY);
-						main_ret = main_state_transition(status_local, MAIN_STATE_LOITER, mavlink_fd);
-						if (main_ret != TRANSITION_DENIED && custom_sub_mode == 1) {
-							//Pass takeoff command to the loiter state
-							status_local->auto_takeoff_cmd = need_auto_takeoff;
+						// Takeoff requested, but should not be allowed
+						if (status_local->main_state != MAIN_STATE_AUTO_STANDBY && custom_sub_mode == 1) {
+							main_ret = TRANSITION_DENIED;
+							mavlink_log_info(mavlink_fd, "Takeoff denied. Standby mode required.");
+						}
+						else {
+							main_ret = main_state_transition(status_local, MAIN_STATE_LOITER, mavlink_fd);
+							if (main_ret != TRANSITION_DENIED && custom_sub_mode == 1) {
+								//Pass takeoff command to the loiter state
+								status_local->auto_takeoff_cmd = true;
+							}
 						}
 
 					} else if (custom_main_mode == PX4_CUSTOM_MAIN_MODE_ACRO) {
