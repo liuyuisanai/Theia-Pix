@@ -50,8 +50,9 @@ open(FAR struct file * filp)
 	channel_index_t ch = priv_to_channel_index(filp);
 	if (ch == INVALID_CHANNEL_INDEX) { return -ENXIO; }
 
-	bool ok = opened_acquare(get_multiplexer(filp), ch);
-	// TODO drain rx
+	auto & mp = get_multiplexer(filp);
+	bool ok = opened_acquare(mp, ch);
+	if (ok) { drain(mp.rx, ch); }
 	return ok ? 0 : -EBUSY;
 }
 
@@ -61,8 +62,9 @@ close(FAR struct file * filp)
 	channel_index_t ch = priv_to_channel_index(filp);
 	if (ch == INVALID_CHANNEL_INDEX) { return -ENXIO; }
 
-	bool ok = opened_release(get_multiplexer(filp), ch);
-	// TODO drain xt
+	auto & mp = get_multiplexer(filp);
+	bool ok = opened_release(mp, ch);
+	if (ok) { drain(mp.xt, ch); }
 	return ok ? 0 : -EBADF;
 }
 
