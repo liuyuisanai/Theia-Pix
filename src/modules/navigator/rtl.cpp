@@ -152,6 +152,9 @@ RTL::execute_vehicle_command()
 			commander_request_s *commander_request = _navigator->get_commander_request();
 			commander_request->request_type = V_MAIN_STATE_CHANGE;
 			commander_request->main_state = MAIN_STATE_LOITER;
+			if (rtl_state == RTL_STATE_LAND) {
+				commander_request->mode_param = 1; // request takeoff
+			}
 			_navigator->set_commander_request_updated();
 		}
 	}

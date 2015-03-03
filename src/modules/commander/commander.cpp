@@ -2027,6 +2027,9 @@ int commander_thread_main(int argc, char *argv[])
 
 				if (main_state_transition(&status, commander_request.main_state, mavlink_fd) == TRANSITION_CHANGED) {
 					status_changed = true;
+					if (commander_request.main_state == MAIN_STATE_LOITER && commander_request.mode_param == 1) {
+						status.auto_takeoff_cmd = true;
+					}
 				} else {
                     mavlink_log_info(mavlink_fd, "State rejected\n");
                 }

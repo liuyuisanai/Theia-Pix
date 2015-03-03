@@ -59,6 +59,7 @@ struct commander_request_s {
 	main_state_t main_state;
     airdog_state_t airdog_state;
     camera_mode_t camera_mode;
+    int8_t mode_param; // used for additional mode parameters like loiter takeoff command
     bool camera_mode_changed;
 };
 

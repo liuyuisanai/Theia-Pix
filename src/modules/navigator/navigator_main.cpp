@@ -774,6 +774,7 @@ Navigator::publish_commander_request()
 	//clean up commander request fields
 	_commander_request.request_type = OTHER;
 	_commander_request.camera_mode_changed = false;
+	_commander_request.mode_param = 0;
 }
 
 void Navigator::add_fence_point(int argc, char *argv[])

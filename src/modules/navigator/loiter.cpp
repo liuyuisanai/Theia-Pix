@@ -153,6 +153,12 @@ Loiter::on_activation()
     if (vstatus->auto_takeoff_cmd) {
 		set_sub_mode(LOITER_SUB_MODE_TAKING_OFF, 1, camera_reset_mode);
 		takeoff();
+		if (vstatus->airdog_state == AIRD_STATE_IN_AIR || vstatus->airdog_state == AIRD_STATE_LANDING) {
+			in_air_takeoff = true;
+		}
+		else {
+			in_air_takeoff = false;
+		}
 		//resetModeArguments(MAIN_STATE_LOITER); //now done in commander itself
 
 	} else if (vstatus->airdog_state == AIRD_STATE_LANDED || vstatus->airdog_state == AIRD_STATE_STANDBY) {
@@ -175,7 +181,12 @@ Loiter::on_active()
 	vehicle_status_s *vehicle_status = _navigator->get_vstatus();
 
 	if (loiter_sub_mode == LOITER_SUB_MODE_TAKING_OFF && check_current_pos_sp_reached()) {
-        if (_parameters.airdog_init_pos_use == 1){
+
+		if (in_air_takeoff) {
+			// TODO! [AK] Consider resetting camera while "freeze" mode is not implemented, as currently there is no easy way to activate "aim" camera while freezed
+			set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, 2, -1);
+		}
+		else if (_parameters.airdog_init_pos_use == 1){
             set_sub_mode(LOITER_SUB_MODE_GO_TO_POSITION, 2);
             go_to_intial_position(); 
         }
@@ -260,6 +271,7 @@ Loiter::execute_vehicle_command()
 void
 Loiter::execute_command_in_landed(vehicle_command_s cmd){
 
+	// TODO! [AK] Is this thing still needed? Or do we switch to takeoff parameter in all cases?
 	if (cmd.command == VEHICLE_CMD_NAV_REMOTE_CMD) {
 
 		int remote_cmd = cmd.param1;
@@ -575,6 +587,7 @@ Loiter::execute_command_in_go_to_position(vehicle_command_s cmd){
 void
 Loiter::execute_command_in_landing(vehicle_command_s cmd){
 
+	// TODO! [AK] Correct pausing
 	if (cmd.command == VEHICLE_CMD_NAV_REMOTE_CMD) {
 		int remote_cmd = cmd.param1;
 		if (remote_cmd == REMOTE_CMD_PLAY_PAUSE) {

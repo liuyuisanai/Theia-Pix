@@ -95,6 +95,7 @@ private:
 
 	bool flag_sub_mode_goal_reached;
 	bool previous_target_valid_flag;
+	bool in_air_takeoff; // Indicates that a takeoff command was called while we were in air
 };
 
 #endif

@@ -469,6 +469,7 @@ NavigatorMode::takeoff()
 	_navigator->invalidate_setpoint_triplet();
     pos_sp_triplet = _navigator->get_position_setpoint_triplet();
     global_pos = _navigator->get_global_position();
+    _vstatus = _navigator->get_vstatus();
 
 	pos_sp_triplet->previous.valid = false;
 	pos_sp_triplet->current.valid = true;
@@ -476,7 +477,20 @@ NavigatorMode::takeoff()
 
 	pos_sp_triplet->current.lat = global_pos->lat;
 	pos_sp_triplet->current.lon = global_pos->lon;
-	pos_sp_triplet->current.alt = global_pos->alt + _parameters.takeoff_alt;
+
+	if (_vstatus->airdog_state == AIRD_STATE_IN_AIR) {
+		// Complete takeoff procedure immediately if IN AIR
+		pos_sp_triplet->current.alt = global_pos->alt;
+	}
+	else if (_vstatus->airdog_state == AIRD_STATE_LANDING) {
+		// Check range finder and try to calculate necessary altitude gain
+		// TODO! [AK] Use parameter instead of hardcoded 3.0f
+		pos_sp_triplet->current.alt = global_pos->alt + 3.0f; // - range_finder.distance
+	}
+	else {
+		pos_sp_triplet->current.alt = global_pos->alt + _parameters.takeoff_alt;
+	}
+
 	pos_sp_triplet->current.position_valid = true;
 
 	pos_sp_triplet->current.yaw = global_pos->yaw;//NAN;

@@ -217,6 +217,7 @@ protected:
 	struct target_global_position_s 	*target_pos;
 	struct vehicle_global_position_s 	*global_pos;
 	struct home_position_s 				*home_pos;
+	struct vehicle_status_s				*_vstatus;
 
 	struct vehicle_command_s _vcommand;
 
