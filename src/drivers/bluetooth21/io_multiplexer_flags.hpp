@@ -4,6 +4,7 @@
 
 #include "debug.hpp"
 #include "io_multiplexer.hpp"
+#include "std_algo.hpp"
 
 namespace BT
 {
@@ -34,6 +35,22 @@ opened_release(MultiPlexer & mp, channel_index_t ch)
 	mp.flags.channels_opened_mask = new_mask;
 
 	return old_mask & channel_bit;
+}
+
+inline bool
+is_channel_xt_ready(const MultiPlexer & mp, channel_index_t ch)
+{ return is_channel_ready(mp.xt, ch); }
+
+inline void
+set_xt_ready_mask(MultiPlexer & mp, channel_mask_t mask)
+{ mp.xt.ready_mask = mask; }
+
+inline channel_mask_t
+get_rx_ready_mask(const MultiPlexer & mp)
+{
+	// We assume buffers are big enough for mavlink's small data volume.
+	// So any opened channel can receive data.
+	return mp.flags.channels_opened_mask;
 }
 
 }

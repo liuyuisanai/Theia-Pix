@@ -12,7 +12,7 @@
 #include "bt_types.hpp"
 #include "chardev.hpp"
 #include "io_multiplexer.hpp"
-#include "io_multiplexer_inlines.hpp"
+#include "io_multiplexer_flags.hpp"
 #include "io_multiplexer_global.hpp"
 
 /*
@@ -72,7 +72,13 @@ read(FAR struct file * filp, FAR char * buffer, size_t buflen)
 	channel_index_t ch = priv_to_channel_index(filp);
 	if (ch == INVALID_CHANNEL_INDEX) { return -ENXIO; }
 
-	return 0;
+	auto & mp = get_multiplexer(filp);
+
+	// FIXME read_service_channel when ch == 0
+	ssize_t r = read_channel_raw(mp.rx, ch, buffer, buflen);
+
+	if (r == 0) { r = -EAGAIN; }
+	return r;
 }
 
 static ssize_t
@@ -81,7 +87,15 @@ write(FAR struct file * filp, FAR const char * buffer, size_t buflen)
 	channel_index_t ch = priv_to_channel_index(filp);
 	if (ch == INVALID_CHANNEL_INDEX) { return -ENXIO; }
 
-	return 0;
+	auto & mp = get_multiplexer(filp);
+
+	// FIXME write_service_channel when ch == 0
+	ssize_t r = 0;
+	if (is_channel_xt_ready(mp, ch))
+		r = write_channel_packet(mp.xt, ch, buffer, buflen);
+
+	if (r == 0) { r = -EAGAIN; }
+	return r;
 }
 
 static int
@@ -90,7 +104,7 @@ poll(FAR struct file * filp, FAR struct pollfd * fds, bool setup)
 	channel_index_t ch = priv_to_channel_index(filp);
 	if (ch == INVALID_CHANNEL_INDEX) { return -ENXIO; }
 
-	return 0;
+	return -ENXIO;
 }
 
 }

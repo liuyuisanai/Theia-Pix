@@ -34,13 +34,13 @@ main(int argc, const char * const argv[])
 {
 	using namespace BT;
 
-	if (argc != 2 and argc != 3)
+	if (argc < 2)
 	{
 		usage(argv[0]);
 		return 1;
 	}
 
-	if (streq(argv[1], "start"))
+	if (streq(argv[1], "start") and argc == 3)
 	{
 		if (Daemon::Multiplexer::is_running())
 		{
@@ -48,10 +48,9 @@ main(int argc, const char * const argv[])
 			return 1;
 		}
 		printf("Starting...");
-		// TODO device name from command line
-		Daemon::Multiplexer::start("/dev/ttyS1");
+		Daemon::Multiplexer::start(argv[2]);
 	}
-	else if (streq(argv[1], "status"))
+	else if (streq(argv[1], "status") and argc == 2)
 	{
 		if (Daemon::Multiplexer::is_running())
 			printf("Daemon::Multiplexer is running.\n");
@@ -59,7 +58,7 @@ main(int argc, const char * const argv[])
 			printf("Daemon::Multiplexer is NOT running.\n");
 		printf("\n");
 	}
-	else if (streq(argv[1], "stop"))
+	else if (streq(argv[1], "stop") and argc == 2)
 	{
 		if (not Daemon::Multiplexer::is_running())
 		{
