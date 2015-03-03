@@ -73,6 +73,7 @@ process_serial_input(Protocol tag, Device & d, RxState & rx)
 		);
 	}
 	pack(rx.device_buffer);
+	// TODO poll_notify(... all channels);
 }
 
 inline ssize_t

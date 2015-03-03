@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include "bt_types.hpp"
+#include "chardev_poll.hpp"
 #include "io_recv.hpp"
 #include "io_xmit.hpp"
 #include "mutex.hpp"
@@ -22,6 +23,7 @@ struct MultiPlexer
 
 	RxState rx;
 	XtState xt;
+	PollRefSet pollset[8];
 
 	MutexSem mutex_flags;
 	MutexSem mutex_rx;

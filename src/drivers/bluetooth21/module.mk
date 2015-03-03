@@ -2,6 +2,7 @@ MODULE_COMMAND = $(notdir $(shell pwd))
 
 SRCS = \
 	chardev.cpp \
+	chardev_poll.cpp \
 	daemon_multiplexer.cpp \
 	io_multiplexer_global.cpp \
 	main.cpp \

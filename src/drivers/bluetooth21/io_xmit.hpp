@@ -73,6 +73,7 @@ transfer_channel_data(XtState & xt, channel_index_t i)
 	{
 		insert_end_unsafe(out, cbegin(ch), cend(ch));
 		clear(ch);
+		// TODO poll_notify(... ch)
 	}
 }
 

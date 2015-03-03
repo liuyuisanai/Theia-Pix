@@ -101,12 +101,31 @@ write(FAR struct file * filp, FAR const char * buffer, size_t buflen)
 }
 
 static int
-poll(FAR struct file * filp, FAR struct pollfd * fds, bool setup)
+poll(FAR struct file * filp, FAR struct pollfd * fds, bool setup_phase)
 {
 	channel_index_t ch = priv_to_channel_index(filp);
 	if (ch == INVALID_CHANNEL_INDEX) { return -ENXIO; }
 
-	return -ENXIO;
+	auto & mp = get_multiplexer(filp);
+
+	int r = 0;
+	if (setup_phase)
+	{
+		if (full(mp.pollset[ch]))
+		{
+			r = -ENOMEM;
+		}
+		else
+		{
+			add(mp.pollset[ch], fds);
+			// poll_notify(fds, channel_poll_mask(mp, ch));
+		}
+	}
+	else
+	{
+		clear(mp.pollset[ch]);
+	}
+	return r;
 }
 
 }
