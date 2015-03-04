@@ -198,6 +198,7 @@ Loiter::on_active()
         		set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, 2);
         	}
         }
+		in_air_takeoff = false;
 	}
 
 	if (loiter_sub_mode == LOITER_SUB_MODE_LANDING && check_current_pos_sp_reached(SETPOINT_TYPE_LAND)) {
@@ -587,19 +588,19 @@ Loiter::execute_command_in_go_to_position(vehicle_command_s cmd){
 void
 Loiter::execute_command_in_landing(vehicle_command_s cmd){
 
-	// TODO! [AK] Correct pausing
 	if (cmd.command == VEHICLE_CMD_NAV_REMOTE_CMD) {
 		int remote_cmd = cmd.param1;
 		if (remote_cmd == REMOTE_CMD_PLAY_PAUSE) {
-			// Update airdog state
-			commander_request_s *commander_request = _navigator->get_commander_request();
-			commander_request->request_type = AIRD_STATE_CHANGE;
-			commander_request->airdog_state = AIRD_STATE_IN_AIR;
-			_navigator->set_commander_request_updated();
+//			// Update airdog state
+//			commander_request_s *commander_request = _navigator->get_commander_request();
+//			commander_request->request_type = AIRD_STATE_CHANGE;
+//			commander_request->airdog_state = AIRD_STATE_IN_AIR;
+//			_navigator->set_commander_request_updated();
 
 			_navigator->invalidate_setpoint_triplet();
-			set_sub_mode(LOITER_SUB_MODE_AIM_AND_SHOOT, 1);
-			loiter_sub_mode = LOITER_SUB_MODE_AIM_AND_SHOOT;
+			set_sub_mode(LOITER_SUB_MODE_TAKING_OFF, 1, 1);
+			takeoff();
+			in_air_takeoff = true;
 		}
 	}
 }
