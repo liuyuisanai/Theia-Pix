@@ -13,12 +13,10 @@ namespace BT
 
 struct MultiPlexer
 {
-	// TODO turn volatile into atomic
-	volatile struct Flags
+	struct Flags
 	{
+		// TODO atomic_channel_mask_t and remove mutex flags.
 		channel_mask_t channels_opened_mask;
-
-		Flags() : channels_opened_mask(0) {}
 	} flags;
 
 	RxState rx;

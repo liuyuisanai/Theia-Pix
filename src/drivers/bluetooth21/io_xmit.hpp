@@ -25,13 +25,13 @@ struct XtState
 	channel_index_t round_robin;
 	channel_mask_t ready_mask;
 
-	XtState() : round_robin(0), ready_mask(0) {}
+	XtState() : round_robin(0) {}
 };
 
 inline bool
 is_channel_ready(const XtState & xt, channel_index_t i)
 {
-	return i == 0 or xt.ready_mask & (1 << i);
+	return i == 0 or is_set(xt.ready_mask, i);
 }
 
 inline size_t
