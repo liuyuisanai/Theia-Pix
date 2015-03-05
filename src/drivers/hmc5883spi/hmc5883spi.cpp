@@ -934,6 +934,7 @@ int HMC5883::calibrate(struct file *filp, unsigned enable)
 	ssize_t sz;
 	int ret = 1;
 	uint8_t good_count = 0;
+	int prev_rate = -1, prev_range = -1;
 
 	// XXX do something smarter here
 	int fd = (int)enable;
@@ -953,9 +954,23 @@ int HMC5883::calibrate(struct file *filp, unsigned enable)
 
 	warnx("starting mag scale calibration");
 
+	prev_rate = ioctl(filp, SENSORIOCGPOLLRATE, 0);
+	if (prev_rate <= 0) {
+		warn("failed to get previous poll rate");
+		ret = 1;
+		goto out;
+	}
+
 	/* start the sensor polling at 50 Hz */
 	if (OK != ioctl(filp, SENSORIOCSPOLLRATE, 50)) {
-		warn("failed to set 2Hz poll rate");
+		warn("failed to set 50Hz poll rate");
+		ret = 1;
+		goto out;
+	}
+
+	prev_range = ioctl(filp, MAGIOCGRANGE, 0);
+	if (prev_range <= 0) {
+		warn("failed to get previous mag range");
 		ret = 1;
 		goto out;
 	}
@@ -1085,11 +1100,12 @@ out:
 	}
 
 	/* set back to normal mode */
-	/* Set to 1.1 Gauss */
-	if (OK != ::ioctl(fd, MAGIOCSRANGE, 1)) {
-		warnx("failed to set 1.1 Ga range");
+	if (prev_rate > 0 && OK != ::ioctl(fd, SENSORIOCSPOLLRATE, prev_rate)) {
+		warnx("failed to restore mag poll rate");
 	}
-
+	if (prev_range > 0 && OK != ::ioctl(fd, MAGIOCSRANGE, prev_range)) {
+		warnx("failed to restore mag range");
+	}
 	if (OK != ::ioctl(fd, MAGIOCEXSTRAP, 0)) {
 		warnx("failed to disable sensor calibration mode");
 	}
