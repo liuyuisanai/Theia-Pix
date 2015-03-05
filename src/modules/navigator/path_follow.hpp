@@ -51,7 +51,6 @@ private:
 
     struct position_setpoint_triplet_s 	*last_moving_sp_triplet;
 
-
     float _target_velocity;   // raw target velocity
     float _target_velocity_f; // target velocity filtered
     float _drone_velocity;    // raw drone velocity
@@ -64,6 +63,21 @@ private:
 
     float _vel_ch_rate;  // velocity change rate
     float _vel_ch_rate_f; // velocity change rate filtered
+
+    double _fp_i;
+    double _fp_p;
+    double _fp_d;
+    double _fp_dd;
+
+    math::LowPassFilter<float> _fp_d_lpf;
+    math::LowPassFilter<float> _fp_dd_lpf;
+
+	uint64_t _last_gpos_time; // Timestamp of the last trajectory point
+	uint64_t _last_target_time; // Timestamp of the last trajectory point
+
+    hrt_abstime _calc_vel_pid_t_prev;
+    double _fp_p_last;
+    double _fp_d_last;
 
     uint64_t _global_pos_timestamp_last;
 
@@ -92,6 +106,7 @@ private:
 	// Update drone velocity with a new value
 	inline void update_drone_velocity();
 	// Calculates desired speed in m/s based on current distance and target's speed
+	inline float calculate_desired_velocity_PID(float distance);
 	inline float calculate_desired_velocity(float distance);
 	// Calculates total current distance by trajectory + drone distance to setpoint + target distance to last point
 	inline float calculate_current_distance();

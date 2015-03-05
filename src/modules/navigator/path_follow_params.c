@@ -139,3 +139,36 @@ PARAM_DEFINE_FLOAT(PAFOL_AC_DST_PT, 8.0f);
  */
 PARAM_DEFINE_FLOAT(PAFOL_STOP_SPD, 2.0f);
 
+/**
+ * Coefficient for integral part of velocity PID controller 
+ * @min 0
+ * @max 50
+ * @group PathFollow
+ */
+PARAM_DEFINE_FLOAT(PAFOL_VEL_PID_I, 0.0f);
+
+
+/**
+ * Coefficient for proportional part of velocity PID controller 
+ * @min 0
+ * @max 50
+ * @group PathFollow
+ */
+PARAM_DEFINE_FLOAT(PAFOL_VEL_PID_P, 0.0f);
+
+/**
+ * Coefficient for dirivative part of velocity PID controller 
+ * @min 0
+ * @max 50
+ * @group PathFollow
+ */
+PARAM_DEFINE_FLOAT(PAFOL_VEL_PID_D, 0.0f);
+
+
+/**
+ * Coefficient for second degree dirivative part of velocity PID controller 
+ * @min 0
+ * @max 50
+ * @group PathFollow
+ */
+PARAM_DEFINE_FLOAT(PAFOL_VEL_PID_DD, 0.0f);

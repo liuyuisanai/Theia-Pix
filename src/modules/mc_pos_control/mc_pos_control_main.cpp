@@ -1297,7 +1297,7 @@ MulticopterPositionControl::control_auto_vel(float dt) {
 
                 _vel_sp(0) = xy_move_direction(0) * xy_speed;
                 _vel_sp(1) = xy_move_direction(1) * xy_speed;
-                _vel_sp(2) = z_speed;
+                //_vel_sp(2) = z_speed;
 
             }
 

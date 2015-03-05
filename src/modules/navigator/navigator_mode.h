@@ -143,6 +143,11 @@ public:
         float pafol_vel_err_growth_power_decr;
         float pafol_vel_reaction_time_decr;
 
+        float pafol_vel_i;
+        float pafol_vel_p;
+        float pafol_vel_d;
+        float pafol_vel_dd;
+
 		float mpc_max_speed;
 
         float airdog_dst_inv; 
@@ -192,6 +197,11 @@ public:
 
         param_t pafol_vel_err_growth_power_decr;
         param_t pafol_vel_reaction_time_decr;
+
+        param_t pafol_vel_i;
+        param_t pafol_vel_p;
+        param_t pafol_vel_d;
+        param_t pafol_vel_dd;
 
 		param_t mpc_max_speed;
 

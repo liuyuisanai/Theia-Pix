@@ -35,7 +35,16 @@ PathFollow::PathFollow(Navigator *navigator, const char *name):
 		_target_velocity(0.5f),
         _drone_velocity(0.0f),
 		_desired_speed(0.0f),
-		_ok_distance(0.0f){
+		_ok_distance(0.0f),
+        _fp_i(0.0f),
+        _fp_p(0.0f),
+        _fp_d(0.0f),
+        _fp_dd(0.0f),
+        _fp_d_lpf(0.1),
+        _fp_dd_lpf(0.1),
+        _fp_p_last(0.0f),
+        _fp_d_last(0.0f)
+        {
 }
 PathFollow::~PathFollow() {
 
@@ -214,10 +223,24 @@ void PathFollow::on_active() {
         }
     }
 
-    _desired_speed = calculate_desired_velocity(calculate_current_distance() - _ok_distance);
-    pos_sp_triplet->current.abs_velocity = _desired_speed;
-    pos_sp_triplet->current.abs_velocity_valid = true;
+    global_pos = _navigator->get_global_position();
+    target_pos = _navigator->get_target_position();
 
+    // TODO gpos doesn't update or target signal is lost situation handling
+    // TODO prediction about movement from last measurement till this moment in time, could do that in calculate_current_distance
+    
+    if (global_pos->timestamp != _last_gpos_time && target_pos->timestamp != _last_target_time){
+
+        _desired_speed = calculate_desired_velocity_PID(calculate_current_distance() - _ok_distance);
+        pos_sp_triplet->current.abs_velocity = _desired_speed;
+        pos_sp_triplet->current.abs_velocity_valid = true;
+
+	    _last_gpos_time = global_pos->timestamp;
+	    _last_target_time = target_pos->timestamp;
+
+    }
+
+    /*
   if (zero_setpoint == true){
 
         if (_desired_speed > 1e-6f) {
@@ -255,6 +278,7 @@ void PathFollow::on_active() {
             
         }
     }
+    */
 
     _navigator->set_position_setpoint_triplet_updated();
 
@@ -419,9 +443,65 @@ void PathFollow::update_drone_velocity() {
 
 }
 
+float PathFollow::calculate_desired_velocity_PID(float dst_to_ok){
+
+    double fp_i_coif = _parameters.pafol_vel_i;
+    double fp_p_coif = _parameters.pafol_vel_p;
+    double fp_d_coif = _parameters.pafol_vel_d;
+    double fp_dd_coif = _parameters.pafol_vel_dd;
+
+    hrt_abstime t = hrt_absolute_time();
+    double calc_vel_pid_dt = _calc_vel_pid_t_prev != 0 ? (t - _calc_vel_pid_t_prev) : 0.0f;
+
+
+    calc_vel_pid_dt /= 1000000.0;
+
+    _fp_p = dst_to_ok;
+    _fp_i = _fp_i + _fp_p * calc_vel_pid_dt;
+    
+    if (_fp_i>50.0)
+        _fp_i = 50.0;
+
+    if (_fp_i<-50.0)
+        _fp_i = -50.0;
+
+    if (calc_vel_pid_dt > 0.0) {
+        double fp_d_tmp = (_fp_p - _fp_p_last) / calc_vel_pid_dt;
+        _fp_d = _fp_d_lpf.apply(t, (float)fp_d_tmp);
+        
+    }
+    
+    if (calc_vel_pid_dt > 0.0) {
+        double fp_dd_tmp = (_fp_d - _fp_d_last) / calc_vel_pid_dt;
+        _fp_dd = _fp_dd_lpf.apply(t, fp_dd_tmp);
+    }
+
+
+    _fp_p_last = _fp_p;
+    _fp_d_last = _fp_d;
+
+    double vel_new =_fp_i * fp_i_coif + 
+              _fp_p * fp_p_coif +
+              _fp_d * fp_d_coif +
+              _fp_dd * fp_dd_coif;
+
+
+    dd_log.log(0,_fp_i);
+    dd_log.log(1,_fp_p);
+    dd_log.log(2,_fp_d);
+    dd_log.log(3,_fp_dd);
+    dd_log.log(4,dst_to_ok);
+
+    mavlink_log_info(_mavlink_fd, "dst:%.5f, vel_n:%.5f, fp:d%.5f", (double)dst_to_ok, (double)vel_new, (double)_fp_i);
+
+    _calc_vel_pid_t_prev = t;
+
+    return (float)vel_new;
+}
+
 float PathFollow::calculate_desired_velocity(float dst_to_ok) {
 
-    // calculate drone speed change rate and filter it
+    // calculate drone spee return vel_new;d change rate and filter it
     if (_global_pos_timestamp_last != global_pos->timestamp){
 
         float ch_rate_dt = global_pos->timestamp - _global_pos_timestamp_last;
