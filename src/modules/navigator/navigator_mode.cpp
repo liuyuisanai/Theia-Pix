@@ -81,9 +81,7 @@ NavigatorMode::NavigatorMode(Navigator *navigator, const char *name) :
 {
 	updateParams();
 	on_inactive();
-
 	_mavlink_fd = open(MAVLINK_LOG_DEVICE, 0);
-
 }
 
 NavigatorMode::~NavigatorMode()
@@ -95,7 +93,6 @@ NavigatorMode::updateParameters() {
 
 	updateParamHandles();
 	updateParamValues();
-
 }
 
 void
@@ -120,26 +117,25 @@ NavigatorMode::updateParamHandles() {
 	_parameter_handles.rtl_ret_alt = param_find("RTL_RET_ALT");
 
 	_parameter_handles.pafol_buf_size = param_find("PAFOL_BUFF_SIZE");
-	_parameter_handles.pafol_min_ok_dist = param_find("PAFOL_MIN_OK_D");
-	_parameter_handles.pafol_ok_dist = param_find("PAFOL_OK_D");
+	_parameter_handles.pafol_optimal_dist = param_find("PAFOL_OPT_D");
+	_parameter_handles.pafol_break_dist = param_find("PAFOL_BRK_D");
+	_parameter_handles.pafol_break_coef = param_find("PAFOL_BRK_C");
 	_parameter_handles.pafol_min_alt_off = param_find("PAFOL_ALT_OFF");
-    _parameter_handles.pafol_vel_err_coif = param_find("PAFOL_VEL_E_C");
-    _parameter_handles.pafol_vel_reaction_time = param_find("PAFOL_VEL_R_T");
-    _parameter_handles.pafol_vel_err_growth_power = param_find("PAFOL_VEL_E_GP");
-
-    _parameter_handles.pafol_vel_err_growth_power_decr = param_find("PAFOL_VEL_E_GPD");
-    _parameter_handles.pafol_vel_reaction_time_decr = param_find("PAFOL_VEL_R_TD");
 
     _parameter_handles.pafol_acc_dst_to_line = param_find("PAFOL_AC_DST_LN");
     _parameter_handles.pafol_acc_dst_to_point = param_find("PAFOL_AC_DST_PT");
-
-    _parameter_handles.pafol_stop_speed = param_find("PAFOL_STOP_SPD");
     _parameter_handles.pafol_acc_rad = param_find("PAFOL_ACC_RAD");
 
-    _parameter_handles.pafol_vel_i = param_find("PAFOL_VEL_PID_I");
-    _parameter_handles.pafol_vel_p = param_find("PAFOL_VEL_PID_P");
-    _parameter_handles.pafol_vel_d = param_find("PAFOL_VEL_PID_D");
-    _parameter_handles.pafol_vel_dd = param_find("PAFOL_VEL_PID_DD");
+    _parameter_handles.pafol_vel_i = param_find("PAFOL_VPID_I");
+    _parameter_handles.pafol_vel_p = param_find("PAFOL_VPID_P");
+    _parameter_handles.pafol_vel_d = param_find("PAFOL_VPID_D");
+    
+    _parameter_handles.pafol_vel_i_add_dec_rate = param_find("PAFOL_VPID_I_DR");
+    _parameter_handles.pafol_vel_i_add_inc_rate = param_find("PAFOL_VPID_I_IR");
+    _parameter_handles.pafol_vel_i_upper_limit = param_find("PAFOL_VPID_I_UL");
+    _parameter_handles.pafol_vel_i_lower_limit = param_find("PAFOL_VPID_I_LL");
+
+
 
 	_parameter_handles.mpc_max_speed = param_find("MPC_XY_VEL_MAX");
     _parameter_handles.airdog_dst_inv = param_find("A_DST_INV");
@@ -172,26 +168,23 @@ NavigatorMode::updateParamValues() {
 	param_get(_parameter_handles.rtl_ret_alt, &(_parameters.rtl_ret_alt));
 
 	param_get(_parameter_handles.pafol_buf_size, &(_parameters.pafol_buf_size));
-	param_get(_parameter_handles.pafol_min_ok_dist, &(_parameters.pafol_min_ok_dist));
-	param_get(_parameter_handles.pafol_ok_dist, &(_parameters.pafol_ok_dist));
+	param_get(_parameter_handles.pafol_optimal_dist, &(_parameters.pafol_optimal_dist));
+	param_get(_parameter_handles.pafol_break_dist, &(_parameters.pafol_break_dist));
+	param_get(_parameter_handles.pafol_break_coef, &(_parameters.pafol_break_coef));
 	param_get(_parameter_handles.pafol_min_alt_off, &(_parameters.pafol_min_alt_off));
-    param_get(_parameter_handles.pafol_vel_err_coif, &(_parameters.pafol_vel_err_coif)); 
-	param_get(_parameter_handles.pafol_vel_reaction_time, &(_parameters.pafol_vel_reaction_time));
-	param_get(_parameter_handles.pafol_vel_err_growth_power, &(_parameters.pafol_vel_err_growth_power));
 	param_get(_parameter_handles.pafol_acc_rad, &(_parameters.pafol_acc_rad));
 	param_get(_parameter_handles.pafol_acc_dst_to_line, &(_parameters.pafol_acc_dst_to_line));
 	param_get(_parameter_handles.pafol_acc_dst_to_point, &(_parameters.pafol_acc_dst_to_point));
 
+
+	param_get(_parameter_handles.pafol_vel_i_add_dec_rate, &(_parameters.pafol_vel_i_add_dec_rate));
+	param_get(_parameter_handles.pafol_vel_i_add_inc_rate, &(_parameters.pafol_vel_i_add_inc_rate));
+	param_get(_parameter_handles.pafol_vel_i_upper_limit, &(_parameters.pafol_vel_i_upper_limit));
+	param_get(_parameter_handles.pafol_vel_i_lower_limit, &(_parameters.pafol_vel_i_lower_limit));
+
 	param_get(_parameter_handles.pafol_vel_i, &(_parameters.pafol_vel_i));
 	param_get(_parameter_handles.pafol_vel_p, &(_parameters.pafol_vel_p));
 	param_get(_parameter_handles.pafol_vel_d, &(_parameters.pafol_vel_d));
-	param_get(_parameter_handles.pafol_vel_dd, &(_parameters.pafol_vel_dd));
-
-
-	param_get(_parameter_handles.pafol_vel_err_growth_power_decr, &(_parameters.pafol_vel_err_growth_power_decr));
-	param_get(_parameter_handles.pafol_vel_reaction_time_decr, &(_parameters.pafol_vel_reaction_time_decr));
-
-	param_get(_parameter_handles.pafol_stop_speed, &(_parameters.pafol_stop_speed));
 
 	param_get(_parameter_handles.mpc_max_speed, &(_parameters.mpc_max_speed));
 	param_get(_parameter_handles.rtl_ret_alt, &(_parameters.rtl_ret_alt));
@@ -244,27 +237,7 @@ NavigatorMode::on_inactive()
 void
 NavigatorMode::on_activation()
 {
-	/* invalidate position setpoint triplet by default */
 	_navigator->invalidate_setpoint_triplet();
-    //mavlink_log_info(_mavlink_fd, "[nav] About to set leash points\n");
-    //if (_parameters.first_point_lat != 0
-    //        || _parameters.first_point_lon != 0
-    //        || _parameters.first_point_alt != 0.0f) {
-    //    double first_point[3];
-    //    first_point[0] = _parameters.first_point_lat / 1e7;
-    //    first_point[1] = _parameters.first_point_lon / 1e7;
-    //    first_point[2] = _parameters.first_point_alt;
-    //    _navigator->set_next_path_point(first_point, true, 0);
-    //}
-    //if (_parameters.last_point_lat != 0
-    //        || _parameters.last_point_lon != 0
-    //        || _parameters.last_point_alt != 0.0f) {
-    //    double last_point[3];
-    //    last_point[0] = _parameters.last_point_lat / 1e7;
-    //    last_point[1] = _parameters.last_point_lon / 1e7;
-    //    last_point[2] = _parameters.last_point_alt;
-    //    _navigator->set_next_path_point(last_point, true, 0);
-    //}
 }
 
 void
@@ -298,36 +271,6 @@ NavigatorMode::execute_vehicle_command()
 void
 NavigatorMode::set_camera_mode(camera_mode_t camera_mode, bool force_change)
 {
-	// target_pos = _navigator->get_target_position();
-	// global_pos = _navigator->get_global_position();
-
-	// // Calculate offset values for later use.
-	// float offset_x;
-	// float offset_y;
-	// float offset_z = target_pos->alt - global_pos->alt;
-
-	// get_vector_to_next_waypoint(
-	// 		target_pos->lat,
-	// 		target_pos->lon,
-	// 		global_pos->lat,
-	// 		global_pos->lon,
-	// 		&offset_x,
-	// 		&offset_y
-	// );
-
-	// math::Vector<3> offset(offset_x, offset_y, offset_z);
-	// math::Vector<2> offset_xy(offset_x, offset_y);
-
-	// float offset_xy_len = offset_xy.length();
-
-	// if (offset_xy_len > _parameters.a_yaw_ignore_radius)
-	// 	sp->yaw = _wrap_pi(atan2f(-offset_xy(1), -offset_xy(0)));
-
-	// sp->camera_pitch = atan2f(offset(2), offset_xy_len);
-
-	// pos_sp_triplet = _navigator->get_position_setpoint_triplet();
-	// pos_sp_triplet->current.aim_to_target = point_to_target;		
-	// _navigator->set_position_setpoint_triplet_updated();
 
 	if (_camera_mode != camera_mode || force_change) {
 

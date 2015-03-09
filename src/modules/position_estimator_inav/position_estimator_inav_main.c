@@ -642,6 +642,7 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 						/* calculate current estimated position in global frame */
 						est_alt = local_pos.ref_alt - local_pos.z;
 						map_projection_reproject(&ref, local_pos.x, local_pos.y, &est_lat, &est_lon);
+
 					}
 
 					/* update reference */

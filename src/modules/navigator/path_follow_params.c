@@ -12,26 +12,16 @@
  */
 PARAM_DEFINE_INT32(PAFOL_BUFF_SIZE, 500);
 
+
 /**
- * Minimum desired distance from target
+ * Optimal trajectory distance from target to drone
  *
  * @unit meters
  * @min 5
  * @max 100
  * @group PathFollow
  */
-PARAM_DEFINE_FLOAT(PAFOL_MIN_OK_D, 10.0f);
-
-
-/**
- * Desired distance from target
- *
- * @unit meters
- * @min 5
- * @max 100
- * @group PathFollow
- */
-PARAM_DEFINE_FLOAT(PAFOL_OK_D, 10.0f);
+PARAM_DEFINE_FLOAT(PAFOL_OPT_D, 10.0f);
 
 
 /**
@@ -42,61 +32,8 @@ PARAM_DEFINE_FLOAT(PAFOL_OK_D, 10.0f);
  * @max 100
  * @group PathFollow
  */
+
 PARAM_DEFINE_FLOAT(PAFOL_ALT_OFF, 3.0f);
-
-
-/**
- * Velocity error coif.
- *
- * @unit meters
- * @min 0.1
- * @max 20
- * @group PathFollow
- */
-PARAM_DEFINE_FLOAT(PAFOL_VEL_E_C, 0.5f);
-
-
-/**
- * Velocity reaction time.
- *
- * @unit meters
- * @min 0.1
- * @max 20
- * @group PathFollow
- */
-PARAM_DEFINE_FLOAT(PAFOL_VEL_R_T, 0.5f);
-
-/**
- * Velocity error function growth power.
- *
- * @unit meters
- * @min 0.1
- * @max 20
- * @group PathFollow
- */
-PARAM_DEFINE_FLOAT(PAFOL_VEL_E_GP, 1.0f);
-
-
-/**
- * Velocity reaction time when speed should be decreased
- *
- * @unit meters
- * @min 0.1
- * @max 20
- * @group PathFollow
- */
-PARAM_DEFINE_FLOAT(PAFOL_VEL_R_TD, 0.5f);
-
-/**
- * Velocity error function growth power when speed should be decreased
- *
- * @unit meters
- * @min 0.1
- * @max 20
- * @group PathFollow
- */
-PARAM_DEFINE_FLOAT(PAFOL_VEL_E_GPD, 2.0f);
-
 
 /**
  * Path follow acceptance radius
@@ -130,22 +67,12 @@ PARAM_DEFINE_FLOAT(PAFOL_AC_DST_PT, 8.0f);
 
 
 /**
- * Path follow speed when the drone is allowed to stop imidiatelly
- *
- * @unit meters
- * @min 0.1
- * @max 50
- * @group PathFollow
- */
-PARAM_DEFINE_FLOAT(PAFOL_STOP_SPD, 2.0f);
-
-/**
  * Coefficient for integral part of velocity PID controller 
  * @min 0
  * @max 50
  * @group PathFollow
  */
-PARAM_DEFINE_FLOAT(PAFOL_VEL_PID_I, 0.0f);
+PARAM_DEFINE_FLOAT(PAFOL_VPID_I, 0.0f);
 
 
 /**
@@ -154,7 +81,7 @@ PARAM_DEFINE_FLOAT(PAFOL_VEL_PID_I, 0.0f);
  * @max 50
  * @group PathFollow
  */
-PARAM_DEFINE_FLOAT(PAFOL_VEL_PID_P, 0.0f);
+PARAM_DEFINE_FLOAT(PAFOL_VPID_P, 0.0f);
 
 /**
  * Coefficient for dirivative part of velocity PID controller 
@@ -162,13 +89,32 @@ PARAM_DEFINE_FLOAT(PAFOL_VEL_PID_P, 0.0f);
  * @max 50
  * @group PathFollow
  */
-PARAM_DEFINE_FLOAT(PAFOL_VEL_PID_D, 0.0f);
+PARAM_DEFINE_FLOAT(PAFOL_VPID_D, 0.0f);
 
 
 /**
- * Coefficient for second degree dirivative part of velocity PID controller 
- * @min 0
- * @max 50
+ * Follow path vel PID control integral part aditional decrease rate
+ * when aditional decrease necessary. 
  * @group PathFollow
  */
-PARAM_DEFINE_FLOAT(PAFOL_VEL_PID_DD, 0.0f);
+PARAM_DEFINE_FLOAT(PAFOL_VPID_I_DR, 5.0f);
+
+/**
+ * Follow path vel PID control integral part aditional increase rate
+ * when aditional increase necessary. 
+ * @group PathFollow
+ */
+PARAM_DEFINE_FLOAT(PAFOL_VPID_I_IR, 5.0f);
+
+/**
+ * Follow path vel PID control integral part upper limit.
+ * @group PathFollow
+ */
+PARAM_DEFINE_FLOAT(PAFOL_VPID_I_UL, 100.0f);
+
+/**
+ * Follow path vel PID control integral part lower limit.
+ * @group PathFollow
+ */
+PARAM_DEFINE_FLOAT(PAFOL_VPID_I_LL, -50.0f);
+

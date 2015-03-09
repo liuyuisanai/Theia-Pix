@@ -129,24 +129,24 @@ public:
 		float rtl_ret_alt;
 
 		ssize_t pafol_buf_size;
-		float pafol_min_ok_dist;
-		float pafol_ok_dist;
+		float pafol_break_dist;
+		float pafol_break_coef;
+		float pafol_optimal_dist;
 		float pafol_min_alt_off;
-        float pafol_vel_err_coif;
-        float pafol_vel_reaction_time;
-        float pafol_vel_err_growth_power;
         float pafol_acc_rad;
         float pafol_acc_dst_to_line;
         float pafol_acc_dst_to_point;
-        float pafol_stop_speed;
 
-        float pafol_vel_err_growth_power_decr;
-        float pafol_vel_reaction_time_decr;
 
         float pafol_vel_i;
         float pafol_vel_p;
         float pafol_vel_d;
-        float pafol_vel_dd;
+
+        float pafol_vel_i_add_dec_rate;
+        float pafol_vel_i_add_inc_rate;
+
+        float pafol_vel_i_lower_limit;
+        float pafol_vel_i_upper_limit;
 
 		float mpc_max_speed;
 
@@ -184,24 +184,24 @@ public:
 		param_t rtl_ret_alt;
 
 		param_t pafol_buf_size;
-		param_t pafol_min_ok_dist;
-		param_t pafol_ok_dist;
+		param_t pafol_break_coef;
+		param_t pafol_break_dist;
+		param_t pafol_optimal_dist;
 		param_t pafol_min_alt_off;
-        param_t pafol_vel_err_coif;
-        param_t pafol_vel_reaction_time;
-        param_t pafol_vel_err_growth_power;
         param_t pafol_acc_rad;
         param_t pafol_acc_dst_to_line;
         param_t pafol_acc_dst_to_point;
         param_t pafol_stop_speed;
 
-        param_t pafol_vel_err_growth_power_decr;
-        param_t pafol_vel_reaction_time_decr;
-
         param_t pafol_vel_i;
         param_t pafol_vel_p;
         param_t pafol_vel_d;
-        param_t pafol_vel_dd;
+
+        param_t pafol_vel_i_add_dec_rate;
+        param_t pafol_vel_i_add_inc_rate;
+
+        param_t pafol_vel_i_lower_limit;
+        param_t pafol_vel_i_upper_limit;
 
 		param_t mpc_max_speed;
 
