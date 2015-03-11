@@ -6,14 +6,15 @@
 #endif
 
 #include <cerrno>
-#include <cstdio>
 #include <cstdint>
 
 #include "bt_types.hpp"
+#include "debug.hpp"
 #include "chardev.hpp"
 #include "io_multiplexer.hpp"
 #include "io_multiplexer_flags.hpp"
 #include "io_multiplexer_global.hpp"
+#include "io_multiplexer_rw.hpp"
 
 /*
  * Bluetooth character devices implementation uses struct file .priv
@@ -35,8 +36,8 @@ channel_index_to_priv(channel_index_t ch) { return (void *)(uintptr_t)ch; }
 inline channel_index_t
 priv_to_channel_index(FAR struct file * filp)
 {
-	assert(filp);
-	assert(filp->f_inode);
+	D_ASSERT(filp);
+	D_ASSERT(filp->f_inode);
 	auto value = (uintptr_t)filp->f_inode->i_private;
 	return value <= 7 ? (channel_index_t)value : INVALID_CHANNEL_INDEX;
 }
@@ -77,7 +78,9 @@ read(FAR struct file * filp, FAR char * buffer, size_t buflen)
 	auto & mp = get_multiplexer(filp);
 
 	// FIXME read_service_channel when ch == 0
-	ssize_t r = read_channel_raw(mp.rx, ch, buffer, buflen);
+	ssize_t r = read_channel_raw(mp, ch, buffer, buflen);
+
+	dbg_dump("chardev read", mp.rx);
 
 	if (r == 0) { r = -EAGAIN; }
 	return r;
@@ -94,7 +97,10 @@ write(FAR struct file * filp, FAR const char * buffer, size_t buflen)
 	// FIXME write_service_channel when ch == 0
 	ssize_t r = 0;
 	if (is_channel_xt_ready(mp, ch))
-		r = write_channel_packet(mp.xt, ch, buffer, buflen);
+		r = write_channel_packet(mp, ch, buffer, buflen);
+
+	dbg("chardev r %i\n", r);
+	dbg_dump("chardev write", mp.xt);
 
 	if (r == 0) { r = -EAGAIN; }
 	return r;
@@ -111,19 +117,19 @@ poll(FAR struct file * filp, FAR struct pollfd * fds, bool setup_phase)
 	int r = 0;
 	if (setup_phase)
 	{
-		if (full(mp.pollset[ch]))
+		if (full(mp.poll_waiters[ch]))
 		{
 			r = -ENOMEM;
 		}
 		else
 		{
-			add(mp.pollset[ch], fds);
+			add(mp.poll_waiters[ch], fds);
 			// poll_notify(fds, channel_poll_mask(mp, ch));
 		}
 	}
 	else
 	{
-		clear(mp.pollset[ch]);
+		clear(mp.poll_waiters[ch]);
 	}
 	return r;
 }

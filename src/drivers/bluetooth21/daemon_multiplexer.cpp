@@ -2,7 +2,6 @@
 #include <sched.h>
 #include <sys/types.h> // main_t
 #include <systemlib/systemlib.h> // task_spawn_cmd
-#include <unistd.h> // sleep
 
 #include <cstdio>
 
@@ -13,12 +12,16 @@
 #include "io_tty.hpp"
 #include "unique_file.hpp"
 
+#include "read_write_log.hpp"
+
 namespace BT
 {
 namespace Daemon
 {
 namespace Multiplexer
 {
+
+constexpr int POLL_ms = 5 /*ms*/;
 
 static volatile bool
 should_run = false;
@@ -33,26 +36,26 @@ daemon(int argc, const char * const argv[])
 	unique_file dev;
 
 	if (argc == 2)
-		dev = tty_open(argv[1]);
+		dev.set(tty_open(argv[1]));
 	else
 		fprintf(stderr, "Wrong argument count.\n");
 
-	running = should_run =
-		fileno(dev) != -1
+	running = should_run = (
+		fileno(dev) > -1
 		and tty_set_speed(fileno(dev), B115200) // TODO move speed to a header
 		and Globals::Multiplexer::create()
-		and CharacterDevices::register_all_devices();
+		and CharacterDevices::register_all_devices()
+	);
 
 	if (should_run)
 		fprintf(stderr, "Daemon::Multiplexer started.\n");
 	else
 		perror("Daemon::Multiplexer start failed");
 
-	while (should_run)
-	{
-		auto & mp = Globals::Multiplexer::get();
-		perform_poll_io(dev, mp, 100 /*ms*/);
-	}
+	auto & mp = Globals::Multiplexer::get();
+	//DevLog log_dev(fileno(dev), 2, "module  ", "host    ");
+	auto & log_dev = dev;
+	while (should_run) { perform_poll_io(log_dev, mp, POLL_ms); }
 
 	CharacterDevices::unregister_all_devices();
 	Globals::Multiplexer::destroy();
@@ -70,8 +73,8 @@ start(const char uart_dev_name[])
 	if (running)
 		return;
 
-	const char * argv[] = { "bt21_io", uart_dev_name, nullptr };
-	task_spawn_cmd(argv[0],
+	const char * argv[] = { uart_dev_name, nullptr };
+	task_spawn_cmd("bt21_io",
 			SCHED_DEFAULT,
 			SCHED_PRIORITY_DEFAULT,
 			CONFIG_TASK_SPAWN_DEFAULT_STACKSIZE,

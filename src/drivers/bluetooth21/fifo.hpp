@@ -1,7 +1,5 @@
 #pragma once
 
-#include <cstdint>
-
 #include "std_algo.hpp"
 #include "std_iter.hpp"
 
@@ -16,8 +14,8 @@ struct FIFO
 	using iterator = value_type *;
 	using const_iterator = const value_type *;
 
-	value_type data[CAPACITY];
 	iterator first, last;
+	value_type data[CAPACITY];
 
 	FIFO< CAPACITY >() : first(data), last(data) {}
 
@@ -45,7 +43,10 @@ size(const FIFO< CAPACITY > & self) { return self.last - self.first; }
 
 template <size_t CAPACITY>
 size_t
-space_available(const FIFO< CAPACITY > & self) { return capacity(self) - size(self); }
+space_available(const FIFO< CAPACITY > & self)
+{
+	return CAPACITY - (self.last - self.data);
+}
 
 template <size_t CAPACITY>
 void
@@ -75,6 +76,13 @@ void
 insert_end_unsafe(FIFO< CAPACITY > & self, It first, It last)
 {
 	self.last = copy(first, last, self.last);
+}
+
+template <size_t CAPACITY, typename It>
+void
+insert_end_n_unsafe(FIFO< CAPACITY > & self, It first, const size_t n)
+{
+	self.last = copy_n(first, n, self.last);
 }
 
 template <size_t CAPACITY, typename T = typename FIFO<CAPACITY>::value_type>

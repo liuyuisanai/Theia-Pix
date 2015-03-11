@@ -3,8 +3,6 @@
 #include <fcntl.h>
 #include <termios.h>
 
-#include "unique_file.hpp"
-
 namespace BT
 {
 
@@ -17,7 +15,7 @@ tty_set_speed(int fd, speed_t speed)
 		and tcsetattr(fd, TCSANOW, &mode) == 0;
 }
 
-inline unique_file
+inline int
 tty_open(const char name[])
 { return open(name, O_RDWR | O_NONBLOCK | O_NOCTTY); }
 

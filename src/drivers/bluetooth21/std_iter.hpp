@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdlib>
+#include <type_traits>
 
 namespace BT
 {
@@ -14,11 +15,6 @@ auto
 begin( C& c ) -> decltype(c.begin())
 { return c.begin(); }
 
-template< class C >
-auto
-begin( const C& c ) -> decltype(c.begin())
-{ return c.begin(); }
-
 template< class T, size_t N >
 constexpr T*
 begin( T (&array)[N] ) { return &array[0]; }
@@ -29,13 +25,8 @@ begin( T (&array)[N] ) { return &array[0]; }
 
 template< class C >
 auto
-end( C& c ) -> decltype(c.begin())
-{ return c.begin(); }
-
-template< class C >
-auto
-end( const C& c ) -> decltype(c.begin())
-{ return c.begin(); }
+end( C& c ) -> decltype((void*)c.end(), c.end())
+{ return c.end(); }
 
 template< class T, size_t N >
 constexpr T*

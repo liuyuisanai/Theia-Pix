@@ -1,11 +1,12 @@
 #pragma once
 
 #include <cerrno>
-#include <stdio.h>
-#include <utility>
+#include <cstdio> // perror
 
 #include "bt_types.hpp"
 #include "buffer_rx.hpp"
+#include "debug.hpp"
+#include "host_protocol.hpp"
 
 #include "std_algo.hpp"
 #include "std_iter.hpp"
@@ -25,10 +26,13 @@ struct RxState
 };
 
 template <typename Protocol, typename Device>
-void
+channel_mask_t
 process_serial_input(Protocol tag, Device & d, RxState & rx)
 {
+	using namespace HostProtocol::Parser;
 	using DevIt = typename RxState::device_buffer_type::const_iterator;
+
+	channel_mask_t poll_mask;
 
 	ssize_t r = read(d, rx.device_buffer);
 	if (r < 0 and errno != EAGAIN)
@@ -37,7 +41,7 @@ process_serial_input(Protocol tag, Device & d, RxState & rx)
 	while (not empty(rx.device_buffer))
 	{
 		DevIt first, last;
-		tie(first, last) = find_next_packet(
+		tie(first, last) = HostProtocol::Parser::find_next_packet(
 			tag,
 			cbegin(rx.device_buffer),
 			cend(rx.device_buffer)
@@ -57,6 +61,8 @@ process_serial_input(Protocol tag, Device & d, RxState & rx)
 		// TODO check channel index is valid.
 		// TODO check channel is opened. Drop data on closed channels.
 
+		mark(poll_mask, ch, true);
+
 		auto & ch_buf = rx.channel_buffer[ch];
 		DevIt data_first, data_last;
 		tie(data_first, data_last) =
@@ -73,7 +79,8 @@ process_serial_input(Protocol tag, Device & d, RxState & rx)
 		);
 	}
 	pack(rx.device_buffer);
-	// TODO poll_notify(... all channels);
+
+	return poll_mask;
 }
 
 inline ssize_t
@@ -92,49 +99,66 @@ read_channel_raw(RxState & rx, channel_index_t ch, void * buf, size_t buf_size)
 	return h;
 }
 
-inline bool
-service_channel_empty(RxState & rx)
-{
-	return empty(rx.channel_buffer[0]);
-}
-
-template <typename Protocol>
-ssize_t
-read_service_channel(Protocol tag, RxState & rx, void * buf, size_t buf_size)
-{
-	auto & rx_buf = rx.channel_buffer[0];
-
-	using BufIt = typename RxState::channel_buffer_type::const_iterator;
-	BufIt first, last;
-	tie(first, last) =
-		find_next_packet(tag, cbegin(rx_buf), cend(rx_buf));
-
-	if (first == last)
-	{
-		errno = EAGAIN;
-		return -1;
-	}
-
-	// TODO
-	//if (first != begin(rx_buf) {}
-
-	size_t s = distance(first, last);
-	if (buf_size < s)
-	{
-		errno = ENOMEM;
-		return -1;
-	}
-
-	using char_type = typename RxState::channel_buffer_type::value_type;
-	auto b = (char_type *)buf;
-
-	copy(first, last, b);
-	erase_begin(rx_buf, s);
-
-	return s;
-}
-
+//inline bool
+//service_channel_empty(RxState & rx)
+//{
+//	return empty(rx.channel_buffer[0]);
+//}
+//
+//template <typename Protocol>
+//ssize_t
+//read_service_channel(Protocol tag, RxState & rx, void * buf, size_t buf_size)
+//{
+//	auto & rx_buf = rx.channel_buffer[0];
+//
+//	using BufIt = typename RxState::channel_buffer_type::const_iterator;
+//	BufIt first, last;
+//	tie(first, last) =
+//		find_next_packet(tag, cbegin(rx_buf), cend(rx_buf));
+//
+//	if (first == last)
+//	{
+//		errno = EAGAIN;
+//		return -1;
+//	}
+//
+//	// TODO
+//	//if (first != begin(rx_buf) {}
+//
+//	size_t s = distance(first, last);
+//	if (buf_size < s)
+//	{
+//		errno = ENOMEM;
+//		return -1;
+//	}
+//
+//	using char_type = typename RxState::channel_buffer_type::value_type;
+//	auto b = (char_type *)buf;
+//
+//	copy(first, last, b);
+//	erase_begin(rx_buf, s);
+//
+//	return s;
+//}
+//
 inline void
 drain(RxState & rx, channel_index_t ch) { clear(rx.channel_buffer[ch]); }
+
+inline void
+dbg_dump(const char comment[], RxState & rx)
+{
+	dbg("%s: Rx channels %u %u %u %u %u %u %u %u uart %u\n"
+		, comment
+		, size(rx.channel_buffer[0])
+		, size(rx.channel_buffer[1])
+		, size(rx.channel_buffer[2])
+		, size(rx.channel_buffer[3])
+		, size(rx.channel_buffer[4])
+		, size(rx.channel_buffer[5])
+		, size(rx.channel_buffer[6])
+		, size(rx.channel_buffer[7])
+		, size(rx.device_buffer)
+	);
+}
 
 } // end of namespace BT

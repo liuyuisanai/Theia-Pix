@@ -1,5 +1,6 @@
-#include <cassert>
+#pragma once
 
+#include "debug.hpp"
 #include "io_multiplexer.hpp"
 
 namespace BT
@@ -14,7 +15,7 @@ extern MultiPlexer * _mp;
 inline MultiPlexer &
 get()
 {
-	assert(_mp != nullptr);
+	D_ASSERT(_mp != nullptr);
 	return *_mp;
 }
 

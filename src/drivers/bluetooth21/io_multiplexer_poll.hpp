@@ -1,29 +1,25 @@
-#pragma once
-
 #include <poll.h>
 
-#include "debug.hpp"
-#include "io_multiplexer.hpp"
 #include "std_algo.hpp"
+
+#include "debug.hpp"
+#include "host_protocol.hpp"
+#include "io_multiplexer.hpp"
+#include "unique_file.hpp"
 
 namespace BT
 {
 
 template <typename Device>
-inline void
-perform_input(Device & d, MultiPlexer & mp)
-{ process_serial_input(mp.protocol_tag, d, mp.rx); }
-
-template <typename Device>
-inline void
-perform_output(Device & d, MultiPlexer & mp)
-{ process_serial_output(d, mp.xt); }
-
-template <typename Device>
-inline void
+void
 perform_poll_io(Device & d, MultiPlexer & mp, int poll_timeout_ms)
 {
-	if (empty(mp.xt.device_buffer)) { fill_device_buffer(mp.xt); }
+	if (empty(mp.xt.device_buffer))
+	{
+		lock_guard guard(mp.mutex_xt);
+		// TODO notify by this mask //channel_mask_t writeable =
+		fill_device_buffer(mp.protocol_tag, mp.xt);
+	}
 
 	pollfd p;
 	p.fd = fileno(d);
@@ -39,11 +35,19 @@ perform_poll_io(Device & d, MultiPlexer & mp, int poll_timeout_ms)
 		 * Input comes before output as we have
 		 * to check what the chip is ready to receive and
 		 * to inform the chip about what we are ready to receive.
+		 *
+		 * This property is not fully used now.
 		 */
+		channel_mask_t readable, writeable;
 		if (p.revents & POLLIN)
-			perform_input(d, mp);
+		{
+			lock_guard guard(mp.mutex_rx);
+			readable = process_serial_input(mp.protocol_tag, d, mp.rx);
+		}
 		if (p.revents & POLLOUT)
-			perform_output(d, mp);
+			writeable = process_serial_output(mp.protocol_tag, d, mp.xt);
+
+		poll_notify_by_masks(mp.poll_waiters, readable, writeable);
 	}
 }
 

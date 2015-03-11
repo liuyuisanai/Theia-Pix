@@ -36,6 +36,13 @@ public:
 	inline int
 	get() { return fd; }
 
+	inline void
+	set(int x)
+	{
+		if (fd > -1) { close(fd); }
+		fd = x;
+	}
+
 	friend inline int
 	fileno(const unique_file & uf) { return uf.fd; }
 
@@ -74,6 +81,13 @@ public:
 
 	inline FILE *
 	get() { return fp; }
+
+	inline void
+	set(FILE * x)
+	{
+		if (fp != nullptr) { std::fclose(fp); }
+		fp = x;
+	}
 
 	friend inline int
 	fileno(unique_FILE const & uf) { return fileno(uf.fp); }

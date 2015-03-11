@@ -6,7 +6,10 @@
 #include "chardev_poll.hpp"
 #include "io_recv.hpp"
 #include "io_xmit.hpp"
+#include "laird/defs.hpp"
 #include "mutex.hpp"
+
+#include "unique_file.hpp"
 
 namespace BT
 {
@@ -21,13 +24,14 @@ struct MultiPlexer
 
 	RxState rx;
 	XtState xt;
-	PollRefSet pollset[8];
+	PollMultiPlexer poll_waiters;
 
 	MutexSem mutex_flags;
 	MutexSem mutex_rx;
 	MutexSem mutex_xt;
 
-	static constexpr LairdParser protocol_tag = LairdParser {};
+	static constexpr auto
+	protocol_tag = HostProtocol::LairdProtocol{};
 };
 
 bool
@@ -44,6 +48,18 @@ set_xt_ready_mask(const MultiPlexer & mp, channel_mask_t mask);
 
 channel_mask_t
 get_rx_ready_mask(const MultiPlexer & mp);
+
+ssize_t
+read_channel_raw(MultiPlexer & mp, channel_index_t ch, void * buf, size_t buf_size);
+ssize_t
+write_channel_packet(MultiPlexer & mp, channel_index_t ch, const void * buf, size_t buf_size);
+
+//void
+//perform_poll_io(unique_file & d, MultiPlexer & mp, int poll_timeout_ms);
+
+template <typename Device>
+void
+perform_poll_io(Device & d, MultiPlexer & mp, int poll_timeout_ms);
 
 }
 // end of namespace BT

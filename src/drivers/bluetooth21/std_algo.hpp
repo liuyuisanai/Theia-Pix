@@ -5,15 +5,15 @@ namespace BT
 
 template <typename InputIt, typename OutputIt>
 OutputIt
-copy(InputIt first, InputIt last, OutputIt d_first)
+copy(InputIt first, InputIt last, OutputIt d)
 {
 	while (first != last)
 	{
-		*d_first = *first;
-		++d_first;
+		*d= *first;
+		++d;
 		++first;
 	}
-	return d_first;
+	return d;
 }
 
 template< class InputIt, class Size, class OutputIt>

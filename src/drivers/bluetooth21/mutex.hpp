@@ -1,7 +1,8 @@
 #include <semaphore.h>
 
-#include <cassert>
 #include <cerrno>
+
+#include "debug.hpp"
 
 namespace BT
 {
@@ -24,7 +25,7 @@ struct MutexSem
 	try_lock_interruptable()
 	{
 		auto r = sem_wait(&nuttx_sem);
-		if (r != 0) { assert(get_errno() == EINTR); }
+		if (r != 0) { ASSERT(r == -EINTR); }
 		return r == 0;
 	};
 

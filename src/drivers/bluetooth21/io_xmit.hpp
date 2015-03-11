@@ -1,15 +1,16 @@
 #pragma once
 
 #include <cerrno>
-#include <cstdio>
-
-#include "bt_types.hpp"
-#include "buffer_xt.hpp"
-#include "laird_parser.hpp"
+#include <cstdio> // perror
 
 #include "std_algo.hpp"
 #include "std_iter.hpp"
 
+#include "bt_types.hpp"
+#include "buffer_xt.hpp"
+#include "debug.hpp"
+#include "host_protocol.hpp"
+#include "io_xmit_data_packet.hpp"
 
 namespace BT
 {
@@ -25,7 +26,7 @@ struct XtState
 	channel_index_t round_robin;
 	channel_mask_t ready_mask;
 
-	XtState() : round_robin(0) {}
+	XtState() : round_robin(0), ready_mask(0xFF) {}
 };
 
 inline bool
@@ -53,17 +54,16 @@ command_is_waiting(XtState & xt)
 }
 
 inline bool
-packet_fits_in(XtState & xt, size_t cmd_size)
+packet_fits_in(XtState & xt, channel_index_t ch, size_t packet_size)
 {
-	return cmd_size <= channel_space_available(xt, 0);
+	return packet_size <= channel_space_available(xt, ch);
 }
 
 // Requirements: ensure packets from different channels are not intermixed.
-inline void
-transfer_channel_data(XtState & xt, channel_index_t i)
+template <typename Protocol>
+inline bool
+transfer_raw_channel(Protocol tag, XtState & xt, channel_index_t i)
 {
-	// TODO Do packet-wise transfer, allowing older packets sent earlier.
-
 	auto & out = xt.device_buffer;
 	auto & ch = xt.channel_buffer[i];
 	bool ready = is_channel_ready(xt, i)
@@ -73,37 +73,66 @@ transfer_channel_data(XtState & xt, channel_index_t i)
 	{
 		insert_end_unsafe(out, cbegin(ch), cend(ch));
 		clear(ch);
-		// TODO poll_notify(... ch)
 	}
+	return ready;
 }
 
-inline void
-fill_device_buffer(XtState & xt)
+// Requirements: ensure packets from different channels are not intermixed.
+template <typename Protocol>
+inline bool
+transfer_data_channel(Protocol tag, XtState & xt, channel_index_t i)
 {
-	transfer_channel_data(xt, 0);
+	auto & out = xt.device_buffer;
+	auto & ch = xt.channel_buffer[i];
+	bool ready = is_channel_ready(xt, i) and not empty(ch);
+	if (ready)
+	{
+		size_t processed = HostProtocol::transfer< Protocol >(i, out, cbegin(ch), size(ch));
+		erase_begin(ch, processed);
+		pack(ch);
+		ready = processed > 0;
+	}
+	return ready;
+}
+
+template <typename Protocol>
+inline channel_mask_t
+fill_device_buffer(Protocol tag, XtState & xt)
+{
+	channel_mask_t poll_mask;
+
+	bool poll_ready = transfer_raw_channel(tag, xt, 0);
+	mark(poll_mask, 0, poll_ready);
 
 	// TODO optimize: check available space by minimal packet size.
-	if (space_available(xt.device_buffer) == 0)
-		return;
-
-	auto & i = xt.round_robin;
-	auto rr = i;
-	do
+	if (xt.round_robin == 0 or space_available(xt.device_buffer) > 0)
 	{
-		transfer_channel_data(xt, i);
-		i = (i + 1) & 7;
+		auto & i = xt.round_robin;
+		auto rr = i;
+		do
+		{
+			if (i != 0)
+			{
+				poll_ready = transfer_data_channel(tag, xt, i);
+				mark(poll_mask, i, poll_ready);
+			}
+			i = (i + 1) & 7;
+		}
+		while (i != rr and space_available(xt.device_buffer) > 0);
 	}
-	while (i != rr and space_available(xt.device_buffer) > 0);
+
+	return poll_mask;
 }
 
-template <typename Device>
-void
-process_serial_output(Device & d, XtState & xt)
+template <typename Protocol, typename Device>
+channel_mask_t
+process_serial_output(Protocol tag, Device & d, XtState & xt)
 {
-	fill_device_buffer(xt);
+	channel_mask_t poll_mask = fill_device_buffer(tag, xt);
 	ssize_t r = write(d, xt.device_buffer);
 	if (r < 0 and errno != EAGAIN)
 		perror("process_serial_output / write");
+	return poll_mask;
 }
 
 inline ssize_t
@@ -116,7 +145,7 @@ write_channel_raw(XtState & xt, channel_index_t ch, const void * buf, size_t buf
 
 	size_t r = min(space_available(xt_buf), buf_size);
 
-	insert_end_unsafe(xt_buf, data, data + r);
+	insert_end_n_unsafe(xt_buf, data, r);
 
 	return r;
 }
@@ -124,14 +153,38 @@ write_channel_raw(XtState & xt, channel_index_t ch, const void * buf, size_t buf
 inline ssize_t
 write_channel_packet(XtState & xt, channel_index_t ch, const void * buf, size_t buf_size)
 {
-	if (packet_fits_in(xt, buf_size))
-		return write_channel_raw(xt, ch, buf, buf_size);
+	if (packet_fits_in(xt, ch, buf_size))
+	{
+		using char_type = typename XtState::channel_buffer_type::value_type;
+		auto data = (const char_type *)buf;
+
+		insert_end_n_unsafe(xt.channel_buffer[ch], data, buf_size);
+		return buf_size;
+	}
 
 	return 0;
 }
 
 inline void
 drain(XtState & xt, channel_index_t ch) { clear(xt.channel_buffer[ch]); }
+
+inline void
+dbg_dump(const char comment[], XtState & xt)
+{
+	dbg("%s: Xt @%08x channels %u %u %u %u %u %u %u %u uart %u\n"
+		, comment
+		, (int)(void*)&xt
+		, size(xt.channel_buffer[0])
+		, size(xt.channel_buffer[1])
+		, size(xt.channel_buffer[2])
+		, size(xt.channel_buffer[3])
+		, size(xt.channel_buffer[4])
+		, size(xt.channel_buffer[5])
+		, size(xt.channel_buffer[6])
+		, size(xt.channel_buffer[7])
+		, size(xt.device_buffer)
+	);
+}
 
 }
 // end of namespace BT

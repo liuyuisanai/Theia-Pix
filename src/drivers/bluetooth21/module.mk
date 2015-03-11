@@ -7,9 +7,11 @@ SRCS = \
 	io_multiplexer_global.cpp \
 	main.cpp \
 	mutex.cpp \
+	# io_multiplexer_poll.cpp \
 	# end of SRCS
 
-EXTRACXXFLAGS += -std=c++11 -DMODULE_COMMAND=${MODULE_COMMAND} -Werror
+EXTRACXXFLAGS += -std=c++11 -DMODULE_COMMAND=${MODULE_COMMAND} -Werror -flto
+SHOW_ALL_ERRORS = yes
 
 ifneq ($(DEBUG_BLUETOOTH21),)
 #

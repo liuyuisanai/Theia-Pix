@@ -12,9 +12,7 @@ streq(const char a[], const char b[]) { return std::strcmp(a, b) == 0; }
 static void
 usage(const char name[])
 {
-	// TODO
-	//fprintf(stderr, "Usage: %s start tty\n", name);
-	fprintf(stderr, "Usage: %s start\n", name);
+	fprintf(stderr, "Usage: %s start tty\n", name);
 	fprintf(stderr, "       %s status\n", name);
 	fprintf(stderr, "       %s stop\n", name);
 	fprintf(stderr, "\n");
