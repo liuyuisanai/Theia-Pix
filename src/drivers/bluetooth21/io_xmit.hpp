@@ -171,18 +171,17 @@ drain(XtState & xt, channel_index_t ch) { clear(xt.channel_buffer[ch]); }
 inline void
 dbg_dump(const char comment[], XtState & xt)
 {
-	dbg("%s: Xt @%08x channels %u %u %u %u %u %u %u %u uart %u\n"
+	dbg("%s: Xt channels %u %u %u %u %u %u %u %u uart %u\n"
 		, comment
-		, (int)(void*)&xt
-		, size(xt.channel_buffer[0])
-		, size(xt.channel_buffer[1])
-		, size(xt.channel_buffer[2])
-		, size(xt.channel_buffer[3])
-		, size(xt.channel_buffer[4])
-		, size(xt.channel_buffer[5])
-		, size(xt.channel_buffer[6])
-		, size(xt.channel_buffer[7])
-		, size(xt.device_buffer)
+		, space_available(xt.channel_buffer[0])
+		, space_available(xt.channel_buffer[1])
+		, space_available(xt.channel_buffer[2])
+		, space_available(xt.channel_buffer[3])
+		, space_available(xt.channel_buffer[4])
+		, space_available(xt.channel_buffer[5])
+		, space_available(xt.channel_buffer[6])
+		, space_available(xt.channel_buffer[7])
+		, space_available(xt.device_buffer)
 	);
 }
 

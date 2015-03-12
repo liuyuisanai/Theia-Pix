@@ -42,9 +42,17 @@ perform_poll_io(Device & d, MultiPlexer & mp, int poll_timeout_ms)
 		{
 			lock_guard guard(mp.mutex_rx);
 			readable = process_serial_input(mp.protocol_tag, d, mp.rx);
+			//dbg_dump("perform_poll_io IN", mp.rx);
 		}
 		if (p.revents & POLLOUT)
+		{
+			lock_guard guard(mp.mutex_xt);
+			// TODO remove second fill_device_buffer()
+			// TODO let fill_device_buffer() always set the lock
+			//      by calling fill_device_buffer(mp).
 			writeable |= process_serial_output(mp.protocol_tag, d, mp.xt);
+			//dbg_dump("perform_poll_io OUT", mp.xt);
+		}
 	}
 
 	if (not (empty(readable) and empty(writeable)))
