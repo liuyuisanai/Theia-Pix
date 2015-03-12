@@ -26,13 +26,13 @@ struct RxState
 };
 
 template <typename Protocol, typename Device>
-channel_mask_t
+poll_notify_mask_t
 process_serial_input(Protocol tag, Device & d, RxState & rx)
 {
 	using namespace HostProtocol::Parser;
 	using DevIt = typename RxState::device_buffer_type::const_iterator;
 
-	channel_mask_t poll_mask;
+	poll_notify_mask_t poll_mask;
 
 	ssize_t r = read(d, rx.device_buffer);
 	if (r < 0 and errno != EAGAIN)

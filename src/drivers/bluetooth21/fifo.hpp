@@ -49,6 +49,10 @@ space_available(const FIFO< CAPACITY > & self)
 }
 
 template <size_t CAPACITY>
+bool
+full(const FIFO< CAPACITY > & self) { return space_available(self) == 0; }
+
+template <size_t CAPACITY>
 void
 clear(FIFO< CAPACITY > & self) { self.first = self.last = self.data; }
 

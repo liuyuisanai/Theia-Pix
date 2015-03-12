@@ -14,11 +14,11 @@ template <typename Device>
 void
 perform_poll_io(Device & d, MultiPlexer & mp, int poll_timeout_ms)
 {
+	poll_notify_mask_t readable, writeable;
 	if (empty(mp.xt.device_buffer))
 	{
 		lock_guard guard(mp.mutex_xt);
-		// TODO notify by this mask //channel_mask_t writeable =
-		fill_device_buffer(mp.protocol_tag, mp.xt);
+		writeable = fill_device_buffer(mp.protocol_tag, mp.xt);
 	}
 
 	pollfd p;
@@ -38,17 +38,17 @@ perform_poll_io(Device & d, MultiPlexer & mp, int poll_timeout_ms)
 		 *
 		 * This property is not fully used now.
 		 */
-		channel_mask_t readable, writeable;
 		if (p.revents & POLLIN)
 		{
 			lock_guard guard(mp.mutex_rx);
 			readable = process_serial_input(mp.protocol_tag, d, mp.rx);
 		}
 		if (p.revents & POLLOUT)
-			writeable = process_serial_output(mp.protocol_tag, d, mp.xt);
-
-		poll_notify_by_masks(mp.poll_waiters, readable, writeable);
+			writeable |= process_serial_output(mp.protocol_tag, d, mp.xt);
 	}
+
+	if (not (empty(readable) and empty(writeable)))
+		poll_notify_by_masks(mp.poll_waiters, readable, writeable);
 }
 
 }

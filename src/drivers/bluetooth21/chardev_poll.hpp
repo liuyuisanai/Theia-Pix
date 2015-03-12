@@ -40,13 +40,19 @@ struct PollMultiPlexer
 	operator [] (channel_index_t i) { return channel[i]; }
 };
 
-using poll_notify_mask_t = channel_mask_t;
-
 void
 poll_notify_by_masks(
 	PollMultiPlexer & pmp,
 	poll_notify_mask_t readable,
 	poll_notify_mask_t writeable
+);
+
+void
+poll_notify_channel_unsafe(
+	PollMultiPlexer & pmp,
+	channel_index_t ch,
+	bool readable,
+	bool writeable
 );
 
 }

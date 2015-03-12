@@ -16,7 +16,17 @@ struct channel_mask_t
 
 	channel_mask_t &
 	operator = (const channel_mask_t &) = default;
+
+	channel_mask_t &
+	operator |= (const channel_mask_t & other)
+	{
+		value |= other.value;
+		return *this;
+	}
 };
+
+using poll_notify_mask_t = channel_mask_t;
+
 
 inline bool
 empty(const channel_mask_t & mask) { return mask.value == 0; }

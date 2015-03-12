@@ -96,10 +96,10 @@ transfer_data_channel(Protocol tag, XtState & xt, channel_index_t i)
 }
 
 template <typename Protocol>
-inline channel_mask_t
+inline poll_notify_mask_t
 fill_device_buffer(Protocol tag, XtState & xt)
 {
-	channel_mask_t poll_mask;
+	poll_notify_mask_t poll_mask;
 
 	bool poll_ready = transfer_raw_channel(tag, xt, 0);
 	mark(poll_mask, 0, poll_ready);
@@ -125,10 +125,10 @@ fill_device_buffer(Protocol tag, XtState & xt)
 }
 
 template <typename Protocol, typename Device>
-channel_mask_t
+poll_notify_mask_t
 process_serial_output(Protocol tag, Device & d, XtState & xt)
 {
-	channel_mask_t poll_mask = fill_device_buffer(tag, xt);
+	poll_notify_mask_t poll_mask = fill_device_buffer(tag, xt);
 	ssize_t r = write(d, xt.device_buffer);
 	if (r < 0 and errno != EAGAIN)
 		perror("process_serial_output / write");

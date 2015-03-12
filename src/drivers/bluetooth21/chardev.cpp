@@ -11,6 +11,7 @@
 #include "bt_types.hpp"
 #include "debug.hpp"
 #include "chardev.hpp"
+#include "chardev_poll.hpp"
 #include "io_multiplexer.hpp"
 #include "io_multiplexer_flags.hpp"
 #include "io_multiplexer_global.hpp"
@@ -107,7 +108,7 @@ write(FAR struct file * filp, FAR const char * buffer, size_t buflen)
 }
 
 static int
-poll(FAR struct file * filp, FAR struct pollfd * fds, bool setup_phase)
+poll(FAR struct file * filp, FAR struct pollfd * p_fd, bool setup_phase)
 {
 	channel_index_t ch = priv_to_channel_index(filp);
 	if (ch == INVALID_CHANNEL_INDEX) { return -ENXIO; }
@@ -123,8 +124,11 @@ poll(FAR struct file * filp, FAR struct pollfd * fds, bool setup_phase)
 		}
 		else
 		{
-			add(mp.poll_waiters[ch], fds);
-			// poll_notify(fds, channel_poll_mask(mp, ch));
+			add(mp.poll_waiters[ch], p_fd);
+			poll_notify_channel_unsafe(mp.poll_waiters, ch,
+				not empty(mp.rx.channel_buffer[ch]),
+				not full(mp.xt.channel_buffer[ch])
+			);
 		}
 	}
 	else
