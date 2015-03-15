@@ -25,6 +25,11 @@ find_next_packet(LairdProtocol, Iterator first, Iterator last)
 }
 
 template <typename Iterator>
+std::pair<Iterator, Iterator>
+find_next_packet_safe(LairdProtocol, Iterator first, Iterator)
+{ return std::make_pair(first, next(first, *first)); }
+
+template <typename Iterator>
 channel_index_t
 get_channel_number(LairdProtocol, Iterator first, Iterator last)
 {

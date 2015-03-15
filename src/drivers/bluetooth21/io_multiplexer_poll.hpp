@@ -5,7 +5,6 @@
 #include "debug.hpp"
 #include "host_protocol.hpp"
 #include "io_multiplexer.hpp"
-#include "unique_file.hpp"
 
 namespace BT
 {

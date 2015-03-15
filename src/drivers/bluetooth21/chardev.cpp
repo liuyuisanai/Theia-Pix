@@ -78,12 +78,16 @@ read(FAR struct file * filp, FAR char * buffer, size_t buflen)
 
 	auto & mp = get_multiplexer(filp);
 
-	// FIXME read_service_channel when ch == 0
-	ssize_t r = read_channel_raw(mp, ch, buffer, buflen);
-
-	dbg_dump("chardev read", mp.rx);
+	ssize_t r;
+	if (ch == 0)
+		r = read_service_channel(mp, buffer, buflen);
+	else
+		r = read_channel_raw(mp, ch, buffer, buflen);
 
 	if (r == 0) { r = -EAGAIN; }
+
+	dbg_dump("chardev read", mp.rx);
+	dbg("chardev read(%u) returns %i.\n", ch, r);
 	return r;
 }
 
@@ -100,10 +104,10 @@ write(FAR struct file * filp, FAR const char * buffer, size_t buflen)
 	if (is_channel_xt_ready(mp, ch))
 		r = write_channel_packet(mp, ch, buffer, buflen);
 
-	dbg("chardev r %i\n", r);
-	dbg_dump("chardev write", mp.xt);
-
 	if (r == 0) { r = -EAGAIN; }
+
+	dbg_dump("chardev write", mp.xt);
+	dbg("chardev write(%u) returns %i.\n", ch, r);
 	return r;
 }
 
@@ -135,6 +139,7 @@ poll(FAR struct file * filp, FAR struct pollfd * p_fd, bool setup_phase)
 	{
 		clear(mp.poll_waiters[ch]);
 	}
+	dbg("chardev poll %u returns %i.\n", ch, r);
 	return r;
 }
 

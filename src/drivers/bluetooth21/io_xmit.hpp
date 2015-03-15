@@ -153,6 +153,7 @@ write_channel_raw(XtState & xt, channel_index_t ch, const void * buf, size_t buf
 inline ssize_t
 write_channel_packet(XtState & xt, channel_index_t ch, const void * buf, size_t buf_size)
 {
+	// FIXME Should we try to pack() or clear()?
 	if (packet_fits_in(xt, ch, buf_size))
 	{
 		using char_type = typename XtState::channel_buffer_type::value_type;

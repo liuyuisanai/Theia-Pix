@@ -69,8 +69,10 @@ process_serial_input(Protocol tag, Device & d, RxState & rx)
 			get_packet_data_slice(tag, first, last);
 
 		size_t data_size = distance(data_first, data_last);
-		if (space_available(ch_buf) < data_size) { clear(ch_buf); }
-		else { pack(ch_buf); }
+		if (capacity(ch_buf) - size(ch_buf) < data_size)
+			clear(ch_buf);
+		else
+			pack(ch_buf);
 
 		insert_end_unsafe(ch_buf, data_first, data_last);
 		erase_begin(
@@ -95,52 +97,45 @@ read_channel_raw(RxState & rx, channel_index_t ch, void * buf, size_t buf_size)
 
 	copy_n(cbegin(rx_buf), h, b);
 	erase_begin(rx_buf, h);
+	// pack()ing is done by process_serial_input().
 
 	return h;
 }
 
-//inline bool
-//service_channel_empty(RxState & rx)
-//{
-//	return empty(rx.channel_buffer[0]);
-//}
-//
-//template <typename Protocol>
-//ssize_t
-//read_service_channel(Protocol tag, RxState & rx, void * buf, size_t buf_size)
-//{
-//	auto & rx_buf = rx.channel_buffer[0];
-//
-//	using BufIt = typename RxState::channel_buffer_type::const_iterator;
-//	BufIt first, last;
-//	tie(first, last) =
-//		find_next_packet(tag, cbegin(rx_buf), cend(rx_buf));
-//
-//	if (first == last)
-//	{
-//		errno = EAGAIN;
-//		return -1;
-//	}
-//
-//	// TODO
-//	//if (first != begin(rx_buf) {}
-//
-//	size_t s = distance(first, last);
-//	if (buf_size < s)
-//	{
-//		errno = ENOMEM;
-//		return -1;
-//	}
-//
-//	using char_type = typename RxState::channel_buffer_type::value_type;
-//	auto b = (char_type *)buf;
-//
-//	copy(first, last, b);
-//	erase_begin(rx_buf, s);
-//
-//	return s;
-//}
-//
+template <typename Protocol>
+ssize_t
+read_service_channel(Protocol tag, RxState & rx, void * buf, size_t buf_size)
+{
+	using namespace HostProtocol::Parser;
+	using BufIt = typename RxState::channel_buffer_type::const_iterator;
+
+	auto & rx_buf = rx.channel_buffer[0];
+
+	if (empty(rx_buf)) { return 0; }
+
+	BufIt first, last;
+	tie(first, last) = find_next_packet_safe(
+		tag, cbegin(rx_buf), cend(rx_buf)
+	);
+	size_t s = distance(first, last);
+
+	dbg("read_service_channel packet %u size %u.\n", s, buf_size);
+	if (s > 0)
+	{
+		if (buf_size < s)
+			s = -ENOMEM;
+		else
+		{
+			using char_type = typename
+				RxState::channel_buffer_type::value_type;
+			copy(first, last, (char_type *)buf);
+			erase_begin(rx_buf, s);
+			// pack()ing is done by process_serial_input().
+		}
+	}
+	return s;
+}
+
 inline void
 drain(RxState & rx, channel_index_t ch) { clear(rx.channel_buffer[ch]); }
 
