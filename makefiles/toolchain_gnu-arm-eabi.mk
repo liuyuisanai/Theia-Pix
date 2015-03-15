@@ -132,7 +132,14 @@ ARCHCXXFLAGS		 = -fno-exceptions -fno-rtti -std=gnu++0x -fno-threadsafe-statics
 # and templates better be compiled with no -Wfatal-errors.
 # Setting SHOW_ALL_ERRORS non-empty makes compiler give all the output.
 #
-SHOW_ALL_ERRORS =
+SHOW_ALL_ERRORS ?=
+#
+# -Wmissing-declarations is default for PX4 code.
+# For modules having a lot of code in headers it is very inconvenient
+# and forces overuse of `inline` keyword.
+# Setting TOLERATE_MISSING_DECLARATION non-empty turns the error off.
+#
+TOLERATE_MISSING_DECLARATION ?=
 ARCHWARNINGS		 = -Wall \
 			   -Wextra \
 			   -Wdouble-promotion \
@@ -141,7 +148,6 @@ ARCHWARNINGS		 = -Wall \
 			   -Wframe-larger-than=1024 \
 			   -Wpointer-arith \
 			   -Wlogical-op \
-			   -Wmissing-declarations \
 			   -Wpacked \
 			   -Wno-unused-parameter \
 			   -Werror=format-security \
@@ -151,7 +157,9 @@ ARCHWARNINGS		 = -Wall \
 			   -Werror=unused-variable \
 			   -Werror=double-promotion \
 			   -Werror=reorder \
-			   $(if $(SHOW_ALL_ERRORS),,-Wfatal-errors)
+			   $(if $(SHOW_ALL_ERRORS),,-Wfatal-errors) \
+			   $(if $(TOLERATE_MISSING_DECLARATION),,-Wmissing-declarations) \
+#			end of ARCHWARNINGS
 #   -Wcast-qual  - generates spurious noreturn attribute warnings, try again later
 #   -Wconversion - would be nice, but too many "risky-but-safe" conversions in the code
 #   -Wcast-align - would help catch bad casts in some cases, but generates too many false positives
