@@ -30,7 +30,7 @@ main(int argc, const char * const argv[]);
 int
 main(int argc, const char * const argv[])
 {
-	using namespace BT;
+	using namespace BT::Daemon;
 
 	if (argc < 2)
 	{
@@ -40,31 +40,41 @@ main(int argc, const char * const argv[])
 
 	if (streq(argv[1], "start") and argc == 3)
 	{
-		if (Daemon::Multiplexer::is_running())
+		printf("%s: Starting...\n", argv[0]);
+
+		if (Multiplexer::is_running())
+			fprintf(stderr
+				, "%s: Multiplexer is already running.\n"
+				, argv[0]
+			);
+		else
+			Multiplexer::start(argv[2]);
+
+		sleep(1);
+		if (Multiplexer::is_running())
 		{
-			fprintf(stderr, "Deamon::Multiplexer is already running.\n");
+			printf("%s: OK, started.\n", argv[0]);
+		}
+		else
+		{
+			printf("%s: Start failed.\n", argv[0]);
 			return 1;
 		}
-		printf("Starting...");
-		Daemon::Multiplexer::start(argv[2]);
 	}
 	else if (streq(argv[1], "status") and argc == 2)
 	{
-		if (Daemon::Multiplexer::is_running())
-			printf("Daemon::Multiplexer is running.\n");
-		else
-			printf("Daemon::Multiplexer is NOT running.\n");
-		printf("\n");
+		Multiplexer::report_status(stdout);
 	}
 	else if (streq(argv[1], "stop") and argc == 2)
 	{
-		if (not Daemon::Multiplexer::is_running())
+		if (Multiplexer::is_running()) { Multiplexer::request_stop(); }
+		else { Multiplexer::report_status(stderr); }
+
+		while (Multiplexer::is_running())
 		{
-			fprintf(stderr, "Deamon::Multiplexer is NOT running.\n");
-			return 1;
+			fputc('.', stderr);
+			fflush(stderr);
 		}
-		printf("Stopping...");
-		Daemon::Multiplexer::request_stop();
 	}
 	else
 	{

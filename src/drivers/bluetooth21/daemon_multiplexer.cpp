@@ -22,6 +22,7 @@ namespace Multiplexer
 {
 
 constexpr int POLL_ms = 5 /*ms*/;
+const char PROCESS_NAME[] = "bt21_io";
 
 static volatile bool
 should_run = false;
@@ -32,25 +33,31 @@ running = false;
 static int
 daemon(int argc, const char * const argv[])
 {
+	running = true;
+	fprintf(stderr, "%s starting ...\n", PROCESS_NAME);
 
 	unique_file dev;
 
 	if (argc == 2)
 		dev.set(tty_open(argv[1]));
 	else
-		fprintf(stderr, "Wrong argument count.\n");
+		fprintf(stderr, "%s: wrong argument count.\n", PROCESS_NAME);
 
-	running = should_run = (
+	should_run = (
 		fileno(dev) > -1
 		and tty_set_speed(fileno(dev), B115200) // TODO move speed to a header
 		and Globals::Multiplexer::create()
 		and CharacterDevices::register_all_devices()
 	);
 
-	if (should_run)
-		fprintf(stderr, "Daemon::Multiplexer started.\n");
+	if (should_run) { fprintf(stderr, "%s started.\n", PROCESS_NAME); }
 	else
-		perror("Daemon::Multiplexer start failed");
+	{
+		fprintf(stderr, "%s start failed: %s."
+				, PROCESS_NAME
+				, strerror(errno)
+		);
+	}
 
 	auto & mp = Globals::Multiplexer::get();
 	//DevLog log_dev(fileno(dev), 2, "module  ", "host    ");
@@ -61,11 +68,21 @@ daemon(int argc, const char * const argv[])
 	Globals::Multiplexer::destroy();
 
 	running = false;
+	fprintf(stderr, "%s stopped.\n", PROCESS_NAME);
 	return 0;
 }
 
 bool
 is_running() { return running; }
+
+void
+report_status(FILE * fp)
+{
+	fprintf(fp, "%s %s.\n"
+		, PROCESS_NAME
+		, is_running() ? "is running" : "is NOT running"
+	);
+}
 
 void
 start(const char uart_dev_name[])
@@ -74,7 +91,7 @@ start(const char uart_dev_name[])
 		return;
 
 	const char * argv[] = { uart_dev_name, nullptr };
-	task_spawn_cmd("bt21_io",
+	task_spawn_cmd(PROCESS_NAME,
 			SCHED_DEFAULT,
 			SCHED_PRIORITY_DEFAULT,
 			CONFIG_TASK_SPAWN_DEFAULT_STACKSIZE,
@@ -83,7 +100,11 @@ start(const char uart_dev_name[])
 }
 
 void
-request_stop() { should_run = false; }
+request_stop()
+{
+	should_run = false;
+	fprintf(stderr, "%s stop requested.\n", PROCESS_NAME);
+}
 
 }
 // end of namespace Multiplexer

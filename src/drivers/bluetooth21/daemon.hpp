@@ -1,9 +1,12 @@
 #pragma once
 
+#include <cstdio>
+
 namespace BT
 {
 namespace Daemon
 {
+
 namespace Multiplexer
 {
 
@@ -12,6 +15,9 @@ is_running();
 
 void
 start(const char name[]);
+
+void
+report_status(FILE *);
 
 void
 request_stop();
