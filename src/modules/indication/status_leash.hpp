@@ -84,7 +84,6 @@ update(hrt_abstime now)
 	use_blue_led = x;
 
 
-    printf("leash_status %d\n", l_status.menu_mode);
 	if (force_update or changed_use_blue_led
 	or changed_link_valid or changed_pos_valid or changed_mode or led_updated
 	) {
