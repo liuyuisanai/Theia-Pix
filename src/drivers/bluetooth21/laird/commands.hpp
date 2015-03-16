@@ -13,18 +13,6 @@ namespace Service
 namespace Laird
 {
 
-template <typename packet_type, event_id_t cmd_id>
-inline packet_type
-prefill_packet()
-{
-	packet_type r;
-	r.hdr.length = sizeof r;
-	r.hdr.channel = 0;
-	r.hdr.command = cmd_id;
-	r.hdr.flow = 0x7F;
-	return r;
-}
-
 template <uint8_t CMD_ID, typename ServiceIO>
 bool
 send_simple_command(ServiceIO & io)
@@ -32,8 +20,28 @@ send_simple_command(ServiceIO & io)
 	RESPONSE_SIMPLE rsp;
 	auto cmd = prefill_packet<COMMAND_SIMPLE, CMD_ID>();
 
-	return send_receive_verbose(io, cmd, rsp)
+	bool ok = send_receive_verbose(io, cmd, rsp)
 		and get_response_status(rsp) == MPSTATUS_OK;
+
+	dbg("-> command simple_command() %s.\n", ok ? "ok": "failed");
+	return ok;
+}
+
+template <typename ServiceIO>
+bool
+module_factory_default(ServiceIO & io, uint8_t flagmask)
+{
+	RESPONSE_FACTORYDEFAULT rsp;
+	auto cmd =
+		prefill_packet<COMMAND_FACTORYDEFAULT, CMD_FACTORYDEFAULT>();
+	cmd.flagmask = flagmask | 0b00111000;
+
+	bool ok = send_receive_verbose(io, cmd, rsp)
+		and get_response_status(rsp) == MPSTATUS_OK;
+
+	dbg("-> command module_factory_default(0x%02x) %s.\n",
+		flagmask, ok ? "ok": "failed");
+	return ok;
 }
 
 template <typename ServiceIO>
@@ -47,6 +55,11 @@ s_register_get(ServiceIO & io, uint32_t regno, uint32_t & value)
 	bool ok = send_receive_verbose(io, cmd, rsp)
 		and get_response_status(rsp) == MPSTATUS_OK;
 	if (ok) { value = network_to_host(rsp.regVal); }
+
+	dbg("-> command s_register_get(%u) %s -> %u.\n"
+		, regno
+		, ok ? "ok": "failed"
+		, value);
 	return ok;
 }
 
@@ -59,8 +72,14 @@ s_register_set(ServiceIO & io, uint32_t regno, uint32_t value)
 	cmd.regNo = (uint8_t)regno;
 	host_to_network(value, cmd.regVal);
 
-	return send_receive_verbose(io, cmd, rsp)
+	bool ok = send_receive_verbose(io, cmd, rsp)
 		and get_response_status(rsp) == MPSTATUS_OK;
+
+	dbg("-> command s_register_set(%u, %u) %s.\n"
+		, regno
+		, value
+		, ok ? "ok": "failed");
+	return ok;
 }
 
 template <typename ServiceIO>
@@ -73,9 +92,14 @@ switch_connectable(ServiceIO & io, bool enable)
 	cmd.enable = (uint8_t)(enable ? 1 : 0);
 	cmd.autoAccept = 0;
 
-	return send_receive_verbose(io, cmd, rsp)
+	bool ok = send_receive_verbose(io, cmd, rsp)
 		and get_response_status(rsp) == MPSTATUS_OK
 		and rsp.currentMode == cmd.enable;
+
+	dbg("-> command switch_connectable(%i) %s.\n"
+		, enable
+		, ok ? "ok": "failed");
+	return ok;
 }
 
 template <typename ServiceIO>
@@ -87,9 +111,14 @@ switch_discoverable(ServiceIO & io, bool enable)
 				  CMD_DISCOVERABLE_MODE>();
 	cmd.enable = (uint8_t)(enable ? 1 : 0);
 
-	return send_receive_verbose(io, cmd, rsp)
+	bool ok = send_receive_verbose(io, cmd, rsp)
 		and get_response_status(rsp) == MPSTATUS_OK
 		and rsp.currentMode == cmd.enable;
+
+	dbg("-> command switch_discoverable(%i) %s.\n"
+		, enable
+		, ok ? "ok": "failed");
+	return ok;
 }
 
 // TODO Address6
@@ -104,21 +133,19 @@ switch_discoverable(ServiceIO & io, bool enable)
 //	copy(cbegin(key), cend(key), cmd.linkKey);
 //	fill(cbegin(cmd.keyFlags), cend(cmd.keyFlags), 0);
 //
-//	return send_receive_verbose(io, cmd, rsp)
+//	bool ok = send_receive_verbose(io, cmd, rsp)
 //		and get_response_status(rsp) == MPSTATUS_OK;
+//	dbg("-> command add_trusted_key %s.\n", ok ? "ok": "failed");
+//	return ok;
 //}
 
 template <typename ServiceIO>
 bool
 drop_trusted_db(ServiceIO & io)
 {
-	RESPONSE_FACTORYDEFAULT rsp;
-	auto cmd =
-		prefill_packet<COMMAND_FACTORYDEFAULT, CMD_FACTORYDEFAULT>();
-	cmd.flagmask = 0b01111000;
-
-	return send_receive_verbose(io, cmd, rsp)
-		and get_response_status(rsp) == MPSTATUS_OK;
+	bool ok = module_factory_default(io, 1 << 6);
+	dbg("-> command drop_trusted_db() %s.\n", ok ? "ok": "failed");
+	return ok;
 }
 
 }
