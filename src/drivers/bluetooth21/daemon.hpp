@@ -24,6 +24,25 @@ request_stop();
 
 }
 // end of namespace Multiplexer
+
+namespace Service
+{
+
+bool
+is_running();
+
+void
+start(const char mode[]);
+
+void
+report_status(FILE *);
+
+void
+request_stop();
+
+}
+// end of namespace Service
+
 }
 // end of namespace Daemon
 }
