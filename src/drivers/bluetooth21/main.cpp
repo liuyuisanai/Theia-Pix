@@ -2,10 +2,14 @@
 
 #include <cstdio>
 #include <cstring>
+#include <unistd.h>
 
 #include "daemon.hpp"
 #include "io_multiplexer_global.hpp"
 #include "util.hpp"
+
+constexpr useconds_t
+WAIT_PERIOD_us = 100*1000 /*us*/;
 
 static void
 usage(const char name[])
@@ -48,26 +52,41 @@ main(int argc, const char * const argv[])
 		printf("%s: Starting...\n", argv[0]);
 
 		if (Multiplexer::is_running())
-			fprintf(stderr
-				, "%s: Multiplexer is already running.\n"
-				, argv[0]
-			);
+			fprintf(stderr, "%s is *already* running.\n",
+					Multiplexer::PROCESS_NAME);
 		else
+		{
 			Multiplexer::start(argv[2]);
 
+			bool wait;
+			do
+			{
+				usleep(WAIT_PERIOD_us);
+				wait =      Multiplexer::is_running()
+					and not Multiplexer::has_started();
+			}
+			while (wait);
+		}
+
 		if (Service::is_running())
-			fprintf(stderr
-				, "%s: Service is already running.\n"
-				, argv[0]
-			);
-		else
+			fprintf(stderr, "%s is *already* running.\n",
+					Service::PROCESS_NAME);
+		else if (Multiplexer::is_running())
 			Service::start(argv[3]);
 
-		sleep(1);
-		if (Multiplexer::is_running() and Service::is_running())
+		bool wait;
+		do
 		{
-			printf("%s: OK, started.\n", argv[0]);
+			usleep(WAIT_PERIOD_us);
+			wait =      Multiplexer::is_running()
+				and not Multiplexer::has_started()
+				and Service::is_running()
+				and not Service::has_started();
 		}
+		while (wait);
+
+		if (Multiplexer::is_running() and Service::is_running())
+			printf("%s: OK, started.\n", argv[0]);
 		else
 		{
 			printf("%s: Start failed.\n", argv[0]);
@@ -93,6 +112,7 @@ main(int argc, const char * const argv[])
 
 		while (Multiplexer::is_running() and Service::is_running())
 		{
+			usleep(WAIT_PERIOD_us);
 			fputc('.', stderr);
 			fflush(stderr);
 		}

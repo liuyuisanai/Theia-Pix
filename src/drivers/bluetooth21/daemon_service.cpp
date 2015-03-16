@@ -33,6 +33,9 @@ should_run = false;
 static volatile bool
 running = false;
 
+static volatile bool
+started = false;
+
 enum class Mode : uint8_t
 {
 	UNDEFINED,
@@ -49,6 +52,7 @@ daemon()
 	using namespace BT::Service::Laird;
 
 	running = true;
+	started = false;
 	fprintf(stderr, "%s starting ...\n", PROCESS_NAME);
 
 	unique_file dev = tty_open("/dev/btcmd");// TODO name #define/constexpr
@@ -75,6 +79,7 @@ daemon()
 		);
 	}
 
+	started = true;
 	while (should_run)
 	{
 		wait_process_event(service_io);
@@ -83,13 +88,16 @@ daemon()
 		// check ORB subscriptions
 	}
 
-	running = false;
+	started = running = false;
 	fprintf(stderr, "%s stopped.\n", PROCESS_NAME);
 	return 0;
 }
 
 bool
 is_running() { return running; }
+
+bool
+has_started() { return started; }
 
 void
 report_status(FILE * fp)
@@ -122,7 +130,7 @@ void
 request_stop()
 {
 	should_run = false;
-	printf("%s: Service stop requested.\n", PROCESS_NAME);
+	fprintf(stderr, "%s stop requested.\n", PROCESS_NAME);
 }
 
 }

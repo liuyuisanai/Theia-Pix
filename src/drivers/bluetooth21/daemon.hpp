@@ -10,11 +10,16 @@ namespace Daemon
 namespace Multiplexer
 {
 
+extern const char PROCESS_NAME[];
+
 bool
 is_running();
 
+bool
+has_started();
+
 void
-start(const char name[]);
+start(const char uart_dev_name[]);
 
 void
 report_status(FILE *);
@@ -28,8 +33,13 @@ request_stop();
 namespace Service
 {
 
+extern const char PROCESS_NAME[];
+
 bool
 is_running();
+
+bool
+has_started();
 
 void
 start(const char mode[]);

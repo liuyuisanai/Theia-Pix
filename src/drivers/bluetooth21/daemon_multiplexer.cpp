@@ -30,10 +30,14 @@ should_run = false;
 static volatile bool
 running = false;
 
+static volatile bool
+started = false;
+
 static int
 daemon(int argc, const char * const argv[])
 {
 	running = true;
+	started = false;
 	fprintf(stderr, "%s starting ...\n", PROCESS_NAME);
 
 	unique_file dev;
@@ -67,13 +71,16 @@ daemon(int argc, const char * const argv[])
 	CharacterDevices::unregister_all_devices();
 	Globals::Multiplexer::destroy();
 
-	running = false;
+	started = running = false;
 	fprintf(stderr, "%s stopped.\n", PROCESS_NAME);
 	return 0;
 }
 
 bool
 is_running() { return running; }
+
+bool
+has_started() { return started; }
 
 void
 report_status(FILE * fp)
