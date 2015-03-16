@@ -7,6 +7,8 @@
 #include <unistd.h>
 
 #include "daemon.hpp"
+#include "io_multiplexer_flags.hpp"
+#include "io_multiplexer_global.hpp"
 #include "io_tty.hpp"
 #include "laird/configure.hpp"
 #include "laird/service_state.hpp"
@@ -23,7 +25,6 @@ namespace Daemon
 namespace Service
 {
 
-constexpr int POLL_ms = 5 /*ms*/;
 const char PROCESS_NAME[] = "bt21_service";
 
 static volatile bool
@@ -55,11 +56,11 @@ daemon()
 	DevLog log_dev(fileno(dev), 2, "bt21_io      ", "bt21_service ");
 	// auto & log_dev = dev;
 
+	auto & mp = Globals::Multiplexer::get();
 	ServiceState svc;
 	ServiceBlockingIO<decltype(log_dev)> service_io(log_dev, svc);
 
 	should_run = daemon_mode != Mode::UNDEFINED
-		// and TODO multiplexer is set up
 		and fileno(dev) > -1
 		and configure_latency(service_io)
 		and configure_general(service_io, daemon_mode == Mode::LISTEN);
@@ -76,9 +77,8 @@ daemon()
 
 	while (should_run)
 	{
-		sleep(1);
-		// poll
-		// process
+		wait_process_event(service_io);
+		set_xt_ready_mask(mp, svc.xt_flow);
 		// if Mode::ONE_CONNECT and not connected { sleep, reconnect }
 		// check ORB subscriptions
 	}

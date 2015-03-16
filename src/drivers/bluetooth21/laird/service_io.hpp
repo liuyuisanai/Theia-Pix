@@ -136,6 +136,11 @@ wait_command_response(Device & dev, ServiceState & svc, event_id_t cmd, void * b
 				memcpy(buf, &packet, size);
 				return true;
 			}
+			else if (is_command(get_event_id(packet)))
+			{
+				dbg("Unexpected command response 0x%02x.",
+					get_event_id(packet));
+			}
 		}
 
 		if (time_limit < Time::now())
@@ -143,6 +148,26 @@ wait_command_response(Device & dev, ServiceState & svc, event_id_t cmd, void * b
 			dbg("wait_command_response timeout.\n");
 			return false;
 		}
+	}
+}
+
+template <typename Device>
+void
+wait_process_event(Device & dev, ServiceState & svc)
+{
+	RESPONSE_EVENT_UNION packet;
+
+	ssize_t r = wait_service_packet(dev, packet);
+	if (r < 0)
+	{
+		if (errno != EAGAIN) { perror("wait_command_response"); }
+	}
+	else
+	{
+		process_service_packet(svc, packet);
+		event_id_t event = get_event_id(packet);
+		if (is_command(event))
+			dbg("Unexpected command response 0x%02x.\n", event);
 	}
 }
 
@@ -191,6 +216,11 @@ send_receive_verbose(
 	else { dbg("-> Response 0x%02x timeout.\n", cmd); }
 	return ok;
 }
+
+template <typename Device>
+void
+wait_process_event(ServiceBlockingIO< Device > & self)
+{ wait_process_event(self.dev, self.svc); }
 
 }
 // end of namespace Laird

@@ -2,6 +2,7 @@
 
 #include <cstdint>
 
+#include "../bt_types.hpp"
 #include "../debug.hpp"
 
 #include "service_defs.hpp"
@@ -15,9 +16,8 @@ namespace Laird
 
 struct ServiceState
 {
-	uint8_t xt_flow; // TODO channel_mask_t
-
-	ServiceState() : xt_flow(0) {}
+	bool xt_flow_changed;
+	channel_mask_t xt_flow;
 };
 
 void
@@ -133,13 +133,12 @@ dbg_responce_received(const RESPONSE_EVENT_UNION & packet)
 void
 process_service_packet(ServiceState & svc, const RESPONSE_EVENT_UNION & packet)
 {
-	svc.xt_flow = get_xt_flow(packet);
+	svc.xt_flow_changed = svc.xt_flow.value != get_xt_flow(packet);
+	if (svc.xt_flow_changed) { svc.xt_flow.value = get_xt_flow(packet); }
 
 	auto event_id = get_event_id(packet);
-	if (is_command(event_id))
-	{
-		dbg_responce_received(packet);
-	}
+	if (is_command(event_id)) { dbg_responce_received(packet); }
+
 	process_event(svc, packet);
 }
 
