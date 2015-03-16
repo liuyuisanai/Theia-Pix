@@ -21,9 +21,9 @@ struct DevLog {
 	: dev(d)
 	, log(l)
 	, prefix_read(prefix_r)
-	, prefix_read_len(std::strlen(prefix_r))
+	, prefix_read_len(strlen(prefix_r))
 	, prefix_write(prefix_w)
-	, prefix_write_len(std::strlen(prefix_w))
+	, prefix_write_len(strlen(prefix_w))
 	{}
 
 	friend inline int
@@ -53,6 +53,7 @@ struct DevLog {
 		else
 			write(self.log, self.prefix_write, self.prefix_write_len);
 		write_repr(self.log, buf, buf_size);
-		write(self.log, "\n", 1);
+		const char ch = '\n';
+		write(self.log, &ch, 1);
 	}
 };

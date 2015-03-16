@@ -48,11 +48,11 @@ public:
 
 	friend inline std::size_t
 	read(unique_file & uf, void * buf, size_t buf_size)
-	{ return ::read(uf.fd, buf, buf_size); }
+	{ return read(uf.fd, buf, buf_size); }
 
 	friend inline std::size_t
 	write(unique_file & uf, const void * buf, size_t buf_size)
-	{ return ::write(uf.fd, buf, buf_size); }
+	{ return write(uf.fd, buf, buf_size); }
 };
 
 class unique_FILE {
@@ -70,7 +70,7 @@ public:
 	unique_FILE(unique_FILE && other) : fp(other.fp) { other.fp = nullptr; }
 
 	inline
-	~unique_FILE() { if (fp != nullptr) std::fclose(fp); }
+	~unique_FILE() { if (fp != nullptr) fclose(fp); }
 
 	inline unique_FILE &
 	operator = (unique_FILE && other)
@@ -85,7 +85,7 @@ public:
 	inline void
 	set(FILE * x)
 	{
-		if (fp != nullptr) { std::fclose(fp); }
+		if (fp != nullptr) { fclose(fp); }
 		fp = x;
 	}
 
@@ -94,11 +94,11 @@ public:
 
 	friend inline std::size_t
 	read(unique_FILE & uf, void * buf, size_t buf_size)
-	{ return std::fread(buf, 1, buf_size, uf.fp); }
+	{ return fread(buf, 1, buf_size, uf.fp); }
 
 	friend inline std::size_t
 	write(unique_FILE & uf, const void * buf, size_t buf_size)
-	{ return std::fwrite(buf, 1, buf_size, uf.fp); }
+	{ return fwrite(buf, 1, buf_size, uf.fp); }
 };
 
 }
