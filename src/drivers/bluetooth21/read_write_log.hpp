@@ -48,6 +48,8 @@ struct DevLog {
 	friend void
 	write_log(DevLog &self, bool is_read, const void *buf, size_t buf_size)
 	{
+		int save_errno = errno;
+
 		if (is_read)
 			write(self.log, self.prefix_read, self.prefix_read_len);
 		else
@@ -55,5 +57,7 @@ struct DevLog {
 		write_repr(self.log, buf, buf_size);
 		const char ch = '\n';
 		write(self.log, &ch, 1);
+
+		errno = save_errno;
 	}
 };
