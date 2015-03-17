@@ -3,9 +3,15 @@
 #include <cstdint>
 
 #include "../bt_types.hpp"
+#include "../connection_state.hpp"
 #include "../debug.hpp"
+#include "../network_util.hpp"
+
+#include "../std_algo.hpp"
+#include "../std_iter.hpp"
 
 #include "service_defs.hpp"
+#include "service_io.hpp"
 
 namespace BT
 {
@@ -18,14 +24,42 @@ struct ServiceState
 {
 	bool xt_flow_changed;
 	channel_mask_t xt_flow;
+	ConnectionState conn;
+
+	ServiceState()
+	: xt_flow_changed(false)
+	{}
 };
 
-void
-process_event(ServiceState & svc, const RESPONSE_EVENT_UNION & packet)
+template <typename Device>
+bool
+request_connect(Device & dev, ServiceState & svc, const Address6 & addr)
 {
-	auto event_id = get_event_id(packet);
+	if (not allowed_connection_request(svc.conn))
+		return false;
 
-	switch (get_event_id(packet))
+	auto cmd =
+		prefill_packet<COMMAND_MAKE_CONNECTION, CMD_MAKE_CONNECTION>();
+	cmd.hostHandle = 0;
+	copy(begin(addr), end(addr), cmd.bdAddr);
+	host_to_network(uint16_t(UUID_SPP), cmd.uuid);
+	cmd.instanceIndex = 0;
+
+	bool ok = write_command(dev, &cmd, sizeof cmd);
+
+	if (ok) { register_connection_request(svc.conn, addr); }
+
+	dbg("-> request MAKE_CONNECTION(" Address6_FMT ") %s.\n"
+		, Address6_FMT_ITEMS(addr)
+		, ok ? "ok": "failed");
+	return ok;
+}
+
+void
+process_event(ServiceState & svc, const RESPONSE_EVENT_UNION & p)
+{
+	event_id_t event_id = get_event_id(p);
+	switch (get_event_id(p))
 	{
 	// case CMD_CHANNEL_LIST:
 	// 	if (get_response_status() == MPSTATUS_OK)
@@ -37,77 +71,91 @@ process_event(ServiceState & svc, const RESPONSE_EVENT_UNION & packet)
 	// 	if (get_response_status() == MPSTATUS_OK)
 	// 	{
 	// 		register_disconnect(
-	// 			svc.conns,
-	// 			packet.rspDropConnection.hostHandle
+	// 			svc.conn,
+	// 			p.rspDropConnection.hostHandle
 	// 		);
 	// 	}
 	// break;
 
-	// case CMD_MAKE_CONNECTION:
-	// 	if (get_response_status() == MPSTATUS_OK)
-	// 	{
-	// 		channel_index_t i = packet.rspMakeConnection.channelId;
-	// 		register_connection_out<ChannelMode::ESTABLISHED>(svc.conns, i);
-	// 		// TODO convert to hex12 only when debug enabled.
-	// 		hex12_str_t hex12;
-	// 		hex12_str(get_address(svc.conns, i), hex12);
-	// 		dbg("-> CMD_MAKE_CONNECTION: established connection"
-	// 			" at channel %i to %s.\n" , i , hex12);
-	// 	}
-	// 	// TODO turn into a callback
-	// 	reset(svc.conns.request_address);
-	// break;
+	case CMD_MAKE_CONNECTION:
+		if (get_response_status(p) == MPSTATUS_OK)
+		{
+			channel_index_t ch = p.rspMakeConnection.channelId;
+			register_requested_connection(svc.conn, ch);
 
-	// case EVT_DISCONNECT:
-	// 	register_disconnect(
-	// 		svc.conns,
-	// 		packet.evtDisconnect.channelId
-	// 	);
-	// 	dbg("-> EVT_DISCONNECT: at channel %i reason 0x%02x.\n"
-	// 		, packet.evtDisconnect.channelId
-	// 		, packet.evtDisconnect.reason
-	// 	);
-	// break;
+			const Address6 & addr = get_address(svc.conn, ch);
+			dbg("-> MAKE_CONNECTION:"
+				" Channel %u got connected connection"
+				" to " Address6_FMT ".\n"
+				, ch
+				, Address6_FMT_ITEMS(addr)
+			);
+		}
+		else
+		{
+			forget_connection_request(svc.conn);
+			dbg("-> MAKE_CONNECTION failed with status 0x%02x.\n",
+				get_response_status(p));
+		}
+	break;
 
-	// case EVT_INCOMING_CONNECTION:
-	// 	// TODO check channel number
-	// 	if (network_to_host(packet.evtIncomingConnection.uuid) != UUID_SPP)
-	// 	{
-	// 		dbg("-> EVT_INCOMING_CONNECTION: unsupported"
-	// 			" uuid 0x%04x.\n", network_to_host(
-	// 				packet.evtIncomingConnection.uuid
-	// 			)
-	// 		);
-	// 	}
-	// 	else
-	// 	{
-	// 		channel_index_t i = packet.evtIncomingConnection.channelId;
-	// 		register_connection_in<ChannelMode::ESTABLISHED>(
-	// 			svc.conns,
-	// 			i,
-	// 			make_address6(packet.evtIncomingConnection.bdAddr)
-	// 		);
-	// 		// TODO convert to hex12 only when debug enabled.
-	// 		hex12_str_t hex12;
-	// 		hex12_str(get_address(svc.conns, i), hex12);
-	// 		dbg("-> EVT_INCOMING_CONNECTION:"
-	// 			" established connection"
-	// 			" at channel %i to %s.\n", i, hex12);
-	// 	}
-	// break;
+	case EVT_DISCONNECT:
+		if (p.evtDisconnect.channelId > 7)
+			dbg("-> EVT_DISCONNECT: Invalid channel %u.\n"
+				, p.evtDisconnect.channelId
+			);
+		else
+		{
+			channel_index_t ch = p.evtDisconnect.channelId;
+			register_disconnect(svc.conn, ch);
+			dbg("-> EVT_DISCONNECT: at channel %u reason 0x%02x.\n"
+				, ch
+				, p.evtDisconnect.reason
+			);
+		}
+	break;
+
+	case EVT_INCOMING_CONNECTION:
+		if (network_to_host(p.evtIncomingConnection.uuid) != UUID_SPP
+		or p.evtIncomingConnection.channelId > 7
+		) {
+			channel_index_t ch = p.evtIncomingConnection.channelId;
+			auto uuid =
+				network_to_host(p.evtIncomingConnection.uuid);
+			dbg("-> EVT_INCOMING_CONNECTION: Error"
+				" unsupported uuid 0x%04x at channel %u.\n"
+				, uuid
+				, ch
+			);
+		}
+		else
+		{
+			channel_index_t ch = p.evtIncomingConnection.channelId;
+			register_incoming_connection(
+				svc.conn, ch, p.evtIncomingConnection.bdAddr
+			);
+			const Address6 & addr = get_address(svc.conn, ch);
+			dbg("-> EVT_INCOMING_CONNECTION:"
+				" Channel %u got connected"
+				" to " Address6_FMT ".\n"
+				, ch
+				, Address6_FMT_ITEMS(addr)
+			);
+		}
+	break;
 
 	case EVT_STATUS:
 		dbg("-> EVT_STATUS: %d disco %d conn %d sec %d.\n"
-			, packet.evtStatus.status
-			, packet.evtStatus.discoverable_mode
-			, packet.evtStatus.connectable_mode
-			, packet.evtStatus.security_mode
+			, p.evtStatus.status
+			, p.evtStatus.discoverable_mode
+			, p.evtStatus.connectable_mode
+			, p.evtStatus.security_mode
 		);
 	break;
 
 	case EVT_UNKNOWN_COMMAND:
 		dbg("-> EVT_UNKNOWN_COMMAND: command id 0x%02x.\n",
-			packet.evtUnknownCmd.command);
+			p.evtUnknownCmd.command);
 	break;
 
 	default:

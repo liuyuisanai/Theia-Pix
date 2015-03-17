@@ -5,6 +5,7 @@ SRCS = main.cpp \
 	chardev_poll.cpp \
 	daemon_multiplexer.cpp \
 	daemon_service.cpp \
+	factory_addresses.cpp \
 	io_multiplexer_global.cpp \
 	laird/module_params.c \
 	mutex.cpp \

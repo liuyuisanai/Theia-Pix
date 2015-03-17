@@ -47,6 +47,10 @@ get_xt_flow(const RESPONSE_EVENT_UNION & buf)
 	return hdr.flow << 1;
 }
 
+template <typename ResponsePOD>
+inline uint8_t
+get_response_status(const ResponsePOD & packet) { return packet.hdr.status; }
+
 inline uint8_t
 get_response_status(const RESPONSE_EVENT_UNION & buf)
 {
@@ -54,9 +58,17 @@ get_response_status(const RESPONSE_EVENT_UNION & buf)
 	return hdr.status;
 }
 
-template <typename ResponsePOD>
-uint8_t
-get_response_status(const ResponsePOD & packet) { return packet.hdr.status; }
+template <typename PacketType, event_id_t CMD_ID>
+inline PacketType
+prefill_packet()
+{
+	PacketType r;
+	r.hdr.length = sizeof r;
+	r.hdr.channel = 0;
+	r.hdr.command = CMD_ID;
+	r.hdr.flow = 0x7F;
+	return r;
+}
 
 }
 // end of namespace Laird

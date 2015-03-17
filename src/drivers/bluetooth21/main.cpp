@@ -15,14 +15,12 @@ static void
 usage(const char name[])
 {
 	fprintf(stderr,
-		"Usage: %s start tty <mode>\n"
+		"Usage: %s start tty listen\n"
+		"       %s start tty one-connect address\n"
 		"       %s status\n"
 		"       %s stop\n"
-		"Modes: \n"
-		" * one-connect\n"
-		" * listen\n"
 		"\n"
-		, name, name, name
+		, name, name, name, name
 	);
 }
 
@@ -47,7 +45,7 @@ main(int argc, const char * const argv[])
 		return 1;
 	}
 
-	if (streq(argv[1], "start") and argc == 4)
+	if (streq(argv[1], "start") and argc >= 4)
 	{
 		printf("%s: Starting...\n", argv[0]);
 
@@ -72,7 +70,7 @@ main(int argc, const char * const argv[])
 			fprintf(stderr, "%s is *already* running.\n",
 					Service::PROCESS_NAME);
 		else if (Multiplexer::is_running())
-			Service::start(argv[3]);
+			Service::start(argv[3], argc > 4 ? argv[4] : nullptr);
 
 		bool wait;
 		do

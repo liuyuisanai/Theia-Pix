@@ -42,7 +42,7 @@ bool
 has_started();
 
 void
-start(const char mode[]);
+start(const char mode[], const char address_no[]);
 
 void
 report_status(FILE *);

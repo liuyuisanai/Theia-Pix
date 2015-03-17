@@ -9,7 +9,7 @@ copy(InputIt first, InputIt last, OutputIt d)
 {
 	while (first != last)
 	{
-		*d= *first;
+		*d = *first;
 		++d;
 		++first;
 	}
@@ -18,20 +18,20 @@ copy(InputIt first, InputIt last, OutputIt d)
 
 template< class InputIt, class Size, class OutputIt>
 OutputIt
-copy_n(InputIt first, Size count, OutputIt result)
+copy_n(InputIt first, Size count, OutputIt d)
 {
 	if (count > 0)
 	{
-		*result = *first;
-		++result;
+		*d = *first;
+		++d;
 		for (Size i = 1; i < count; ++i)
 		{
 			++first;
-			*result = *first;
-			++result;
+			*d = *first;
+			++d;
 		}
 	}
-	return result;
+	return d;
 }
 
 template< class ForwardIt, class T >
@@ -55,6 +55,18 @@ fill_n(OutputIt first, Size count, const T& value)
 		++first;
 	}
 	return first;
+}
+
+template<class InputIt1, class Size1, class InputIt2>
+bool equal_n(InputIt1 first1, Size1 n, InputIt2 first2)
+{
+    while (n != 0) {
+        if (not (*first1 == *first2)) { return false; }
+	--n;
+	++first1;
+	++first2;
+    }
+    return true;
 }
 
 template <typename T>

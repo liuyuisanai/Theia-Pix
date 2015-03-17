@@ -2,10 +2,18 @@
 
 #include <cstdint>
 
+#include "std_array.hpp"
+
 namespace BT
 {
 
 using channel_index_t = uint8_t;
+struct channel_mask_t;
+
+using Address6 = PODArray<uint8_t, 6>;
+#define Address6_FMT "%02x:%02x:%02x:%02x:%02x:%02x"
+#define Address6_FMT_ITEMS(x) (x)[0], (x)[1], (x)[2], (x)[3], (x)[4], (x)[5]
+
 
 struct channel_mask_t
 {

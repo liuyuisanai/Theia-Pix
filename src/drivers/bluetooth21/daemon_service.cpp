@@ -7,12 +7,13 @@
 #include <unistd.h>
 
 #include "daemon.hpp"
+#include "factory_addresses.hpp"
 #include "io_multiplexer_flags.hpp"
 #include "io_multiplexer_global.hpp"
 #include "io_tty.hpp"
 #include "laird/configure.hpp"
-#include "laird/service_state.hpp"
 #include "laird/service_io.hpp"
+#include "laird/service_state.hpp"
 #include "unique_file.hpp"
 #include "util.hpp"
 
@@ -45,6 +46,9 @@ enum class Mode : uint8_t
 
 static volatile Mode
 daemon_mode = Mode::UNDEFINED;
+
+static Address6
+connect_address;
 
 static int
 daemon()
@@ -84,8 +88,15 @@ daemon()
 	{
 		wait_process_event(service_io);
 		set_xt_ready_mask(mp, svc.xt_flow);
-		// if Mode::ONE_CONNECT and not connected { sleep, reconnect }
-		// check ORB subscriptions
+		if (count_connections(svc.conn) > 0)
+		{
+			// TODO request rssi
+		}
+		else if (allowed_connection_request(svc.conn))
+		{
+			if (daemon_mode == Mode::ONE_CONNECT)
+				request_connect(log_dev, svc, connect_address);
+		}
 	}
 
 	started = running = false;
@@ -109,7 +120,7 @@ report_status(FILE * fp)
 }
 
 void
-start(const char mode[])
+start(const char mode[], const char addr_no[])
 {
 	if (running)
 		return;
@@ -117,6 +128,15 @@ start(const char mode[])
 	if (streq(mode, "one-connect")) { daemon_mode = Mode::ONE_CONNECT; }
 	else if (streq(mode, "listen")) { daemon_mode = Mode::LISTEN; }
 	else { return; }
+
+	if (daemon_mode == Mode::ONE_CONNECT)
+	{
+		uint32_t i;
+		if (not parse_uint32(addr_no, i) or i >= n_factory_addresses)
+			return;
+
+		connect_address = factory_addresses[i];
+	}
 
 	task_spawn_cmd(PROCESS_NAME,
 			SCHED_DEFAULT,
