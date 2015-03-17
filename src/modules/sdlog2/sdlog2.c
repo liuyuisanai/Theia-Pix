@@ -69,11 +69,13 @@
 #include <uORB/topics/actuator_outputs.h>
 #include <uORB/topics/actuator_controls.h>
 #include <uORB/topics/vehicle_command.h>
+#include <uORB/topics/airdog_path_log.h>
 #include <uORB/topics/vehicle_local_position.h>
 #include <uORB/topics/vehicle_local_position_setpoint.h>
 #include <uORB/topics/vehicle_global_position.h>
 #include <uORB/topics/target_global_position.h>
 #include <uORB/topics/external_trajectory.h>
+#include <uORB/topics/trajectory.h>
 #include <uORB/topics/position_setpoint_triplet.h>
 #include <uORB/topics/vehicle_gps_position.h>
 #include <uORB/topics/satellite_info.h>
@@ -176,6 +178,7 @@ PARAM_DEFINE_INT32(SDLOG_M_TRGPOS, 0);
 PARAM_DEFINE_INT32(SDLOG_M_EXTRAJ, 0);
 PARAM_DEFINE_INT32(SDLOG_M_DEBUGD, 0);
 PARAM_DEFINE_INT32(SDLOG_M_MAVST, 0);
+PARAM_DEFINE_INT32(SDLOG_M_LOTRAJ, 0);
 
 #define LOGBUFFER_WRITE_AND_COUNT(_msg) if (logbuffer_write(&lb, &log_msg, LOG_PACKET_SIZE(_msg))) { \
 		log_msgs_written++; \
@@ -299,7 +302,9 @@ static bool file_exist(const char *filename);
 
 static int file_copy(const char *file_old, const char *file_new);
 
-static void handle_command(struct vehicle_command_s *cmd);
+//static void handle_command(struct vehicle_command_s *cmd);
+
+static void handle_command(struct airdog_path_log_s *cmd);
 
 static void handle_status(struct vehicle_status_s *cmd);
 
@@ -991,6 +996,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 	/* warning! using union here to save memory, elements should be used separately! */
 	union {
 		struct vehicle_command_s cmd;
+		struct airdog_path_log_s aird;
 		struct sensor_combined_s sensor;
 		struct vehicle_attitude_s att;
 		struct vehicle_attitude_setpoint_s att_sp;
@@ -1020,6 +1026,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 		//struct wind_estimate_s wind_estimate;
 		struct target_global_position_s target_pos;
 		struct external_trajectory_s ext_traj;
+		struct trajectory_s local_traj;
         struct debug_data_s debug_data;
         struct mavlink_receive_stats_s mav_stats;
 	} buf;
@@ -1065,7 +1072,9 @@ int sdlog2_thread_main(int argc, char *argv[])
 			struct log_TECS_s log_TECS;
 			struct log_WIND_s log_WIND;
 			struct log_TPOS_s log_TPOS;
+			// TODO! Consider merging two trajectory messages
 			struct log_EXTJ_s log_EXTJ;
+			struct log_LOTJ_s log_LOTJ;
             struct log_DEBUGD_s log_DEBUGD;
 			struct log_GPRE_s log_GPRE;
 			struct log_GNEX_s log_GNEX;
@@ -1080,6 +1089,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 
 	struct {
 		int cmd_sub;
+		int aird_sub;
 		int status_sub;
 		int sensor_sub;
 		int att_sub;
@@ -1113,12 +1123,14 @@ int sdlog2_thread_main(int argc, char *argv[])
 
         int debug_data_sub;
         int mav_stats_sub;
+        int local_trajectory_sub;
 	} subs;
 
 	int sub_freq;
 
 	// Don't limit status and command subs to process commands in timely manner
 	subs.cmd_sub = orb_subscribe(ORB_ID(vehicle_command));
+	subs.aird_sub = orb_subscribe(ORB_ID(airdog_path_log));
 	subs.status_sub = orb_subscribe(ORB_ID(vehicle_status));
 	LOG_ORB_PARAM_SUBSCRIBE(subs.gps_pos_sub, ORB_ID(vehicle_gps_position), "SDLOG_M_GPS", sub_freq)
 	LOG_ORB_PARAM_SUBSCRIBE(subs.sat_info_sub, ORB_ID(satellite_info), "SDLOG_M_SAT", sub_freq)
@@ -1152,10 +1164,14 @@ int sdlog2_thread_main(int argc, char *argv[])
 	/* we need to rate-limit wind, as we do not need the full update rate */
 	// orb_set_interval(subs.wind_sub, 90);
 	LOG_ORB_PARAM_SUBSCRIBE(subs.target_pos_sub, ORB_ID(target_global_position), "SDLOG_M_TRGPOS", sub_freq)
+	// External reported trajectory, that was received trough Mavlink
 	LOG_ORB_PARAM_SUBSCRIBE(subs.external_trajectory_sub, ORB_ID(external_trajectory), "SDLOG_M_EXTRAJ", sub_freq)
 
 	LOG_ORB_PARAM_SUBSCRIBE(subs.debug_data_sub, ORB_ID(debug_data), "SDLOG_M_DEBUGD", sub_freq)
 	LOG_ORB_PARAM_SUBSCRIBE(subs.mav_stats_sub, ORB_ID(mavlink_receive_stats), "SDLOG_M_MAVST", sub_freq)
+
+	// Local reported trajectory for leashes
+	LOG_ORB_PARAM_SUBSCRIBE(subs.local_trajectory_sub, ORB_ID(trajectory), "SDLOG_M_LOTRAJ", sub_freq)
 
 	thread_running = true;
 
@@ -1196,8 +1212,13 @@ int sdlog2_thread_main(int argc, char *argv[])
 
 		/* --- VEHICLE COMMAND - LOG MANAGEMENT --- */
 		bool command_updated = copy_if_updated(ORB_ID(vehicle_command), subs.cmd_sub, &buf_cmd);
-		if (command_updated) {
-			handle_command(&buf_cmd);
+//		if (command_updated) {
+//			handle_command(&buf_cmd);
+//		}
+
+		/* --- LOG MANAGEMENT - AIRDOG APP CONTROL --- */
+		if (copy_if_updated(ORB_ID(airdog_path_log), subs.aird_sub, &buf.aird)) {
+			handle_command(&buf.aird);
 		}
 
 		/* --- VEHICLE STATUS - LOG MANAGEMENT --- */
@@ -1807,6 +1828,22 @@ int sdlog2_thread_main(int argc, char *argv[])
 			LOGBUFFER_WRITE_AND_COUNT(EXTJ);
 		}
 
+		/* --- LOCAL TRAJECTORY --- */
+		if (copy_if_updated(ORB_ID(trajectory), subs.local_trajectory_sub, &buf.local_traj)) {
+			log_msg.msg_type = LOG_LOTJ_MSG;
+			log_msg.body.log_LOTJ.point_type = buf.local_traj.point_type;
+			log_msg.body.log_LOTJ.timestamp = buf.local_traj.timestamp;
+			log_msg.body.log_LOTJ.lat = buf.local_traj.lat * 1e7d;
+			log_msg.body.log_LOTJ.lon = buf.local_traj.lon * 1e7d;
+			log_msg.body.log_LOTJ.alt = buf.local_traj.alt;
+			log_msg.body.log_LOTJ.relative_alt = buf.local_traj.relative_alt;
+			log_msg.body.log_LOTJ.vel_n = buf.local_traj.vel_n;
+			log_msg.body.log_LOTJ.vel_e = buf.local_traj.vel_e;
+			log_msg.body.log_LOTJ.vel_d = buf.local_traj.vel_d;
+			log_msg.body.log_LOTJ.heading = buf.local_traj.heading;
+			LOGBUFFER_WRITE_AND_COUNT(LOTJ);
+		}
+
 
 		if (copy_if_updated(ORB_ID(debug_data), subs.debug_data_sub, &buf.debug_data)) {
 
@@ -1913,8 +1950,8 @@ int file_copy(const char *file_old, const char *file_new)
 	return OK;
 }
 
-void handle_command(struct vehicle_command_s *cmd)
-{
+//void handle_command(struct vehicle_command_s *cmd)
+//{
 //	int param;
 //
 //	/* request to set different system mode */
@@ -1936,6 +1973,16 @@ void handle_command(struct vehicle_command_s *cmd)
 //		/* silently ignore */
 //		break;
 //	}
+//}
+
+void handle_command(struct airdog_path_log_s *cmd)
+{
+    /* request to set different system mode */
+    if (cmd->start == 1 && cmd->stop == 0 && !logging_enabled) {
+        sdlog2_start_log();
+    } else if (cmd->start == 0 && cmd->stop == 1) {
+        sdlog2_stop_log();
+    }
 }
 
 void handle_status(struct vehicle_status_s *status)

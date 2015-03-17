@@ -87,5 +87,10 @@ else
 	fi
 fi
 
-sdlog2_lite start -r 200 -b 22 -t
+if param compare SDLOG_ON_BOOT 1
+then
+	sdlog2 start -r 200 -e -b 22
+else
+	sdlog2 start -r 200 -b 22 -t
+fi
 #exit
