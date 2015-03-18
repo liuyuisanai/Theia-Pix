@@ -973,7 +973,7 @@ protected:
         updated |= _home_sub->update(&_home_time, &home);
         updated |= _gps_sub->update(&_gps_time, &gps);
 
-		if (updated) {
+		if (_pos_time != 0 && updated) {
 			mavlink_global_position_int_t msg;
 
 			msg.time_boot_ms = pos.timestamp / 1000;
