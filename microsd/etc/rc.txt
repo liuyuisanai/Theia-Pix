@@ -24,8 +24,22 @@ fi
 
  sh /etc/init.d/rc.sensors
  usleep 1000000
- # Original gps
- gps start
+
+set SDLOG_SWITCHES "-r 200 -b 22 -t"
+if param compare SDLOG_ON_BOOT 1
+then
+	set SDLOG_SWITCHES "${SDLOG_SWITCHES} -e"
+fi
+
+ # Original gps with sat info, if sat info log is enabled
+if param compare SDLOG_M_SAT -1
+then
+	gps start
+else
+	gps start -s
+	set SDLOG_SWITCHES "${SDLOG_SWITCHES} -x"
+fi
+
  # Fake gps
  # gps start -f
  usleep 1000000
@@ -62,6 +76,8 @@ usleep 1000000
 #
 # MAVLink
 #
+set MAVLINK_TTY /dev/ttyS1
+
 if param compare AIRD_LEASH_MODE 0
 then
 	#Default leash
@@ -87,10 +103,5 @@ else
 	fi
 fi
 
-if param compare SDLOG_ON_BOOT 1
-then
-	sdlog2 start -r 200 -e -b 22
-else
-	sdlog2 start -r 200 -b 22 -t
-fi
+sdlog2 start $SDLOG_SWITCHES
 #exit
