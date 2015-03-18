@@ -148,7 +148,6 @@ ARCHWARNINGS		 = -Wall \
 			   -Wframe-larger-than=1024 \
 			   -Wpointer-arith \
 			   -Wlogical-op \
-			   -Wpacked \
 			   -Wno-unused-parameter \
 			   -Werror=format-security \
 			   -Werror=array-bounds \
@@ -159,6 +158,7 @@ ARCHWARNINGS		 = -Wall \
 			   -Werror=reorder \
 			   $(if $(SHOW_ALL_ERRORS),,-Wfatal-errors) \
 			   $(if $(TOLERATE_MISSING_DECLARATION),,-Wmissing-declarations) \
+#			   -Wpacked \
 #			end of ARCHWARNINGS
 #   -Wcast-qual  - generates spurious noreturn attribute warnings, try again later
 #   -Wconversion - would be nice, but too many "risky-but-safe" conversions in the code

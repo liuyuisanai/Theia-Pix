@@ -23,13 +23,13 @@ MODULES		+= drivers/led
 MODULES		+= drivers/px4fmu
 MODULES		+= drivers/px4io
 MODULES		+= drivers/bluetooth21
-MODULES		+= drivers/bluetooth21/tests/bluetooth21_devtest
+#MODULES		+= drivers/bluetooth21/tests/bluetooth21_devtest
 MODULES		+= drivers/boards/px4fmu-v2
 MODULES		+= drivers/rgbled
 MODULES		+= drivers/mpu6000
 MODULES		+= drivers/lsm303d
 MODULES		+= drivers/l3gd20
-MODULES		+= drivers/hmc5883
+#MODULES		+= drivers/hmc5883
 MODULES		+= drivers/hmc5883spi
 MODULES		+= drivers/ms5611
 #MODULES		+= drivers/mb12xx
@@ -50,7 +50,7 @@ MODULES		+= modules/sensors
 #MODULES		+= drivers/px4flow
 MODULES		+= drivers/calibration
 
-#MODULES 	+= drivers/pwm_input
+#MODULES 		+= drivers/pwm_input
 #MODULES		+= drivers/mb1230serial
 
 # Needs to be burned to the ground and re-written; for now,
@@ -70,7 +70,7 @@ MODULES		+= systemcmds/pwm
 MODULES		+= systemcmds/esc_calib
 MODULES		+= systemcmds/reboot
 MODULES		+= systemcmds/top
-MODULES		+= systemcmds/tests
+#MODULES		+= systemcmds/tests
 MODULES		+= systemcmds/config
 MODULES		+= systemcmds/nshterm
 MODULES		+= systemcmds/mtd

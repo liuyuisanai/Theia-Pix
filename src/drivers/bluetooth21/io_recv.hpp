@@ -119,7 +119,6 @@ read_service_channel(Protocol tag, RxState & rx, void * buf, size_t buf_size)
 	);
 	size_t s = distance(first, last);
 
-	dbg("read_service_channel packet %u size %u.\n", s, buf_size);
 	if (s > 0)
 	{
 		if (buf_size < s)
@@ -142,6 +141,18 @@ drain(RxState & rx, channel_index_t ch) { clear(rx.channel_buffer[ch]); }
 inline void
 dbg_dump(const char comment[], RxState & rx)
 {
+	if (size(rx.channel_buffer[0])
+	    + size(rx.channel_buffer[1])
+	    + size(rx.channel_buffer[2])
+	    + size(rx.channel_buffer[3])
+	    + size(rx.channel_buffer[4])
+	    + size(rx.channel_buffer[5])
+	    + size(rx.channel_buffer[6])
+	    + size(rx.channel_buffer[7])
+	    + size(rx.device_buffer)
+	    == 0
+	) { return; }
+
 	dbg("%s: Rx channels %u %u %u %u %u %u %u %u uart %u\n"
 		, comment
 		, size(rx.channel_buffer[0])

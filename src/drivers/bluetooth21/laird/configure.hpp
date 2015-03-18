@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../module_params.hpp"
+#include "../factory_addresses.hpp"
 
 #include "commands.hpp"
 
@@ -47,6 +48,27 @@ configure_latency(ServiceIO & io)
 	);
 	return ok;
 }
+
+template <typename ServiceIO>
+bool
+trust_factory(ServiceIO & io)
+{
+	LinkKey16 key(
+		0xe8, 0x17, 0xfc, 0x99, 0xa2, 0xd0, 0x1b, 0x4b,
+		0x07, 0xd2, 0xbb, 0xf9, 0xec, 0xba, 0x57, 0x9b
+	);
+	for (unsigned i = 0; i < n_factory_addresses; ++i)
+	{
+		bool ok = add_trusted_key(io, factory_addresses[i], key);
+		if (not ok) { return false; }
+	}
+	return true;
+}
+
+template <typename ServiceIO>
+bool
+configure_factory(ServiceIO & io)
+{ return drop_trusted_db(io) and trust_factory(io); }
 
 }
 // end of namespace Laird

@@ -66,6 +66,8 @@ daemon(int argc, const char * const argv[])
 	auto & mp = Globals::Multiplexer::get();
 	//DevLog log_dev(fileno(dev), 2, "module  ", "host    ");
 	auto & log_dev = dev;
+
+	started = true;
 	while (should_run) { perform_poll_io(log_dev, mp, POLL_ms); }
 
 	CharacterDevices::unregister_all_devices();

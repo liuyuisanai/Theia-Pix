@@ -61,17 +61,19 @@ daemon()
 
 	unique_file dev = tty_open("/dev/btcmd");// TODO name #define/constexpr
 
-	DevLog log_dev(fileno(dev), 2, "bt21_io      ", "bt21_service ");
-	// auto & log_dev = dev;
+	//DevLog log_dev(fileno(dev), 2, "bt21_io      ", "bt21_service ");
+	auto & log_dev = dev;
 
 	auto & mp = Globals::Multiplexer::get();
 	ServiceState svc;
 	ServiceBlockingIO<decltype(log_dev)> service_io(log_dev, svc);
 
-	should_run = daemon_mode != Mode::UNDEFINED
+	should_run = (daemon_mode != Mode::UNDEFINED
 		and fileno(dev) > -1
 		and configure_latency(service_io)
-		and configure_general(service_io, daemon_mode == Mode::LISTEN);
+		and configure_general(service_io, daemon_mode == Mode::LISTEN)
+		and configure_factory(service_io)
+	);
 
 	if (should_run) { fprintf(stderr, "%s started.\n", PROCESS_NAME); }
 	else

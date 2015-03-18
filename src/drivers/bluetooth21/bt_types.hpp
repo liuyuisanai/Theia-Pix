@@ -14,6 +14,7 @@ using Address6 = PODArray<uint8_t, 6>;
 #define Address6_FMT "%02x:%02x:%02x:%02x:%02x:%02x"
 #define Address6_FMT_ITEMS(x) (x)[0], (x)[1], (x)[2], (x)[3], (x)[4], (x)[5]
 
+using LinkKey16 = PODArray<uint8_t, 16>;
 
 struct channel_mask_t
 {

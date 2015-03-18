@@ -93,8 +93,8 @@ switch_connectable(ServiceIO & io, bool enable)
 	cmd.autoAccept = 0;
 
 	bool ok = send_receive_verbose(io, cmd, rsp)
-		and get_response_status(rsp) == MPSTATUS_OK
-		and rsp.currentMode == cmd.enable;
+		and get_response_status(rsp) == MPSTATUS_OK;
+		//and rsp.currentMode == cmd.enable;
 
 	dbg("-> command switch_connectable(%i) %s.\n"
 		, enable
@@ -112,8 +112,8 @@ switch_discoverable(ServiceIO & io, bool enable)
 	cmd.enable = (uint8_t)(enable ? 1 : 0);
 
 	bool ok = send_receive_verbose(io, cmd, rsp)
-		and get_response_status(rsp) == MPSTATUS_OK
-		and rsp.currentMode == cmd.enable;
+		and get_response_status(rsp) == MPSTATUS_OK;
+		//and rsp.currentMode == cmd.enable;
 
 	dbg("-> command switch_discoverable(%i) %s.\n"
 		, enable
@@ -121,23 +121,24 @@ switch_discoverable(ServiceIO & io, bool enable)
 	return ok;
 }
 
-// TODO Address6
-//template <typename ServiceIO>
-//bool
-//add_trusted_key(ServiceIO & io, const Address6 & addr, const LinkKey16 & key)
-//{
-//	RESPONSE_TRUSTED_DB_ADD rsp;
-//	auto cmd =
-//		prefill_packet<COMMAND_TRUSTED_DB_ADD, CMD_TRUSTED_DB_ADD>();
-//	copy(cbegin(addr), cend(addr), cmd.bdAddr);
-//	copy(cbegin(key), cend(key), cmd.linkKey);
-//	fill(cbegin(cmd.keyFlags), cend(cmd.keyFlags), 0);
-//
-//	bool ok = send_receive_verbose(io, cmd, rsp)
-//		and get_response_status(rsp) == MPSTATUS_OK;
-//	dbg("-> command add_trusted_key %s.\n", ok ? "ok": "failed");
-//	return ok;
-//}
+template <typename ServiceIO>
+bool
+add_trusted_key(ServiceIO & io, const Address6 & addr, const LinkKey16 & key)
+{
+	RESPONSE_TRUSTED_DB_ADD rsp;
+	auto cmd =
+		prefill_packet<COMMAND_TRUSTED_DB_ADD, CMD_TRUSTED_DB_ADD>();
+	copy(cbegin(addr), cend(addr), cmd.bdAddr);
+	copy(cbegin(key), cend(key), cmd.linkKey);
+	fill(begin(cmd.keyFlags), end(cmd.keyFlags), 0);
+
+	bool ok = send_receive_verbose(io, cmd, rsp)
+		and get_response_status(rsp) == MPSTATUS_OK;
+	dbg("-> command add_trusted_key(" Address6_FMT ") %s.\n"
+		, Address6_FMT_ITEMS(addr)
+		, ok ? "ok": "failed");
+	return ok;
+}
 
 template <typename ServiceIO>
 bool

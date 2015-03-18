@@ -7,6 +7,8 @@
 #include <cstdio>
 #include <cstring>
 
+#include "debug.hpp"
+
 namespace BT
 {
 
@@ -26,11 +28,7 @@ inline int
 tty_open(const char name[])
 {
        int r = open(name, O_RDWR | O_NONBLOCK | O_NOCTTY);
-       if (r < 0)
-       {
-		fprintf(stderr, "tty_open(\"%s\"): %s\n",
-				name, strerror(errno));
-       }
+       if (r < 0) { dbg("tty_open(\"%s\"): %s\n", name, strerror(errno)); }
        return r;
 }
 

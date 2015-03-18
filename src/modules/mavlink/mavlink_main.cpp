@@ -126,7 +126,7 @@ Mavlink::Mavlink() :
 	_hil_enabled(false),
 	_use_hil_gps(false),
 	_forward_externalsp(false),
-	_is_usb_uart(false),
+	_is_usb_uart(true),
 	_wait_to_transmit(false),
 	_received_messages(false),
 	_main_loop_delay(1000),
@@ -152,7 +152,7 @@ Mavlink::Mavlink() :
 	mavlink_link_termination_allowed(false),
 	_subscribe_to_stream(nullptr),
 	_subscribe_to_stream_rate(0.0f),
-	_flow_control_enabled(true),
+	_flow_control_enabled(false),
 	_last_write_success_time(0),
 	_last_write_try_time(0),
 	_bytes_tx(0),
@@ -553,56 +553,56 @@ int Mavlink::get_component_id()
 int Mavlink::mavlink_open_uart(int baud, const char *uart_name, struct termios *uart_config_original, bool *is_usb)
 {
 	/* process baud rate */
-	int speed;
-
-	switch (baud) {
-	case 0:      speed = B0;      break;
-
-	case 50:     speed = B50;     break;
-
-	case 75:     speed = B75;     break;
-
-	case 110:    speed = B110;    break;
-
-	case 134:    speed = B134;    break;
-
-	case 150:    speed = B150;    break;
-
-	case 200:    speed = B200;    break;
-
-	case 300:    speed = B300;    break;
-
-	case 600:    speed = B600;    break;
-
-	case 1200:   speed = B1200;   break;
-
-	case 1800:   speed = B1800;   break;
-
-	case 2400:   speed = B2400;   break;
-
-	case 4800:   speed = B4800;   break;
-
-	case 9600:   speed = B9600;   break;
-
-	case 19200:  speed = B19200;  break;
-
-	case 38400:  speed = B38400;  break;
-
-	case 57600:  speed = B57600;  break;
-
-	case 115200: speed = B115200; break;
-
-	case 230400: speed = B230400; break;
-
-	case 460800: speed = B460800; break;
-
-	case 921600: speed = B921600; break;
-
-	default:
-		warnx("ERROR: Unsupported baudrate: %d\n\tsupported examples:\n\t9600, 19200, 38400, 57600\t\n115200\n230400\n460800\n921600\n",
-		      baud);
-		return -EINVAL;
-	}
+//	int speed;
+//
+//	switch (baud) {
+//	case 0:      speed = B0;      break;
+//
+//	case 50:     speed = B50;     break;
+//
+//	case 75:     speed = B75;     break;
+//
+//	case 110:    speed = B110;    break;
+//
+//	case 134:    speed = B134;    break;
+//
+//	case 150:    speed = B150;    break;
+//
+//	case 200:    speed = B200;    break;
+//
+//	case 300:    speed = B300;    break;
+//
+//	case 600:    speed = B600;    break;
+//
+//	case 1200:   speed = B1200;   break;
+//
+//	case 1800:   speed = B1800;   break;
+//
+//	case 2400:   speed = B2400;   break;
+//
+//	case 4800:   speed = B4800;   break;
+//
+//	case 9600:   speed = B9600;   break;
+//
+//	case 19200:  speed = B19200;  break;
+//
+//	case 38400:  speed = B38400;  break;
+//
+//	case 57600:  speed = B57600;  break;
+//
+//	case 115200: speed = B115200; break;
+//
+//	case 230400: speed = B230400; break;
+//
+//	case 460800: speed = B460800; break;
+//
+//	case 921600: speed = B921600; break;
+//
+//	default:
+//		warnx("ERROR: Unsupported baudrate: %d\n\tsupported examples:\n\t9600, 19200, 38400, 57600\t\n115200\n230400\n460800\n921600\n",
+//		      baud);
+//		return -EINVAL;
+//	}
 
 	/* open uart */
 	_uart_fd = open(uart_name, O_RDWR | O_NOCTTY);
@@ -611,90 +611,93 @@ int Mavlink::mavlink_open_uart(int baud, const char *uart_name, struct termios *
 		return _uart_fd;
 	}
 
-
-	/* Try to set baud rate */
-	struct termios uart_config;
-	int termios_state;
-	*is_usb = false;
-
-	/* Back up the original uart configuration to restore it after exit */
-	if ((termios_state = tcgetattr(_uart_fd, uart_config_original)) < 0) {
-		warnx("ERR GET CONF %s: %d\n", uart_name, termios_state);
-		close(_uart_fd);
-		return -1;
-	}
-
-	/* Fill the struct for the new configuration */
-	tcgetattr(_uart_fd, &uart_config);
-
-	/* Clear ONLCR flag (which appends a CR for every LF) */
-	uart_config.c_oflag &= ~ONLCR;
-
-	/* USB serial is indicated by /dev/ttyACM0*/
-	if (strcmp(uart_name, "/dev/ttyACM0") != OK && strcmp(uart_name, "/dev/ttyACM1") != OK) {
-
-		/* Set baud rate */
-		if (cfsetispeed(&uart_config, speed) < 0 || cfsetospeed(&uart_config, speed) < 0) {
-			warnx("ERR SET BAUD %s: %d\n", uart_name, termios_state);
-			close(_uart_fd);
-			return -1;
-		}
-
-	}
-
-	if ((termios_state = tcsetattr(_uart_fd, TCSANOW, &uart_config)) < 0) {
-		warnx("ERR SET CONF %s\n", uart_name);
-		close(_uart_fd);
-		return -1;
-	}
-
-	if (!_is_usb_uart) {
-		/*
-		 * Setup hardware flow control. If the port has no RTS pin this call will fail,
-		 * which is not an issue, but requires a separate call so we can fail silently.
-		 */
-		(void)tcgetattr(_uart_fd, &uart_config);
-		uart_config.c_cflag |= CRTS_IFLOW;
-		(void)tcsetattr(_uart_fd, TCSANOW, &uart_config);
-
-		/* setup output flow control */
-		if (enable_flow_control(true)) {
-			warnx("hardware flow control not supported");
-		}
-
-	} else {
-		_flow_control_enabled = false;
-	}
-
+	*is_usb = true;
+//
+//	/* Try to set baud rate */
+//	struct termios uart_config;
+//	int termios_state;
+//	*is_usb = false;
+//
+//	/* Back up the original uart configuration to restore it after exit */
+//	if ((termios_state = tcgetattr(_uart_fd, uart_config_original)) < 0) {
+//		warnx("ERR GET CONF %s: %d\n", uart_name, termios_state);
+//		close(_uart_fd);
+//		return -1;
+//	}
+//
+//	/* Fill the struct for the new configuration */
+//	tcgetattr(_uart_fd, &uart_config);
+//
+//	/* Clear ONLCR flag (which appends a CR for every LF) */
+//	uart_config.c_oflag &= ~ONLCR;
+//
+//	/* USB serial is indicated by /dev/ttyACM0*/
+//	if (strcmp(uart_name, "/dev/ttyACM0") != OK && strcmp(uart_name, "/dev/ttyACM1") != OK) {
+//
+//		/* Set baud rate */
+//		if (cfsetispeed(&uart_config, speed) < 0 || cfsetospeed(&uart_config, speed) < 0) {
+//			warnx("ERR SET BAUD %s: %d\n", uart_name, termios_state);
+//			close(_uart_fd);
+//			return -1;
+//		}
+//
+//	}
+//
+//	if ((termios_state = tcsetattr(_uart_fd, TCSANOW, &uart_config)) < 0) {
+//		warnx("ERR SET CONF %s\n", uart_name);
+//		close(_uart_fd);
+//		return -1;
+//	}
+//
+//	if (!_is_usb_uart) {
+//		/*
+//		 * Setup hardware flow control. If the port has no RTS pin this call will fail,
+//		 * which is not an issue, but requires a separate call so we can fail silently.
+//		 */
+//		(void)tcgetattr(_uart_fd, &uart_config);
+//		uart_config.c_cflag |= CRTS_IFLOW;
+//		(void)tcsetattr(_uart_fd, TCSANOW, &uart_config);
+//
+//		/* setup output flow control */
+//		if (enable_flow_control(true)) {
+//			warnx("hardware flow control not supported");
+//		}
+//
+//	} else {
+//		_flow_control_enabled = false;
+//	}
+//
 	return _uart_fd;
 }
 
 int
 Mavlink::enable_flow_control(bool enabled)
 {
-	// We can't do this on USB - skip
-	if (_is_usb_uart) {
-		return OK;
-	}
-
-	struct termios uart_config;
-
-	int ret = tcgetattr(_uart_fd, &uart_config);
-
-	if (enabled) {
-		uart_config.c_cflag |= CRTSCTS;
-
-	} else {
-		uart_config.c_cflag &= ~CRTSCTS;
-	}
-
-	ret = tcsetattr(_uart_fd, TCSANOW, &uart_config);
-
-	if (!ret) {
-		_flow_control_enabled = enabled;
-	}
-
-	return ret;
+	return OK;
+//
+//	// We can't do this on USB - skip
+//	if (_is_usb_uart) {
+//		return OK;
+//	}
+//
+//	struct termios uart_config;
+//
+//	int ret = tcgetattr(_uart_fd, &uart_config);
+//
+//	if (enabled) {
+//		uart_config.c_cflag |= CRTSCTS;
+//
+//	} else {
+//		uart_config.c_cflag &= ~CRTSCTS;
+//	}
+//
+//	ret = tcsetattr(_uart_fd, TCSANOW, &uart_config);
+//
+//	if (!ret) {
+//		_flow_control_enabled = enabled;
+//	}
+//
+//	return ret;
 }
 
 int
@@ -1608,7 +1611,7 @@ Mavlink::task_main(int argc, char *argv[])
 	pthread_join(_receive_thread, NULL);
 
 	/* reset the UART flags to original state */
-	tcsetattr(_uart_fd, TCSANOW, &uart_config_original);
+	//tcsetattr(_uart_fd, TCSANOW, &uart_config_original);
 
 	/* close UART */
 	close(_uart_fd);

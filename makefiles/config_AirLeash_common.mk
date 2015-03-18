@@ -15,6 +15,8 @@ ROMFS_ROOT	 = $(PX4_BASE)/ROMFS/AirLeash
 #
 # Board support modules
 #
+MODULES		+= drivers/bluetooth21
+MODULES		+= drivers/bluetooth21/tests/bluetooth21_devtest
 MODULES		+= drivers/boards/AirLeash/$(CONFIG_BOARD_REVISION)
 MODULES		+= drivers/boards/AirLeash/kbd
 MODULES		+= drivers/calibration
@@ -30,6 +32,7 @@ MODULES		+= drivers/stm32/adc
 MODULES		+= drivers/stm32/tone_alarm
 MODULES		+= modules/airdog  # AIRD_LEASH_MODE parameter
 MODULES		+= modules/airdog/trajectory_calculator
+MODULES		+= modules/fs_test
 MODULES		+= modules/gpio_tool
 MODULES		+= modules/indication
 MODULES		+= modules/kbd_test
@@ -38,7 +41,6 @@ MODULES		+= modules/sensors
 MODULES		+= modules/sensors_probe
 MODULES		+= modules/sensors_switch
 MODULES		+= modules/spi_exchange
-MODULES		+= modules/fs_test
 #MODULES		+= drivers/airspeed
 #MODULES		+= drivers/blinkm
 #MODULES		+= drivers/bluetooth21

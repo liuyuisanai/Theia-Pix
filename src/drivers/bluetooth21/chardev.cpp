@@ -87,7 +87,7 @@ read(FAR struct file * filp, FAR char * buffer, size_t buflen)
 	if (r == 0) { r = -EAGAIN; }
 
 	dbg_dump("chardev read", mp.rx);
-	dbg("chardev read(%u) returns %i.\n", ch, r);
+	//dbg("chardev read(%u) returns %i.\n", ch, r);
 	return r;
 }
 
@@ -107,7 +107,7 @@ write(FAR struct file * filp, FAR const char * buffer, size_t buflen)
 	if (r == 0) { r = -EAGAIN; }
 
 	dbg_dump("chardev write", mp.xt);
-	dbg("chardev write(%u) returns %i.\n", ch, r);
+	//dbg("chardev write(%u) returns %i.\n", ch, r);
 	return r;
 }
 
@@ -139,7 +139,7 @@ poll(FAR struct file * filp, FAR struct pollfd * p_fd, bool setup_phase)
 	{
 		clear(mp.poll_waiters[ch]);
 	}
-	dbg("chardev poll %u returns %i.\n", ch, r);
+	//dbg("chardev poll %u returns %i.\n", ch, r);
 	return r;
 }
 

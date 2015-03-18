@@ -102,8 +102,11 @@ wait_service_packet(Device & dev, RESPONSE_EVENT_UNION & buf)
 		r = poll(&p, 1, READ_WAIT_POLL_ms);
 		if (r == 1)
 			r = read_packet(dev, &buf, sizeof buf);
-		else // errno is either set by poll() or is EAGAIN by read().
+		else if (r == 0)
+		{
 			r = -1;
+			errno = EAGAIN;
+		}
 	}
 	return r;
 }
@@ -123,7 +126,7 @@ wait_command_response(Device & dev, ServiceState & svc, event_id_t cmd, void * b
 		{
 			if (errno != EAGAIN)
 			{
-				perror("wait_command_response");
+				dbg_perror("wait_command_response");
 				return false;
 			}
 		}
@@ -160,7 +163,7 @@ wait_process_event(Device & dev, ServiceState & svc)
 	ssize_t r = wait_service_packet(dev, packet);
 	if (r < 0)
 	{
-		if (errno != EAGAIN) { perror("wait_command_response"); }
+		if (errno != EAGAIN) { dbg_perror("wait_process_event"); }
 	}
 	else
 	{
@@ -186,20 +189,24 @@ template <typename Device, typename PacketPOD, typename ResponcePOD>
 bool
 send_receive(
 	ServiceBlockingIO< Device > & self
-	, PacketPOD & p
+	, const PacketPOD & p
 	, ResponcePOD & r
 ) {
+	if (not write_command(self.dev, &p, sizeof p))
+	{
+		dbg_perror("send_receive / write_command");
+		return false;
+	}
+
 	event_id_t cmd = get_event_id(p);
-	auto & s = self;
-	return write_command(s.dev, &p, sizeof p)
-		and wait_command_response(s.dev, s.svc, cmd, &r, sizeof r);
+	return wait_command_response(self.dev, self.svc, cmd, &r, sizeof r);
 }
 
 template <typename Device, typename PacketPOD, typename ResponcePOD>
 bool
 send_receive_verbose(
 	ServiceBlockingIO< Device > & self
-	, PacketPOD & p
+	, const PacketPOD & p
 	, ResponcePOD & r
 ) {
 	event_id_t cmd = get_event_id(p);
