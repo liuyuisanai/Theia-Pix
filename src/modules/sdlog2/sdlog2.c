@@ -95,6 +95,7 @@
 #include <uORB/topics/servorail_status.h>
 #include <uORB/topics/debug_data.h>
 #include <uORB/topics/mavlink_receive_stats.h>
+#include <uORB/topics/target_gps_raw.h>
 
 #include <systemlib/systemlib.h>
 #include <systemlib/param/param.h>
@@ -179,6 +180,7 @@ PARAM_DEFINE_INT32(SDLOG_M_EXTRAJ, 0);
 PARAM_DEFINE_INT32(SDLOG_M_DEBUGD, 0);
 PARAM_DEFINE_INT32(SDLOG_M_MAVST, 0);
 PARAM_DEFINE_INT32(SDLOG_M_LOTRAJ, 0);
+PARAM_DEFINE_INT32(SDLOG_M_TRGGPS, 0);
 
 #define LOGBUFFER_WRITE_AND_COUNT(_msg) if (logbuffer_write(&lb, &log_msg, LOG_PACKET_SIZE(_msg))) { \
 		log_msgs_written++; \
@@ -1029,6 +1031,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 		struct trajectory_s local_traj;
         struct debug_data_s debug_data;
         struct mavlink_receive_stats_s mav_stats;
+        struct target_gps_raw_s target_gps_raw;
 	} buf;
 
 	memset(&buf, 0, sizeof(buf));
@@ -1080,6 +1083,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 			struct log_GNEX_s log_GNEX;
 			struct log_MVST_s log_MVST;
 			struct log_CMD_s log_CMD;
+			struct log_TGPS_s log_TGPS;
 		} body;
 	} log_msg = {
 		LOG_PACKET_HEADER_INIT(0)
@@ -1124,6 +1128,7 @@ int sdlog2_thread_main(int argc, char *argv[])
         int debug_data_sub;
         int mav_stats_sub;
         int local_trajectory_sub;
+        int target_gps_raw_sub;
 	} subs;
 
 	int sub_freq;
@@ -1172,6 +1177,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 
 	// Local reported trajectory for leashes
 	LOG_ORB_PARAM_SUBSCRIBE(subs.local_trajectory_sub, ORB_ID(trajectory), "SDLOG_M_LOTRAJ", sub_freq)
+	LOG_ORB_PARAM_SUBSCRIBE(subs.target_gps_raw_sub, ORB_ID(target_gps_raw), "SDLOG_M_TRGGPS", sub_freq)
 
 	thread_running = true;
 
@@ -1809,6 +1815,22 @@ int sdlog2_thread_main(int argc, char *argv[])
 			log_msg.body.log_TPOS.eph = buf.target_pos.eph;
 			log_msg.body.log_TPOS.epv = buf.target_pos.epv;
 			LOGBUFFER_WRITE_AND_COUNT(TPOS);
+		}
+
+		/* --- TARGET RAW GPS DATA --- */
+		if (copy_if_updated(ORB_ID(target_gps_raw), subs.target_gps_raw_sub, &buf.target_gps_raw)) {
+			log_msg.msg_type = LOG_TGPS_MSG;
+			log_msg.body.log_TGPS.fix_type = buf.target_gps_raw.fix_type;
+			log_msg.body.log_TGPS.gps_time = buf.target_gps_raw.timestamp_remote;
+			log_msg.body.log_TGPS.lat = buf.target_gps_raw.lat;
+			log_msg.body.log_TGPS.lon = buf.target_gps_raw.lon;
+			log_msg.body.log_TGPS.alt = buf.target_gps_raw.alt * 0.001f;
+			log_msg.body.log_TGPS.eph = buf.target_gps_raw.eph;
+			log_msg.body.log_TGPS.epv = buf.target_gps_raw.epv;
+			log_msg.body.log_TGPS.sats = buf.target_gps_raw.satellites_visible;
+			log_msg.body.log_TGPS.vel = buf.target_gps_raw.vel;
+			log_msg.body.log_TGPS.cog = buf.target_gps_raw.cog_rad;
+			LOGBUFFER_WRITE_AND_COUNT(TGPS);
 		}
 
 		/* --- EXTERNAL TRAJECTORY --- */

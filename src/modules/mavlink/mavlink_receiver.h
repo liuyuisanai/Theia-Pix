@@ -75,6 +75,7 @@
 #include <uORB/topics/vehicle_force_setpoint.h>
 #include <uORB/topics/airdog_status.h>
 #include <uORB/topics/external_trajectory.h>
+#include <uORB/topics/target_gps_raw.h>
 
 #include "mavlink_ftp.h"
 
@@ -134,6 +135,7 @@ private:
 	void handle_message_drone_heartbeat(mavlink_message_t *msg);
 	void handle_message_drone_status(mavlink_message_t *msg);
 	void handle_message_trajectory(mavlink_message_t *msg);
+	void handle_message_gps_raw_int(mavlink_message_t *msg);
 
 
 	void *receive_thread(void *arg);
@@ -176,6 +178,7 @@ private:
 	struct map_projection_reference_s _hil_local_proj_ref;
 	orb_advert_t _airdog_status_pub;
 	struct airdog_status_s _airdog_status;
+	orb_advert_t _target_gps_raw_pub;
 
 	/* do not allow copying this class */
 	MavlinkReceiver(const MavlinkReceiver&);

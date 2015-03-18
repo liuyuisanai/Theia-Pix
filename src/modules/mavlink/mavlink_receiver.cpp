@@ -129,7 +129,8 @@ MavlinkReceiver::MavlinkReceiver(Mavlink *parent) :
 	_hil_local_alt0(0.0f),
 	_hil_local_proj_ref{},
 	_airdog_status_pub(-1),
-	_airdog_status{}
+	_airdog_status{},
+	_target_gps_raw_pub(-1)
 {
 
 	// make sure the FTP server is started
@@ -209,6 +210,9 @@ MavlinkReceiver::handle_message(mavlink_message_t *msg)
 		handle_message_trajectory(msg);
 		break;
 
+	case MAVLINK_MSG_ID_GPS_RAW_INT:
+		handle_message_gps_raw_int(msg);
+		break;
 	default:
 		break;
 	}
@@ -913,6 +917,41 @@ MavlinkReceiver::handle_message_global_position_int(mavlink_message_t *msg)
 
 	} else {
 		orb_publish(ORB_ID(target_global_position), _target_pos_pub, &target_pos);
+	}
+}
+
+void
+MavlinkReceiver::handle_message_gps_raw_int(mavlink_message_t *msg)
+{
+	mavlink_gps_raw_int_t gps_raw_msg;
+	mavlink_msg_gps_raw_int_decode(msg, &gps_raw_msg);
+
+	uint64_t timestamp = hrt_absolute_time();
+
+	struct target_gps_raw_s target_gps;
+	memset(&target_gps, 0, sizeof(target_gps));
+
+	target_gps.timestamp_local = timestamp;
+	target_gps.timestamp_remote = gps_raw_msg.time_usec;
+
+	target_gps.lat = gps_raw_msg.lat;
+	target_gps.lon = gps_raw_msg.lon;
+	target_gps.alt = gps_raw_msg.alt;
+
+	target_gps.eph = (float)gps_raw_msg.eph * 1e-2f; // from cm to m
+	target_gps.epv = (float)gps_raw_msg.epv * 1e-2f; // from cm to m
+
+	target_gps.vel = (float)gps_raw_msg.vel * 1e-2f; // from cm/s to m/s
+	target_gps.cog_rad = _wrap_pi(gps_raw_msg.cog * M_DEG_TO_RAD_F * 1e-2f);
+
+	target_gps.fix_type = gps_raw_msg.fix_type;
+	target_gps.satellites_visible = gps_raw_msg.satellites_visible;
+
+	if (_target_gps_raw_pub < 0) {
+		_target_gps_raw_pub = orb_advertise(ORB_ID(target_gps_raw), &target_gps);
+
+	} else {
+		orb_publish(ORB_ID(target_gps_raw), _target_gps_raw_pub, &target_gps);
 	}
 }
 

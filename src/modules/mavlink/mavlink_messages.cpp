@@ -988,19 +988,6 @@ protected:
 		    msg.epv = cm_uint16_from_m_float(gps.epv);
 		    msg.hdg = _wrap_2pi(pos.yaw) * M_RAD_TO_DEG_F * 100.0f;
 
-//			// Pass trough GPS reports as GLOBAL_POSITION_INT messages
-//			msg.time_boot_ms = gps.timestamp_position / 1000;
-//			msg.lat = gps.lat;
-//			msg.lon = gps.lon;
-//			msg.alt = gps.alt;
-//			msg.relative_alt = (((float) gps.alt) / 1000.0f - home.alt) * 1000.0f;
-//			msg.vx = gps.vel_n_m_s * 100.0f;
-//			msg.vy = gps.vel_e_m_s * 100.0f;
-//			msg.vz = gps.vel_d_m_s * 100.0f;
-//			msg.eph = cm_uint16_from_m_float(gps.eph);
-//			msg.epv = cm_uint16_from_m_float(gps.epv);
-//			msg.hdg = _wrap_2pi(gps.cog_rad) * M_RAD_TO_DEG_F * 100.0f;
-
 			_mavlink->send_message(MAVLINK_MSG_ID_GLOBAL_POSITION_INT, &msg);
 		}
 	}

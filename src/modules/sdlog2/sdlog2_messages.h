@@ -500,6 +500,21 @@ struct log_CMD_s {
 	float param3;
 };
 
+/* --- Target raw GPS data --- */
+#define LOG_TGPS_MSG 72
+struct log_TGPS_s {
+	uint64_t gps_time;
+	uint8_t fix_type;
+	float eph;
+	float epv;
+	int32_t lat;
+	int32_t lon;
+	float alt;
+	float vel;
+	float cog;
+	uint8_t sats;
+};
+
 /********** SYSTEM MESSAGES, ID > 0x80 **********/
 
 /* --- TIME - TIME STAMP --- */
@@ -572,6 +587,7 @@ static const struct log_format_s log_formats[] = {
 	LOG_FORMAT(GNEX, "BLLfB",		"NavState,Lat,Lon,Alt,Type"),
 	LOG_FORMAT(MVST, "IIII", "TotalBytes,HrtCount,GposCount,TrajCount"),
 	LOG_FORMAT(CMD, "HBBfff", "Cmd,SrcSys,SrcComp,Par1,Par2,Par3"),
+	LOG_FORMAT(TGPS, "QBffLLfffB", "Time,Fix,EPH,EPV,Lat,Lon,Alt,Vel,COG,nSat"),
 
 	/* system-level messages, ID >= 0x80 */
 	/* FMT: don't write format of format message, it's useless */

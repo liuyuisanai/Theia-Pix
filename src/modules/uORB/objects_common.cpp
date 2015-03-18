@@ -272,3 +272,6 @@ ORB_DEFINE(camera_user_offsets, struct camera_user_offsets_s);
 
 #include "topics/mavlink_receive_stats.h"
 ORB_DEFINE(mavlink_receive_stats, struct mavlink_receive_stats_s);
+
+#include "topics/target_gps_raw.h"
+ORB_DEFINE(target_gps_raw, struct target_gps_raw_s);
