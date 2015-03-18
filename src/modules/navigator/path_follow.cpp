@@ -28,6 +28,8 @@ PathFollow::PathFollow(Navigator *navigator, const char *name):
 		_trajectory_distance(0.0f),
 		_reaching_for_traj_point(false),
 		_inited(false),
+        _drone_speed_d(0.0f),
+        _drone_is_going_backwards(false),
 		_desired_speed(0.0f),
 		_optimal_distance(0.0f),
         _fp_i(0.0f),
@@ -318,6 +320,23 @@ float PathFollow::calculate_desired_velocity() {
 
     double vel_new =_fp_i * fp_i_coif + _fp_p * fp_p_coif + _fp_d * fp_d_coif;
 
+    // Let's prevent drone going backwards.
+    if (!_drone_is_going_backwards && vel_new < 0.0 && _drone_speed_d > 0.0f) {
+        _drone_is_going_backwards = true;
+        //mavlink_log_info(_mavlink_fd, "d:%.3f",(double)_drone_is_going_backwards);
+    }
+
+    if (_drone_is_going_backwards && vel_new > 0.0){
+        _drone_is_going_backwards = false;
+    };
+
+    if (_drone_is_going_backwards) {
+
+        if (vel_new < -1.0)
+            vel_new = -1.0;
+
+    }
+
     dd_log.log(0,_fp_i);
     dd_log.log(1,_fp_p);
     dd_log.log(2,_fp_d);
@@ -327,7 +346,7 @@ float PathFollow::calculate_desired_velocity() {
     dd_log.log(6,dst_to_optimal);
 
     // mavlink_log_info(_mavlink_fd, "i:%.3f, p:%.3f d:%.3f", (double)fp_d_coif, (double)fp_p_coif, (double)fp_i_coif);
-    // mavlink_log_info(_mavlink_fd, "dst:%.3f, fp_i:%.3f fp_d:%.3f, ad:%.3f", (double)dst_to_optimal, (double)_fp_i, (double)_fp_d, (double)ad);
+    //mavlink_log_info(_mavlink_fd, "dst:%.3f, fp_i:%.3f fp_d:%.3f, ad:%.3f", (double)dst_to_optimal, (double)_fp_i, (double)_fp_d);
     // mavlink_log_info(_mavlink_fd, "ul:%.3f, ll:%.3f ir:%.3f dr:%.3f", (double)_parameters.pafol_vel_i_lower_limit, (double)_parameters.pafol_vel_i_upper_limit, 
     //        (double)_parameters.pafol_vel_i_add_inc_rate, (double)_parameters.pafol_vel_i_add_dec_rate);
     _calc_vel_pid_t_prev = t;
@@ -448,6 +467,10 @@ PathFollow::update_drone_pos(){
 
     if (_drone_global_pos->timestamp != _drone_local_pos.timestamp){
 
+
+        uint64_t last_timestamp  = _drone_local_pos.timestamp;		
+        float last_drone_speed = _drone_speed;
+
         _drone_local_pos.timestamp = _drone_global_pos->timestamp;
 
         _drone_local_pos.vx = _drone_global_pos->vel_n;
@@ -465,7 +488,18 @@ PathFollow::update_drone_pos(){
 
         _last_dpos_t = hrt_abstime();
 
+
         _drone_speed = sqrt ( _drone_local_pos.vx * _drone_local_pos.vx + _drone_local_pos.vy * _drone_local_pos.vy);
+
+		float dt = last_timestamp != 0 ? (_drone_local_pos.timestamp - last_timestamp) * 0.000001f : 0.0f;
+
+        if (dt > 1e-7f)
+            _drone_speed_d = (_drone_speed - last_drone_speed) / dt;
+        else 
+            _drone_speed_d = 0.0f;
+
+
+
 
     }
 }

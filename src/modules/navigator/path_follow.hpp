@@ -78,6 +78,9 @@ private:
     struct vehicle_local_position_s _target_local_pos;
 
     float _drone_speed;
+    float _drone_speed_d;
+    bool _drone_is_going_backwards;
+
     float _target_speed;
 
     // Speed we want to move with until distance changes
