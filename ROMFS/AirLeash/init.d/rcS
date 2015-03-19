@@ -112,6 +112,16 @@ else
 			mavlink start -d $MAVLINK_TTY -m target
 			usleep 1000
 			mavlink stream -r 0.1 -d $MAVLINK_TTY -s GPS_RAW_INT
+		else
+			if param compare AIRD_LEASH_MODE 3
+			then
+				#GPS test leash
+				mavlink start -d $MAVLINK_TTY -m custom
+				usleep 1000
+				mavlink stream -r 10 -d $MAVLINK_TTY -s GLOBAL_POSITION_INT
+				usleep 1000
+				mavlink stream -r 10 -d $MAVLINK_TTY -s GPS_RAW_INT
+			fi
 		fi
 	fi
 fi
