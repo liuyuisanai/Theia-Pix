@@ -5,17 +5,27 @@
 
 if [ -d /fs/microsd ]
 then
+
 	if ver hwcmp PX4FMU_V1
 	then
 		echo "Start sdlog2 at 50Hz"
-		sdlog2 start -r 50 -a -b 4 -t
+		set SDLOG_SWITCHES "-r 50 -a -b 4 -t"
 	else
 		echo "Start sdlog2 at 200Hz"
-		if param compare SDLOG_ON_BOOT 1
-		then
-			sdlog2 start -r 200 -e -b 22
-		else
-			sdlog2 start -r 200 -a -b 22 -t
-		fi
+		set SDLOG_SWITCHES "-r 200 -b 22 -t"
 	fi
+	if param compare SDLOG_ON_BOOT 1
+	then
+		set SDLOG_SWITCHES "${SDLOG_SWITCHES} -e"
+	else
+		set SDLOG_SWITCHES "${SDLOG_SWITCHES} -a"
+	fi
+	if param compare SDLOG_M_SAT -1
+	then
+		# Nothing to do here
+	else
+		set SDLOG_SWITCHES "${SDLOG_SWITCHES} -x"
+	fi
+
+	sdlog2 start $SDLOG_SWITCHES
 fi

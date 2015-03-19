@@ -313,7 +313,12 @@ then
 			echo "[init] Faking GPS"
 			gps start -f
 		else
-			gps start
+			if param compare SDLOG_M_SAT -1
+			then
+				gps start
+			else
+				gps start -s
+			fi
 		fi
 	fi
 
