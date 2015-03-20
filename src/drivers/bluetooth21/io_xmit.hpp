@@ -29,6 +29,9 @@ struct XtState
 	XtState() : round_robin(0), ready_mask(0xFF) {}
 };
 
+inline void
+dbg_dump(const char comment[], XtState & xt);
+
 inline bool
 is_channel_ready(const XtState & xt, channel_index_t i)
 {

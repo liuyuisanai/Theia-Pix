@@ -25,6 +25,9 @@ struct RxState
 	channel_buffer_type channel_buffer[8];
 };
 
+inline void
+dbg_dump(const char comment[], RxState & rx);
+
 template <typename Protocol, typename Device>
 poll_notify_mask_t
 process_serial_input(Protocol tag, Device & d, RxState & rx)
