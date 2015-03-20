@@ -14,13 +14,14 @@ WAIT_PERIOD_us = 100*1000 /*us*/;
 static void
 usage(const char name[])
 {
-	fprintf(stderr,
-		"Usage: %s start tty listen\n"
-		"       %s start tty one-connect address\n"
-		"       %s status\n"
-		"       %s stop\n"
+	fprintf(stderr, "Usage:\n"
+		"\t%s start tty listen\n"
+		"\t%s       tty one-connect address\n"
+		"\t%s       tty loopback-test\n"
+		"\t%s status\n"
+		"\t%s stop\n"
 		"\n"
-		, name, name, name, name
+		, name, name, name, name, name
 	);
 }
 

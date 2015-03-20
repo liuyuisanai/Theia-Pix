@@ -127,9 +127,27 @@ start(const char mode[], const char addr_no[])
 	if (running)
 		return;
 
-	if (streq(mode, "one-connect")) { daemon_mode = Mode::ONE_CONNECT; }
-	else if (streq(mode, "listen")) { daemon_mode = Mode::LISTEN; }
-	else { return; }
+	if (streq(mode, "one-connect"))
+		daemon_mode = Mode::ONE_CONNECT;
+	else if (streq(mode, "listen"))
+		daemon_mode = Mode::LISTEN;
+	else
+		daemon_mode = Mode::UNDEFINED;
+
+	if (daemon_mode == Mode::UNDEFINED)
+	{
+		if (streq(mode, "loopback-test"))
+			fprintf(stderr, "The '%s' mode doesn't use %s.\n"
+				, mode
+				, PROCESS_NAME
+			);
+		else
+			fprintf(stderr, "%s: Invaid mode: %s.\n"
+				, PROCESS_NAME
+				, mode
+			);
+		return;
+	}
 
 	if (daemon_mode == Mode::ONE_CONNECT)
 	{
