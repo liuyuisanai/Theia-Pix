@@ -731,32 +731,38 @@ Mavlink::set_hil_enabled(bool hil_enabled)
 unsigned
 Mavlink::get_free_tx_buf()
 {
-	/*
-	 * Check if the OS buffer is full and disable HW
-	 * flow control if it continues to be full
-	 */
-	int buf_free = 0;
-	(void) ioctl(_uart_fd, FIONWRITE, (unsigned long)&buf_free);
-
-	if (get_flow_control_enabled() && buf_free < TX_BUFFER_GAP) {
-		/* Disable hardware flow control:
-		 * if no successful write since a defined time
-		 * and if the last try was not the last successful write
-		 */
-		if (_last_write_try_time != 0 &&
-		    hrt_elapsed_time(&_last_write_success_time) > 500 * 1000UL &&
-		    _last_write_success_time != _last_write_try_time) {
-			warnx("DISABLING HARDWARE FLOW CONTROL");
-			enable_flow_control(false);
-		}
-	}
-
-	return buf_free;
+	// /*
+	//  * Check if the OS buffer is full and disable HW
+	//  * flow control if it continues to be full
+	//  */
+	// int buf_free = 0;
+	// (void) ioctl(_uart_fd, FIONWRITE, (unsigned long)&buf_free);
+	//
+	// if (get_flow_control_enabled() && buf_free < TX_BUFFER_GAP) {
+	// 	/* Disable hardware flow control:
+	// 	 * if no successful write since a defined time
+	// 	 * and if the last try was not the last successful write
+	// 	 */
+	// 	if (_last_write_try_time != 0 &&
+	// 	    hrt_elapsed_time(&_last_write_success_time) > 500 * 1000UL &&
+	// 	    _last_write_success_time != _last_write_try_time) {
+	// 		warnx("DISABLING HARDWARE FLOW CONTROL");
+	// 		enable_flow_control(false);
+	// 	}
+	// }
+	//
+	// return buf_free;
 }
 
 void
 Mavlink::send_message(const uint8_t msgid, const void *msg)
 {
+	fprintf(stderr, "send_message(%u): should transmit %i %i %i.\n"
+		, msgid
+		, should_transmit()
+		, _wait_to_transmit
+		, _received_messages);
+
 	/* If the wait until transmit flag is on, only transmit after we've received messages.
 	   Otherwise, transmit all the time. */
 	if (!should_transmit()) {
@@ -765,21 +771,21 @@ Mavlink::send_message(const uint8_t msgid, const void *msg)
 
 	pthread_mutex_lock(&_send_mutex);
 
-	int buf_free = get_free_tx_buf();
+	// int buf_free = get_free_tx_buf();
 
 	uint8_t payload_len = mavlink_message_lengths[msgid];
 	unsigned packet_len = payload_len + MAVLINK_NUM_NON_PAYLOAD_BYTES;
 
 	_last_write_try_time = hrt_absolute_time();
 
-	/* check if there is space in the buffer, let it overflow else */
-	if (buf_free < TX_BUFFER_GAP) {
-		/* no enough space in buffer to send */
-		count_txerr();
-		count_txerrbytes(packet_len);
-		pthread_mutex_unlock(&_send_mutex);
-		return;
-	}
+	// /* check if there is space in the buffer, let it overflow else */
+	// if (buf_free < TX_BUFFER_GAP) {
+	// 	/* no enough space in buffer to send */
+	// 	count_txerr();
+	// 	count_txerrbytes(packet_len);
+	// 	pthread_mutex_unlock(&_send_mutex);
+	// 	return;
+	// }
 
 	uint8_t buf[MAVLINK_MAX_PACKET_LEN];
 
@@ -806,6 +812,7 @@ Mavlink::send_message(const uint8_t msgid, const void *msg)
 
 	/* send message to UART */
 	ssize_t ret = write(_uart_fd, buf, packet_len);
+	perror("send_message/write");
 
 	if (ret != (int) packet_len) {
 		count_txerr();
@@ -830,20 +837,20 @@ Mavlink::resend_message(mavlink_message_t *msg)
 
 	pthread_mutex_lock(&_send_mutex);
 
-	int buf_free = get_free_tx_buf();
+	// int buf_free = get_free_tx_buf();
 
 	_last_write_try_time = hrt_absolute_time();
 
 	unsigned packet_len = msg->len + MAVLINK_NUM_NON_PAYLOAD_BYTES;
 
-	/* check if there is space in the buffer, let it overflow else */
-	if (buf_free < TX_BUFFER_GAP) {
-		/* no enough space in buffer to send */
-		count_txerr();
-		count_txerrbytes(packet_len);
-		pthread_mutex_unlock(&_send_mutex);
-		return;
-	}
+	// /* check if there is space in the buffer, let it overflow else */
+	// if (buf_free < TX_BUFFER_GAP) {
+	// 	/* no enough space in buffer to send */
+	// 	count_txerr();
+	// 	count_txerrbytes(packet_len);
+	// 	pthread_mutex_unlock(&_send_mutex);
+	// 	return;
+	// }
 
 	uint8_t buf[MAVLINK_MAX_PACKET_LEN];
 
@@ -856,6 +863,7 @@ Mavlink::resend_message(mavlink_message_t *msg)
 
 	/* send message to UART */
 	ssize_t ret = write(_uart_fd, buf, packet_len);
+	perror("resend_message/write");
 
 	if (ret != (int) packet_len) {
 		count_txerr();
