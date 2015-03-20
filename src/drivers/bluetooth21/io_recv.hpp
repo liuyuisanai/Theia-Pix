@@ -50,13 +50,13 @@ process_serial_input(Protocol tag, Device & d, RxState & rx)
 			cend(rx.device_buffer)
 		);
 
-		// TODO Drop bad prefix fragment.
-		// rx.device_buffer.erase(begin(rx.device_buffer), first);
-		// if (rx.device_buffer.empty())
-		// 	break;
+		erase_begin(
+			rx.device_buffer,
+			distance(cbegin(rx.device_buffer), first)
+		);
 
 		if (first == last)
-			/* there is no whole packet */
+			/* There is no whole packet. */
 			break;
 
 		channel_index_t ch = get_channel_number(tag, first, last);

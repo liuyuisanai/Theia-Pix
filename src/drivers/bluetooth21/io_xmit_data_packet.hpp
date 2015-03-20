@@ -73,7 +73,11 @@ transfer(channel_index_t ch, XtBuffer< CAPACITY > & out, It buf, size_t buf_size
 	const size_t s0 = buf_size;
 	while (buf_size > 0 and space_available(out) > 0)
 	{
-		buf_size -= transfer_leading_packet< Protocol >(ch, out, buf, buf_size);
+		size_t packet_size = transfer_leading_packet< Protocol >(
+			ch, out, buf, buf_size
+		);
+		if (packet_size == 0) { break; }
+		buf_size -= packet_size;
 	}
 	return s0 - buf_size;
 }

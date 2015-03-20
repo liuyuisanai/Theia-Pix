@@ -108,12 +108,13 @@ fill_device_buffer(Protocol tag, XtState & xt)
 	mark(poll_mask, 0, poll_ready);
 
 	// TODO optimize: check available space by minimal packet size.
-	if (xt.round_robin == 0 or space_available(xt.device_buffer) > 0)
+	if (space_available(xt.device_buffer) > 0)
 	{
 		auto & i = xt.round_robin;
 		auto rr = i;
 		do
 		{
+			// TODO replace by two loops.
 			if (i != 0)
 			{
 				poll_ready = transfer_data_channel(tag, xt, i);

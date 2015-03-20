@@ -17,7 +17,9 @@ template <typename Iterator>
 std::pair<Iterator, Iterator>
 find_next_packet(LairdProtocol, Iterator first, Iterator last)
 {
-	// TODO skip leading zeros, ones, twos.
+	// TODO Review: how to skip leading zeros, ones, twos.
+	while (first != last and *first <= 2)
+		++first;
 	size_t n_bytes = distance(first, last);
 	size_t packet_size = (n_bytes > 2 and *first <= n_bytes) ? *first : 0;
 	last = packet_size <= n_bytes ? next(first, packet_size) : first;
