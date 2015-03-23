@@ -9,16 +9,16 @@ then
 	if ver hwcmp PX4FMU_V1
 	then
 		echo "Start sdlog2 at 50Hz"
-		set SDLOG_SWITCHES "-r 50 -a -b 4 -t"
+		set SDLOG_SWITCHES "-r 50 -a -b 4"
 	else
 		echo "Start sdlog2 at 200Hz"
-		set SDLOG_SWITCHES "-r 200 -b 22 -t"
+		set SDLOG_SWITCHES "-r 200 -b 22"
 	fi
 	if param compare SDLOG_ON_BOOT 1
 	then
 		set SDLOG_SWITCHES "${SDLOG_SWITCHES} -e"
 	else
-		set SDLOG_SWITCHES "${SDLOG_SWITCHES} -a"
+		set SDLOG_SWITCHES "${SDLOG_SWITCHES} -t -a"
 	fi
 	if param compare SDLOG_M_SAT -1
 	then

@@ -25,10 +25,12 @@ fi
  sh /etc/init.d/rc.sensors
  usleep 1000000
 
-set SDLOG_SWITCHES "-r 200 -b 22 -t"
+set SDLOG_SWITCHES "-r 200 -b 22"
 if param compare SDLOG_ON_BOOT 1
 then
 	set SDLOG_SWITCHES "${SDLOG_SWITCHES} -e"
+else
+	set SDLOG_SWITCHES "${SDLOG_SWITCHES} -t"
 fi
 
  # Original gps with sat info, if sat info log is enabled
