@@ -91,7 +91,7 @@ bool get_calibration_parameters (mag_calibration_s *mag_calibration) {
 	return get_calibration_parameters(offset_params, scale_params, mag_calibration);
 }
 
-void print_calibration(calibration_values_s calibration, int mavlink_fd) {
+void print_calibration(const calibration_values_s &calibration, int mavlink_fd) {
 	printf("Offsets: X: % 9.6f, Y: % 9.6f, Z: % 9.6f.\nScales:  X: % 9.6f, Y: % 9.6f, Z: % 9.6f.\n",
 			(double) calibration.offsets(0), (double) calibration.offsets(1), (double) calibration.offsets(2),
 			(double) calibration.scales(0), (double) calibration.scales(1), (double) calibration.scales(2));

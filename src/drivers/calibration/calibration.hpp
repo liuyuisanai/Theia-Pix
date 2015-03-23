@@ -61,4 +61,4 @@ __EXPORT bool get_calibration_parameters (mag_calibration_s *mag_calibration);
  * Print calibration values from calibration argument to console
  * If mavlink_fd argument is nonzero, then sends mavlink_info message too
  */
-__EXPORT void print_calibration(calibration_values_s calibration, int mavlink_fd = 0);
+__EXPORT void print_calibration(const calibration_values_s &calibration, int mavlink_fd = 0);

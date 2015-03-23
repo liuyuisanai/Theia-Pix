@@ -240,6 +240,8 @@ int do_accel_calibration(int mavlink_fd)
 		}
 	}
 
+	print_calibration(accel_calibration, mavlink_fd);
+
 	if (res == OK) {
 		mavlink_log_info(mavlink_fd, CAL_DONE_MSG, sensor_name);
 
