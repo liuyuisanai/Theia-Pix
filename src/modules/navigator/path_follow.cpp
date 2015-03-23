@@ -1,4 +1,5 @@
 /**
+ *
  * @file path_follow.cpp
  *
  * Path follow navigator mode implementation 
@@ -153,6 +154,9 @@ void PathFollow::on_active() {
             }
         }
     }
+
+    if (euclidean_distance(_target_local_pos.x, _target_local_pos.y, _drone_local_pos.x, _drone_local_pos.y ) < _parameters.pafol_optimal_dist - 7.0f )
+        _traj_point_queue.do_empty();
 
     pos_sp_triplet->current.abs_velocity = calculate_desired_velocity();
     pos_sp_triplet->current.alt = _ref_alt - calculate_desired_z();
@@ -331,10 +335,8 @@ float PathFollow::calculate_desired_velocity() {
     };
 
     if (_drone_is_going_backwards) {
-
         if (vel_new < -1.0)
             vel_new = -1.0;
-
     }
 
     dd_log.log(0,_fp_i);
@@ -491,15 +493,12 @@ PathFollow::update_drone_pos(){
 
         _drone_speed = sqrt ( _drone_local_pos.vx * _drone_local_pos.vx + _drone_local_pos.vy * _drone_local_pos.vy);
 
-		float dt = last_timestamp != 0 ? (_drone_local_pos.timestamp - last_timestamp) * 0.000001f : 0.0f;
+		float dt = last_timestamp != 0 ? (_drone_local_pos.timestamp - last_timestamp) * 1e-6f : 0.0f;
 
         if (dt > 1e-7f)
             _drone_speed_d = (_drone_speed - last_drone_speed) / dt;
         else 
             _drone_speed_d = 0.0f;
-
-
-
 
     }
 }
