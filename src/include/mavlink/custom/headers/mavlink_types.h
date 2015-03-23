@@ -162,7 +162,19 @@ typedef enum {
     MAVLINK_COMM_0,
     MAVLINK_COMM_1,
     MAVLINK_COMM_2,
-    MAVLINK_COMM_3
+    MAVLINK_COMM_3,
+#if MAVLINK_COMM_NUM_BUFFERS > 4
+    MAVLINK_COMM_4,
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 5
+    MAVLINK_COMM_5,
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 6
+    MAVLINK_COMM_6,
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 7
+# error MAVLINK_COMM_NUM_BUFFERS is bounded by 7 for now.
+#endif
 } mavlink_channel_t;
 
 /*

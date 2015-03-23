@@ -180,46 +180,10 @@ Mavlink::Mavlink() :
 
 	_instance_id = Mavlink::instance_count();
 
-	/* set channel according to instance id */
-	switch (_instance_id) {
-	case 0:
-		_channel = MAVLINK_COMM_0;
-		break;
-
-	case 1:
-		_channel = MAVLINK_COMM_1;
-		break;
-
-	case 2:
-		_channel = MAVLINK_COMM_2;
-		break;
-
-	case 3:
-		_channel = MAVLINK_COMM_3;
-		break;
-#ifdef MAVLINK_COMM_4
-
-	case 4:
-		_channel = MAVLINK_COMM_4;
-		break;
-#endif
-#ifdef MAVLINK_COMM_5
-
-	case 5:
-		_channel = MAVLINK_COMM_5;
-		break;
-#endif
-#ifdef MAVLINK_COMM_6
-
-	case 6:
-		_channel = MAVLINK_COMM_6;
-		break;
-#endif
-
-	default:
+	if (_instance_id < MAVLINK_COMM_NUM_BUFFERS)
+		_channel = (mavlink_channel_t)_instance_id;
+	else
 		errx(1, "instance ID is out of range");
-		break;
-	}
 
 	_rstatus.type = TELEMETRY_STATUS_RADIO_TYPE_GENERIC;
 }
