@@ -90,6 +90,7 @@ daemon()
 	{
 		wait_process_event(service_io);
 		set_xt_ready_mask(mp, svc.xt_flow);
+		mp.flags.channels_connected_mask = svc.conn.channels_connected;
 		if (count_connections(svc.conn) > 0)
 		{
 			// TODO request rssi

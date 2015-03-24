@@ -100,7 +100,7 @@ transfer_data_channel(Protocol tag, XtState & xt, channel_index_t i)
 
 template <typename Protocol>
 inline poll_notify_mask_t
-fill_device_buffer(Protocol tag, XtState & xt)
+fill_device_buffer(Protocol tag, XtState & xt, channel_mask_t connected)
 {
 	poll_notify_mask_t poll_mask;
 
@@ -115,7 +115,7 @@ fill_device_buffer(Protocol tag, XtState & xt)
 		do
 		{
 			// TODO replace by two loops.
-			if (i != 0)
+			if (i != 0 and is_set(connected, i))
 			{
 				poll_ready = transfer_data_channel(tag, xt, i);
 				mark(poll_mask, i, poll_ready);
@@ -128,15 +128,13 @@ fill_device_buffer(Protocol tag, XtState & xt)
 	return poll_mask;
 }
 
-template <typename Protocol, typename Device>
-poll_notify_mask_t
-process_serial_output(Protocol tag, Device & d, XtState & xt)
+template <typename Device>
+void
+process_serial_output(Device & d, XtState & xt)
 {
-	poll_notify_mask_t poll_mask = fill_device_buffer(tag, xt);
 	ssize_t r = write(d, xt.device_buffer);
 	if (r < 0 and errno != EAGAIN)
 		perror("process_serial_output / write");
-	return poll_mask;
 }
 
 inline ssize_t

@@ -7,7 +7,7 @@ namespace BT
 
 struct ConnectionState
 {
-	channel_mask_t connected;
+	channel_mask_t channels_connected;
 	Address6 address[8];
 	/* address[0] is request address,
 	 *            therefore only one request possible at a time.
@@ -22,8 +22,8 @@ get_address(const ConnectionState & self, channel_index_t ch)
 inline bool
 allowed_connection_request(const ConnectionState & self)
 {
-	return (self.connected.value & 0xfe) != 0xfe
-		and not (self.connected.value & 1);
+	return (self.channels_connected.value & 0xfe) != 0xfe
+		and not (self.channels_connected.value & 1);
 }
 
 inline void
@@ -31,7 +31,7 @@ register_connection_request(
 	ConnectionState & self,
 	const Address6 & remote_peer
 ) {
-	mark(self.connected, 0, true);
+	mark(self.channels_connected, 0, true);
 	self.address[0] = remote_peer;
 }
 
@@ -40,14 +40,14 @@ register_requested_connection(
 	ConnectionState & self,
 	channel_index_t ch
 ) {
-	mark(self.connected, ch, true);
+	mark(self.channels_connected, ch, true);
 	self.address[ch] = self.address[0];
-	mark(self.connected, 0, false);
+	mark(self.channels_connected, 0, false);
 }
 
 inline void
 forget_connection_request(ConnectionState & self)
-{ mark(self.connected, 0, false); }
+{ mark(self.channels_connected, 0, false); }
 
 inline void
 register_incoming_connection(
@@ -55,7 +55,7 @@ register_incoming_connection(
 	channel_index_t ch,
 	const uint8_t (&bdAddr)[6]
 ) {
-	mark(self.connected, ch, true);
+	mark(self.channels_connected, ch, true);
 	self.address[ch] = bdAddr;
 }
 
@@ -64,7 +64,7 @@ register_disconnect(
 	ConnectionState & self,
 	channel_index_t ch
 ) {
-	mark(self.connected, ch, false);
+	mark(self.channels_connected, ch, false);
 	self.address[ch] = Address6();
 }
 
@@ -82,11 +82,11 @@ bitsum(uint8_t x)
 
 inline uint8_t
 count_connections(const ConnectionState & self)
-{ return bitsum(self.connected.value & 0xfe); }
+{ return bitsum(self.channels_connected.value & 0xfe); }
 
 inline uint8_t
 count_requests(const ConnectionState & self)
-{ return self.connected.value & 1; }
+{ return self.channels_connected.value & 1; }
 
 }
 // end of namespace BT

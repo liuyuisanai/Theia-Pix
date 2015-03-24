@@ -18,6 +18,7 @@ struct MultiPlexer
 	{
 		// TODO atomic_channel_mask_t and remove mutex flags.
 		channel_mask_t channels_opened_mask;
+		channel_mask_t channels_connected_mask;
 	} flags;
 
 	RxState rx;

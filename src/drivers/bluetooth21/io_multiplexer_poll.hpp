@@ -17,7 +17,11 @@ perform_poll_io(Device & d, MultiPlexer & mp, int poll_timeout_ms)
 	if (empty(mp.xt.device_buffer))
 	{
 		lock_guard guard(mp.mutex_xt);
-		writeable = fill_device_buffer(mp.protocol_tag, mp.xt);
+		writeable = fill_device_buffer(
+			mp.protocol_tag,
+			mp.xt,
+			mp.flags.channels_connected_mask
+		);
 	}
 
 	pollfd p;
@@ -49,7 +53,12 @@ perform_poll_io(Device & d, MultiPlexer & mp, int poll_timeout_ms)
 			// TODO remove second fill_device_buffer()
 			// TODO let fill_device_buffer() always set the lock
 			//      by calling fill_device_buffer(mp).
-			writeable |= process_serial_output(mp.protocol_tag, d, mp.xt);
+			writeable |= fill_device_buffer(
+				mp.protocol_tag,
+				mp.xt,
+				mp.flags.channels_connected_mask
+			);
+			process_serial_output(d, mp.xt);
 			//dbg_dump("perform_poll_io OUT", mp.xt);
 		}
 	}
