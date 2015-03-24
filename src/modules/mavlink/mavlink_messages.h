@@ -56,6 +56,7 @@ public:
 	~StreamListItem() {};
 };
 
-extern StreamListItem *streams_list[];
+extern StreamListItem * const streams_list[];
+extern unsigned const streams_list_len;
 
 #endif /* MAVLINK_MESSAGES_H_ */

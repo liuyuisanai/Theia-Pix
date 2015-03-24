@@ -47,6 +47,7 @@
 #include <systemlib/perf_counter.h>
 #include <pthread.h>
 #include <mavlink/mavlink_log.h>
+#include <termios.h>
 
 #include <uORB/uORB.h>
 #include <uORB/topics/mission.h>
@@ -369,7 +370,7 @@ private:
 
 	void			mavlink_update_system();
 
-	int mavlink_open_uart(int baudrate, const char *uart_name, struct termios *uart_config_original, bool *is_usb);
+	static int mavlink_open_uart(int baudrate, const char *uart_name, termios & uart_config_original, bool & is_usb);
 
 	/**
 	 * Get the free space in the transmit buffer

@@ -514,123 +514,113 @@ int Mavlink::get_component_id()
 	return mavlink_system.compid;
 }
 
-int Mavlink::mavlink_open_uart(int baud, const char *uart_name, struct termios *uart_config_original, bool *is_usb)
+int Mavlink::mavlink_open_uart(int baud, const char *uart_name, termios & uart_config_original, bool & is_usb)
 {
 	/* process baud rate */
-//	int speed;
-//
-//	switch (baud) {
-//	case 0:      speed = B0;      break;
-//
-//	case 50:     speed = B50;     break;
-//
-//	case 75:     speed = B75;     break;
-//
-//	case 110:    speed = B110;    break;
-//
-//	case 134:    speed = B134;    break;
-//
-//	case 150:    speed = B150;    break;
-//
-//	case 200:    speed = B200;    break;
-//
-//	case 300:    speed = B300;    break;
-//
-//	case 600:    speed = B600;    break;
-//
-//	case 1200:   speed = B1200;   break;
-//
-//	case 1800:   speed = B1800;   break;
-//
-//	case 2400:   speed = B2400;   break;
-//
-//	case 4800:   speed = B4800;   break;
-//
-//	case 9600:   speed = B9600;   break;
-//
-//	case 19200:  speed = B19200;  break;
-//
-//	case 38400:  speed = B38400;  break;
-//
-//	case 57600:  speed = B57600;  break;
-//
-//	case 115200: speed = B115200; break;
-//
-//	case 230400: speed = B230400; break;
-//
-//	case 460800: speed = B460800; break;
-//
-//	case 921600: speed = B921600; break;
-//
-//	default:
-//		warnx("ERROR: Unsupported baudrate: %d\n\tsupported examples:\n\t9600, 19200, 38400, 57600\t\n115200\n230400\n460800\n921600\n",
-//		      baud);
-//		return -EINVAL;
-//	}
+	int speed;
+
+	switch (baud) {
+	case 0:      speed = B0;      break;
+
+	case 50:     speed = B50;     break;
+
+	case 75:     speed = B75;     break;
+
+	case 110:    speed = B110;    break;
+
+	case 134:    speed = B134;    break;
+
+	case 150:    speed = B150;    break;
+
+	case 200:    speed = B200;    break;
+
+	case 300:    speed = B300;    break;
+
+	case 600:    speed = B600;    break;
+
+	case 1200:   speed = B1200;   break;
+
+	case 1800:   speed = B1800;   break;
+
+	case 2400:   speed = B2400;   break;
+
+	case 4800:   speed = B4800;   break;
+
+	case 9600:   speed = B9600;   break;
+
+	case 19200:  speed = B19200;  break;
+
+	case 38400:  speed = B38400;  break;
+
+	case 57600:  speed = B57600;  break;
+
+	case 115200: speed = B115200; break;
+
+	case 230400: speed = B230400; break;
+
+	case 460800: speed = B460800; break;
+
+	case 921600: speed = B921600; break;
+
+	default:
+		warnx("ERROR: Unsupported baudrate: %d\n\tsupported examples:\n\t9600, 19200, 38400, 57600\t\n115200\n230400\n460800\n921600\n",
+		      baud);
+		return -EINVAL;
+	}
 
 	/* open uart */
-	_uart_fd = open(uart_name, O_RDWR | O_NOCTTY);
+	int _uart_fd = open(uart_name, O_RDWR | O_NOCTTY);
 
 	if (_uart_fd < 0) {
 		return _uart_fd;
 	}
 
-	*is_usb = true;
-//
-//	/* Try to set baud rate */
-//	struct termios uart_config;
-//	int termios_state;
-//	*is_usb = false;
-//
-//	/* Back up the original uart configuration to restore it after exit */
-//	if ((termios_state = tcgetattr(_uart_fd, uart_config_original)) < 0) {
-//		warnx("ERR GET CONF %s: %d\n", uart_name, termios_state);
-//		close(_uart_fd);
-//		return -1;
-//	}
-//
-//	/* Fill the struct for the new configuration */
-//	tcgetattr(_uart_fd, &uart_config);
-//
-//	/* Clear ONLCR flag (which appends a CR for every LF) */
-//	uart_config.c_oflag &= ~ONLCR;
-//
-//	/* USB serial is indicated by /dev/ttyACM0*/
-//	if (strcmp(uart_name, "/dev/ttyACM0") != OK && strcmp(uart_name, "/dev/ttyACM1") != OK) {
-//
-//		/* Set baud rate */
-//		if (cfsetispeed(&uart_config, speed) < 0 || cfsetospeed(&uart_config, speed) < 0) {
-//			warnx("ERR SET BAUD %s: %d\n", uart_name, termios_state);
-//			close(_uart_fd);
-//			return -1;
-//		}
-//
-//	}
-//
-//	if ((termios_state = tcsetattr(_uart_fd, TCSANOW, &uart_config)) < 0) {
-//		warnx("ERR SET CONF %s\n", uart_name);
-//		close(_uart_fd);
-//		return -1;
-//	}
-//
-//	if (!_is_usb_uart) {
-//		/*
-//		 * Setup hardware flow control. If the port has no RTS pin this call will fail,
-//		 * which is not an issue, but requires a separate call so we can fail silently.
-//		 */
-//		(void)tcgetattr(_uart_fd, &uart_config);
-//		uart_config.c_cflag |= CRTS_IFLOW;
-//		(void)tcsetattr(_uart_fd, TCSANOW, &uart_config);
-//
-//		/* setup output flow control */
-//		if (enable_flow_control(true)) {
-//			warnx("hardware flow control not supported");
-//		}
-//
-//	} else {
-//		_flow_control_enabled = false;
-//	}
-//
+	is_usb = !strstr(uart_name, "/dev/ttyS");
+	if (strstr(uart_name, "/dev/bt"))
+		return _uart_fd;
+
+	/* Try to set baud rate */
+	struct termios uart_config;
+	int termios_state;
+
+	/* Back up the original uart configuration to restore it after exit */
+	if ((termios_state = tcgetattr(_uart_fd, &uart_config_original)) < 0) {
+		warnx("ERR GET CONF %s: %d\n", uart_name, termios_state);
+		close(_uart_fd);
+		return -1;
+	}
+
+	/* Fill the struct for the new configuration */
+	tcgetattr(_uart_fd, &uart_config);
+
+	/* Clear ONLCR flag (which appends a CR for every LF) */
+	uart_config.c_oflag &= ~ONLCR;
+
+	if ((termios_state = tcsetattr(_uart_fd, TCSANOW, &uart_config)) < 0) {
+		warnx("ERR SET CONF %s\n", uart_name);
+		close(_uart_fd);
+		return -1;
+	}
+
+	if (is_usb)
+		return _uart_fd;
+
+	/* Set baud rate */
+	if (cfsetispeed(&uart_config, speed) < 0 || cfsetospeed(&uart_config, speed) < 0) {
+		warnx("ERR SET BAUD %s: %d\n", uart_name, termios_state);
+		close(_uart_fd);
+		return -1;
+	}
+
+	/*
+	 * Setup hardware flow control. If the port has no RTS pin this call will fail,
+	 * which is not an issue, but requires a separate call so we can fail silently.
+	 */
+	(void)tcgetattr(_uart_fd, &uart_config);
+	uart_config.c_cflag |= CRTS_IFLOW;
+	(void)tcsetattr(_uart_fd, TCSANOW, &uart_config);
+
+
 	return _uart_fd;
 }
 
@@ -638,30 +628,31 @@ int
 Mavlink::enable_flow_control(bool enabled)
 {
 	return OK;
-//
-//	// We can't do this on USB - skip
-//	if (_is_usb_uart) {
-//		return OK;
-//	}
-//
-//	struct termios uart_config;
-//
-//	int ret = tcgetattr(_uart_fd, &uart_config);
-//
-//	if (enabled) {
-//		uart_config.c_cflag |= CRTSCTS;
-//
-//	} else {
-//		uart_config.c_cflag &= ~CRTSCTS;
-//	}
-//
-//	ret = tcsetattr(_uart_fd, TCSANOW, &uart_config);
-//
-//	if (!ret) {
-//		_flow_control_enabled = enabled;
-//	}
-//
-//	return ret;
+
+	// We can't do this on USB - skip
+	if (_is_usb_uart) {
+		_flow_control_enabled = false;
+		return OK;
+	}
+
+	struct termios uart_config;
+
+	int ret = tcgetattr(_uart_fd, &uart_config);
+
+	if (enabled) {
+		uart_config.c_cflag |= CRTSCTS;
+
+	} else {
+		uart_config.c_cflag &= ~CRTSCTS;
+	}
+
+	ret = tcsetattr(_uart_fd, TCSANOW, &uart_config);
+
+	if (!ret) {
+		_flow_control_enabled = enabled;
+	}
+
+	return ret;
 }
 
 int
@@ -695,38 +686,32 @@ Mavlink::set_hil_enabled(bool hil_enabled)
 unsigned
 Mavlink::get_free_tx_buf()
 {
-	// /*
-	//  * Check if the OS buffer is full and disable HW
-	//  * flow control if it continues to be full
-	//  */
-	// int buf_free = 0;
-	// (void) ioctl(_uart_fd, FIONWRITE, (unsigned long)&buf_free);
-	//
-	// if (get_flow_control_enabled() && buf_free < TX_BUFFER_GAP) {
-	// 	/* Disable hardware flow control:
-	// 	 * if no successful write since a defined time
-	// 	 * and if the last try was not the last successful write
-	// 	 */
-	// 	if (_last_write_try_time != 0 &&
-	// 	    hrt_elapsed_time(&_last_write_success_time) > 500 * 1000UL &&
-	// 	    _last_write_success_time != _last_write_try_time) {
-	// 		warnx("DISABLING HARDWARE FLOW CONTROL");
-	// 		enable_flow_control(false);
-	// 	}
-	// }
-	//
-	// return buf_free;
+	/*
+	 * Check if the OS buffer is full and disable HW
+	 * flow control if it continues to be full
+	 */
+	int buf_free = 0;
+	(void) ioctl(_uart_fd, FIONWRITE, (unsigned long)&buf_free);
+
+	if (get_flow_control_enabled() && buf_free < TX_BUFFER_GAP) {
+		/* Disable hardware flow control:
+		 * if no successful write since a defined time
+		 * and if the last try was not the last successful write
+		 */
+		if (_last_write_try_time != 0 &&
+		    hrt_elapsed_time(&_last_write_success_time) > 500 * 1000UL &&
+		    _last_write_success_time != _last_write_try_time) {
+			warnx("DISABLING HARDWARE FLOW CONTROL");
+			enable_flow_control(false);
+		}
+	}
+
+	return buf_free;
 }
 
 void
 Mavlink::send_message(const uint8_t msgid, const void *msg)
 {
-	fprintf(stderr, "send_message(%u): should transmit %i %i %i.\n"
-		, msgid
-		, should_transmit()
-		, _wait_to_transmit
-		, _received_messages);
-
 	/* If the wait until transmit flag is on, only transmit after we've received messages.
 	   Otherwise, transmit all the time. */
 	if (!should_transmit()) {
@@ -735,21 +720,19 @@ Mavlink::send_message(const uint8_t msgid, const void *msg)
 
 	pthread_mutex_lock(&_send_mutex);
 
-	// int buf_free = get_free_tx_buf();
-
 	uint8_t payload_len = mavlink_message_lengths[msgid];
 	unsigned packet_len = payload_len + MAVLINK_NUM_NON_PAYLOAD_BYTES;
 
 	_last_write_try_time = hrt_absolute_time();
 
-	// /* check if there is space in the buffer, let it overflow else */
-	// if (buf_free < TX_BUFFER_GAP) {
-	// 	/* no enough space in buffer to send */
-	// 	count_txerr();
-	// 	count_txerrbytes(packet_len);
-	// 	pthread_mutex_unlock(&_send_mutex);
-	// 	return;
-	// }
+	/* check if there is space in the buffer, let it overflow else */
+	if (!_is_usb_uart && get_free_tx_buf() < TX_BUFFER_GAP) {
+		/* no enough space in buffer to send */
+		count_txerr();
+		count_txerrbytes(packet_len);
+		pthread_mutex_unlock(&_send_mutex);
+		return;
+	}
 
 	uint8_t buf[MAVLINK_MAX_PACKET_LEN];
 
@@ -776,7 +759,6 @@ Mavlink::send_message(const uint8_t msgid, const void *msg)
 
 	/* send message to UART */
 	ssize_t ret = write(_uart_fd, buf, packet_len);
-	perror("send_message/write");
 
 	if (ret != (int) packet_len) {
 		count_txerr();
@@ -801,20 +783,18 @@ Mavlink::resend_message(mavlink_message_t *msg)
 
 	pthread_mutex_lock(&_send_mutex);
 
-	// int buf_free = get_free_tx_buf();
-
 	_last_write_try_time = hrt_absolute_time();
 
 	unsigned packet_len = msg->len + MAVLINK_NUM_NON_PAYLOAD_BYTES;
 
-	// /* check if there is space in the buffer, let it overflow else */
-	// if (buf_free < TX_BUFFER_GAP) {
-	// 	/* no enough space in buffer to send */
-	// 	count_txerr();
-	// 	count_txerrbytes(packet_len);
-	// 	pthread_mutex_unlock(&_send_mutex);
-	// 	return;
-	// }
+	/* check if there is space in the buffer, let it overflow else */
+	if (!_is_usb_uart && get_free_tx_buf() < TX_BUFFER_GAP) {
+		/* no enough space in buffer to send */
+		count_txerr();
+		count_txerrbytes(packet_len);
+		pthread_mutex_unlock(&_send_mutex);
+		return;
+	}
 
 	uint8_t buf[MAVLINK_MAX_PACKET_LEN];
 
@@ -827,7 +807,6 @@ Mavlink::resend_message(mavlink_message_t *msg)
 
 	/* send message to UART */
 	ssize_t ret = write(_uart_fd, buf, packet_len);
-	perror("resend_message/write");
 
 	if (ret != (int) packet_len) {
 		count_txerr();
@@ -899,7 +878,7 @@ MavlinkOrbSubscription *Mavlink::add_orb_subscription(const orb_id_t topic)
 	/* add new subscription */
 	MavlinkOrbSubscription *sub_new = new MavlinkOrbSubscription(topic);
 
-	LL_APPEND(_subscriptions, sub_new);
+	LL_PREPEND(_subscriptions, sub_new);
 
 	return sub_new;
 }
@@ -941,13 +920,13 @@ Mavlink::configure_stream(const char *stream_name, const float rate)
 	}
 
 	/* search for stream with specified name in supported streams list */
-	for (unsigned int i = 0; streams_list[i] != nullptr; i++) {
+	for (unsigned int i = 0; i < streams_list_len; i++) {
 
 		if (strcmp(stream_name, streams_list[i]->get_name()) == 0) {
 			/* create new instance */
 			stream = streams_list[i]->new_instance(this);
 			stream->set_interval(interval);
-			LL_APPEND(_streams, stream);
+			LL_PREPEND(_streams, stream);
 
 			return OK;
 		}
@@ -1311,7 +1290,12 @@ Mavlink::task_main(int argc, char *argv[])
 	struct termios uart_config_original;
 
 	/* default values for arguments */
-	_uart_fd = mavlink_open_uart(_baudrate, _device_name, &uart_config_original, &_is_usb_uart);
+	_uart_fd = mavlink_open_uart(_baudrate, _device_name, uart_config_original, _is_usb_uart);
+	/* setup output flow control */
+	if (enable_flow_control(!_is_usb_uart)) {
+		warnx("hardware flow control not supported");
+	}
+
 
 	if (_uart_fd < 0) {
 		warn("could not open %s", _device_name);
@@ -1437,7 +1421,7 @@ Mavlink::task_main(int argc, char *argv[])
 	_main_loop_delay = MAIN_LOOP_DELAY * 1000 / _datarate;
 
 	/* now the instance is fully initialized and we can bump the instance count */
-	LL_APPEND(_mavlink_instances, this);
+	LL_PREPEND(_mavlink_instances, this);
 
 	while (!_task_should_exit) {
 		/* main loop */

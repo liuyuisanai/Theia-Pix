@@ -2175,7 +2175,7 @@ protected:
 };
 
 
-StreamListItem *streams_list[] = {
+StreamListItem * const streams_list[] = {
 	new StreamListItem(&MavlinkStreamHeartbeat::new_instance, &MavlinkStreamHeartbeat::get_name_static),
 	new StreamListItem(&MavlinkStreamStatustext::new_instance, &MavlinkStreamStatustext::get_name_static),
 	new StreamListItem(&MavlinkStreamCommandLong::new_instance, &MavlinkStreamCommandLong::get_name_static),
@@ -2205,5 +2205,8 @@ StreamListItem *streams_list[] = {
 	new StreamListItem(&MavlinkStreamCameraCapture::new_instance, &MavlinkStreamCameraCapture::get_name_static),
 	new StreamListItem(&MavlinkStreamDistanceSensor::new_instance, &MavlinkStreamDistanceSensor::get_name_static),
 	new StreamListItem(&MavlinkStreamTrajectory::new_instance, &MavlinkStreamTrajectory::get_name_static),
-	nullptr
 };
+
+unsigned const streams_list_len = sizeof streams_list / sizeof *streams_list;
+
+static_assert(streams_list_len <= 50, "streams_list_len <= 50");
