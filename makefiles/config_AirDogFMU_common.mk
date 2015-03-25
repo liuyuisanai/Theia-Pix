@@ -63,10 +63,6 @@ MODULES 	+= drivers/pwm_input
 #MODULES		+= drivers/sf0x
 #MODULES		+= modules/SiKUploader
 
-# Needs to be burned to the ground and re-written; for now,
-# just don't build it.
-#MODULES		+= drivers/mkblctrl
-
 #
 # System commands
 #
