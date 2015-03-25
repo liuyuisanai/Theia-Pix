@@ -8,11 +8,21 @@ namespace BT
 struct ConnectionState
 {
 	channel_mask_t channels_connected;
-	Address6 address[8];
-	/* address[0] is request address,
+
+	/**
+	 * Addresses for established connections by channel.
+	 *
+	 * address[0] is request address,
 	 *            therefore only one request possible at a time.
 	 * address[1-7] channel addresses if it is marked connected.
 	 */
+	Address6 address[8];
+
+	/** Flag whether a new connection established or an existing one closed.
+	 */
+	bool changed;
+
+	ConnectionState() : changed(false) {}
 };
 
 inline const Address6 &
@@ -31,6 +41,7 @@ register_connection_request(
 	ConnectionState & self,
 	const Address6 & remote_peer
 ) {
+	self.changed = true;
 	mark(self.channels_connected, 0, true);
 	self.address[0] = remote_peer;
 }
@@ -40,6 +51,7 @@ register_requested_connection(
 	ConnectionState & self,
 	channel_index_t ch
 ) {
+	self.changed = true;
 	mark(self.channels_connected, ch, true);
 	self.address[ch] = self.address[0];
 	mark(self.channels_connected, 0, false);
@@ -47,7 +59,10 @@ register_requested_connection(
 
 inline void
 forget_connection_request(ConnectionState & self)
-{ mark(self.channels_connected, 0, false); }
+{
+	/* Established connections have not changed. */
+	mark(self.channels_connected, 0, false);
+}
 
 inline void
 register_incoming_connection(
@@ -55,6 +70,7 @@ register_incoming_connection(
 	channel_index_t ch,
 	const uint8_t (&bdAddr)[6]
 ) {
+	self.changed = true;
 	mark(self.channels_connected, ch, true);
 	self.address[ch] = bdAddr;
 }
@@ -64,6 +80,7 @@ register_disconnect(
 	ConnectionState & self,
 	channel_index_t ch
 ) {
+	self.changed = true;
 	mark(self.channels_connected, ch, false);
 	self.address[ch] = Address6();
 }

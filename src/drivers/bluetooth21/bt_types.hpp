@@ -7,34 +7,46 @@
 namespace BT
 {
 
-using channel_index_t = uint8_t;
-struct channel_mask_t;
-
 using Address6 = PODArray<uint8_t, 6>;
 #define Address6_FMT "%02x:%02x:%02x:%02x:%02x:%02x"
 #define Address6_FMT_ITEMS(x) (x)[0], (x)[1], (x)[2], (x)[3], (x)[4], (x)[5]
 
 using LinkKey16 = PODArray<uint8_t, 16>;
 
-struct channel_mask_t
+using channel_index_t = uint8_t; // 0..7
+using connection_index_t = uint8_t;  // 1..7
+using device_index_t = uint8_t;  // 0..7
+constexpr connection_index_t INVALID_DEV_INDEX = 255;
+
+struct bitmask_t
 {
 	uint8_t value;
 
-	channel_mask_t(uint8_t x=0) : value(x) {}
-	channel_mask_t(const channel_mask_t &) = default;
+	bitmask_t(uint8_t x=0) : value(x) {}
+	bitmask_t(const bitmask_t &) = default;
 
-	channel_mask_t &
-	operator = (const channel_mask_t &) = default;
+	bitmask_t &
+	operator = (const bitmask_t &) = default;
 
-	channel_mask_t &
-	operator |= (const channel_mask_t & other)
+	inline bitmask_t &
+	operator |= (const bitmask_t & other)
 	{
 		value |= other.value;
 		return *this;
 	}
+
+	friend inline bool
+	operator == (const bitmask_t & a, const bitmask_t & b)
+	{ return a.value == b.value; }
+
+	friend inline bool
+	operator != (const bitmask_t & a, const bitmask_t & b)
+	{ return not (a == b); }
 };
 
-using poll_notify_mask_t = channel_mask_t;
+using channel_mask_t = bitmask_t;
+using device_index_mask_t = bitmask_t;
+using poll_notify_mask_t = bitmask_t;
 
 
 inline bool

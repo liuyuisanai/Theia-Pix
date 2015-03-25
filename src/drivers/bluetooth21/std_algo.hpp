@@ -1,5 +1,7 @@
 #pragma once
 
+#include "std_util.hpp"
+
 namespace BT
 {
 
@@ -49,7 +51,7 @@ template<class OutputIt, class Size, class T>
 OutputIt
 fill_n(OutputIt first, Size count, const T& value)
 {
-	for (Size i = 0; i < count; i++)
+	for (Size i = 0; i < count; ++i)
 	{
 		*first = value;
 		++first;
@@ -57,8 +59,22 @@ fill_n(OutputIt first, Size count, const T& value)
 	return first;
 }
 
+template<class ForwardIt, class Size, class T>
+std::pair<ForwardIt, Size>
+find_n2(ForwardIt first, Size count, const T& value)
+{
+	Size i = 0;
+       	while (i < count and *first != value)
+	{
+		++i;
+		++first;
+	}
+	return std::make_pair(first, i);
+}
+
 template<class InputIt1, class Size1, class InputIt2>
-bool equal_n(InputIt1 first1, Size1 n, InputIt2 first2)
+bool
+equal_n(InputIt1 first1, Size1 n, InputIt2 first2)
 {
     while (n != 0) {
         if (not (*first1 == *first2)) { return false; }

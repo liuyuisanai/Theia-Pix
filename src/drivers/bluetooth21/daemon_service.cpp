@@ -7,6 +7,7 @@
 #include <unistd.h>
 
 #include "daemon.hpp"
+#include "device_connection_map.hpp"
 #include "factory_addresses.hpp"
 #include "io_multiplexer_flags.hpp"
 #include "io_multiplexer_global.hpp"
@@ -90,7 +91,13 @@ daemon()
 	{
 		wait_process_event(service_io);
 		set_xt_ready_mask(mp, svc.xt_flow);
-		mp.flags.channels_connected_mask = svc.conn.channels_connected;
+
+		if (svc.conn.changed)
+		{
+			update_connections(mp, svc.conn.channels_connected);
+			svc.conn.changed = false;
+		}
+
 		if (count_connections(svc.conn) > 0)
 		{
 			// TODO request rssi

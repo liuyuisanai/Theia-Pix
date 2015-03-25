@@ -12,11 +12,11 @@ namespace BT
 /* Flag operations */
 
 inline bool
-opened_acquare(MultiPlexer & mp, channel_index_t ch)
+opened_acquare(MultiPlexer & mp, device_index_t di)
 {
 	lock_guard guard(mp.mutex_flags);
 
-	uint8_t channel_bit = 1 << ch;
+	uint8_t channel_bit = 1 << di;
 	uint8_t old_mask = mp.flags.channels_opened_mask.value;
 	uint8_t new_mask = old_mask | channel_bit;
 	mp.flags.channels_opened_mask.value = new_mask;
@@ -25,11 +25,11 @@ opened_acquare(MultiPlexer & mp, channel_index_t ch)
 }
 
 inline bool
-opened_release(MultiPlexer & mp, channel_index_t ch)
+opened_release(MultiPlexer & mp, device_index_t di)
 {
 	lock_guard guard(mp.mutex_flags);
 
-	uint8_t channel_bit = 1 << ch;
+	uint8_t channel_bit = 1 << di;
 	uint8_t old_mask = mp.flags.channels_opened_mask.value;
 	uint8_t new_mask = old_mask & ~channel_bit;
 	mp.flags.channels_opened_mask.value = new_mask;
@@ -43,15 +43,11 @@ is_channel_xt_ready(const MultiPlexer & mp, channel_index_t ch)
 
 inline void
 set_xt_ready_mask(MultiPlexer & mp, channel_mask_t mask)
-{ mp.xt.ready_mask.value = mask.value; }
+{ mp.xt.ready_mask = mask; }
 
-inline channel_mask_t
-get_rx_ready_mask(const MultiPlexer & mp)
-{
-	// We assume buffers are big enough for mavlink's small data volume.
-	// So any opened channel can receive data.
-	return mp.flags.channels_opened_mask;
-}
+inline void
+update_connections(MultiPlexer & mp, channel_mask_t connected)
+{ update_by_mask(mp.connection_slots, connected, mp); }
 
 }
 // end of namespace BT

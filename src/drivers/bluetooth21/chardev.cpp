@@ -9,9 +9,10 @@
 #include <cstdint>
 
 #include "bt_types.hpp"
-#include "debug.hpp"
 #include "chardev.hpp"
 #include "chardev_poll.hpp"
+#include "debug.hpp"
+#include "device_connection_map.hpp"
 #include "io_multiplexer.hpp"
 #include "io_multiplexer_flags.hpp"
 #include "io_multiplexer_global.hpp"
@@ -29,18 +30,16 @@ namespace CharacterDevices
 namespace ForeignAddressSpace
 {
 
-constexpr channel_index_t INVALID_CHANNEL_INDEX = 255;
+constexpr void *
+dev_index_to_priv(device_index_t di) { return (void *)(uintptr_t)di; }
 
-inline void *
-channel_index_to_priv(channel_index_t ch) { return (void *)(uintptr_t)ch; }
-
-inline channel_index_t
-priv_to_channel_index(FAR struct file * filp)
+inline device_index_t
+priv_to_dev_index(FAR struct file * filp)
 {
 	D_ASSERT(filp);
 	D_ASSERT(filp->f_inode);
 	auto value = (uintptr_t)filp->f_inode->i_private;
-	return value <= 7 ? (channel_index_t)value : INVALID_CHANNEL_INDEX;
+	return value <= 7 ? (device_index_t)value : INVALID_DEV_INDEX;
 }
 
 inline MultiPlexer &
@@ -49,81 +48,122 @@ get_multiplexer(FAR struct file * filp) { return Globals::Multiplexer::get(); }
 static int
 open(FAR struct file * filp)
 {
-	channel_index_t ch = priv_to_channel_index(filp);
-	if (ch == INVALID_CHANNEL_INDEX) { return -ENXIO; }
+	const channel_index_t di = priv_to_dev_index(filp);
+	if (di == INVALID_DEV_INDEX) { return -ENXIO; }
 
 	auto & mp = get_multiplexer(filp);
-	bool ok = opened_acquare(mp, ch);
-	if (ok) { drain(mp.rx, ch); }
+	bool ok = opened_acquare(mp, di);
+	if (ok) { drain(mp.rx, di); }
 	return ok ? 0 : -EBUSY;
 }
 
 static int
 close(FAR struct file * filp)
 {
-	channel_index_t ch = priv_to_channel_index(filp);
-	if (ch == INVALID_CHANNEL_INDEX) { return -ENXIO; }
+	const channel_index_t di = priv_to_dev_index(filp);
+	if (di == INVALID_DEV_INDEX) { return -ENXIO; }
 
 	auto & mp = get_multiplexer(filp);
-	bool ok = opened_release(mp, ch);
-	if (ok) { drain(mp.xt, ch); }
+	bool ok = opened_release(mp, di);
+	if (ok) { drain(mp.xt, di); }
 	return ok ? 0 : -EBADF;
 }
 
 static ssize_t
 read(FAR struct file * filp, FAR char * buffer, size_t buflen)
 {
-	channel_index_t ch = priv_to_channel_index(filp);
-	if (ch == INVALID_CHANNEL_INDEX) { return -ENXIO; }
+	const channel_index_t di = priv_to_dev_index(filp);
+	if (di == INVALID_DEV_INDEX) { return -ENXIO; }
 
 	auto & mp = get_multiplexer(filp);
 
-	ssize_t r;
-	if (ch == 0)
+	ssize_t r = 0;
+	if (di == 0)
+	{
 		r = read_service_channel(mp, buffer, buflen);
-	else
+		dbg("chardev read(0/service) returns %i.\n", r);
+	}
+	else if (is_connection_established(mp.connection_slots, di))
+	{
+		channel_index_t ch = channel_index(mp.connection_slots, di);
 		r = read_channel_raw(mp, ch, buffer, buflen);
+		dbg("chardev read(%u/%u) returns %i.\n", di, ch, r);
+	}
+	else { dbg("chardev read(%u/-) unconnected.\n", di); }
 
 	if (r == 0) { r = -EAGAIN; }
 
 	dbg_dump("chardev read", mp.rx);
-	//dbg("chardev read(%u) returns %i.\n", ch, r);
 	return r;
 }
 
 static ssize_t
 write(FAR struct file * filp, FAR const char * buffer, size_t buflen)
 {
-	channel_index_t ch = priv_to_channel_index(filp);
-	if (ch == INVALID_CHANNEL_INDEX) { return -ENXIO; }
+	const channel_index_t di = priv_to_dev_index(filp);
+	if (di == INVALID_DEV_INDEX) { return -ENXIO; }
 
 	auto & mp = get_multiplexer(filp);
 
-	// FIXME write_service_channel when ch == 0
 	ssize_t r = 0;
-	if (is_channel_xt_ready(mp, ch))
-		r = write_channel_packet(mp, ch, buffer, buflen);
+	if (di == 0)
+	{
+		// FIXME write_service_channel
+		r = write_channel_packet(mp, 0, buffer, buflen);
+		dbg("chardev write(0/service) returns %i.\n", r);
+	}
+	else if (is_connection_established(mp.connection_slots, di))
+	{
+		channel_index_t ch = channel_index(mp.connection_slots, di);
+		if (is_channel_xt_ready(mp, ch))
+			r = write_channel_packet(mp, ch, buffer, buflen);
+		dbg("chardev write(%u/%u) returns %i.\n", di, ch, r);
+	}
+	else { dbg("chardev write(%u/-) unconnected.\n", di); }
 
 	if (r == 0) { r = -EAGAIN; }
 
 	dbg_dump("chardev write", mp.xt);
-	//dbg("chardev write(%u) returns %i.\n", ch, r);
 	return r;
 }
 
 static int
 poll(FAR struct file * filp, FAR struct pollfd * p_fd, bool setup_phase)
 {
-	channel_index_t ch = priv_to_channel_index(filp);
-	if (ch == INVALID_CHANNEL_INDEX) { return -ENXIO; }
+	const channel_index_t di = priv_to_dev_index(filp);
+	if (di == INVALID_DEV_INDEX) { return -ENXIO; }
 
 	auto & mp = get_multiplexer(filp);
+
+	channel_index_t ch;
+       	if (di == 0)
+		ch = 0;
+	else if (is_connection_established(mp.connection_slots, di))
+		ch = channel_index(mp.connection_slots, (connection_index_t)di);
+	else
+	{
+		/*
+		 * If there is no connection:
+		 *
+		 * + at set-up phase, it is not an error,
+		 *   just let it sleep and receive timeout.
+		 *
+		 * + at clean-up phase, do nothing and let open(),
+		 *   connect and disconnect handlers remove useless
+		 *   referencies.
+		 */
+		return 0;
+	}
 
 	int r = 0;
 	if (setup_phase)
 	{
 		if (full(mp.poll_waiters[ch]))
 		{
+			/*
+			 * This should never happen while first open() only
+			 * succeeds.
+			 */
 			r = -ENOMEM;
 		}
 		else
@@ -157,28 +197,29 @@ static const struct file_operations g_fileops =
 	.poll  = ForeignAddressSpace::poll,
 };
 
-static const char * const devname[7] = {
-	"/dev/bt1", "/dev/bt2", "/dev/bt3", "/dev/bt4",
-	"/dev/bt5", "/dev/bt6", "/dev/bt7"
+static const char * const devname[8] = {
+	"/dev/btcmd", "/dev/bt1", "/dev/bt2", "/dev/bt3",
+	"/dev/bt4", "/dev/bt5", "/dev/bt6", "/dev/bt7"
 };
 
 bool
 register_all_devices()
 {
-	using ForeignAddressSpace::channel_index_to_priv;
+	using ForeignAddressSpace::dev_index_to_priv;
 
-	auto err = register_driver("/dev/btcmd", &g_fileops, 0666,
-					channel_index_to_priv(0));
-
-	for (channel_index_t ch = 1; err == 0 and ch <= 7; ++ch)
+	int err;
+	device_index_t di = 0;
+	do
 	{
 		err = register_driver(
-			devname[ch - 1],
+			devname[di],
 			&g_fileops,
 			0666,
-			channel_index_to_priv(ch)
+			dev_index_to_priv(di)
 		);
+		++di;
 	}
+	while (err == 0 and di < 7);
 
 	if (err != 0)
 	{
@@ -191,10 +232,8 @@ register_all_devices()
 void
 unregister_all_devices()
 {
-	for (channel_index_t ch = 1; ch <= 7; ++ch)
-		unregister_driver(devname[ch - 1]);
-
-	unregister_driver("/dev/btcmd");
+	for (device_index_t di = 0; di <= 7; ++di)
+		unregister_driver(devname[di]);
 }
 
 }

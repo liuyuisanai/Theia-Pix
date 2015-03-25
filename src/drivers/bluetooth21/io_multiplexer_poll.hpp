@@ -20,7 +20,7 @@ perform_poll_io(Device & d, MultiPlexer & mp, int poll_timeout_ms)
 		writeable = fill_device_buffer(
 			mp.protocol_tag,
 			mp.xt,
-			mp.flags.channels_connected_mask
+			mp.connection_slots.connected_mask
 		);
 	}
 
@@ -56,7 +56,7 @@ perform_poll_io(Device & d, MultiPlexer & mp, int poll_timeout_ms)
 			writeable |= fill_device_buffer(
 				mp.protocol_tag,
 				mp.xt,
-				mp.flags.channels_connected_mask
+				mp.connection_slots.connected_mask
 			);
 			process_serial_output(d, mp.xt);
 			//dbg_dump("perform_poll_io OUT", mp.xt);
