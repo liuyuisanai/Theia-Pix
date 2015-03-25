@@ -20,8 +20,10 @@ ROMFS_OPTIONAL_FILES = $(PX4_BASE)/Images/px4io-v2_default.bin
 #
 # Board support modules
 #
-#MODULES		+= drivers/bluetooth21
+MODULES		+= drivers/bluetooth21
+MODULES		+= drivers/bluetooth21/tests/bluetooth21_devtest
 MODULES		+= drivers/boards/AirDogFMU/$(CONFIG_BOARD_REVISION)
+MODULES		+= drivers/calibration
 MODULES		+= drivers/calibration
 MODULES		+= drivers/device
 MODULES		+= drivers/frsky_telemetry
@@ -44,7 +46,6 @@ MODULES		+= modules/sensors
 MODULES		+= modules/sensors_probe
 MODULES		+= modules/sensors_switch
 MODULES		+= modules/spi_exchange
-MODULES		+= drivers/calibration
 MODULES 	+= drivers/pwm_input
 #MODULES		+= drivers/airspeed
 #MODULES		+= drivers/blinkm
