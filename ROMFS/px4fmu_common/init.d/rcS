@@ -125,7 +125,7 @@ then
 	set PWM_MAX none
 	set MKBLCTRL_MODE none
 	set FMU_MODE pwm
-	set MAVLINK_FLAGS default
+	set TELEM_TTY /dev/ttyS1
 	set EXIT_ON_END no
 	set MAV_TYPE none
 	set LOAD_DEFAULT_APPS yes
@@ -426,30 +426,36 @@ then
 	fi
 
 	#
+	# Telemetry module
+	#
+	if [ $TTYS1_BUSY == yes ]
+	then
+		set TELEM_TTY /dev/ttyS0
+		# Exit from nsh to free the port used by console
+		set EXIT_ON_END yes
+	fi
+
+	if param compare A_TELEMETRY_MODE 1
+	then
+		# Power-cycle unavailable.
+		bluetooth21 start $TELEM_TTY factory-param
+		set MAVLINK_TTY /dev/bt1
+	else
+		set MAVLINK_TTY $TELEM_TTY
+	fi
+
+	#
 	# MAVLink
 	#
-	if [ $MAVLINK_FLAGS == default ]
-	then
-		# Normal mode, use baudrate 57600 (default) and data rate 1000 bytes/s
-		if [ $TTYS1_BUSY == yes ]
-		then
-			# Start MAVLink on ttyS0, because FMU ttyS1 pins configured as something else
-			set MAVLINK_FLAGS "-r 1000 -d /dev/ttyS0"
-
-			# Exit from nsh to free port for mavlink
-			set EXIT_ON_END yes
-		else
-			# Start MAVLink on default port: ttyS1
-			set MAVLINK_FLAGS "-r 1000"
-		fi
-	fi
 
 	if param compare MAV_MINIMALISTIC 1
 	then
-		mavlink start -m airdog $MAVLINK_FLAGS
+		set MAVLINK_MODE "-m airdog"
 	else
-		mavlink start $MAVLINK_FLAGS
+		# set MAVLINK_MODE "" produces new line on substitution.
+		unset MAVLINK_MODE
 	fi
+	mavlink start $MAVLINK_MODE -r 1000 -d $MAVLINK_TTY
 
 	#
 	# UAVCAN

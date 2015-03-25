@@ -1,6 +1,14 @@
 #include <systemlib/param/param.h>
 
 /*
+ * Telemetry mode:
+ * 0 -- Plain radio modem,
+ * 1 -- Long-range bluetooth.
+ *
+ */
+PARAM_DEFINE_INT32(A_TELEMETRY_MODE, 0);
+
+/*
  * Mode and factory address index to connect to.
  *
  * Default `-1` is the listen mode.

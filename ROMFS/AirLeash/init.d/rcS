@@ -14,8 +14,6 @@ set SENSORS_OK unknown
 
 set EXIT_ON_END no
 
-set MAVLINK_TTY /dev/ttyS0
-
 #
 # Alarms are always useful.
 #
@@ -99,6 +97,23 @@ fi
 if param compare MAV_SYS_ID 1
 then
 	param set MAV_SYS_ID 4
+fi
+
+#
+# Telemetry module
+#
+if param compare A_TELEMETRY_MODE 1
+then
+	# Power-cycle BT module
+	gpio_tool set pa10=0
+	sleep 3
+	gpio_tool set pa10=1
+	sleep 3
+
+	bluetooth21 start /dev/ttyS0 factory-param
+	set MAVLINK_TTY /dev/bt1
+else
+	set MAVLINK_TTY /dev/ttyS0
 fi
 
 #
