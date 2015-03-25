@@ -135,36 +135,73 @@ start(const char mode[], const char addr_no[])
 	if (running)
 		return;
 
-	if (streq(mode, "one-connect"))
-		daemon_mode = Mode::ONE_CONNECT;
-	else if (streq(mode, "listen"))
-		daemon_mode = Mode::LISTEN;
-	else
-		daemon_mode = Mode::UNDEFINED;
-
-	if (daemon_mode == Mode::UNDEFINED)
+	daemon_mode = Mode::UNDEFINED;
+	if (streq(mode, "factory-param"))
 	{
-		if (streq(mode, "loopback-test"))
-			fprintf(stderr, "The '%s' mode doesn't use %s.\n"
-				, mode
-				, PROCESS_NAME
-			);
+		uint32_t i = Params::get("A_BT_CONNECT_TO");
+		if (i < n_factory_addresses)
+		{
+			daemon_mode = Mode::ONE_CONNECT;
+			connect_address = factory_addresses[i];
+		}
 		else
-			fprintf(stderr, "%s: Invaid mode: %s.\n"
-				, PROCESS_NAME
-				, mode
-			);
-		return;
+		{
+			daemon_mode = Mode::LISTEN;
+		}
 	}
-
-	if (daemon_mode == Mode::ONE_CONNECT)
+	else if (streq(mode, "one-connect"))
 	{
 		uint32_t i;
-		if (not parse_uint32(addr_no, i) or i >= n_factory_addresses)
-			return;
+		if (not addr_no)
+			fprintf(stderr, "%s: factory_address_no required.\n",
+				PROCESS_NAME);
+		else if (not parse_uint32(addr_no, i))
+			fprintf(stderr, "%s: invalid factory_address_no %s.\n",
+				PROCESS_NAME, addr_no);
+		else if (i < n_factory_addresses)
+		{
+			daemon_mode = Mode::ONE_CONNECT;
+			connect_address = factory_addresses[i];
+		}
+		else
+			fprintf(stderr
+				, "%s: invalid factory_address_no %i max %i.\n"
+				, PROCESS_NAME
+				, i
+				, n_factory_addresses - 1
+			);
 
-		connect_address = factory_addresses[i];
 	}
+	else if (streq(mode, "listen"))
+	{
+		daemon_mode = Mode::LISTEN;
+	}
+	else if (streq(mode, "loopback-test"))
+	{
+		fprintf(stderr, "The '%s' mode doesn't use %s.\n"
+			, mode
+			, PROCESS_NAME
+		);
+	}
+	else
+	{
+		fprintf(stderr, "%s: Invaid mode: %s.\n"
+			, PROCESS_NAME
+			, mode
+		);
+	}
+
+	if (daemon_mode == Mode::UNDEFINED)
+		return;
+
+	if (daemon_mode == Mode::ONE_CONNECT)
+		fprintf(stderr
+			, "%s: mode one-connect to " Address6_FMT ".\n"
+			, PROCESS_NAME
+			, Address6_FMT_ITEMS(connect_address)
+		);
+	else
+		fprintf(stderr, "%s: mode listen.\n", PROCESS_NAME);
 
 	task_spawn_cmd(PROCESS_NAME,
 			SCHED_DEFAULT,

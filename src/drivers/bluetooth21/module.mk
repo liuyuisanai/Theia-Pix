@@ -9,6 +9,7 @@ SRCS = main.cpp \
 	factory_addresses.cpp \
 	io_multiplexer_global.cpp \
 	laird/module_params.c \
+	module_params.c \
 	mutex.cpp \
 # end of SRCS
 

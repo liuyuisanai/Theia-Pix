@@ -15,13 +15,14 @@ static void
 usage(const char name[])
 {
 	fprintf(stderr, "Usage:\n"
-		"\t%s start tty listen\n"
-		"\t%s       tty one-connect address\n"
-		"\t%s       tty loopback-test\n"
+		"\t%s start tty factory-param\n"
+		"\t%s           listen\n"
+		"\t%s           one-connect address\n"
+		"\t%s           loopback-test\n"
 		"\t%s status\n"
 		"\t%s stop\n"
 		"\n"
-		, name, name, name, name, name
+		, name, name, name, name, name, name
 	);
 }
 

@@ -4,12 +4,6 @@
 #include "../module_params.hpp"
 
 /*
- * Mode and factory address index to connect to.
- *
- */
-PARAM_DEFINE_INT32(A_BT_CONNECT_TO, -1);
-
-/*
  * RFCOMM Frame Size, bytes in range 23..4096.
  */
 PARAM_DEFINE_INT32(A_BT_S11_RFCOMM, BT_SREG_AS_IS);
