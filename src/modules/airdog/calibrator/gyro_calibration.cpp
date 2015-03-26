@@ -35,6 +35,8 @@ CALIBRATION_RESULT do_gyro_calibration(const unsigned int sample_count, const un
 		return CALIBRATION_RESULT::SENSOR_DATA_FAIL;
 	}
 
+	// Fill calibration conditions before setting parameters, errors are ignored
+	fill_calibration_conditions(&calibration);
 	// set offset and scale parameters. Scale parameters reset to 1, but that's the number we pass to the sensor driver.
 	if (!set_calibration_parameters(calibration)) {
 		close(fd);

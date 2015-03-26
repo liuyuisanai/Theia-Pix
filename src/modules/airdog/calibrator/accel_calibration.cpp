@@ -89,6 +89,8 @@ CALIBRATION_RESULT AccelCalibrator::calculate_and_save() {
 	calibration_vals.offsets = accel_offs;
 	calibration_vals.scales = accel_T.diag_main();
 
+	// Fill calibration conditions before setting parameters, errors are ignored
+	fill_calibration_conditions(&calibration_vals);
 	// Set calibration parameters
 	if (!set_calibration_parameters(calibration_vals)) {
 		return(CALIBRATION_RESULT::PARAMETER_SET_FAIL);

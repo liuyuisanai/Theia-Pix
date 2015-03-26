@@ -95,6 +95,8 @@ CALIBRATION_RESULT do_mag_offset_calibration(unsigned int sample_count, unsigned
 
 	sphere_fit_least_squares(res_stats, calibration.offsets);
 
+	// Fill calibration conditions before setting parameters, errors are ignored
+	fill_calibration_conditions(&calibration);
 	// Set calibration parameters
 	if (!set_calibration_parameters(calibration)) {
 		cleanup(fd, true);

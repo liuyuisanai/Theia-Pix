@@ -213,6 +213,8 @@ int do_accel_calibration(int mavlink_fd)
 		accel_calibration.offsets = accel_offs_rotated;
 		accel_calibration.scales = accel_T_rotated.diag_main();
 
+		// Fill calibration conditions before setting parameters, errors are ignored
+		fill_calibration_conditions(&accel_calibration);
 		/* set parameters */
 		if (!set_calibration_parameters(accel_calibration)) {
 			mavlink_log_critical(mavlink_fd, CAL_FAILED_SET_PARAMS_MSG);

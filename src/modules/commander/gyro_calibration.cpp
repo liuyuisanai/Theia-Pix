@@ -249,6 +249,8 @@ int do_gyro_calibration(int mavlink_fd)
 #endif
 
 	if (res == OK) {
+		// Fill calibration conditions before setting parameters, errors are ignored
+		fill_calibration_conditions(&gyro_calibration);
 		/* set scale parameters to new values */
 		if (!set_calibration_parameters(gyro_calibration)) {
 			mavlink_log_critical(mavlink_fd, "ERROR: failed to set calibration params");

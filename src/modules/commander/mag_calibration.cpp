@@ -246,6 +246,8 @@ int do_mag_calibration(int mavlink_fd)
 		close(fd);
 
 		if (res == OK) {
+			// Fill calibration conditions before setting parameters, errors are ignored
+			fill_calibration_conditions(&calibration);
 			/* set parameters */
 			if (!set_calibration_parameters(calibration)) {
 				res = ERROR;
