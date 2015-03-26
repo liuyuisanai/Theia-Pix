@@ -91,13 +91,13 @@ private:
 	float _break_distance;                     
 
     // desired speed PID controller integral component coefficient
-    double _fp_i;                           
+    float _fp_i;                           
     // desired speed PID controller proportional component coefficient
-    double _fp_p;                           
+    float _fp_p;                           
     // desired speed PID controller dirivetive component coefficient 
-    double _fp_d;                           
+    float _fp_d;                           
     // desired speed PID controller second degree component coefficient 
-    double _fp_dd;                          
+    float _fp_dd;                          
 
     math::LowPassFilter<float> _fp_d_lpf;
     math::LowPassFilter<float> _vel_lpf;
@@ -105,7 +105,7 @@ private:
 
     hrt_abstime _calc_vel_pid_t_prev;
 
-    double _fp_p_last;
+    float _fp_p_last;
 
     hrt_abstime _last_dpos_t;
     hrt_abstime _last_tpos_t;

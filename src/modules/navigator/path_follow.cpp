@@ -273,70 +273,65 @@ void PathFollow::set_tpos_to_setpoint(position_setpoint_s &destination) {
 float PathFollow::calculate_desired_velocity() {
 
     float current_distance = calculate_current_distance();
-    double dst_to_optimal = current_distance - _optimal_distance;
+    float dst_to_optimal = current_distance - _optimal_distance;
 
-    double fp_i_coif = _parameters.pafol_vel_i;
-    double fp_p_coif = _parameters.pafol_vel_p;
-    double fp_d_coif = _parameters.pafol_vel_d;
+    float fp_i_coif = _parameters.pafol_vel_i;
+    float fp_p_coif = _parameters.pafol_vel_p;
+    float fp_d_coif = _parameters.pafol_vel_d;
 
     hrt_abstime t = hrt_absolute_time();
-    double calc_vel_pid_dt = _calc_vel_pid_t_prev != 0 ? (t - _calc_vel_pid_t_prev) : 0.0f;
-
-    calc_vel_pid_dt /= 1000000.0;
+    float calc_vel_pid_dt = _calc_vel_pid_t_prev != 0 ? (t - _calc_vel_pid_t_prev) * 1e-6f : 0.0f;
 
     _fp_p_last = _fp_p;
 
     _fp_p = dst_to_optimal;
     _fp_i = _fp_i + _fp_p * calc_vel_pid_dt;
 
-    if (calc_vel_pid_dt > 0.0) {
-        double fp_d_current = (_fp_p - _fp_p_last) / calc_vel_pid_dt;
-        _fp_d = _fp_d_lpf.apply(t, (float)fp_d_current);
+    if (calc_vel_pid_dt > 0.0f) {
+        float fp_d_current = (_fp_p - _fp_p_last) / calc_vel_pid_dt;
+        _fp_d = _fp_d_lpf.apply(t, fp_d_current);
     }
 
-    // Solution to problem when accumulated error is very big and drone is already to closer and comes closer because of the accumulated error (integral part), which
+    // Solution to problem when accumulated error is very big, drone is to close and comes closer because of the accumulated error (integral part), which
     // is decreasing to slow in this case.
     //
-    // The same for drone going far and with very small negative accumulated error
 
-    // dst_to_optimal is below zero and trajectory distance is still decreasing[ because dirivative is smaller than zero], so the pulling power is to big. 
-    // integral part [accumulated error, the pulling power] is to big and it needs to be decreased faster
-    if (dst_to_optimal < 0.0 && _fp_d < 0.0) { 
+    // dst_to_optimal is below zero and trajectory distance is still decreasing[ because dirivative is smaller than zero], so the pulling power[integral part] is to big and needs 
+    // some extra help to decrease it, we do it with factor pafol_vel_i_add_dec_rate [follow path velocity integral part aditional decrease rate]
+    if (dst_to_optimal < 0.0f && _fp_d < 0.0f) { 
 
-        double additional_i_dec = _fp_d * (double)_parameters.pafol_vel_i_add_dec_rate;
-        if (additional_i_dec < 0.0) additional_i_dec = -additional_i_dec;
+        float additional_i_dec = _fp_d * _parameters.pafol_vel_i_add_dec_rate;
+        if (additional_i_dec < 0.0f) additional_i_dec = -additional_i_dec;
         _fp_i -= additional_i_dec * calc_vel_pid_dt;
 
     }
 
-    // dst_to_optimal is above zero and distance is still increasing[ dirivative bigger than zero], 
-    // integral part [accumulated error, the pulling power] is to small and it needs to be increased faster
-    if (dst_to_optimal > 0.0 && _fp_d > 0.0) { 
+    // In some cases the same extra help is needed to increase the integral part a bit faster.
+    if (dst_to_optimal > 0.0f && _fp_d > 0.0f) { 
 
-        double additional_i_inc = _fp_d * (double)_parameters.pafol_vel_i_add_inc_rate;
-        if (additional_i_inc < 0.0) additional_i_inc = -additional_i_inc;
+        float additional_i_inc = _fp_d * _parameters.pafol_vel_i_add_inc_rate;
+        if (additional_i_inc < 0.0f) additional_i_inc = -additional_i_inc;
         _fp_i += additional_i_inc * calc_vel_pid_dt;
 
     }
 
-    if (_fp_i>(double)_parameters.pafol_vel_i_upper_limit) _fp_i = _parameters.pafol_vel_i_upper_limit;
-    if (_fp_i<(double)_parameters.pafol_vel_i_lower_limit) _fp_i = _parameters.pafol_vel_i_lower_limit;
+    if (_fp_i>_parameters.pafol_vel_i_upper_limit) _fp_i = _parameters.pafol_vel_i_upper_limit;
+    if (_fp_i<_parameters.pafol_vel_i_lower_limit) _fp_i = _parameters.pafol_vel_i_lower_limit;
 
-    double vel_new =_fp_i * fp_i_coif + _fp_p * fp_p_coif + _fp_d * fp_d_coif;
+    float vel_new =_fp_i * fp_i_coif + _fp_p * fp_p_coif + _fp_d * fp_d_coif;
 
     // Let's prevent drone going backwards.
-    if (!_drone_is_going_backwards && vel_new < 0.0 && _drone_speed_d > 0.0f) {
+    if (!_drone_is_going_backwards && vel_new < 0.0f && _drone_speed_d > 0.0f) {
         _drone_is_going_backwards = true;
-        //mavlink_log_info(_mavlink_fd, "d:%.3f",(double)_drone_is_going_backwards);
     }
 
-    if (_drone_is_going_backwards && vel_new > 0.0){
+    if (_drone_is_going_backwards && vel_new > 0.0f){
         _drone_is_going_backwards = false;
-    };
+    }
 
     if (_drone_is_going_backwards) {
-        if (vel_new < -1.0)
-            vel_new = -1.0;
+        if (vel_new < -1.0f)
+            vel_new = -1.0f;
     }
 
     dd_log.log(0,_fp_i);
@@ -351,6 +346,7 @@ float PathFollow::calculate_desired_velocity() {
     //mavlink_log_info(_mavlink_fd, "dst:%.3f, fp_i:%.3f fp_d:%.3f, ad:%.3f", (double)dst_to_optimal, (double)_fp_i, (double)_fp_d);
     // mavlink_log_info(_mavlink_fd, "ul:%.3f, ll:%.3f ir:%.3f dr:%.3f", (double)_parameters.pafol_vel_i_lower_limit, (double)_parameters.pafol_vel_i_upper_limit, 
     //        (double)_parameters.pafol_vel_i_add_inc_rate, (double)_parameters.pafol_vel_i_add_dec_rate);
+    
     _calc_vel_pid_t_prev = t;
 
     return vel_new;
@@ -369,14 +365,11 @@ float PathFollow::calculate_current_distance() {
 
     hrt_abstime t = hrt_absolute_time();
 
-    float tpos_dt = _last_tpos_t != 0 ? (t - _last_tpos_t) : 0.0f;
-    float dpos_dt = _last_dpos_t != 0 ? (t - _last_dpos_t) : 0.0f;
+    float tpos_dt = _last_tpos_t != 0 ? (t - _last_tpos_t) * 1e-6f : 0.0f;
+    float dpos_dt = _last_dpos_t != 0 ? (t - _last_dpos_t) * 1e-6f : 0.0f;
 
-    tpos_dt/= 1000000.0f;
-    dpos_dt/= 1000000.0f;
-
-    if (tpos_dt > 0.2f) tpos_dt = 0.2f;
-    if (dpos_dt > 0.2f) dpos_dt = 0.2f;
+    if (tpos_dt > 1.0f) tpos_dt = 1.0f;
+    if (dpos_dt > 1.0f) dpos_dt = 1.0f;
 
     target_lpos = target_lpos + target_vel * tpos_dt;
     drone_lpos = drone_lpos + drone_vel * dpos_dt;
@@ -386,23 +379,12 @@ float PathFollow::calculate_current_distance() {
         full_distance = _trajectory_distance + 
             euclidean_distance(drone_lpos(0), drone_lpos(1), _active_traj_point.x, _active_traj_point.y) +
             euclidean_distance(_latest_point.x, _latest_point.y, target_lpos(0), target_lpos(1));
-
-        //float tcount = _traj_point_queue.get_value_count();
-        //mavlink_log_info(_mavlink_fd, "d:%.3f,td:%.3f, tx:%.3f,ty:%.3f, pcount:%.3f",(double)full_distance, (double)_trajectory_distance,(double)target_lpos(0), (double)target_lpos(1), (double)tcount);
-
-        //mavlink_log_info(_mavlink_fd, "d:%.3f, ax:%.3f ay:%.3f,dx:%.3f,dy:%.3f,tx:%.3f,ty:%.3f",(double)full_distance, (double)_active_traj_point.x, (double)_active_traj_point.y, (double)drone_lpos(0), (double)drone_lpos(1), (double)target_lpos(0), (double)target_lpos(1));
-
     } else {
 
         full_distance = euclidean_distance(target_lpos(0), target_lpos(1), drone_lpos(0), drone_lpos(1));
-
-        //mavlink_log_info(_mavlink_fd, "d:%.5f,dx:%.3f,dy:%.3f,tx:%.3f,ty:%.3f",(double)full_distance, (double)drone_lpos(0), (double)drone_lpos(1), (double)target_lpos(0), (double)target_lpos(1));
-
-
     }
 
     return full_distance;
-
 }
 
 bool PathFollow::check_point_safe() {
@@ -412,7 +394,6 @@ bool PathFollow::check_point_safe() {
 		return false;
 	}
     return true;
-
 }
 
 bool PathFollow::check_active_traj_point_reached() {
@@ -456,7 +437,7 @@ PathFollow::update_target_pos(){
 
         _target_local_pos.z = _ref_alt - _target_global_pos->alt;
 
-        _last_tpos_t = hrt_abstime();
+        _last_tpos_t = hrt_absolute_time();
 
         _target_speed = sqrt ( _target_local_pos.vx * _target_local_pos.vx + _target_local_pos.vy * _target_local_pos.vy);
     }
@@ -488,7 +469,7 @@ PathFollow::update_drone_pos(){
 
         _drone_local_pos.z = _ref_alt - _drone_global_pos->alt;
 
-        _last_dpos_t = hrt_abstime();
+        _last_dpos_t = hrt_absolute_time();
 
 
         _drone_speed = sqrt ( _drone_local_pos.vx * _drone_local_pos.vx + _drone_local_pos.vy * _drone_local_pos.vy);
