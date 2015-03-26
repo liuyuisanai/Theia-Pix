@@ -22,10 +22,11 @@ struct __EXPORT gyro_calibration_s : calibration_values_s {};
 struct __EXPORT mag_calibration_s : calibration_values_s {};
 
 /*
- * Sets parameters specified in offset_params and scale_params from values in calibration argument
+ * Sets parameters specified in offset_params and scale_params as well as date and temperature
+ * from values in calibration argument
  */
 __EXPORT bool set_calibration_parameters (const char* const offset_params[3], const char* const scale_params[3],
-		const calibration_values_s &calibration);
+		const char * const date_param, const char * const temp_param, const calibration_values_s &calibration);
 /*
  * Helper function to set accelerometer calibration parameters
  */
@@ -41,19 +42,23 @@ __EXPORT bool set_calibration_parameters (const mag_calibration_s &mag_calibrati
 
 /*
  * Gets parameters specified in offset_params and scale_params and stores them in calibration argument
+ * Failure may result in incomplete parameter structure
  */
 __EXPORT bool get_calibration_parameters (const char* const offset_params[3], const char* const scale_params[3],
 		calibration_values_s *calibration);
 /*
  * Helper function to get accelerometer calibration parameters
+ * Failure may result in incomplete parameter structure
  */
 __EXPORT bool get_calibration_parameters (accel_calibration_s *accel_calibration);
 /*
  * Helper function to get gyroscope calibration parameters
+ * Failure may result in incomplete parameter structure
  */
 __EXPORT bool get_calibration_parameters (gyro_calibration_s *gyro_calibration);
 /*
  * Helper function to get magnetometer calibration parameters
+ * Failure may result in incomplete parameter structure
  */
 __EXPORT bool get_calibration_parameters (mag_calibration_s *mag_calibration);
 
