@@ -114,7 +114,14 @@ class Application(tk.Frame):
             cur = self.logs_dir + self.loglist.get(i)
             if self.nsh.file_exists(cur):
                             data = self.nsh.download_file(cur)
-                            with open(self.dir_to_save+'/'+cur[cur.rindex('/')+1:], "wb") as f:
+
+                            sl = [-1] +  [m.start() for m in re.finditer('/', cur)]
+
+                            new_filename = cur[sl[-1]+1:]
+                            if (len(sl)>1):
+                                new_filename = cur[sl[-2]+1:sl[-1]] + "_" + new_filename
+                            
+                            with open(self.dir_to_save+'/'+new_filename, "wb") as f:
                                 f.write(data)
                             print("Success.")
             else:
