@@ -155,8 +155,13 @@ void PathFollow::on_active() {
         }
     }
 
-    if (euclidean_distance(_target_local_pos.x, _target_local_pos.y, _drone_local_pos.x, _drone_local_pos.y ) < _parameters.pafol_optimal_dist - 7.0f )
+    if (euclidean_distance(_target_local_pos.x, _target_local_pos.y, _drone_local_pos.x, _drone_local_pos.y ) < _parameters.pafol_optimal_dist - 7.0f ){
         _traj_point_queue.do_empty();
+
+        _reaching_for_traj_point = false;
+        set_tpos_to_setpoint(pos_sp_triplet->current);
+
+    }
 
     pos_sp_triplet->current.abs_velocity = calculate_desired_velocity();
     pos_sp_triplet->current.alt = _ref_alt - calculate_desired_z();
