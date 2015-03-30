@@ -185,6 +185,14 @@ struct ServiceBlockingIO
 	{}
 };
 
+template <typename Device, typename PacketPOD>
+bool
+send(ServiceBlockingIO< Device > & self , const PacketPOD & p) {
+	bool ok = write_command(self.dev, &p, sizeof p);
+	if (not ok) { dbg_perror("send / write_command"); }
+	return ok;
+}
+
 template <typename Device, typename PacketPOD, typename ResponcePOD>
 bool
 send_receive(

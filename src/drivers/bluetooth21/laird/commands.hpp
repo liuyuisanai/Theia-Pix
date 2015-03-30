@@ -84,6 +84,29 @@ s_register_set(ServiceIO & io, uint32_t regno, uint32_t value)
 
 template <typename ServiceIO>
 bool
+s_register_store(ServiceIO & io)
+{
+	bool ok = send_simple_command<CMD_STORE_SREG>(io);
+	dbg("-> command s_register_store %s.\n", ok ? "ok": "failed");
+	return ok;
+}
+
+template <typename ServiceIO>
+bool
+soft_reset(ServiceIO & io)
+{
+	auto cmd = prefill_packet<COMMAND_RESET, CMD_RESET>();
+	fill_n(cmd.reserved, sizeof cmd.reserved, 0);
+
+	bool ok = send(io, cmd);
+	sleep(1);
+
+	dbg("-> command soft_reset %s.\n", ok ? "ok": "failed");
+	return ok;
+}
+
+template <typename ServiceIO>
+bool
 switch_connectable(ServiceIO & io, bool enable)
 {
 	RESPONSE_CONNECTABLE_MODE rsp;

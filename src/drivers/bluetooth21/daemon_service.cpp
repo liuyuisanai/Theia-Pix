@@ -71,6 +71,7 @@ daemon()
 
 	should_run = (daemon_mode != Mode::UNDEFINED
 		and fileno(dev) > -1
+		and configure_n_reboot(service_io)
 		and configure_latency(service_io)
 		and configure_general(service_io, daemon_mode == Mode::LISTEN)
 		and configure_factory(service_io)

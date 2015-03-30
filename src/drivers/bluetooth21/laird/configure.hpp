@@ -1,7 +1,8 @@
 #pragma once
 
-#include "../module_params.hpp"
+#include "../debug.hpp"
 #include "../factory_addresses.hpp"
+#include "../module_params.hpp"
 
 #include "commands.hpp"
 
@@ -11,6 +12,23 @@ namespace Service
 {
 namespace Laird
 {
+
+template <typename ServiceIO>
+bool
+configure_n_reboot(ServiceIO & io)
+{
+	uint32_t s12 = Params::get("A_BT_S12_LINK");
+
+	bool as_is = s12 == BT_SREG_AS_IS;
+	bool ok = as_is or (
+		    s_register_set(io, 12, s12)
+		and s_register_store(io)
+		and soft_reset(io)
+	);
+
+	dbg("configure_n_reboot as-is %i ok %i.\n", as_is, ok);
+	return ok;
+}
 
 template <typename ServiceIO>
 bool
@@ -29,6 +47,7 @@ configure_general(ServiceIO & io, bool connectable)
 		/* Outgoing connection number */
 		and s_register_set(io, 35, 1)
 	);
+	dbg("configure_general %i.\n", ok);
 	return ok;
 }
 
@@ -37,15 +56,14 @@ bool
 configure_latency(ServiceIO & io)
 {
 	uint32_t s11 = Params::get("A_BT_S11_RFCOMM");
-	uint32_t s12 = Params::get("A_BT_S12_LINK");
 	uint32_t s80 = Params::get("A_BT_S80_LATENCY");
 	uint32_t s84 = Params::get("A_BT_S84_POLL");
 
 	bool ok = ( (s11 == BT_SREG_AS_IS or s_register_set(io, 11, s11))
-		and (s12 == BT_SREG_AS_IS or s_register_set(io, 12, s12))
 		and (s80 == BT_SREG_AS_IS or s_register_set(io, 80, s80))
 		and (s84 == BT_SREG_AS_IS or s_register_set(io, 84, s84))
 	);
+	dbg("configure_latency %i.\n", ok);
 	return ok;
 }
 
