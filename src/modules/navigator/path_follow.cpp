@@ -54,6 +54,11 @@ bool PathFollow::init() {
 	return (_inited);
 }
 void PathFollow::on_inactive() {
+
+    _fp_i = 0.0f;
+    _fp_p = 0.0f;
+    _fp_d = 0.0f;
+
 }
 
 void PathFollow::on_activation() {
@@ -303,7 +308,7 @@ float PathFollow::calculate_desired_velocity() {
 
     // dst_to_optimal is below zero and trajectory distance is still decreasing[ because dirivative is smaller than zero], so the pulling power[integral part] is to big and needs 
     // some extra help to decrease it, we do it with factor pafol_vel_i_add_dec_rate [follow path velocity integral part aditional decrease rate]
-    if (dst_to_optimal < 0.0f && _fp_d < 0.0f) { 
+    if (dst_to_optimal < -1.0f && _fp_d < -1.0f && _drone_speed > 2.0f) { 
 
         float additional_i_dec = _fp_d * _parameters.pafol_vel_i_add_dec_rate;
         if (additional_i_dec < 0.0f) additional_i_dec = -additional_i_dec;
@@ -312,7 +317,7 @@ float PathFollow::calculate_desired_velocity() {
     }
 
     // In some cases the same extra help is needed to increase the integral part a bit faster.
-    if (dst_to_optimal > 0.0f && _fp_d > 0.0f) { 
+    if (dst_to_optimal > 1.0f && _fp_d > 1.0f && _drone_speed > 2.0f) { 
 
         float additional_i_inc = _fp_d * _parameters.pafol_vel_i_add_inc_rate;
         if (additional_i_inc < 0.0f) additional_i_inc = -additional_i_inc;
