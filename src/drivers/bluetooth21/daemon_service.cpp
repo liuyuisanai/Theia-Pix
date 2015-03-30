@@ -74,6 +74,7 @@ daemon()
 		and configure_latency(service_io)
 		and configure_general(service_io, daemon_mode == Mode::LISTEN)
 		and configure_factory(service_io)
+		and dump_s_registers(service_io)
 	);
 
 	if (should_run) { fprintf(stderr, "%s started.\n", PROCESS_NAME); }
@@ -94,6 +95,7 @@ daemon()
 
 		if (svc.conn.changed)
 		{
+			dbg("Connect/disconnect.\n");
 			update_connections(mp, svc.conn.channels_connected);
 			svc.conn.changed = false;
 		}
@@ -105,7 +107,10 @@ daemon()
 		else if (allowed_connection_request(svc.conn))
 		{
 			if (daemon_mode == Mode::ONE_CONNECT)
+			{
 				request_connect(log_dev, svc, connect_address);
+				dbg("Request connect.\n");
+			}
 		}
 	}
 

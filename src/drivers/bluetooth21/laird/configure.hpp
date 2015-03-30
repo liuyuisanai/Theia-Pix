@@ -70,6 +70,32 @@ bool
 configure_factory(ServiceIO & io)
 { return drop_trusted_db(io) and trust_factory(io); }
 
+template <typename ServiceIO>
+bool
+dump_s_registers(ServiceIO & io)
+{
+	bool ok = true;
+#ifdef CONFIG_DEBUG_BLUETOOTH21
+	const uint8_t reg[] = {
+		3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14,
+		32, 33, 34, 35, 36, 37, 38, 40, 47,
+		73, 74, 75, 76,
+		80, 81, 82, 83, 84,
+		240, 241, 242, 243,
+		255
+	};
+	constexpr size_t n_reg = sizeof reg;
+	uint32_t value[n_reg];
+	size_t i, j;
+	for (i = 0; ok and i < n_reg; ++i)
+		ok = s_register_get(io, reg[i], value[i]);
+	for (j = 0; j < i; ++j)
+		dbg("SReg %3u (0x%02x) value %8u (0x%08x).\n",
+			reg[j], reg[j], value[j], value[j]);
+#endif // CONFIG_DEBUG_BLUETOOTH21
+	return ok;
+}
+
 }
 // end of namespace Laird
 }
