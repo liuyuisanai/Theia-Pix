@@ -101,6 +101,7 @@ MODULES		+= modules/navigator
 #
 MODULES		+= modules/attitude_estimator_ekf
 MODULES		+= modules/position_estimator_inav
+MODULES		+= modules/attitude_estimator_q
 #MODULES		+= examples/flow_position_estimator
 #MODULES		+= modules/airdog/trajectory_calculator
 #MODULES		+= modules/attitude_estimator_so3

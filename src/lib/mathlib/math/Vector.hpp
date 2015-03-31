@@ -317,10 +317,34 @@ public:
 	}
 
 	/**
+	 * gets the length of this vector in double precision
+	 */
+	double length_double() const {
+		double res = 0.0f;
+
+		for (unsigned int i = 0; i < N; ++i) {
+			res += ((double) data[i]) * ((double) data[i]);
+		}
+
+		return sqrt(res);
+	}
+
+	/**
 	 * normalizes this vector
 	 */
 	void normalize() {
 		*this /= length();
+	}
+
+	/**
+	 * normalizes this vector, using double precision
+	 */
+	void normalize_double() {
+		double len = length_double();
+
+		for (unsigned int i = 0; i < N; ++i) {
+			data[i] = (float) (((double) data[i]) / len);
+		}
 	}
 
 	/**

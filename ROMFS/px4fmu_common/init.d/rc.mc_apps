@@ -4,8 +4,18 @@
 # att & pos estimator, att & pos control.
 #
 
-attitude_estimator_ekf start
-#ekf_att_pos_estimator start
+if param compare ATT_EST_EDITION 0
+then
+	attitude_estimator_ekf start
+else
+	if param compare ATT_EST_EDITION 1
+	then
+		attitude_estimator_q start
+	else
+		echo "WARNING!!! NO ATTITUDE ESTIMATOR SELECTED!"
+	fi
+fi
+
 position_estimator_inav start
 
 mc_att_control start
