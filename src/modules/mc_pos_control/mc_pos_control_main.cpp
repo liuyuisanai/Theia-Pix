@@ -200,6 +200,10 @@ private:
         param_t accept_radius;
         param_t pitch_lpf_cut;
 
+        param_t follow_grad_ff_start;
+        param_t follow_grad_ff_end;
+        param_t follow_grad_ff;
+
         param_t vel_control_z_p_down;
         param_t vel_control_z_p_up;
 
@@ -225,6 +229,11 @@ private:
 		float follow_vel_ff;
 		float follow_talt_offs;
 		float follow_yaw_off_max;
+
+        float follow_grad_ff_start;
+        float follow_grad_ff_end;
+        float follow_grad_ff;
+
         bool land_correction_on;
 		bool follow_use_alt;
 		bool follow_rpt_alt;
@@ -396,6 +405,13 @@ private:
 	 * Control setpoint if "follow target" mode
 	 */
 	void		control_follow(float dt);
+
+	/**
+	 * Calulate how much of full feed foward is necessary based on distance.
+     * returned values are in range from 0.0 to 1.0 - zero to hundred percent of full feed foward
+	 */
+	float		follow_grad_ff(float distance);
+    
 
 	/**
 	 * Control camera and copter yaw depending on mode
@@ -577,6 +593,9 @@ MulticopterPositionControl::MulticopterPositionControl() :
 	_params_handles.follow_use_alt	= param_find("FOL_USE_ALT");
 	_params_handles.follow_rpt_alt	= param_find("FOL_RPT_ALT");
 
+    _params_handles.follow_grad_ff_start = param_find("FOL_FF_GRAD_STRT");
+    _params_handles.follow_grad_ff_end = param_find("FOL_FF_GRAD_END");
+    _params_handles.follow_grad_ff = param_find("FOL_FF_GRAD_USE");
 
 	_params_handles.follow_lpf	= param_find("FOL_LPF");
 	_params_handles.cam_pitch_max	= param_find("CAM_P_MAX");
@@ -663,6 +682,11 @@ MulticopterPositionControl::parameters_update(bool force)
 		param_get(_params_handles.follow_yaw_off_max, &_params.follow_yaw_off_max);
 		_params.follow_yaw_off_max = math::radians(_params.follow_yaw_off_max);
 		param_get(_params_handles.follow_lpf, &_params.follow_lpf);
+
+		param_get(_params_handles.follow_grad_ff, &_params.follow_grad_ff);
+		param_get(_params_handles.follow_grad_ff_start, &_params.follow_grad_ff_start);
+		param_get(_params_handles.follow_grad_ff_end, &_params.follow_grad_ff_end);
+
 		_tvel_lpf.set_cutoff_frequency(_params.follow_lpf);
 		param_get(_params_handles.loi_step_len, &_params.loi_step_len);
 		param_get(_params_handles.cam_pitch_max, &_params.cam_pitch_max);
@@ -1710,8 +1734,20 @@ MulticopterPositionControl::control_follow(float dt)
 	/* add target velocity to setpoint move rate */
 	_sp_move_rate += _tvel;
 
-	/* feed forward target velocity */
-	_vel_ff += _tvel * _params.follow_vel_ff;
+	//feed forward target velocity 
+    // use gradient feed foward based on drone to target distance
+    if (_params.follow_grad_ff) {
+
+        math::Vector<3> trgt_drone_delta_pos = _tpos - _pos;
+        float res = follow_grad_ff( trgt_drone_delta_pos.length() ) ;
+        float ff_r = res * _params.follow_vel_ff;
+        //mavlink_log_info(_mavlink_fd, "%.3f %.3f %.3f %.3f", (double)_params.follow_grad_ff_end, (double)_params.follow_grad_ff_start, (double)res, (double)ff_r);
+        _vel_ff += _tvel * follow_grad_ff( trgt_drone_delta_pos.length() ) * _params.follow_vel_ff;
+
+    }
+    else 
+        // use full feed foward in any distance
+        _vel_ff += _tvel * _params.follow_vel_ff;
 
 	/* update position setpoint and feed-forward velocity if not repeating target altitude */
 	if (!_params.follow_rpt_alt) {
@@ -1719,6 +1755,28 @@ MulticopterPositionControl::control_follow(float dt)
         _pos_sp(2) = _ref_alt + _follow_offset(2);
 		_vel_ff(2) -= _tvel(2) * _params.follow_vel_ff;
 	}
+}
+
+float
+MulticopterPositionControl::follow_grad_ff(float distance){
+
+    float grad_start = _params.follow_grad_ff_start;
+    float grad_end = _params.follow_grad_ff_end;
+
+    float grad_dst = distance - grad_start;
+    float grad_interval = grad_end - grad_start;
+
+    if (grad_dst < 0.0f) grad_dst = 0.0f;
+    if (grad_dst > grad_interval) grad_dst = grad_interval;
+
+    if (grad_interval <= 0.0f) {
+
+        if (distance > grad_end) return 0.0f;
+        else return 1.0f;
+    
+    }
+
+    return 1.0f - (grad_dst / grad_interval); 
 }
 
 void MulticopterPositionControl::set_camera_yaw(){

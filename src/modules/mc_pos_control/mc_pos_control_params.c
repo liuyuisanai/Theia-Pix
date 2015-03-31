@@ -352,18 +352,20 @@ PARAM_DEFINE_FLOAT(A_YAW_GRAD_Z_R, 2.0f);
  */
 PARAM_DEFINE_FLOAT(MPC_PITCH_LPF, 0.0f);
 
-
 /**
- * control_auto_vel Z speed proportion to XY speed when drone goes up
- * 
- * @group Multicopter Position Control
+ * If set to one speed feed foward will change dynamically based on distance from drone to target.
  */
-PARAM_DEFINE_FLOAT(MPC_CVEL_ZP_UP, 1.0f);
+PARAM_DEFINE_INT32(FOL_FF_GRAD_USE, 1);
 
 
 /**
- * control_auto_vel Z speed proportion to XY speed when drone goes down 
- * 
- * @group Multicopter Position Control
+ * Beginning of distance interval in which FF will change.
+ * Below this interval FF will be 1.0 (100% of full feed foward)
  */
-PARAM_DEFINE_FLOAT(MPC_CVEL_ZP_DWN, 1.0f);
+PARAM_DEFINE_FLOAT(FOL_FF_GRAD_STRT, 0.0f);
+
+/**
+ * End of distance interval in which FF will change.
+ * Above this interval FF will be 0.0 (0% of full feed foward)
+ */
+PARAM_DEFINE_FLOAT(FOL_FF_GRAD_END, 0.0f);
