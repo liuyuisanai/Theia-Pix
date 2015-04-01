@@ -1739,8 +1739,8 @@ MulticopterPositionControl::control_follow(float dt)
     if (_params.follow_grad_ff) {
 
         math::Vector<3> trgt_drone_delta_pos = _tpos - _pos;
-        float res = follow_grad_ff( trgt_drone_delta_pos.length() ) ;
-        float ff_r = res * _params.follow_vel_ff;
+        //float res = follow_grad_ff( trgt_drone_delta_pos.length() ) ;
+        //float ff_r = res * _params.follow_vel_ff;
         //mavlink_log_info(_mavlink_fd, "%.3f %.3f %.3f %.3f", (double)_params.follow_grad_ff_end, (double)_params.follow_grad_ff_start, (double)res, (double)ff_r);
         _vel_ff += _tvel * follow_grad_ff( trgt_drone_delta_pos.length() ) * _params.follow_vel_ff;
 
