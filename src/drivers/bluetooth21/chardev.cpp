@@ -76,6 +76,7 @@ read(FAR struct file * filp, FAR char * buffer, size_t buflen)
 	if (di == INVALID_DEV_INDEX) { return -ENXIO; }
 
 	auto & mp = get_multiplexer(filp);
+	if (not is_healthy(mp)) { return -EIO; }
 
 	ssize_t r = 0;
 	if (di == 0)
@@ -104,6 +105,7 @@ write(FAR struct file * filp, FAR const char * buffer, size_t buflen)
 	if (di == INVALID_DEV_INDEX) { return -ENXIO; }
 
 	auto & mp = get_multiplexer(filp);
+	if (not is_healthy(mp)) { return -EIO; }
 
 	ssize_t r = 0;
 	if (di == 0)
@@ -166,7 +168,7 @@ poll(FAR struct file * filp, FAR struct pollfd * p_fd, bool setup_phase)
 			 */
 			r = -ENOMEM;
 		}
-		else
+		else if (is_healthy(mp))
 		{
 			add(mp.poll_waiters[ch], p_fd);
 			poll_notify_channel_unsafe(mp.poll_waiters, ch,
@@ -174,6 +176,10 @@ poll(FAR struct file * filp, FAR struct pollfd * p_fd, bool setup_phase)
 				not full(mp.xt.channel_buffer[ch])
 			);
 		}
+		/*
+		 * If multiplexer is not healthy let caller get a timeout
+		 * to preserve mavlink receiver from infinite active loop.
+		 */
 	}
 	else
 	{

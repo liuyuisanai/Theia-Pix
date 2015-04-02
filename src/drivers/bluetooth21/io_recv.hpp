@@ -23,6 +23,10 @@ struct RxState
 
 	device_buffer_type device_buffer;
 	channel_buffer_type channel_buffer[8];
+
+	bool healthy;
+
+	RxState() : healthy(true) {}
 };
 
 inline void
@@ -61,8 +65,16 @@ process_serial_input(Protocol tag, Device & d, RxState & rx)
 
 		channel_index_t ch = get_channel_number(tag, first, last);
 
-		// TODO check channel index is valid.
 		// TODO check channel is opened. Drop data on closed channels.
+		if (ch > 7)
+		{
+			/*
+			 * Invalid channel index. It means protocol
+			 * synchronization got broken.
+			 */
+			rx.healthy = false;
+			return poll_notify_mask_t();
+		}
 
 		mark(poll_mask, ch, true);
 

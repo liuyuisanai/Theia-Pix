@@ -58,5 +58,8 @@ perform_poll_io(Device & d, MultiPlexer & mp, int poll_timeout_ms);
 void
 update_connections(MultiPlexer & mp, channel_mask_t connected);
 
+inline bool
+is_healthy(const MultiPlexer & mp) { return mp.rx.healthy; }
+
 }
 // end of namespace BT

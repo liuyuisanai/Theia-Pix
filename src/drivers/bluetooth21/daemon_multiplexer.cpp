@@ -63,12 +63,25 @@ daemon(int argc, const char * const argv[])
 		);
 	}
 
-	auto & mp = Globals::Multiplexer::get();
 	//DevLog log_dev(fileno(dev), 2, "module  ", "host    ");
 	auto & log_dev = dev;
 
 	started = true;
-	while (should_run) { perform_poll_io(log_dev, mp, POLL_ms); }
+	while (should_run)
+	{
+		auto & mp = Globals::Multiplexer::get();
+		perform_poll_io(log_dev, mp, POLL_ms);
+		if (not is_healthy(mp)) { break; }
+	}
+
+	while (should_run)
+	{
+		fprintf(stderr
+			, "%s stopped IO processing because went unhealty.\n"
+			, PROCESS_NAME
+		);
+		sleep(1);
+	}
 
 	CharacterDevices::unregister_all_devices();
 	Globals::Multiplexer::destroy();
