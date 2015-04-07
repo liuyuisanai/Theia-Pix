@@ -39,7 +39,8 @@ MODULE_COMMAND	= gps
 
 SRCS		= gps.cpp \
 		  gps_helper.cpp \
-		  ubx.cpp
+		  ubx.cpp \
+		  gps_params.c
 		  # disabled mtk.cpp ashtech.cpp
 
 MODULE_STACKSIZE = 1200

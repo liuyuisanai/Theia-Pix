@@ -55,6 +55,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <systemlib/param/param.h>
 
 #include <systemlib/err.h>
 #include <uORB/uORB.h>
@@ -114,6 +115,12 @@ UBX::configure(unsigned &baudrate)
 
 	unsigned baud_i;
 
+	uint32_t measure_interval = 0;
+	// TODO! [AK] Consider merging with INAV_GPS_DELAY because these parameters need to be in sync
+	param_get(param_find("GPS_UBX_INTERVAL"), &measure_interval);
+	int32_t dynamics_model = -1;
+	param_get(param_find("GPS_UBX_DYNAMICS"), &dynamics_model);
+
 	for (baud_i = 0; baud_i < sizeof(baudrates) / sizeof(baudrates[0]); baud_i++) {
 		baudrate = baudrates[baud_i];
 		set_baudrate(_fd, baudrate);
@@ -167,7 +174,12 @@ UBX::configure(unsigned &baudrate)
 
 	/* Send a CFG-RATE message to define update rate */
 	memset(&_buf.payload_tx_cfg_rate, 0, sizeof(_buf.payload_tx_cfg_rate));
-	_buf.payload_tx_cfg_rate.measRate	= UBX_TX_CFG_RATE_MEASINTERVAL;
+	if (measure_interval != 0) {
+		_buf.payload_tx_cfg_rate.measRate = measure_interval;
+	}
+	else {
+		_buf.payload_tx_cfg_rate.measRate = UBX_TX_CFG_RATE_MEASINTERVAL;
+	}
 	_buf.payload_tx_cfg_rate.navRate	= UBX_TX_CFG_RATE_NAVRATE;
 	_buf.payload_tx_cfg_rate.timeRef	= UBX_TX_CFG_RATE_TIMEREF;
 
@@ -180,7 +192,12 @@ UBX::configure(unsigned &baudrate)
 	/* send a NAV5 message to set the options for the internal filter */
 	memset(&_buf.payload_tx_cfg_nav5, 0, sizeof(_buf.payload_tx_cfg_nav5));
 	_buf.payload_tx_cfg_nav5.mask		= UBX_TX_CFG_NAV5_MASK;
-	_buf.payload_tx_cfg_nav5.dynModel	= UBX_TX_CFG_NAV5_DYNMODEL;
+	if (dynamics_model != -1) {
+		_buf.payload_tx_cfg_nav5.dynModel = dynamics_model;
+	}
+	else {
+		_buf.payload_tx_cfg_nav5.dynModel = UBX_TX_CFG_NAV5_DYNMODEL;
+	}
 	_buf.payload_tx_cfg_nav5.fixMode	= UBX_TX_CFG_NAV5_FIXMODE;
 
 	send_message(UBX_MSG_CFG_NAV5, _buf.raw, sizeof(_buf.payload_tx_cfg_nav5));
