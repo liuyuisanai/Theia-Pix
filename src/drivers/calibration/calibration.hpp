@@ -3,7 +3,7 @@
 #include <mathlib/mathlib.h>
 
 /*
- * common sensor scaling factors; Vout = Vscale * (Vin + Voffset)
+ * common sensor scaling factors; Vout = Vscale * (Vin - Voffset)
  */
 
 struct __EXPORT calibration_values_s {
