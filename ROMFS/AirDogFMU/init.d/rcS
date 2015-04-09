@@ -245,6 +245,14 @@ then
 	#
 	# Telemetry module
 	#
+
+	unset MAVLINK_TTY
+
+	if param compare A_TELEMETRY_MODE 0
+	then
+		set MAVLINK_TTY /dev/ttyS1
+	fi
+
 	if param compare A_TELEMETRY_MODE 1
 	then
 		# Power-cycle BT module
@@ -255,22 +263,26 @@ then
 
 		bluetooth21 start /dev/ttyS1 factory-param
 		set MAVLINK_TTY /dev/bt1
-	else
-		set MAVLINK_TTY /dev/ttyS1
 	fi
 
 	#
 	# MAVLink
 	#
-	if param compare MAV_MINIMALISTIC 1
+
+	if [ x$MAVLINK_TTY = x ]
 	then
-		set MAVLINK_MODE "-m airdog"
+		echo MAVLink NOT started.
 	else
-		# set MAVLINK_MODE "" produces new line on substitution.
-		unset MAVLINK_MODE
+		if param compare MAV_MINIMALISTIC 1
+		then
+			set MAVLINK_MODE "-m airdog"
+		else
+			# set MAVLINK_MODE "" produces new line on substitution.
+			unset MAVLINK_MODE
+		fi
+		echo mavlink start $MAVLINK_MODE -r 1000 -d $MAVLINK_TTY
+		mavlink start $MAVLINK_MODE -r 1000 -d $MAVLINK_TTY
 	fi
-	echo mavlink start $MAVLINK_MODE -r 1000 -d $MAVLINK_TTY
-	mavlink start $MAVLINK_MODE -r 1000 -d $MAVLINK_TTY
 
 	#
 	# Sensors, Logging, GPS

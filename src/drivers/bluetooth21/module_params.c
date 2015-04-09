@@ -7,8 +7,10 @@
  * 0 -- Plain radio modem,
  * 1 -- Long-range bluetooth.
  *
+ * Warning: Default and invalid values keep telemetry disabled!
+ *
  */
-PARAM_DEFINE_INT32(A_TELEMETRY_MODE, 0);
+PARAM_DEFINE_INT32(A_TELEMETRY_MODE, -1);
 
 /*
  * Device ID visible to user as a bluetooth name as one of

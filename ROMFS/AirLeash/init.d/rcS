@@ -102,6 +102,14 @@ fi
 #
 # Telemetry module
 #
+
+unset MAVLINK_TTY
+
+if param compare A_TELEMETRY_MODE 0
+then
+	set MAVLINK_TTY /dev/ttyS0
+fi
+
 if param compare A_TELEMETRY_MODE 1
 then
 	# Power-cycle BT module
@@ -112,48 +120,50 @@ then
 
 	bluetooth21 start /dev/ttyS0 factory-param
 	set MAVLINK_TTY /dev/bt1
-else
-	set MAVLINK_TTY /dev/ttyS0
 fi
 
 #
 # MAVLink
 #
-if param compare AIRD_LEASH_MODE 0
+if [ x$MAVLINK_TTY = x ]
 then
-	#Default leash
-	mavlink start -d $MAVLINK_TTY -m custom
-	usleep 1000
-	mavlink stream -r 18 -d $MAVLINK_TTY -s GLOBAL_POSITION_INT
-	usleep 1000
-	mavlink stream -r 0.1 -d $MAVLINK_TTY -s GPS_RAW_INT
+	echo MAVLink NOT started.
 else
+	if param compare AIRD_LEASH_MODE 0
+	then
+		#Default leash
+		mavlink start -d $MAVLINK_TTY -m custom
+		usleep 1000
+		mavlink stream -r 18 -d $MAVLINK_TTY -s GLOBAL_POSITION_INT
+		usleep 1000
+		mavlink stream -r 0.1 -d $MAVLINK_TTY -s GPS_RAW_INT
+	fi
+
 	if param compare AIRD_LEASH_MODE 1
 	then
 		#Trainer leash
 		mavlink start -d $MAVLINK_TTY -m custom
-	else
-		if param compare AIRD_LEASH_MODE 2
-		then
-			#Follow path leash
-			trajectory_calculator start
-			mavlink start -d $MAVLINK_TTY -m target
-			usleep 1000
-			mavlink stream -r 0.1 -d $MAVLINK_TTY -s GPS_RAW_INT
-		else
-			if param compare AIRD_LEASH_MODE 3
-			then
-				#GPS test leash
-				mavlink start -d $MAVLINK_TTY -m custom
-				usleep 1000
-				mavlink stream -r 10 -d $MAVLINK_TTY -s GLOBAL_POSITION_INT
-				usleep 1000
-				mavlink stream -r 10 -d $MAVLINK_TTY -s GPS_RAW_INT
-			fi
-		fi
+	fi
+
+	if param compare AIRD_LEASH_MODE 2
+	then
+		#Follow path leash
+		trajectory_calculator start
+		mavlink start -d $MAVLINK_TTY -m target
+		usleep 1000
+		mavlink stream -r 0.1 -d $MAVLINK_TTY -s GPS_RAW_INT
+	fi
+
+	if param compare AIRD_LEASH_MODE 3
+	then
+		#GPS test leash
+		mavlink start -d $MAVLINK_TTY -m custom
+		usleep 1000
+		mavlink stream -r 10 -d $MAVLINK_TTY -s GLOBAL_POSITION_INT
+		usleep 1000
+		mavlink stream -r 10 -d $MAVLINK_TTY -s GPS_RAW_INT
 	fi
 fi
-
 
 #
 # Sensors, GPS, estimators and commander
