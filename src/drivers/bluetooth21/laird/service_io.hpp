@@ -8,8 +8,6 @@
 
 #include "../debug.hpp"
 
-#include "service_state.hpp"
-
 namespace BT
 {
 namespace Service
@@ -29,6 +27,30 @@ constexpr auto MAX_COMMAND_DURATION = Time::duration_sec(3);
 
 constexpr int READ_WAIT_POLL_ms = 1000;
 constexpr int WRITE_SINGLE_POLL_ms = 1000;
+
+template <typename State>
+void
+process_service_packet(State & s, const RESPONSE_EVENT_UNION & packet)
+{
+	bool processed = handle_service_packet(s, packet);
+
+	if (not processed)
+	{
+		if (is_command(get_event_id(packet))) {
+			if (get_response_status(packet) == MPSTATUS_OK)
+				dbg("-> CMD 0x%02x OK\n", get_event_id(packet));
+			else
+			{
+				dbg("-> CMD 0x%02x ERROR 0x%02x\n"
+					, get_event_id(packet)
+					, get_response_status(packet));
+			}
+		}
+		else
+			dbg("-> Event 0x%02x dropped.\n", get_event_id(packet));
+	}
+}
+
 
 template <typename Device>
 ssize_t
@@ -111,9 +133,9 @@ wait_service_packet(Device & dev, RESPONSE_EVENT_UNION & buf)
 	return r;
 }
 
-template <typename Device>
+template <typename Device, typename State>
 bool
-wait_command_response(Device & dev, ServiceState & svc, event_id_t cmd, void * buf, size_t size)
+wait_command_response(Device & dev, State & state, event_id_t cmd, void * buf, size_t size)
 {
 	// TODO add timeout parameter
 	auto time_limit = Time::now() + MAX_COMMAND_DURATION;
@@ -133,7 +155,7 @@ wait_command_response(Device & dev, ServiceState & svc, event_id_t cmd, void * b
 		else
 		{
 			size_t read_size = r;
-			process_service_packet(svc, packet);
+			process_service_packet(state, packet);
 			if (read_size == size and cmd == get_event_id(packet))
 			{
 				memcpy(buf, &packet, size);
@@ -154,9 +176,9 @@ wait_command_response(Device & dev, ServiceState & svc, event_id_t cmd, void * b
 	}
 }
 
-template <typename Device>
+template <typename Device, typename State>
 void
-wait_process_event(Device & dev, ServiceState & svc)
+wait_process_event(Device & dev, State & state)
 {
 	RESPONSE_EVENT_UNION packet;
 
@@ -167,36 +189,39 @@ wait_process_event(Device & dev, ServiceState & svc)
 	}
 	else
 	{
-		process_service_packet(svc, packet);
+		process_service_packet(state, packet);
 		event_id_t event = get_event_id(packet);
 		if (is_command(event))
 			dbg("Unexpected command response 0x%02x.\n", event);
 	}
 }
 
-template <typename Device>
+template <typename Device, typename State>
 struct ServiceBlockingIO
 {
 	Device & dev;
-	ServiceState & svc;
+	State & state;
 
-	ServiceBlockingIO(Device & d, ServiceState & s)
-	: dev(d), svc(s)
-	{}
+	ServiceBlockingIO(Device & d, State & s) : dev(d), state(s) {}
 };
 
-template <typename Device, typename PacketPOD>
+template <typename Device, typename State>
+inline ServiceBlockingIO< Device, State >
+make_service_io(Device & d, State & s)
+{ return ServiceBlockingIO< Device, State >(d, s); }
+
+template <typename Device, typename State, typename PacketPOD>
 bool
-send(ServiceBlockingIO< Device > & self , const PacketPOD & p) {
+send(ServiceBlockingIO< Device, State > & self , const PacketPOD & p) {
 	bool ok = write_command(self.dev, &p, sizeof p);
 	if (not ok) { dbg_perror("send / write_command"); }
 	return ok;
 }
 
-template <typename Device, typename PacketPOD, typename ResponcePOD>
+template <typename Device, typename State, typename PacketPOD, typename ResponcePOD>
 bool
 send_receive(
-	ServiceBlockingIO< Device > & self
+	ServiceBlockingIO< Device, State > & self
 	, const PacketPOD & p
 	, ResponcePOD & r
 ) {
@@ -207,13 +232,13 @@ send_receive(
 	}
 
 	event_id_t cmd = get_event_id(p);
-	return wait_command_response(self.dev, self.svc, cmd, &r, sizeof r);
+	return wait_command_response(self.dev, self.state, cmd, &r, sizeof r);
 }
 
-template <typename Device, typename PacketPOD, typename ResponcePOD>
+template <typename Device, typename State, typename PacketPOD, typename ResponcePOD>
 bool
 send_receive_verbose(
-	ServiceBlockingIO< Device > & self
+	ServiceBlockingIO< Device, State > & self
 	, const PacketPOD & p
 	, ResponcePOD & r
 ) {
@@ -232,10 +257,10 @@ send_receive_verbose(
 	return ok;
 }
 
-template <typename Device>
+template <typename Device, typename State>
 void
-wait_process_event(ServiceBlockingIO< Device > & self)
-{ wait_process_event(self.dev, self.svc); }
+wait_process_event(ServiceBlockingIO< Device, State > & self)
+{ wait_process_event(self.dev, self.state); }
 
 }
 // end of namespace Laird

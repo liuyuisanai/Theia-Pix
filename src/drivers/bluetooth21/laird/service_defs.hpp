@@ -40,7 +40,7 @@ get_event_id(const PacketPOD & packet)
 inline bool
 is_command(event_id_t x) { return 0 < x and x < 0x80; }
 
-inline uint8_t
+inline channel_mask_t
 get_xt_flow(const RESPONSE_EVENT_UNION & buf)
 {
 	auto & hdr = *(const BMEVENT_HDR*)&buf;

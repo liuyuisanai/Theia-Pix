@@ -67,7 +67,7 @@ daemon()
 
 	auto & mp = Globals::Multiplexer::get();
 	ServiceState svc;
-	ServiceBlockingIO<decltype(log_dev)> service_io(log_dev, svc);
+	auto service_io = make_service_io(log_dev, svc);
 
 	should_run = (daemon_mode != Mode::UNDEFINED
 		and fileno(dev) > -1
@@ -93,7 +93,7 @@ daemon()
 	while (should_run)
 	{
 		wait_process_event(service_io);
-		set_xt_ready_mask(mp, svc.xt_flow);
+		set_xt_ready_mask(mp, svc.flow.xt_mask);
 
 		if (svc.conn.changed)
 		{
@@ -110,7 +110,9 @@ daemon()
 		{
 			if (daemon_mode == Mode::ONE_CONNECT)
 			{
-				request_connect(log_dev, svc, connect_address);
+				request_connect(
+					log_dev, svc.conn, connect_address
+				);
 				dbg("Request connect.\n");
 			}
 		}
