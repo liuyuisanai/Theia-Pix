@@ -4,6 +4,8 @@
 #include "../factory_addresses.hpp"
 #include "../module_params.hpp"
 
+#include "../std_util.hpp"
+
 #include "commands.hpp"
 #include "service_defs.hpp"
 #include "service_io.hpp"
@@ -16,17 +18,40 @@ namespace Laird
 {
 
 template <typename ServiceIO>
+std::pair<bool, bool>
+s_register_affirm(ServiceIO & io, const uint32_t regno, const uint32_t value)
+{
+	uint32_t module_value;
+	bool changed = false;
+	bool ok = s_register_get(io, regno, module_value);
+	if (module_value != value)
+		changed = ok = s_register_set(io, regno, value);
+	return std::make_pair(ok, changed);
+}
+
+template <typename ServiceIO>
 bool
 configure_n_reboot(ServiceIO & io)
 {
-	uint32_t s12 = Params::get("A_BT_S12_LINK");
+	bool ok, as_is;
 
-	bool as_is = s12 == BT_SREG_AS_IS;
-	bool ok = ( s_register_set(io, 6, 12)
-		and (as_is or s_register_set(io, 12, s12))
-		and s_register_store(io)
-		and soft_reset(io)
-	);
+	tie(ok, as_is) = s_register_affirm(io, 3, 1);
+	if (not ok) { return false; }
+
+	tie(ok, as_is) = s_register_affirm(io, 6, 12);
+	if (not ok) { return false; }
+
+	/* Link Supervision Timeout, seconds */
+	const uint32_t r12 = Params::get("A_BT_S12_LINK");
+	if (r12 != BT_SREG_AS_IS)
+	{
+		bool changed;
+		tie(ok, changed) = s_register_affirm(io, 12, r12);
+		if (not ok) { return false; }
+		as_is = as_is and not changed;
+	}
+
+	ok = as_is or (s_register_store(io) and soft_reset(io));
 
 	dbg("configure_n_reboot as-is %i ok %i.\n", as_is, ok);
 	return ok;
