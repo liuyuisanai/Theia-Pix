@@ -45,13 +45,26 @@ configure_name(ServiceIO & io)
 #endif
 
 #ifdef BT_LOCAL_NAME_PREFIX
-	uint32_t device_id = Params::get("A_DEVICE_ID");
-	char name[16];
-	size_t l = snprintf(
-		name, sizeof name, BT_LOCAL_NAME_PREFIX "-%u", device_id
-	);
+	Address6 addr;
+	bool ok = local_address_read(io, addr);
+	if (ok)
+	{
+		size_t i, l;
+		i = find_n2(factory_addresses, n_factory_addresses, addr).second;
 
-	return local_name_set(io, name, l);
+		char name[24];
+		uint32_t device_id = Params::get("A_DEVICE_ID");
+		if (i < n_factory_addresses)
+			l = snprintf(name, sizeof name,
+				BT_LOCAL_NAME_PREFIX "-F-%u-id-%u",
+				i, device_id);
+		else
+			l = snprintf(name, sizeof name,
+				BT_LOCAL_NAME_PREFIX "-%u", device_id);
+
+		ok = local_name_set(io, name, l);
+	}
+	return ok;
 #undef BT_LOCAL_NAME_PREFIX
 #else
 	return true;

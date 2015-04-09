@@ -46,6 +46,26 @@ module_factory_default(ServiceIO & io, uint8_t flagmask)
 
 template <typename ServiceIO>
 bool
+local_address_read(ServiceIO & io, Address6 & addr)
+{
+	RESPONSE_READ_BDADDR rsp;
+	auto cmd = prefill_packet<COMMAND_READ_BDADDR, CMD_READ_BDADDR>();
+
+	bool ok = send_receive_verbose(io, cmd, rsp)
+		and get_response_status(rsp) == MPSTATUS_OK;
+	if (ok) {
+		static_assert(SIZEOF_HOST_FORMAT_BDADDR == 6,
+			"SIZEOF_HOST_FORMAT_BDADDR");
+		copy_n(rsp.bdAddr, 6, begin(addr));
+		dbg("-> command local_address() ok " Address6_FMT,
+			Address6_FMT_ITEMS(addr));
+	}
+	else { dbg("-> command local_address() failed.\n"); }
+	return ok;
+}
+
+template <typename ServiceIO>
+bool
 local_name_set(ServiceIO & io, const char new_name[], size_t len)
 {
 	RESPONSE_SET_LCL_FNAME rsp;
