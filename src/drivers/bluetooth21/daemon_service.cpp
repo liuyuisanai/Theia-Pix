@@ -73,6 +73,7 @@ daemon()
 		and fileno(dev) > -1
 		and configure_n_reboot(service_io)
 		and configure_latency(service_io)
+		and configure_name(service_io)
 		and configure_general(service_io, daemon_mode == Mode::LISTEN)
 		and configure_factory(service_io)
 		and dump_s_registers(service_io)

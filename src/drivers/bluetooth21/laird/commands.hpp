@@ -46,6 +46,26 @@ module_factory_default(ServiceIO & io, uint8_t flagmask)
 
 template <typename ServiceIO>
 bool
+local_name_set(ServiceIO & io, const char new_name[], size_t len)
+{
+	RESPONSE_SET_LCL_FNAME rsp;
+	auto cmd = prefill_packet<COMMAND_SET_LCL_FNAME, CMD_SET_LCL_FNAME>();
+	cmd.nameLen = min<size_t>(len, MAX_LOCAL_FRIENDLY_NAME_SIZE);
+	memcpy(cmd.name, (const uint8_t *)new_name, cmd.nameLen);
+	memset(cmd.name + cmd.nameLen, 0, sizeof cmd.name - cmd.nameLen);
+
+	cmd.flags = 2; /* Make it visible right now, but do not store. */
+
+	bool ok = send_receive_verbose(io, cmd, rsp)
+		and get_response_status(rsp) == MPSTATUS_OK;
+
+	dbg("-> command local_name_set('%s') %s.\n",
+		cmd.name, ok ? "ok": "failed");
+	return ok;
+}
+
+template <typename ServiceIO>
+bool
 s_register_get(ServiceIO & io, uint32_t regno, uint32_t & value)
 {
 	RESPONSE_READ_SREG rsp;

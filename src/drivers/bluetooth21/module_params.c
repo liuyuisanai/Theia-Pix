@@ -1,5 +1,7 @@
 #include <systemlib/param/param.h>
 
+#include "module_params.hpp"
+
 /*
  * Telemetry mode:
  * 0 -- Plain radio modem,
@@ -7,6 +9,12 @@
  *
  */
 PARAM_DEFINE_INT32(A_TELEMETRY_MODE, 0);
+
+/*
+ * Device ID visible to user as a bluetooth name as one of
+ *   AirDog %i, AirLeash %i, PX4 %i.
+ */
+PARAM_DEFINE_INT32(A_DEVICE_ID, BT_PARAM_DEFAULT);
 
 /*
  * Mode and factory address index to connect to.
@@ -19,4 +27,4 @@ PARAM_DEFINE_INT32(A_TELEMETRY_MODE, 0);
  * A value outside the range also sets the listen mode.
  *
  */
-PARAM_DEFINE_INT32(A_BT_CONNECT_TO, -1);
+PARAM_DEFINE_INT32(A_BT_CONNECT_TO, BT_PARAM_DEFAULT);

@@ -5,6 +5,8 @@
 #include "../module_params.hpp"
 
 #include "commands.hpp"
+#include "service_defs.hpp"
+#include "service_io.hpp"
 
 namespace BT
 {
@@ -28,6 +30,32 @@ configure_n_reboot(ServiceIO & io)
 
 	dbg("configure_n_reboot as-is %i ok %i.\n", as_is, ok);
 	return ok;
+}
+
+template <typename ServiceIO>
+bool
+configure_name(ServiceIO & io)
+{
+#if defined(CONFIG_ARCH_BOARD_AIRDOG_FMU)
+# define BT_LOCAL_NAME_PREFIX "AirDog"
+#elif defined(CONFIG_ARCH_BOARD_AIRLEASH)
+# define BT_LOCAL_NAME_PREFIX "AirLeash"
+#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
+# define BT_LOCAL_NAME_PREFIX "px4"
+#endif
+
+#ifdef BT_LOCAL_NAME_PREFIX
+	uint32_t device_id = Params::get("A_DEVICE_ID");
+	char name[16];
+	size_t l = snprintf(
+		name, sizeof name, BT_LOCAL_NAME_PREFIX "-%u", device_id
+	);
+
+	return local_name_set(io, name, l);
+#undef BT_LOCAL_NAME_PREFIX
+#else
+	return true;
+#endif
 }
 
 template <typename ServiceIO>
