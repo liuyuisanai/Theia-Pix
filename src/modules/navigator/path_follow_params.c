@@ -53,17 +53,17 @@ PARAM_DEFINE_FLOAT(PAFOL_ACC_RAD, 5.0f);
  * @max 50
  * @group PathFollow
  */
-PARAM_DEFINE_FLOAT(PAFOL_AC_DST_LN, 2.0f);
+PARAM_DEFINE_FLOAT(PAFOL_GT_AC_DST, 2.0f);
 
 /**
- * Path follow acceptance distance to point 
+ * Path follow gate width
  *
  * @unit meters
  * @min 0.1
  * @max 50
  * @group PathFollow
  */
-PARAM_DEFINE_FLOAT(PAFOL_AC_DST_PT, 8.0f);
+PARAM_DEFINE_FLOAT(PAFOL_GT_WIDTH, 8.0f);
 
 
 /**

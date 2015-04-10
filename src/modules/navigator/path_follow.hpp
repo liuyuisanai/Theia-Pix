@@ -17,6 +17,9 @@ struct buffer_point_s {
 	float y;
 	float z;
 
+    // Distance of trajectory segment from previous trajectory point to this one.
+    float distance;
+
 	// Provide memcopy assignment for the Queue class
 	buffer_point_s& operator=(buffer_point_s const &copy) {
 		memcpy(this, &copy, sizeof(buffer_point_s));
@@ -36,6 +39,10 @@ public:
 	virtual void on_active();
 	virtual void execute_vehicle_command();
 private:
+
+    // Vehicle status
+    vehicle_status_s* _vstatus;
+
     int iter = 0;
 
     // Timestamp of the last trajectory point
@@ -58,6 +65,17 @@ private:
 	buffer_point_s _future_point;               
     // Indicates if the mode was inited successfully
 	bool _inited;                               
+
+
+    bool _first_tp_flag = false;
+    bool _second_tp_flag = false;
+    
+    buffer_point_s _second_tp;
+    buffer_point_s _first_tp;
+    buffer_point_s _last_passed_point;
+    buffer_point_s _latest_added_tp;
+
+    bool at_least_one_point;
 
 	int     _home_position_sub;
 	int		_target_pos_sub;
@@ -102,6 +120,8 @@ private:
     math::LowPassFilter<float> _fp_d_lpf;
     math::LowPassFilter<float> _vel_lpf;
 
+    int added_points = 0;
+    int removed_points = 0;
 
     hrt_abstime _calc_vel_pid_t_prev;
 
@@ -112,10 +132,10 @@ private:
 
 	// Updates saved trajectory and trajectory distance with a new point
 	void update_traj_point_queue();
-	// Update position setpoint to desired values
-	inline void set_tpos_to_setpoint(position_setpoint_s &destination);
-	// Update position setpoint to desired values
+
+    inline void put_tpos_into_setpoint(target_global_position_s *&tpos, position_setpoint_s &setpoint_to);
 	inline void put_buffer_point_into_setpoint(const buffer_point_s &desired_point, position_setpoint_s &destination);
+
 	// Update target velocity with a new value
 	inline void update_target_velocity();
 	// Update drone velocity with a new value
@@ -125,9 +145,9 @@ private:
 	// Calculates total current distance by trajectory + drone distance to setpoint + target distance to last point
 	inline float calculate_current_distance();
 	// Checks if the next point in the buffer is safe to use
-	inline bool check_point_safe();
+	inline bool check_queue_ready();
     // Setpoint reached specialized for path follow
-    inline bool check_active_traj_point_reached();
+    inline bool traj_point_reached();
     // Get drone global position and calculate local position if needed
     inline void update_drone_pos();
     // Get target global position and calculate local position if needed

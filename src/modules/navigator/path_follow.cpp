@@ -6,6 +6,7 @@
  *
  * @author Anthony Kenga <anton.k@airdog.vom>
  * @author Martins Frolovs <martins.f@airdog.vom>
+ *
  */
 
 #include <nuttx/config.h>
@@ -63,6 +64,8 @@ void PathFollow::on_inactive() {
 
 void PathFollow::on_activation() {
 
+    _vstatus = _navigator->get_vstatus();
+
 	_home_position_sub = orb_subscribe(ORB_ID(home_position));
     orb_copy(ORB_ID(home_position), _home_position_sub, &_home_pos);
     map_projection_init(&_ref_pos, _home_pos.lat, _home_pos.lon);
@@ -75,9 +78,11 @@ void PathFollow::on_activation() {
 	_mavlink_fd = _navigator->get_mavlink_fd();
     _optimal_distance = _parameters.pafol_optimal_dist;
 
-    _last_point.y = _drone_local_pos.y;
-    _last_point.x = _drone_local_pos.x;
-    _last_point.z = _target_local_pos.z;
+    _last_passed_point.y = _drone_local_pos.y;
+    _last_passed_point.x = _drone_local_pos.x;
+    _last_passed_point.z = _target_local_pos.z;
+
+    at_least_one_point = false;
 
     if (_parameters.follow_rpt_alt == 0) {
         _starting_z = _drone_local_pos.z;
@@ -100,20 +105,22 @@ void PathFollow::on_activation() {
 		return;
 	}
 
-	_reaching_for_traj_point = false;
-    _trajectory_distance = 0.0f;
-
 	_traj_point_queue.do_empty();
+    _trajectory_distance = 0.0f;
+    _first_tp_flag = false;
+    _second_tp_flag = false;
+
 	update_traj_point_queue();
 
 	_navigator->invalidate_setpoint_triplet();
+
 	pos_sp_triplet = _navigator->get_position_setpoint_triplet();
 
 	pos_sp_triplet->next.valid = false;
 	pos_sp_triplet->current.valid = true;
 	pos_sp_triplet->previous.valid = false;
 
-    set_tpos_to_setpoint(pos_sp_triplet->current);
+    put_tpos_into_setpoint(_target_global_pos, pos_sp_triplet->current);
 
 	pos_sp_triplet->current.abs_velocity = 0.0f;
 	pos_sp_triplet->current.abs_velocity_valid = true;
@@ -126,6 +133,8 @@ void PathFollow::on_active() {
 		return; // Wait for the Loiter mode to take over, but avoid pausing main navigator thread
 	}
 
+    _vstatus = _navigator->get_vstatus();
+
     update_drone_pos();
     update_target_pos();
 	update_traj_point_queue();
@@ -136,42 +145,59 @@ void PathFollow::on_active() {
 
 	pos_sp_triplet = _navigator->get_position_setpoint_triplet();
 
-    if (_reaching_for_traj_point) {
-        if (check_active_traj_point_reached()) {
-            _last_point = _active_traj_point;
-            if (_traj_point_queue.pop(tmp_point)){
-                _reaching_for_traj_point = true;
-                _trajectory_distance -= euclidean_distance(_active_traj_point.x, _active_traj_point.y, tmp_point.x, tmp_point.y);
-                _active_traj_point = tmp_point;
-                put_buffer_point_into_setpoint(_active_traj_point, pos_sp_triplet->current);
-            } else {
-                _reaching_for_traj_point = false;
-                set_tpos_to_setpoint(pos_sp_triplet->current);
-            }
-        } 
-    } else {
-        set_tpos_to_setpoint(pos_sp_triplet->current);
-        if (check_point_safe()) {
-            if (_traj_point_queue.pop(tmp_point)){
-                _reaching_for_traj_point = true;
-                _active_traj_point = tmp_point;
-                put_buffer_point_into_setpoint(_active_traj_point, pos_sp_triplet->current);
-            }
-        }
+
+    if (_first_tp_flag == true && traj_point_reached()) {
+
+        removed_points++; 
+
+        _last_passed_point = _first_tp;
+        _first_tp_flag = false;
     }
 
+    int it = 0;
+
+    while (_first_tp_flag == false || _second_tp_flag == false){
+
+        if (_first_tp_flag == false && _second_tp_flag == true) {
+            _first_tp = _second_tp; 
+            _second_tp_flag = false;
+            _first_tp_flag = true;
+        }
+
+        if ( not (check_queue_ready() and _traj_point_queue.pop(_second_tp) ))
+            break;
+
+
+        _trajectory_distance -= _second_tp.distance;
+        _second_tp_flag = true;
+
+        if (++it>2) break;
+    }
+
+
     if (euclidean_distance(_target_local_pos.x, _target_local_pos.y, _drone_local_pos.x, _drone_local_pos.y ) < _parameters.pafol_optimal_dist - 7.0f ){
+
         _traj_point_queue.do_empty();
+        _trajectory_distance = 0.0f;
 
-        _reaching_for_traj_point = false;
-        set_tpos_to_setpoint(pos_sp_triplet->current);
+        _first_tp_flag = false;
+        _second_tp_flag = false;
 
+    }
+
+    pos_sp_triplet->current.type = SETPOINT_TYPE_VELOCITY;
+
+    if (_first_tp_flag){
+        put_buffer_point_into_setpoint(_first_tp,pos_sp_triplet->current);
+    } else {
+        put_tpos_into_setpoint(_target_global_pos, pos_sp_triplet->current);
     }
 
     pos_sp_triplet->current.abs_velocity = calculate_desired_velocity();
     pos_sp_triplet->current.alt = _ref_alt - calculate_desired_z();
 
     _navigator->set_position_setpoint_triplet_updated();
+
 }
 
 void PathFollow::execute_vehicle_command() {
@@ -241,42 +267,44 @@ void PathFollow::update_traj_point_queue() {
 				&new_point.x, &new_point.y);
 
         new_point.z = _ref_alt - target_trajectory->alt;
+
+
+        if (at_least_one_point)
+            new_point.distance = euclidean_distance(_latest_added_tp.x, _latest_added_tp.y, new_point.x, new_point.y);
+
+        if (!isfinite(new_point.distance))
+            new_point.distance = 0.0f;
      
 		if (_traj_point_queue.add(new_point, true)) {
 
-            if (_traj_point_queue.get_value_count() > 1 || _reaching_for_traj_point) {
-                _trajectory_distance += euclidean_distance(_latest_point.x, _latest_point.y, new_point.x, new_point.y); 
-            } else {
-                _trajectory_distance = 0.0f;
-            }             
-            
-            _latest_point = new_point;
+            added_points++;
+            _latest_added_tp = new_point;
+            _trajectory_distance += new_point.distance;
+            at_least_one_point = true;
 
         } else {
+
 			mavlink_log_critical(_mavlink_fd, "Trajectory overflow!");
 			warnx("Trajectory overflow!");
-		}
 
+		}
 	}
 }
 
-void PathFollow::put_buffer_point_into_setpoint(const buffer_point_s &desired_point, position_setpoint_s &destination) {
+void PathFollow::put_buffer_point_into_setpoint(const buffer_point_s &buffer_point, position_setpoint_s &setpoint) {
 
-	destination.type = SETPOINT_TYPE_VELOCITY;
-    map_projection_reproject(&_ref_pos, desired_point.x, desired_point.y, &destination.lat, &destination.lon);
+    map_projection_reproject(&_ref_pos, buffer_point.x, buffer_point.y, &setpoint.lat, &setpoint.lon);
+	setpoint.position_valid = true;
+	setpoint.valid = true;
 
-	destination.position_valid = true;
-	destination.valid = true;
 }
 
-void PathFollow::set_tpos_to_setpoint(position_setpoint_s &destination) {
+void PathFollow::put_tpos_into_setpoint(target_global_position_s *&tpos, position_setpoint_s &setpoint_to) {
 
-    destination.type = SETPOINT_TYPE_VELOCITY;
-    destination.lat = _target_global_pos->lat;
-    destination.lon = _target_global_pos->lon;
-
-    destination.position_valid = true;
-    destination.valid = true;
+    setpoint_to.lat = tpos->lat;
+    setpoint_to.lon = tpos->lon;
+    setpoint_to.position_valid = true;
+    setpoint_to.valid = true;
 
 }
 
@@ -304,7 +332,6 @@ float PathFollow::calculate_desired_velocity() {
 
     // Solution to problem when accumulated error is very big, drone is to close and comes closer because of the accumulated error (integral part), which
     // is decreasing to slow in this case.
-    //
 
     // dst_to_optimal is below zero and trajectory distance is still decreasing[ because dirivative is smaller than zero], so the pulling power[integral part] is to big and needs 
     // some extra help to decrease it, we do it with factor pafol_vel_i_add_dec_rate [follow path velocity integral part aditional decrease rate]
@@ -347,13 +374,9 @@ float PathFollow::calculate_desired_velocity() {
     dd_log.log(0,_fp_i);
     dd_log.log(1,_fp_p);
     dd_log.log(2,_fp_d);
-    dd_log.log(3,vel_new);
-    dd_log.log(4,_drone_speed);
-    dd_log.log(5,_target_speed);
-    dd_log.log(6,dst_to_optimal);
 
     // mavlink_log_info(_mavlink_fd, "i:%.3f, p:%.3f d:%.3f", (double)fp_d_coif, (double)fp_p_coif, (double)fp_i_coif);
-    //mavlink_log_info(_mavlink_fd, "dst:%.3f, fp_i:%.3f fp_d:%.3f, ad:%.3f", (double)dst_to_optimal, (double)_fp_i, (double)_fp_d);
+    // mavlink_log_info(_mavlink_fd, "dst:%.3f, fp_i:%.3f fp_d:%.3f, ad:%.3f", (double)dst_to_optimal, (double)_fp_i, (double)_fp_d);
     // mavlink_log_info(_mavlink_fd, "ul:%.3f, ll:%.3f ir:%.3f dr:%.3f", (double)_parameters.pafol_vel_i_lower_limit, (double)_parameters.pafol_vel_i_upper_limit, 
     //        (double)_parameters.pafol_vel_i_add_inc_rate, (double)_parameters.pafol_vel_i_add_dec_rate);
     
@@ -378,26 +401,80 @@ float PathFollow::calculate_current_distance() {
     float tpos_dt = _last_tpos_t != 0 ? (t - _last_tpos_t) * 1e-6f : 0.0f;
     float dpos_dt = _last_dpos_t != 0 ? (t - _last_dpos_t) * 1e-6f : 0.0f;
 
-    if (tpos_dt > 1.0f) tpos_dt = 1.0f;
-    if (dpos_dt > 1.0f) dpos_dt = 1.0f;
+    if (tpos_dt > 2.0f) tpos_dt = 2.0f;
+    if (dpos_dt > 2.0f) dpos_dt = 2.0f;
 
     target_lpos = target_lpos + target_vel * tpos_dt;
     drone_lpos = drone_lpos + drone_vel * dpos_dt;
 
-    if (_reaching_for_traj_point){
+    float rate_a = 0.0f;
+    float rate_b = 0.0f;
+    float dst_to_gate;
 
-        full_distance = _trajectory_distance + 
-            euclidean_distance(drone_lpos(0), drone_lpos(1), _active_traj_point.x, _active_traj_point.y) +
-            euclidean_distance(_latest_point.x, _latest_point.y, target_lpos(0), target_lpos(1));
-    } else {
+    // Calculate distance to gate. 
+    if (_first_tp_flag == true) {
 
-        full_distance = euclidean_distance(target_lpos(0), target_lpos(1), drone_lpos(0), drone_lpos(1));
-    }
+            math::Vector<2> tunnel(_first_tp.x - _last_passed_point.x, _first_tp.y - _last_passed_point.y);
+            math::Vector<2> drone_to_tp(_first_tp.x - _drone_local_pos.x, _first_tp.y - _drone_local_pos.y);
+
+            float dot_product = tunnel(0) * drone_to_tp(0) + tunnel(1) * drone_to_tp(1);
+
+            if (tunnel(0) != 0.0f || tunnel(1) != 0.0f) {
+                dst_to_gate = dot_product /tunnel.length();
+            }
+    
+            float acc_dst_to_gate = _parameters.pafol_acc_dst_to_gate;
+            float traj_radius = _parameters.airdog_traj_radius;
+
+            if (dst_to_gate > traj_radius) 
+                rate_a = 1.0f;
+            else if (dst_to_gate < acc_dst_to_gate) 
+                rate_a = 0.0f;
+            else 
+                rate_a = (dst_to_gate - acc_dst_to_gate) / (traj_radius - acc_dst_to_gate);
+            
+            rate_b = 1.0f - rate_a;
+        }
+
+        if (_first_tp_flag == false){
+        // No trajectory points
+
+            full_distance = euclidean_distance(drone_lpos(0), drone_lpos(1), target_lpos(0), target_lpos(1));
+
+            //mavlink_log_info(_mavlink_fd, "zero_points: full_dst:%.3f rem:%.3f add:%.3f" , (double)full_distance, (double)removed_points, (double)added_points);
+
+        } else if (_first_tp_flag == true && _second_tp_flag == false) {
+        // One trajectory point
+
+            float distance_a = euclidean_distance(drone_lpos(0), drone_lpos(1), _first_tp.x, _first_tp.y) + 
+                            euclidean_distance(_first_tp.x, _first_tp.y, target_lpos(0), target_lpos(1));
+
+            float distance_b = euclidean_distance(drone_lpos(0), drone_lpos(1), target_lpos(0), target_lpos(1));
+
+            full_distance = rate_a * distance_a  + rate_b * distance_b;
+
+            //mavlink_log_info(_mavlink_fd, "1 full:%.1f da:%.1f db:%.1f rb:%.1f" , (double)full_distance, (double)distance_a, (double)distance_b, (double)rate_b);
+         
+        } else {
+        // Two or more trajectory points
+
+            float distance_a = euclidean_distance(drone_lpos(0), drone_lpos(1), _first_tp.x, _first_tp.y) + 
+                            euclidean_distance(_first_tp.x, _first_tp.y, _second_tp.x, _second_tp.y);
+
+            float distance_b = euclidean_distance(drone_lpos(0), drone_lpos(1), _second_tp.x, _second_tp.y);
+
+            full_distance = rate_a * distance_a  + rate_b * distance_b + 
+                            _trajectory_distance + 
+                            euclidean_distance(_latest_added_tp.x, _latest_added_tp.y, target_lpos(0), target_lpos(1));
+
+            //mavlink_log_info(_mavlink_fd, "2 full:%.1f da:%.1f ra:%.1f db:%.1f rb:%.1f" , (double)full_distance, (double)distance_a, (double)rate_a,  (double)distance_b, (double)rate_b);
+
+        }
 
     return full_distance;
 }
 
-bool PathFollow::check_point_safe() {
+bool PathFollow::check_queue_ready() {
 
 	buffer_point_s proposed_point;
 	if (!_traj_point_queue.peek(0, proposed_point)) {
@@ -406,29 +483,43 @@ bool PathFollow::check_point_safe() {
     return true;
 }
 
-bool PathFollow::check_active_traj_point_reached() {
+bool PathFollow::traj_point_reached() {
 
-    float acc_dst_to_line = _parameters.pafol_acc_dst_to_line;
-    float acc_dst_to_point = _parameters.pafol_acc_dst_to_point;
+    float acc_dst_to_gate = _parameters.pafol_acc_dst_to_gate;
+    float gate_width = _parameters.pafol_gate_width;
 
-    math::Vector<2> vel_xy(_drone_local_pos.vx, _drone_local_pos.vy);  
-    math::Vector<2> dst_xy(_active_traj_point.x - _drone_local_pos.x, _active_traj_point.y - _drone_local_pos.y); 
+    // Vector from last trajectory_point to next one.
+    math::Vector<2> tunnel(_first_tp.x - _last_passed_point.x, _first_tp.y - _last_passed_point.y);
+    // Vector from current drone position to next trajectory_point.
+    math::Vector<2> drone_to_tp(_first_tp.x - _drone_local_pos.x, _first_tp.y - _drone_local_pos.y);
 
-    if (vel_xy.length() < 1e-6f) return false;
+    // dot_p(A,B) = |A|x|B| x cos a
+    float dot_product = tunnel(0) * drone_to_tp(0) + tunnel(1) * drone_to_tp(1);
+    // cross_p(A,B) = |A|x|B| x sin a
+    float cross_product = tunnel(0) * drone_to_tp(1) - tunnel(1) * drone_to_tp(0);
 
-    float dot_product = vel_xy(0) * dst_xy(0) + vel_xy(1) * dst_xy(1);
-    float dst_to_line = dot_product / vel_xy.length();
+    float dst_to_gate = 0.0f;
+    float dst_to_tunnel_middle = 0.0;
 
-    if (dst_to_line <= acc_dst_to_line && dst_xy.length() <= acc_dst_to_point )
+    if (abs(tunnel(0)) > 1e-6f || abs(tunnel(1)) > 1e-6f) {
+        // Resultig in |B| x cos a
+        dst_to_gate = dot_product /tunnel.length();
+        // Resultig in |B| x sin a
+        dst_to_tunnel_middle = cross_product /tunnel.length();
+    }
+
+    if (dst_to_gate <= acc_dst_to_gate && abs(dst_to_tunnel_middle) * 2.0f <= gate_width )
         return true;
     else
         return false;
 }
 
-void
+ void
 PathFollow::update_target_pos(){
 
-    _target_global_pos = _navigator->get_target_position();
+    
+    if (_vstatus->condition_target_position_valid)
+        _target_global_pos = _navigator->get_target_position();
 
     if (_target_global_pos->timestamp != _target_local_pos.timestamp){
 
@@ -456,10 +547,10 @@ PathFollow::update_target_pos(){
 void
 PathFollow::update_drone_pos(){
 
-	_drone_global_pos = _navigator->get_global_position();
+    if (_vstatus->condition_global_position_valid)
+        _drone_global_pos = _navigator->get_global_position();
 
     if (_drone_global_pos->timestamp != _drone_local_pos.timestamp){
-
 
         uint64_t last_timestamp  = _drone_local_pos.timestamp;		
         float last_drone_speed = _drone_speed;
@@ -522,9 +613,9 @@ PathFollow::calculate_desired_z() {
 
         if (_reaching_for_traj_point){
 
-            z_full = _active_traj_point.z - _last_point.z;
+            z_full = _active_traj_point.z - _last_passed_point.z;
 
-            xy_full = euclidean_distance(_last_point.x, _last_point.y, _active_traj_point.x, _active_traj_point.y);
+            xy_full = euclidean_distance(_last_passed_point.x, _last_passed_point.y, _active_traj_point.x, _active_traj_point.y);
             xy_part = euclidean_distance(_drone_local_pos.x, _drone_local_pos.y, _active_traj_point.x, _active_traj_point.y);
 
             if (xy_full < 0.1f) 
@@ -536,9 +627,9 @@ PathFollow::calculate_desired_z() {
 
         } else {
 
-            z_full = _target_local_pos.z - _last_point.z;
+            z_full = _target_local_pos.z - _last_passed_point.z;
 
-            xy_full = euclidean_distance(_last_point.x, _last_point.y, _target_local_pos.x, _target_local_pos.y);
+            xy_full = euclidean_distance(_last_passed_point.x, _last_passed_point.y, _target_local_pos.x, _target_local_pos.y);
             xy_part = euclidean_distance(_drone_local_pos.x, _drone_local_pos.y, _target_local_pos.x, _target_local_pos.y);
 
 

@@ -135,7 +135,8 @@ NavigatorMode::updateParamHandles() {
     _parameter_handles.pafol_vel_i_upper_limit = param_find("PAFOL_VPID_I_UL");
     _parameter_handles.pafol_vel_i_lower_limit = param_find("PAFOL_VPID_I_LL");
 
-
+    _parameter_handles.pafol_acc_dst_to_gate = param_find("PAFOL_GT_AC_DST");
+    _parameter_handles.pafol_gate_width = param_find("PAFOL_GT_WIDTH");
 
 	_parameter_handles.mpc_max_speed = param_find("MPC_XY_VEL_MAX");
     _parameter_handles.airdog_dst_inv = param_find("A_DST_INV");
@@ -146,6 +147,8 @@ NavigatorMode::updateParamHandles() {
     _parameter_handles.proportional_gain = param_find("MPC_XY_P");
 	_parameter_handles.follow_rpt_alt	= param_find("FOL_RPT_ALT");
 	_parameter_handles.start_follow_immediately = param_find("A_FOL_IMDTLY");
+
+    _parameter_handles.airdog_traj_radius = param_find("AIRD_TRAJ_RAD");
 }
 
 void
@@ -173,8 +176,9 @@ NavigatorMode::updateParamValues() {
 	param_get(_parameter_handles.pafol_break_coef, &(_parameters.pafol_break_coef));
 	param_get(_parameter_handles.pafol_min_alt_off, &(_parameters.pafol_min_alt_off));
 	param_get(_parameter_handles.pafol_acc_rad, &(_parameters.pafol_acc_rad));
-	param_get(_parameter_handles.pafol_acc_dst_to_line, &(_parameters.pafol_acc_dst_to_line));
-	param_get(_parameter_handles.pafol_acc_dst_to_point, &(_parameters.pafol_acc_dst_to_point));
+
+	param_get(_parameter_handles.pafol_acc_dst_to_gate, &(_parameters.pafol_acc_dst_to_gate));
+	param_get(_parameter_handles.pafol_gate_width, &(_parameters.pafol_gate_width));
 
 
 	param_get(_parameter_handles.pafol_vel_i_add_dec_rate, &(_parameters.pafol_vel_i_add_dec_rate));
@@ -197,6 +201,8 @@ NavigatorMode::updateParamValues() {
     param_get(_parameter_handles.proportional_gain, &(_parameters.proportional_gain));
     param_get(_parameter_handles.follow_rpt_alt, &(_parameters.follow_rpt_alt));
     param_get(_parameter_handles.start_follow_immediately, &(_parameters.start_follow_immediately));
+
+    param_get(_parameter_handles.airdog_traj_radius, &(_parameters.airdog_traj_radius));
     
 }
 

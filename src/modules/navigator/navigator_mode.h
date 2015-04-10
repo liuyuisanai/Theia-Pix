@@ -134,8 +134,8 @@ public:
 		float pafol_optimal_dist;
 		float pafol_min_alt_off;
         float pafol_acc_rad;
-        float pafol_acc_dst_to_line;
-        float pafol_acc_dst_to_point;
+        float pafol_acc_dst_to_gate;
+        float pafol_gate_width;
 
 
         float pafol_vel_i;
@@ -161,6 +161,8 @@ public:
         float proportional_gain;
 
         int start_follow_immediately;
+
+        float airdog_traj_radius;
 
 	} _parameters;		
 
@@ -189,6 +191,10 @@ public:
 		param_t pafol_optimal_dist;
 		param_t pafol_min_alt_off;
         param_t pafol_acc_rad;
+
+        param_t pafol_acc_dst_to_gate;
+        param_t pafol_gate_width;
+
         param_t pafol_acc_dst_to_line;
         param_t pafol_acc_dst_to_point;
         param_t pafol_stop_speed;
@@ -214,6 +220,8 @@ public:
         param_t a_yaw_ignore_radius;
         param_t proportional_gain;
         param_t start_follow_immediately;
+
+        param_t airdog_traj_radius;
 
 	} _parameter_handles;
 
