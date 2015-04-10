@@ -4,6 +4,7 @@
 #include "../network_util.hpp"
 #include "../time.hpp"
 
+#include "../std_algo.hpp"
 #include "../std_util.hpp"
 
 #include "service_defs.hpp"
@@ -74,8 +75,7 @@ local_name_cmd(ServiceIO & io, const char new_name[], size_t len, uint8_t flags)
 	RESPONSE_SET_LCL_FNAME rsp;
 	auto cmd = prefill_packet<COMMAND_SET_LCL_FNAME, CMD_SET_LCL_FNAME>();
 	cmd.nameLen = min<size_t>(len, MAX_LOCAL_FRIENDLY_NAME_SIZE);
-	memcpy(cmd.name, (const uint8_t *)new_name, cmd.nameLen);
-	memset(cmd.name + cmd.nameLen, 0, sizeof cmd.name - cmd.nameLen);
+	fill(copy_n(new_name, cmd.nameLen, cmd.name), end(cmd.name), 0);
 
 	cmd.flags = 2; /* Make it visible right now, but do not store. */
 

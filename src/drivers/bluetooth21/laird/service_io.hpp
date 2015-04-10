@@ -69,6 +69,14 @@ process_service_packet(State & s, const ResponceEventBuffer & buf)
 				);
 		}
 	}
+	else if (ch == CHANNELID_MISC_EIR_INQ_RESP)
+	{
+		processed = handle_inquiry_enhanced_data(
+			s, cbegin(buf), size(buf)
+		);
+		if (not processed)
+			dbg("Enhanced Inquiry responce dropped.\n");
+	}
 	else
 	{
 		processed = handle_unknown_packet(s, cbegin(buf), size(buf));
@@ -79,7 +87,6 @@ process_service_packet(State & s, const ResponceEventBuffer & buf)
 		dbg_dump("Unknown packet bytes", buf);
 	}
 }
-
 
 template <typename Device>
 ssize_t

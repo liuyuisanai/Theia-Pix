@@ -7,8 +7,9 @@
 #include "../debug.hpp"
 
 #include "connections.hpp"
-#include "sync.hpp"
+#include "inquiry.hpp"
 #include "service_defs.hpp"
+#include "sync.hpp"
 
 namespace BT
 {
@@ -30,6 +31,7 @@ struct ServiceState
 {
 	ConnectionState conn;
 	FlowState flow;
+	InquiryState inq;
 	SyncState sync;
 };
 
@@ -46,6 +48,7 @@ handle_service_packet(ServiceState & svc, const RESPONSE_EVENT_UNION & packet)
 	 */
 	processed =   handle(svc.sync, packet)   or processed;
 	processed =   handle(svc.conn, packet)   or processed;
+	processed =   handle(svc.inq, packet)    or processed;
 	return processed;
 }
 
@@ -57,9 +60,24 @@ bool
 handle_unknown_packet(ServiceState & svc, It first, Size n)
 {
 	bool processed = false;
-	processed =   handle_unknown_packet(svc.sync, first, n)   or processed;
-	processed =   handle_unknown_packet(svc.conn, first, n)   or processed;
+	processed =   handle_unknown_packet(svc.sync, first, n)     or processed;
+	processed =   handle_unknown_packet(svc.conn, first, n)     or processed;
+	processed =   handle_unknown_packet(svc.inquiry, first, n)  or processed;
 	return processed;
+}
+
+inline bool
+handle_inquiry_enhanced_data(...) { return false; }
+
+template <typename It, typename Size>
+bool
+handle_inquiry_enhanced_data(ServiceState & svc, It first, Size n)
+{
+	bool fin = false;
+	fin =   handle_inquiry_enhanced_data(svc.sync, first, n)     or fin;
+	fin =   handle_inquiry_enhanced_data(svc.conn, first, n)     or fin;
+	fin =   handle_inquiry_enhanced_data(svc.inquiry, first, n)  or fin;
+	return fin;
 }
 
 }

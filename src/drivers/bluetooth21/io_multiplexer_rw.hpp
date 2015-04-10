@@ -18,7 +18,8 @@ read_service_channel(MultiPlexer & mp, void * buf, size_t buf_size)
 {
 	lock_guard_interruptable guard(mp.mutex_rx);
 	if (not guard.locked) { return -EINTR; }
-	return read_service_channel(mp.protocol_tag, mp.rx, buf, buf_size);
+	auto r = read_service_channel(mp.protocol_tag, mp.rx, buf, buf_size);
+	return r;
 }
 
 ssize_t

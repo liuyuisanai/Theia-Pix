@@ -40,8 +40,8 @@ started = false;
 enum class Mode : uint8_t
 {
 	UNDEFINED,
-	ONE_CONNECT,
 	LISTEN,
+	ONE_CONNECT,
 };
 
 static volatile Mode
@@ -49,6 +49,9 @@ daemon_mode = Mode::UNDEFINED;
 
 static Address6
 connect_address;
+
+static bool
+pairing_required = false;
 
 static pthread_t
 thread;
@@ -135,6 +138,15 @@ daemon()
 
 	started = true;
 
+	while (should_run and pairing_required)
+	{
+		if (inquiry(service_io, svc.inq))
+		{
+			// TODO
+			pairing_required = false;
+		}
+	}
+
 	do
 	{
 		fsync(service_io.dev);
@@ -199,12 +211,18 @@ start(const char mode[], const char addr_no[])
 		if (not addr_no)
 			fprintf(stderr, "%s: factory_address_no required.\n",
 				PROCESS_NAME);
+		else if (streq(addr_no, "pair"))
+		{
+			daemon_mode = Mode::ONE_CONNECT;
+			pairing_required = true;
+		}
 		else if (not parse_uint32(addr_no, i))
 			fprintf(stderr, "%s: invalid factory_address_no %s.\n",
 				PROCESS_NAME, addr_no);
 		else if (i < n_factory_addresses)
 		{
 			daemon_mode = Mode::ONE_CONNECT;
+			pairing_required = false;
 			connect_address = factory_addresses[i];
 		}
 		else
@@ -241,11 +259,15 @@ start(const char mode[], const char addr_no[])
 		return false;
 
 	if (daemon_mode == Mode::ONE_CONNECT)
-		fprintf(stderr
-			, "%s: mode one-connect to " Address6_FMT ".\n"
-			, PROCESS_NAME
-			, Address6_FMT_ITEMS(connect_address)
-		);
+		if (pairing_required)
+			fprintf(stderr, "%s: mode one-connect, pair.\n",
+				PROCESS_NAME);
+		else
+			fprintf(stderr
+				, "%s: mode one-connect to " Address6_FMT ".\n"
+				, PROCESS_NAME
+				, Address6_FMT_ITEMS(connect_address)
+			);
 	else
 		fprintf(stderr, "%s: mode listen.\n", PROCESS_NAME);
 

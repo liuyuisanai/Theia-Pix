@@ -5,6 +5,7 @@
 #include "../std_util.hpp"
 
 #include "defs.hpp"
+#include "service_defs.hpp"
 
 namespace BT
 {
