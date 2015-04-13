@@ -257,9 +257,9 @@ private:
 
 		math::Vector<3> pos_p;
 		math::Vector<3> vel_p;
+		math::Vector<3> vel_ff;
 		math::Vector<3> vel_i;
 		math::Vector<3> vel_d;
-		math::Vector<3> vel_ff;
 		math::Vector<3> vel_max;
 		math::Vector<3> sp_offs_max;
 
@@ -285,7 +285,16 @@ private:
 	math::Vector<3> _vel;
 	math::Vector<3> _vel_sp;
 	math::Vector<3> _vel_prev;	/**< velocity on previous step */
-	math::Vector<3> _vel_ff;
+
+    math::Vector<3> _vel_ff;
+
+    // Velocity feed foward componenet derived from sp_move_rate
+    math::Vector<3> _vel_ff_sp_mv_r;
+    // Velocity feed foward componenet derived from target movements
+    math::Vector<3> _vel_ff_t;
+    // Velocity feed foward component read from position setpoint vx, vy, vz  
+    math::Vector<3> _vel_ff_sp_v;
+
 	math::Vector<3> _sp_move_rate;
 
 	math::Vector<3> _tpos;
@@ -542,6 +551,9 @@ MulticopterPositionControl::MulticopterPositionControl() :
 	_vel_sp.zero();
 	_vel_prev.zero();
 	_vel_ff.zero();
+	_vel_ff_sp_v.zero();
+	_vel_ff_sp_mv_r.zero();
+	_vel_ff_t.zero();
 	_sp_move_rate.zero();
 
 	_tpos.zero();
@@ -1137,7 +1149,7 @@ MulticopterPositionControl::control_manual(float dt)
 	}
 
 	/* feed forward setpoint move rate with weight vel_ff */
-	_vel_ff = _sp_move_rate.emult(_params.vel_ff);
+	_vel_ff_sp_mv_r = _sp_move_rate.emult(_params.vel_ff);
 
 	/* move position setpoint */
 	_pos_sp += _sp_move_rate * dt;
@@ -1205,7 +1217,7 @@ MulticopterPositionControl::control_offboard(float dt)
 		}
 
 		/* feed forward setpoint move rate with weight vel_ff */
-		_vel_ff = _sp_move_rate.emult(_params.vel_ff);
+		_vel_ff_sp_mv_r = _sp_move_rate.emult(_params.vel_ff);
 
 		/* move position setpoint */
 		_pos_sp += _sp_move_rate * dt;
@@ -1279,21 +1291,10 @@ MulticopterPositionControl::control_auto_vel(float dt) {
             {
 
                 float z_delta_len = pos_delta(2);
-                float xy_delta_len = xy_pos_delta.length();
-
                 float xy_speed = _pos_sp_triplet.current.abs_velocity;
 
-                // calculate z_speed based on the position delta vector direction (xy_delta_len, z_delta_len), when we 
-                // already know xy_speed from (xy_speed, z_speed) - use triangle similarity
-                //
-                float z_speed = ( (z_delta_len * xy_speed) / xy_delta_len ); 
+                float z_speed = z_delta_len * _params.pos_p(2); 
 
-                //float tmp_speed = z_speed;
-
-                z_speed *= z_speed > 0.0f ? _params.vel_control_z_p_down : _params.vel_control_z_p_up;
-
-                //mavlink_log_info(_mavlink_fd, "up:%.2f,down:%.2f,spdb:%.2f,spd:%.2f", (double)_params.vel_control_z_p_up,(double)_params.vel_control_z_p_down, (double)z_speed, (double)tmp_speed);
-                
                 _vel_sp(0) = xy_move_direction(0) * xy_speed;
                 _vel_sp(1) = xy_move_direction(1) * xy_speed;
                 _vel_sp(2) = z_speed;
@@ -1415,8 +1416,8 @@ MulticopterPositionControl::control_cablepark()
             //    resulting_velocity *= _current_allowed_velocity/fabsf(required_velocity);
             //}
 
-            _vel_ff(0) = resulting_velocity(0);
-            _vel_ff(1) = resulting_velocity(1);
+            _vel_ff_t(0) = resulting_velocity(0);
+            _vel_ff_t(1) = resulting_velocity(1);
         }
 
         // Calculating vector from path start to desired point on path
@@ -1463,9 +1464,9 @@ MulticopterPositionControl::control_auto(float dt)
 
         /* use speeds defined in navigator if valid */
         if (_pos_sp_triplet.current.velocity_valid) {
-           _vel_ff(0) = _pos_sp_triplet.current.vx;
-           _vel_ff(1) = _pos_sp_triplet.current.vy;
-           _vel_ff(2) = _pos_sp_triplet.current.vz;
+           _vel_ff_sp_v(0) = _pos_sp_triplet.current.vx;
+           _vel_ff_sp_v(1) = _pos_sp_triplet.current.vy;
+           _vel_ff_sp_v(2) = _pos_sp_triplet.current.vz;
         } 
 
 		/* project setpoint to local frame */
@@ -1729,31 +1730,19 @@ MulticopterPositionControl::control_follow(float dt)
 
 
 	/* feed forward manual setpoint move rate with weight vel_ff */
-	_vel_ff = _sp_move_rate.emult(_params.vel_ff);
+	_vel_ff_sp_mv_r = _sp_move_rate.emult(_params.vel_ff);
 
 	/* add target velocity to setpoint move rate */
 	_sp_move_rate += _tvel;
 
-	//feed forward target velocity 
-    // use gradient feed foward based on drone to target distance
-    if (_params.follow_grad_ff) {
-
-        math::Vector<3> trgt_drone_delta_pos = _tpos - _pos;
-        //float res = follow_grad_ff( trgt_drone_delta_pos.length() ) ;
-        //float ff_r = res * _params.follow_vel_ff;
-        //mavlink_log_info(_mavlink_fd, "%.3f %.3f %.3f %.3f", (double)_params.follow_grad_ff_end, (double)_params.follow_grad_ff_start, (double)res, (double)ff_r);
-        _vel_ff += _tvel * follow_grad_ff( trgt_drone_delta_pos.length() ) * _params.follow_vel_ff;
-
-    }
-    else 
-        // use full feed foward in any distance
-        _vel_ff += _tvel * _params.follow_vel_ff;
+    /* feed forward target velocity with weight follow_vel_ff */
+    _vel_ff_t = _tvel * _params.follow_vel_ff;
 
 	/* update position setpoint and feed-forward velocity if not repeating target altitude */
 	if (!_params.follow_rpt_alt) {
 		//_pos_sp(2) = -(_alt_start - _ref_alt + _params.follow_talt_offs) + _follow_offset(2); 
         _pos_sp(2) = _ref_alt + _follow_offset(2);
-		_vel_ff(2) -= _tvel(2) * _params.follow_vel_ff;
+		_vel_ff_t(2) -= _tvel(2) * _params.follow_vel_ff;
 	}
 }
 
@@ -1976,7 +1965,10 @@ MulticopterPositionControl::task_main()
 
 			update_target_pos();
 
-			_vel_ff.zero();
+			_vel_ff_t.zero();
+			_vel_ff_sp_mv_r.zero();
+			_vel_ff_sp_v.zero();
+
 			_sp_move_rate.zero();
 			_att_rates_ff.zero();
 
@@ -2036,7 +2028,11 @@ MulticopterPositionControl::task_main()
                     ground_dist_correction();
                     if (_ground_setpoint_corrected) {
                         //correct altitude velocity
-                        _vel_ff(2) = 0.0f;
+                        
+                        _vel_ff_sp_v(2) = 0.0f;
+                        _vel_ff_sp_mv_r(2) = 0.0f;
+                        _vel_ff_t(2) = 0.0f;
+
                         //and altitude move rate
                         _sp_move_rate(2)= 0.0f;
 
@@ -2113,7 +2109,18 @@ MulticopterPositionControl::task_main()
 
                 } else {
 
+                    // use gradual target speed feed forward based on drone to target distance
+                    if (_params.follow_grad_ff) {
+
+                        math::Vector<3> trgt_drone_delta_pos = _tpos - _pos;
+
+                        _vel_ff_t *= follow_grad_ff( trgt_drone_delta_pos.length() );
+                    }
+
+                    _vel_ff = _vel_ff_t + _vel_ff_sp_mv_r + _vel_ff_sp_v;
+
                     math::Vector<3> pos_err = _pos_sp - _pos;
+
                     _vel_sp = pos_err.emult(_params.pos_p) + _vel_ff;
                     if (_control_mode.flag_control_follow_restricted && _valid_vel_correction) {
                         // Limit speed if we are coming to first/last points in cable park mode
