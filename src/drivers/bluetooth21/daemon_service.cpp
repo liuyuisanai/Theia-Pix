@@ -215,7 +215,7 @@ start(const char mode[], const char addr_no[])
 	task_spawn_cmd(PROCESS_NAME,
 			SCHED_DEFAULT,
 			SCHED_PRIORITY_DEFAULT,
-			CONFIG_TASK_SPAWN_DEFAULT_STACKSIZE,
+			STACKSIZE_DAEMON_SERVICE,
 			(main_t)daemon,
 			nullptr);
 }

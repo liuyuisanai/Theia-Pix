@@ -116,7 +116,7 @@ start(const char uart_dev_name[])
 	task_spawn_cmd(PROCESS_NAME,
 			SCHED_DEFAULT,
 			SCHED_PRIORITY_DEFAULT,
-			CONFIG_TASK_SPAWN_DEFAULT_STACKSIZE,
+			STACKSIZE_DAEMON_IO,
 			(main_t)daemon,
 			argv);
 }

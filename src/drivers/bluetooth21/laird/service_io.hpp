@@ -7,6 +7,7 @@
 //#include <cstdlib>
 
 #include "../debug.hpp"
+#include "../buffer_rx.hpp"
 
 namespace BT
 {
@@ -28,27 +29,44 @@ constexpr auto MAX_COMMAND_DURATION = Time::duration_sec(3);
 constexpr int READ_WAIT_POLL_ms = 1000;
 constexpr int WRITE_SINGLE_POLL_ms = 1000;
 
+using ResponceEventBuffer = RxBuffer< 256 >;
+
+uint8_t
+get_channel_id(const ResponceEventBuffer & buf) { return *next(cbegin(buf)); }
+
+uint8_t
+get_event_id(const ResponceEventBuffer & buf) { return *next(cbegin(buf), 2); }
+
+const RESPONSE_EVENT_UNION &
+as_packet(const ResponceEventBuffer & buf)
+{ return *(const RESPONSE_EVENT_UNION *)cbegin(buf); }
+
 template <typename State>
 void
-process_service_packet(State & s, const RESPONSE_EVENT_UNION & packet)
+process_service_packet(State & s, const ResponceEventBuffer & buf)
 {
-	bool processed = handle_service_packet(s, packet);
+	uint8_t ch = get_channel_id(buf);
+	bool processed;
 
-	if (not processed)
+	if (ch == 0)
 	{
-		if (is_command(get_event_id(packet))) {
-			if (get_response_status(packet) == MPSTATUS_OK)
-				dbg("-> CMD 0x%02x OK\n", get_event_id(packet));
+		const auto & packet = as_packet(buf);
+		processed = handle_service_packet(s, packet);
+		if (not processed)
+		{
+			auto evt = get_event_id(packet);
+			if (not is_command(get_event_id(packet)))
+				dbg("-> Event 0x%02x dropped.\n", evt);
+			else if (get_response_status(packet) == MPSTATUS_OK)
+				dbg("-> CMD 0x%02x OK\n", evt);
 			else
-			{
 				dbg("-> CMD 0x%02x ERROR 0x%02x\n"
-					, get_event_id(packet)
-					, get_response_status(packet));
-			}
+					, evt
+					, get_response_status(packet)
+				);
 		}
-		else
-			dbg("-> Event 0x%02x dropped.\n", get_event_id(packet));
 	}
+	else { dbg("Dropped packet at channel 0x%02x.\n", ch); }
 }
 
 
@@ -95,7 +113,7 @@ write_command(Device & dev, const void * packet, size_t size)
 
 template <typename Device>
 ssize_t
-read_packet(Device & dev, void * buf, size_t size)
+read_packet(Device & dev, ResponceEventBuffer & buf)
 {
 	/*
 	 * Assume
@@ -107,14 +125,14 @@ read_packet(Device & dev, void * buf, size_t size)
 	 * it should be processed by wait_service_packet()
 	 * as it knows service state.
 	 */
-	return read(dev, buf, size);
+	return read(dev, buf);
 }
 
 template <typename Device>
 ssize_t
-wait_service_packet(Device & dev, RESPONSE_EVENT_UNION & buf)
+wait_service_packet(Device & dev, ResponceEventBuffer & buf)
 {
-	ssize_t r = read_packet(dev, &buf, sizeof buf);
+	ssize_t r = read_packet(dev, buf);
 	if (r == -1 and errno == EAGAIN)
 	{
 		pollfd p;
@@ -123,7 +141,7 @@ wait_service_packet(Device & dev, RESPONSE_EVENT_UNION & buf)
 
 		r = poll(&p, 1, READ_WAIT_POLL_ms);
 		if (r == 1)
-			r = read_packet(dev, &buf, sizeof buf);
+			r = read_packet(dev, buf);
 		else if (r == 0)
 		{
 			r = -1;
@@ -135,11 +153,11 @@ wait_service_packet(Device & dev, RESPONSE_EVENT_UNION & buf)
 
 template <typename Device, typename State>
 bool
-wait_command_response(Device & dev, State & state, event_id_t cmd, void * buf, size_t size)
+wait_command_response(Device & dev, State & state, event_id_t cmd, void * buf, size_t bufsize)
 {
 	// TODO add timeout parameter
 	auto time_limit = Time::now() + MAX_COMMAND_DURATION;
-	RESPONSE_EVENT_UNION packet;
+	ResponceEventBuffer packet;
 
 	while (true)
 	{
@@ -156,9 +174,9 @@ wait_command_response(Device & dev, State & state, event_id_t cmd, void * buf, s
 		{
 			size_t read_size = r;
 			process_service_packet(state, packet);
-			if (read_size == size and cmd == get_event_id(packet))
+			if (read_size == bufsize and cmd == get_event_id(packet))
 			{
-				memcpy(buf, &packet, size);
+				copy_n(cbegin(packet), bufsize, (uint8_t*)buf);
 				return true;
 			}
 			else if (is_command(get_event_id(packet)))
@@ -173,6 +191,8 @@ wait_command_response(Device & dev, State & state, event_id_t cmd, void * buf, s
 			dbg("wait_command_response timeout.\n");
 			return false;
 		}
+
+		clear(packet);
 	}
 }
 
@@ -180,7 +200,7 @@ template <typename Device, typename State>
 void
 wait_process_event(Device & dev, State & state)
 {
-	RESPONSE_EVENT_UNION packet;
+	ResponceEventBuffer packet;
 
 	ssize_t r = wait_service_packet(dev, packet);
 	if (r < 0)
