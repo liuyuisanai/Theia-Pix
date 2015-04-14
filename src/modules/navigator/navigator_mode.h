@@ -148,6 +148,8 @@ public:
         float pafol_vel_i_lower_limit;
         float pafol_vel_i_upper_limit;
 
+        float pafol_backward_distance_limit;
+
 		float mpc_max_speed;
 
         float airdog_dst_inv; 
@@ -208,6 +210,8 @@ public:
 
         param_t pafol_vel_i_lower_limit;
         param_t pafol_vel_i_upper_limit;
+
+        param_t pafol_backward_distance_limit;
 
 		param_t mpc_max_speed;
 

@@ -118,3 +118,10 @@ PARAM_DEFINE_FLOAT(PAFOL_VPID_I_UL, 100.0f);
  */
 PARAM_DEFINE_FLOAT(PAFOL_VPID_I_LL, -50.0f);
 
+/**
+ * Follow path going backwards distance limit
+ * @group PathFollow
+ */
+PARAM_DEFINE_FLOAT(PAFOL_BW_DST_LIM, 5.0f);
+
+

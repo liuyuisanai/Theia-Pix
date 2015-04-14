@@ -360,15 +360,25 @@ float PathFollow::calculate_desired_velocity() {
     // Let's prevent drone going backwards.
     if (!_drone_is_going_backwards && vel_new < 0.0f && _drone_speed_d > 0.0f) {
         _drone_is_going_backwards = true;
+
+        going_bckw_st(0) = _drone_local_pos.x;
+        going_bckw_st(1) = _drone_local_pos.y;
+
     }
 
-    if (_drone_is_going_backwards && vel_new > 0.0f){
+    if (_drone_is_going_backwards && vel_new > 1.0f){
         _drone_is_going_backwards = false;
     }
 
     if (_drone_is_going_backwards) {
+
         if (vel_new < -1.0f)
             vel_new = -1.0f;
+
+        if (!(going_bckw_st(0) == _drone_local_pos.x && going_bckw_st(1) == _drone_local_pos.y) && 
+                euclidean_distance(going_bckw_st(0), going_bckw_st(1), _drone_local_pos.x, _drone_local_pos.y)> _parameters.pafol_backward_distance_limit )
+            vel_new = 0.0f;
+
     }
 
     dd_log.log(0,_fp_i);
@@ -468,6 +478,9 @@ float PathFollow::calculate_current_distance() {
                             euclidean_distance(_latest_added_tp.x, _latest_added_tp.y, target_lpos(0), target_lpos(1));
 
             //mavlink_log_info(_mavlink_fd, "2 full:%.1f da:%.1f ra:%.1f db:%.1f rb:%.1f" , (double)full_distance, (double)distance_a, (double)rate_a,  (double)distance_b, (double)rate_b);
+            dd_log.log(5,distance_a);
+            dd_log.log(6,distance_b);
+            dd_log.log(7,rate_a);
 
         }
 
@@ -507,6 +520,10 @@ bool PathFollow::traj_point_reached() {
         // Resultig in |B| x sin a
         dst_to_tunnel_middle = cross_product /tunnel.length();
     }
+
+    dd_log.log(3,dst_to_tunnel_middle);
+    dd_log.log(4,dst_to_gate);
+   
 
     if (dst_to_gate <= acc_dst_to_gate && abs(dst_to_tunnel_middle) * 2.0f <= gate_width )
         return true;

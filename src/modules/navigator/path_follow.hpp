@@ -114,8 +114,9 @@ private:
     float _fp_p;                           
     // desired speed PID controller dirivetive component coefficient 
     float _fp_d;                           
-    // desired speed PID controller second degree component coefficient 
-    float _fp_dd;                          
+
+    // Point where drone started to go backwards
+    math::Vector<2> going_bckw_st;
 
     math::LowPassFilter<float> _fp_d_lpf;
     math::LowPassFilter<float> _vel_lpf;

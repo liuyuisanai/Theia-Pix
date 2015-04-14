@@ -135,6 +135,8 @@ NavigatorMode::updateParamHandles() {
     _parameter_handles.pafol_vel_i_upper_limit = param_find("PAFOL_VPID_I_UL");
     _parameter_handles.pafol_vel_i_lower_limit = param_find("PAFOL_VPID_I_LL");
 
+    _parameter_handles.pafol_backward_distance_limit = param_find("PAFOL_BW_DST_LIM");
+
     _parameter_handles.pafol_acc_dst_to_gate = param_find("PAFOL_GT_AC_DST");
     _parameter_handles.pafol_gate_width = param_find("PAFOL_GT_WIDTH");
 
@@ -185,6 +187,8 @@ NavigatorMode::updateParamValues() {
 	param_get(_parameter_handles.pafol_vel_i_add_inc_rate, &(_parameters.pafol_vel_i_add_inc_rate));
 	param_get(_parameter_handles.pafol_vel_i_upper_limit, &(_parameters.pafol_vel_i_upper_limit));
 	param_get(_parameter_handles.pafol_vel_i_lower_limit, &(_parameters.pafol_vel_i_lower_limit));
+
+    param_get(_parameter_handles.pafol_backward_distance_limit, &(_parameters.pafol_backward_distance_limit));
 
 	param_get(_parameter_handles.pafol_vel_i, &(_parameters.pafol_vel_i));
 	param_get(_parameter_handles.pafol_vel_p, &(_parameters.pafol_vel_p));
