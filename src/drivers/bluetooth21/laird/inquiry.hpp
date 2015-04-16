@@ -70,7 +70,7 @@ inquiry(ServiceIO & io, InquiryState & inq)
 		and get_response_status(rsp) == MPSTATUS_OK
 		and inq.n_results > 0;
 
-	dbg("-> request INQUIRY_REQ %s %u\n"
+	dbg("<- request INQUIRY_REQ %s %u\n"
 		, ok ? "ok": "failed"
 		, inq.n_results
 	);
@@ -80,34 +80,40 @@ inquiry(ServiceIO & io, InquiryState & inq)
 bool
 handle_inquiry_enhanced_data(InquiryState & self, const uint8_t buf[], size_t n)
 {
-	if (self.n_results < self.CAPACITY)
+	bool ok = self.n_results < self.CAPACITY;
+	if (ok)
 	{
 		auto & r = self.first_results[self.n_results];
-		bool ok = parse_inquiry_enhanced_data(r, buf, n);
+		ok = parse_inquiry_enhanced_data(r, buf, n);
 		if (ok)
 		{
 			dbg_result(r);
 			++self.n_results;
 		}
-		return ok;
 	}
+	dbg("-> EIR data %s.\n", ok ? "handled" : "dropped.");
 	return false;
 }
 
 bool
 handle(InquiryState & self, const RESPONSE_EVENT_UNION & p)
 {
-	if (get_event_id(p) == EVT_INQUIRY_RESULT
-	and self.n_results < self.CAPACITY
-	) {
-		auto & r = self.first_results[self.n_results];
+	if (get_event_id(p) == EVT_INQUIRY_RESULT)
+	{
+		bool ok = self.n_results < self.CAPACITY;
+		if (ok)
+		{
+			auto & r = self.first_results[self.n_results];
 
-		r.addr = p.evtInqResult.bdAddr;
-		r.rssi = -128;
-		dbg_result(r);
+			r.addr = p.evtInqResult.bdAddr;
+			r.rssi = -128;
+			dbg_result(r);
 
-		++self.n_results;
-		return true;
+			++self.n_results;
+		}
+		dbg("-> EVT_INQUIRY_RESULT " Address6_FMT,
+			Address6_FMT_ITEMS(p.evtInqResult.bdAddr));
+		return ok;
 	}
 	return false;
 }
