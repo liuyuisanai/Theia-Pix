@@ -24,6 +24,15 @@ tty_set_speed(int fd, speed_t speed)
 	return ok;
 }
 
+inline speed_t
+tty_get_ispeed(int fd)
+{
+	struct termios mode;
+	if (tcgetattr(fd, &mode) == 0) { return cfgetispeed(&mode); }
+	perror("tty_get_ispeed");
+	return 0;
+}
+
 inline int
 tty_open(const char name[])
 {

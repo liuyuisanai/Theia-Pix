@@ -10,6 +10,7 @@
 #include "io_multiplexer_global.hpp"
 #include "io_multiplexer_poll.hpp"
 #include "io_tty.hpp"
+#include "laird/uart.hpp"
 #include "unique_file.hpp"
 
 #include "read_write_log.hpp"
@@ -49,10 +50,18 @@ daemon(int argc, const char * const argv[])
 
 	should_run = (
 		fileno(dev) > -1
-		and tty_set_speed(fileno(dev), B115200) // TODO move speed to a header
 		and Globals::Multiplexer::create()
 		and CharacterDevices::register_all_devices()
 	);
+
+	//DevLog log_dev(fileno(dev), 2, "module  ", "host    ");
+	auto & log_dev = dev;
+
+	if (should_run)
+	{
+		auto & mp = Globals::Multiplexer::get();
+		should_run = setup_serial(mp.protocol_tag, log_dev);
+	}
 
 	if (should_run) { fprintf(stderr, "%s started.\n", PROCESS_NAME); }
 	else
@@ -62,9 +71,6 @@ daemon(int argc, const char * const argv[])
 				, strerror(errno)
 		);
 	}
-
-	//DevLog log_dev(fileno(dev), 2, "module  ", "host    ");
-	auto & log_dev = dev;
 
 	started = true;
 	while (should_run)

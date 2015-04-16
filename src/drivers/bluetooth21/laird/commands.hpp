@@ -5,6 +5,7 @@
 #include "../time.hpp"
 
 #include "service_defs.hpp"
+#include "service_params.hpp"
 
 namespace BT
 {
@@ -139,7 +140,7 @@ soft_reset(ServiceIO & io)
 	fill_n(cmd.reserved, sizeof cmd.reserved, 0);
 
 	bool ok = send(io, cmd);
-	sleep(1);
+	usleep(MODULE_RESET_WAIT_us);
 
 	dbg("-> command soft_reset %s.\n", ok ? "ok": "failed");
 	return ok;

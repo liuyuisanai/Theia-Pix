@@ -11,6 +11,10 @@ namespace BT
 namespace HostProtocol
 {
 
+template <typename Protocol, typename Device>
+bool
+setup_serial(Protocol, Device & dev);
+
 namespace Parser
 {
 
