@@ -60,9 +60,9 @@ bool
 handle_unknown_packet(ServiceState & svc, It first, Size n)
 {
 	bool processed = false;
-	processed =   handle_unknown_packet(svc.sync, first, n)     or processed;
-	processed =   handle_unknown_packet(svc.conn, first, n)     or processed;
-	processed =   handle_unknown_packet(svc.inquiry, first, n)  or processed;
+	processed =   handle_unknown_packet(svc.sync, first, n)  or processed;
+	processed =   handle_unknown_packet(svc.conn, first, n)  or processed;
+	processed =   handle_unknown_packet(svc.inq,  first, n)  or processed;
 	return processed;
 }
 
@@ -73,11 +73,11 @@ template <typename It, typename Size>
 bool
 handle_inquiry_enhanced_data(ServiceState & svc, It first, Size n)
 {
-	bool fin = false;
-	fin =   handle_inquiry_enhanced_data(svc.sync, first, n)     or fin;
-	fin =   handle_inquiry_enhanced_data(svc.conn, first, n)     or fin;
-	fin =   handle_inquiry_enhanced_data(svc.inquiry, first, n)  or fin;
-	return fin;
+	bool processed = false;
+	processed =   handle_inquiry_enhanced_data(svc.sync, first, n)  or processed;
+	processed =   handle_inquiry_enhanced_data(svc.conn, first, n)  or processed;
+	processed =   handle_inquiry_enhanced_data(svc.inq,  first, n)  or processed;
+	return processed;
 }
 
 }

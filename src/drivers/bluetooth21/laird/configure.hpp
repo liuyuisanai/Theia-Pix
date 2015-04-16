@@ -3,6 +3,7 @@
 #include "../debug.hpp"
 #include "../factory_addresses.hpp"
 #include "../module_params.hpp"
+#include "../service_settings.hpp"
 
 #include "../std_util.hpp"
 
@@ -17,18 +18,23 @@ namespace Service
 namespace Laird
 {
 
+#if defined(CONFIG_ARCH_BOARD_AIRDOG_FMU)
+# define BT_CLASS_OF_DEVICE   Class_of_Device::DRONE
+# define BT_LOCAL_NAME_PREFIX "Dog"
+#elif defined(CONFIG_ARCH_BOARD_AIRLEASH)
+# define BT_CLASS_OF_DEVICE   Class_of_Device::LEASH
+# define BT_LOCAL_NAME_PREFIX "Leash"
+#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
+# define BT_CLASS_OF_DEVICE   Class_of_Device::DRONE
+# define BT_LOCAL_NAME_PREFIX "px4"
+#else
+# define BT_CLASS_OF_DEVICE   Class_of_Device::DEFAULT
+#endif
+
 template <typename ServiceIO>
 bool
 configure_name(ServiceIO & io)
 {
-#if defined(CONFIG_ARCH_BOARD_AIRDOG_FMU)
-# define BT_LOCAL_NAME_PREFIX "Dog"
-#elif defined(CONFIG_ARCH_BOARD_AIRLEASH)
-# define BT_LOCAL_NAME_PREFIX "Leash"
-#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
-# define BT_LOCAL_NAME_PREFIX "px4"
-#endif
-
 #ifdef BT_LOCAL_NAME_PREFIX
 	Address6 addr;
 	bool ok = local_address_read(io, addr);
@@ -51,7 +57,6 @@ configure_name(ServiceIO & io)
 			and local_name_store(io, name, l);
 	}
 	return ok;
-#undef BT_LOCAL_NAME_PREFIX
 #else
 	return true;
 #endif
@@ -73,6 +78,12 @@ configure_before_reboot(ServiceIO & io)
 		{  3, 1 },     // Profiles: SPP only
 		{  6, 12 },    // Securty mode
 		{ 12, reg12 }, // Link Supervision Timeout, seconds
+
+		/*
+		 * Class of Device could be set separately, but set here
+		 * to save time on accidental module reboot.
+		 */
+		{ 128, (uint32_t)BT_CLASS_OF_DEVICE },
 
 		/*
 		 * These registers impact module state after reset/reboot.
@@ -157,6 +168,7 @@ dump_s_registers(ServiceIO & io)
 		32, 33, 34, 35, 36, 37, 38, 40, 47,
 		73, 74, 75, 76,
 		80, 81, 82, 83, 84,
+		128,
 		240, 241, 242, 243,
 		255
 	};
@@ -172,6 +184,8 @@ dump_s_registers(ServiceIO & io)
 	return ok;
 }
 
+#undef BT_LOCAL_NAME_PREFIX
+#undef BT_CLASS_OF_DEVICE
 }
 // end of namespace Laird
 }

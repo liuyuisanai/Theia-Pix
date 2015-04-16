@@ -50,6 +50,23 @@ module_factory_default(ServiceIO & io, uint8_t flagmask)
 
 template <typename ServiceIO>
 bool
+class_of_device_set(ServiceIO & io, uint32_t cod24)
+{
+	RESPONSE_SET_DEVCLASS rsp;
+	auto cmd =
+		prefill_packet<COMMAND_SET_DEVCLASS, CMD_SET_DEVCLASS>();
+	host24_to_network(cod24, cmd.devClass);
+
+	bool ok = send_receive_verbose(io, cmd, rsp)
+		and get_response_status(rsp) == MPSTATUS_OK;
+
+	dbg("-> command class_of_device_set(0x%06x) %s.\n",
+		cod24, ok ? "ok": "failed");
+	return ok;
+}
+
+template <typename ServiceIO>
+bool
 local_address_read(ServiceIO & io, Address6 & addr)
 {
 	RESPONSE_READ_BDADDR rsp;
