@@ -4,6 +4,7 @@
 
 #include "../bt_types.hpp"
 #include "../debug.hpp"
+#include "../service_settings.hpp"
 
 #include "../std_array.hpp"
 
@@ -20,14 +21,15 @@ namespace Laird
 struct InquiryResult
 {
 	Address6 addr;
+	Class_of_Device cod;
 	int8_t rssi;
 };
 
 inline void
-dbg_result(const InquiryResult & r)
+dbg_dump(const InquiryResult & r)
 {
-	dbg("-> INQUIRY reply " Address6_FMT " %i.\n",
-		Address6_FMT_ITEMS(r.addr), r.rssi);
+	dbg("-> INQUIRY Result " Address6_FMT " CoD 0x%06x RSSI %i.\n",
+		Address6_FMT_ITEMS(r.addr), r.cod, r.rssi);
 }
 
 inline bool
@@ -37,6 +39,7 @@ parse_inquiry_enhanced_data(InquiryResult & r, const uint8_t buf[], size_t n)
 	if (ok)
 	{
 		copy_n(buf + 2, 6, begin(r.addr));
+		r.cod = (Class_of_Device) network24_to_host_unsafe(buf + 8);
 		r.rssi = buf[11];
 	}
 	return ok;
@@ -45,6 +48,8 @@ parse_inquiry_enhanced_data(InquiryResult & r, const uint8_t buf[], size_t n)
 struct InquiryState
 {
 	static constexpr size_t CAPACITY = 4;
+	static constexpr auto DRONE_COD = Class_of_Device::DRONE;
+
 	PODArray<InquiryResult, CAPACITY> first_results;
 	uint8_t n_results;
 
@@ -70,12 +75,16 @@ inquiry(ServiceIO & io, InquiryState & inq)
 		and get_response_status(rsp) == MPSTATUS_OK
 		and inq.n_results > 0;
 
-	dbg("<- request INQUIRY_REQ %s %u\n"
+	dbg("<- request INQUIRY_REQ %s, N results %u.\n"
 		, ok ? "ok": "failed"
 		, inq.n_results
 	);
 	return ok;
 }
+
+bool
+filter(const InquiryState & self, const InquiryResult & r)
+{ return r.cod == self.DRONE_COD; }
 
 bool
 handle_inquiry_enhanced_data(InquiryState & self, const uint8_t buf[], size_t n)
@@ -85,14 +94,11 @@ handle_inquiry_enhanced_data(InquiryState & self, const uint8_t buf[], size_t n)
 	{
 		auto & r = self.first_results[self.n_results];
 		ok = parse_inquiry_enhanced_data(r, buf, n);
-		if (ok)
-		{
-			dbg_result(r);
-			++self.n_results;
-		}
+		if (ok) { dbg_dump(r); }
+		if (ok and filter(self, r)) { ++self.n_results; }
 	}
 	dbg("-> EIR data %s.\n", ok ? "handled" : "dropped.");
-	return false;
+	return ok;
 }
 
 bool
@@ -106,10 +112,12 @@ handle(InquiryState & self, const RESPONSE_EVENT_UNION & p)
 			auto & r = self.first_results[self.n_results];
 
 			r.addr = p.evtInqResult.bdAddr;
+			r.cod = (Class_of_Device) network24_to_host(p.evtInqResult.devClass);
 			r.rssi = -128;
-			dbg_result(r);
 
-			++self.n_results;
+			dbg_dump(r);
+
+			if (filter(self, r)) { ++self.n_results; }
 		}
 		dbg("-> EVT_INQUIRY_RESULT " Address6_FMT,
 			Address6_FMT_ITEMS(p.evtInqResult.bdAddr));

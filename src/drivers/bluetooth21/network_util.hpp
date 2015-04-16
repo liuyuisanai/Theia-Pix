@@ -20,12 +20,16 @@ network_to_host(const uint8_t (& bytes)[4])
 }
 
 inline uint32_t
-network24_to_host(const uint8_t (& bytes)[3])
+network24_to_host_unsafe(const uint8_t bytes[])
 {
 	const uint16_t & b01 = *(const uint16_t *)bytes;
 	const uint8_t & b2 = bytes[2];
 	return b01 + (b2 << 16);
 }
+
+inline uint32_t
+network24_to_host(const uint8_t (& bytes)[3])
+{ return network24_to_host_unsafe(bytes); }
 
 inline void
 host_to_network(uint16_t x, uint8_t (& bytes)[2])
