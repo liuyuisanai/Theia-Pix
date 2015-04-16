@@ -71,6 +71,7 @@ daemon()
 
 	should_run = (daemon_mode != Mode::UNDEFINED
 		and fileno(dev) > -1
+		and sync_soft_reset(service_io, svc.sync)
 		and configure_n_reboot(service_io)
 		and configure_latency(service_io)
 		and configure_name(service_io)

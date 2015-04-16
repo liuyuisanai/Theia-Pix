@@ -7,6 +7,7 @@
 #include "../debug.hpp"
 
 #include "connections.hpp"
+#include "sync.hpp"
 #include "service_defs.hpp"
 
 namespace BT
@@ -29,13 +30,23 @@ struct ServiceState
 {
 	ConnectionState conn;
 	FlowState flow;
+	SyncState sync;
 };
 
 bool
 handle_service_packet(ServiceState & svc, const RESPONSE_EVENT_UNION & packet)
 {
 	handle(svc.flow, packet);
-	return handle(svc.conn, packet);
+	bool processed = false;
+	/*
+	 * Try all handlers, but caller needs to know if the packet
+	 * is known to at least one of them.
+	 *
+	 * FIXME Shouldn't we try only one of handlers?
+	 */
+	processed =   handle(svc.sync, packet)   or processed;
+	processed =   handle(svc.conn, packet)   or processed;
+	return processed;
 }
 
 }

@@ -131,20 +131,6 @@ handle(ConnectionState & conn, const RESPONSE_EVENT_UNION & p)
 		}
 	break;
 
-	case EVT_STATUS:
-		dbg("-> EVT_STATUS: %d disco %d conn %d sec %d.\n"
-			, p.evtStatus.status
-			, p.evtStatus.discoverable_mode
-			, p.evtStatus.connectable_mode
-			, p.evtStatus.security_mode
-		);
-	break;
-
-	case EVT_UNKNOWN_COMMAND:
-		dbg("-> EVT_UNKNOWN_COMMAND: command id 0x%02x.\n",
-			p.evtUnknownCmd.command);
-	break;
-
 	default: return false;
 	}
 
