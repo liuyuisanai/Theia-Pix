@@ -26,8 +26,18 @@ public:
 	inline
 	unique_file(unique_file && other) : fd(other.fd) { other.fd = -1; }
 
+	friend inline void
+	close(unique_file & self)
+	{
+		if (self.fd > -1)
+		{
+			close(self.fd);
+			self.fd = -1;
+		}
+	}
+
 	inline
-	~unique_file() { if (fd > -1) close(fd); }
+	~unique_file() { close(*this); }
 
 	inline unique_file &
 	operator = (unique_file && other)
@@ -42,7 +52,7 @@ public:
 	inline void
 	set(int x)
 	{
-		if (fd > -1) { close(fd); }
+		close(*this);
 		fd = x;
 	}
 
@@ -72,8 +82,18 @@ public:
 	inline
 	unique_FILE(unique_FILE && other) : fp(other.fp) { other.fp = nullptr; }
 
+	friend inline void
+	close(unique_FILE & self)
+	{
+		if (self.fp != nullptr)
+		{
+			fclose(self.fp);
+			self.fp = nullptr;
+		}
+	}
+
 	inline
-	~unique_FILE() { if (fp != nullptr) fclose(fp); }
+	~unique_FILE() { close(*this); }
 
 	inline unique_FILE &
 	operator = (unique_FILE && other)
@@ -88,7 +108,7 @@ public:
 	inline void
 	set(FILE * x)
 	{
-		if (fp != nullptr) { fclose(fp); }
+		close(*this);
 		fp = x;
 	}
 
