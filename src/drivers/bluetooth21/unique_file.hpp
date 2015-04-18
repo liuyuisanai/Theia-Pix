@@ -9,6 +9,9 @@
 namespace {
 using BT::swap;
 
+inline int
+fileno(int fd) { return fd; }
+
 class unique_file {
 private:
 	int fd;
