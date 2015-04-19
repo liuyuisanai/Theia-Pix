@@ -112,12 +112,6 @@ fi
 
 if param compare A_TELEMETRY_MODE 1
 then
-	# Power-cycle BT module
-	gpio_tool set pa10=0
-	sleep 3
-	gpio_tool set pa10=1
-	sleep 3
-
 	bluetooth21 start /dev/ttyS0 factory-param
 	set MAVLINK_TTY /dev/bt1
 fi
