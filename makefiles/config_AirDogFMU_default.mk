@@ -24,12 +24,10 @@ MODULES		+= drivers/boards/AirDogFMU
 MODULES		+= drivers/device
 MODULES		+= drivers/frsky_telemetry
 MODULES		+= drivers/gps
-MODULES		+= drivers/hmc5883
 MODULES		+= drivers/hmc5883spi
 MODULES		+= drivers/l3gd20
 MODULES		+= drivers/led
 MODULES		+= drivers/lsm303d
-MODULES		+= drivers/mb1230serial
 MODULES		+= drivers/mpu6000
 MODULES		+= drivers/ms5611
 MODULES		+= drivers/px4io
@@ -48,9 +46,11 @@ MODULES		+= drivers/calibration
 #MODULES		+= drivers/airspeed
 #MODULES		+= drivers/blinkm
 #MODULES		+= drivers/ets_airspeed
+#MODULES		+= drivers/hmc5883
 #MODULES		+= drivers/hil
 #MODULES		+= drivers/hott/hott_sensors
 #MODULES		+= drivers/hott/hott_telemetry
+#MODULES		+= drivers/mb1230serial
 #MODULES		+= drivers/mb12xx
 #MODULES		+= drivers/meas_airspeed
 #MODULES		+= drivers/pca8574
@@ -146,7 +146,7 @@ MODULES		+= lib/external_lgpl
 MODULES		+= lib/geo
 MODULES		+= lib/geo_lookup
 MODULES		+= lib/conversion
-MODULES		+= lib/launchdetection
+#MODULES		+= lib/launchdetection
 
 #
 # OBC challenge
