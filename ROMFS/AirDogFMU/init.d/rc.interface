@@ -34,7 +34,7 @@ else
 	fi
 fi
 
-if [ $OUTPUT_MODE == fmu -o $OUTPUT_MODE == io ]
+if [ $IO_PRESENT == yes ]
 then
 	if [ $PWM_OUTPUTS != none ]
 	then

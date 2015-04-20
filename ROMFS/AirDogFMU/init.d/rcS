@@ -25,34 +25,37 @@ set PWM_MIN none
 set PWM_OUTPUTS none
 set PWM_RATE none
 
-set OUTPUT_MODE io
-set USE_IO yes
-set HIL no
-
 set MIXER FMU_quad_x
 set VEHICLE_TYPE mc
 set MAV_TYPE 2
 
+# Custom AirDogIO firmware unstable
+#set IO_FILE /etc/extras/AirDogIO_default.bin
+# Explicitly set IO_FILE to v2
+set IO_FILE /etc/extras/px4io-v2_default.bin
+
 #set ALWAYS_DEBUG_MODE yes
+
+if [ notset$ALWAYS_DEBUG_MODE = notset ]
+then
+	if debug_button_pressed
+	then
+		set DEBUG_MODE yes
+	else
+		set DEBUG_MODE no
+	fi
+else
+	set DEBUG_MODE yes
+fi
 
 # Do IO checks as early as possible while IO chip is in bootloader mode
 set IO_PRESENT no
-
-if [ $USE_IO == yes ]
+if test -e $IO_FILE
 then
-	#
-	# Check if PX4IO present and update firmware if needed
-	#
-
-	# Custom AirDogIO firmware unstable
-	#set IO_FILE /etc/extras/AirDogIO_default.bin
-	# Explicitly set IO_FILE to v2
-	set IO_FILE /etc/extras/px4io-v2_default.bin
-
-	# Uncomment this line to force IO update in any case
-	#px4io forceupdate 14662 $IO_FILE
-
+	## Uncomment these lines to force IO update in any case
+	# px4io forceupdate 14662 $IO_FILE
 	# usleep 2000000
+
 	if px4io checkcrc $IO_FILE
 	then
 		echo "[init] PX4IO CRC OK"
@@ -86,24 +89,10 @@ then
 			tone_alarm $TUNE_OUT_ERROR
 		fi
 	fi
-
-	if [ $IO_PRESENT == no ]
-	then
-		echo "[init] ERROR: PX4IO not found"
-		tone_alarm $TUNE_OUT_ERROR
-	fi
-fi
-
-if [ notset$ALWAYS_DEBUG_MODE = notset ]
-then
-	if debug_button_pressed
-	then
-		set DEBUG_MODE yes
-	else
-		set DEBUG_MODE no
-	fi
 else
-	set DEBUG_MODE yes
+	# Allow running without IO firmware while debug because
+	# debug firmware with IO firmware does not fit in 1Mb.
+	set IO_PRESENT $DEBUG_MODE
 fi
 
 if [ $DEBUG_MODE = yes ]
@@ -230,18 +219,6 @@ then
 		param save
 	fi
 
-	if [ $OUTPUT_MODE == io -a $IO_PRESENT != yes ]
-	then
-		# Need IO for output but it not present, disable output
-		set OUTPUT_MODE none
-		echo "[init] ERROR: PX4IO not found, disabling output"
-	fi
-
-	if [ $HIL == yes ]
-	then
-		set OUTPUT_MODE hil
-	fi
-
 	#
 	# Start the datamanager (and do not abort boot if it fails)
 	#
@@ -254,27 +231,14 @@ then
 	#
 	commander start
 
-	if [ $OUTPUT_MODE == io ]
+	if [ $IO_PRESENT == yes ]
 	then
-		echo "[init] Use PX4IO PWM as primary output"
 		if px4io start
 		then
 			echo "[init] PX4IO started"
 			sh /etc/init.d/rc.io
 		else
 			echo "[init] ERROR: PX4IO start failed"
-			tone_alarm $TUNE_OUT_ERROR
-		fi
-	fi
-
-	if [ $OUTPUT_MODE == hil ]
-	then
-		echo "[init] Use HIL as primary output"
-		if hil mode_port2_pwm8
-		then
-			echo "[init] HIL output started"
-		else
-			echo "[init] ERROR: HIL output start failed"
 			tone_alarm $TUNE_OUT_ERROR
 		fi
 	fi
