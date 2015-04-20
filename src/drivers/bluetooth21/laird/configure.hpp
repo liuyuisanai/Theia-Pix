@@ -116,12 +116,18 @@ trust_factory(ServiceIO & io)
 		0xe8, 0x17, 0xfc, 0x99, 0xa2, 0xd0, 0x1b, 0x4b,
 		0x07, 0xd2, 0xbb, 0xf9, 0xec, 0xba, 0x57, 0x9b
 	);
+
+	Address6 local_addr;
+	bool ok = local_address_read(io, local_addr);
+
 	for (unsigned i = 0; i < n_factory_addresses; ++i)
-	{
-		bool ok = add_trusted_key(io, factory_addresses[i], key);
-		if (not ok) { return false; }
-	}
-	return true;
+		if (factory_addresses[i] != local_addr)
+		{
+			ok = add_trusted_key(io, factory_addresses[i], key);
+			if (not ok) { break; }
+		}
+
+	return ok;
 }
 
 template <typename ServiceIO>
