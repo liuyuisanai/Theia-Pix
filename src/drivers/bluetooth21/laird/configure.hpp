@@ -22,8 +22,8 @@ configure_n_reboot(ServiceIO & io)
 	uint32_t s12 = Params::get("A_BT_S12_LINK");
 
 	bool as_is = s12 == BT_SREG_AS_IS;
-	bool ok = as_is or (
-		    s_register_set(io, 12, s12)
+	bool ok = ( s_register_set(io, 6, 12)
+		and (as_is or s_register_set(io, 12, s12))
 		and s_register_store(io)
 		and soft_reset(io)
 	);
