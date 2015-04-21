@@ -56,7 +56,10 @@ process_service_packet(State & s, const ResponceEventBuffer & buf)
 		{
 			auto evt = get_event_id(packet);
 			if (not is_command(get_event_id(packet)))
+			{
 				dbg("-> Event 0x%02x dropped.\n", evt);
+				dbg_dump("   Event bytes", buf);
+			}
 			else if (get_response_status(packet) == MPSTATUS_OK)
 				dbg("-> CMD 0x%02x OK\n", evt);
 			else
@@ -66,7 +69,11 @@ process_service_packet(State & s, const ResponceEventBuffer & buf)
 				);
 		}
 	}
-	else { dbg("Dropped packet at channel 0x%02x.\n", ch); }
+	else
+	{
+		dbg("Dropped packet at channel 0x%02x.\n", ch);
+		dbg_dump("Dropped packet bytes", buf);
+	}
 }
 
 
