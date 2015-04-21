@@ -1546,7 +1546,8 @@ MavlinkReceiver::receive_thread(void *arg)
 	mavlink_receive_stats_s stats;
 	memset(&stats, 0, sizeof(stats));
 
-	orb_advert_t mavlink_stat_topic = 0;
+	orb_advert_t mavlink_stat_topic =
+		orb_advertise(ORB_ID(mavlink_receive_stats), &stats);
 
 	int uart_fd = _mavlink->get_uart_fd();
 
@@ -1564,56 +1565,70 @@ MavlinkReceiver::receive_thread(void *arg)
 	fds[0].fd = uart_fd;
 	fds[0].events = POLLIN;
 
-	ssize_t nread = 0;
+	size_t nread = 0;
+	ssize_t r = 0;
 
-	while (!_mavlink->_task_should_exit) {
-		if (poll(fds, 1, timeout) > 0) {
+	fprintf(stderr, "mavlink receiver %i started.\n",
+			_mavlink->get_instance_id());
 
-			/* non-blocking read. read may return negative values */
-			if ((nread = read(uart_fd, buf, sizeof(buf))) < (ssize_t)sizeof(buf)) {
-				/* to avoid reading very small chunks wait for data before reading */
-				usleep(1000);
+	while (!_mavlink->_task_should_exit)
+	{
+		r = poll(fds, 1, timeout);
+		if (r != 1) { continue; }
+
+		r = read(uart_fd, buf + nread, sizeof(buf) - nread);
+		if (r < 0)
+		{
+			if (errno != EAGAIN)
+			{
+				perror("receive_thread / read");
+				sleep(1);
 			}
+			continue;
+		}
 
-			/* if read failed, this loop won't execute */
-			for (ssize_t i = 0; i < nread; i++) {
-				if (mavlink_parse_char(_mavlink->get_channel(), buf[i], &msg, &status)) {
-					/* handle generic messages and commands */
-					handle_message(&msg);
+		fprintf(stderr, "receive_thread read() %i.\n", r);
 
-					/* handle packet with parent object */
-					_mavlink->handle_message(&msg);
+		nread += r;
+		if (nread < sizeof(buf))
+			continue;
 
-					switch (msg.msgid) {
-					case MAVLINK_MSG_ID_HEARTBEAT:
-						++stats.heartbeat_count;
-						break;
-					case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
-						++stats.gpos_count;
-						break;
-					case MAVLINK_MSG_ID_TRAJECTORY:
-						++stats.trajectory_count;
-						break;
-					default:
-						break;
-					}
-				}
-			}
+		/* if read failed, this loop won't execute */
+		for (ssize_t i = 0; i < nread; i++) {
+			if (mavlink_parse_char(_mavlink->get_channel(), buf[i], &msg, &status)) {
+				/* handle generic messages and commands */
+				handle_message(&msg);
 
-			/* count received bytes */
-			_mavlink->count_rxbytes(nread);
+				/* handle packet with parent object */
+				_mavlink->handle_message(&msg);
 
-			if (nread > 0) {
-				/* Report to uORB */
-				stats.total_bytes += nread;
-				if (mavlink_stat_topic > 0) {
-					orb_publish(ORB_ID(mavlink_receive_stats), mavlink_stat_topic, &stats);
-				} else {
-					mavlink_stat_topic = orb_advertise(ORB_ID(mavlink_receive_stats), &stats);
+				switch (msg.msgid) {
+				case MAVLINK_MSG_ID_HEARTBEAT:
+					++stats.heartbeat_count;
+					break;
+				case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
+					++stats.gpos_count;
+					break;
+				case MAVLINK_MSG_ID_TRAJECTORY:
+					++stats.trajectory_count;
+					break;
+				default:
+					break;
 				}
 			}
 		}
+
+		/* Report to stats. */
+		stats.total_bytes += nread;
+		orb_publish(ORB_ID(mavlink_receive_stats), mavlink_stat_topic, &stats);
+
+		_mavlink->count_rxbytes(nread);
+
+		nread = 0;
 	}
+
+	fprintf(stderr, "mavlink receiver %i stopped and QUIT.\n",
+			_mavlink->get_instance_id());
 
 	return NULL;
 }
