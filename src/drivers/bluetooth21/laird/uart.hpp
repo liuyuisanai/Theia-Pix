@@ -33,6 +33,12 @@ setup_serial(LairdProtocol, Device & dev)
 	ok = tty_set_speed(fd, BAUDRATE_MP) and ok;
 	dbg("MP ispeed %i.\n", tty_get_ispeed(fd));
 
+	char buf;
+	ssize_t r;
+	do
+		r = read(dev, &buf, 1);
+	while (r == 1);
+
 	return ok;
 }
 
