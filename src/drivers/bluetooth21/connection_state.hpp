@@ -1,6 +1,7 @@
 #pragma once
 
 #include "bt_types.hpp"
+#include "debug.hpp"
 
 namespace BT
 {
@@ -32,8 +33,21 @@ get_address(const ConnectionState & self, channel_index_t ch)
 inline bool
 allowed_connection_request(const ConnectionState & self)
 {
-	return (self.channels_connected.value & 0xfe) != 0xfe
-		and not (self.channels_connected.value & 1);
+	bool ok = not (self.channels_connected.value & 1);
+	if (ok)
+	{
+		ok = (self.channels_connected.value & 0xfe) != 0xfe;
+		if (ok) { dbg("Connection request allowed.\n"); }
+		else { dbg("All connection channels busy.\n"); }
+	}
+	else
+	{
+		dbg("Connection request to " Address6_FMT
+			" still in progress.\n"
+			, Address6_FMT_ITEMS(self.address[0])
+		);
+	}
+	return ok;
 }
 
 inline void
@@ -44,6 +58,10 @@ register_connection_request(
 	self.changed = true;
 	mark(self.channels_connected, 0, true);
 	self.address[0] = remote_peer;
+	dbg("register_connection_request 0x%02x " Address6_FMT ".\n"
+		, self.channels_connected.value
+		, Address6_FMT_ITEMS(self.address[0])
+	);
 }
 
 inline void
@@ -55,6 +73,12 @@ register_requested_connection(
 	mark(self.channels_connected, ch, true);
 	self.address[ch] = self.address[0];
 	mark(self.channels_connected, 0, false);
+	dbg("register_requested_connection 0x%02x"
+		" channel %u address " Address6_FMT ".\n"
+		, self.channels_connected.value
+		, ch
+		, Address6_FMT_ITEMS(self.address[ch])
+	);
 }
 
 inline void
@@ -62,6 +86,9 @@ forget_connection_request(ConnectionState & self)
 {
 	/* Established connections have not changed. */
 	mark(self.channels_connected, 0, false);
+	dbg("forget_connection_request " Address6_FMT ".\n"
+		, Address6_FMT_ITEMS(self.address[0])
+	);
 }
 
 inline void
@@ -73,6 +100,12 @@ register_incoming_connection(
 	self.changed = true;
 	mark(self.channels_connected, ch, true);
 	self.address[ch] = bdAddr;
+	dbg("register_incoming_connection 0x%02x"
+		" channel %u address " Address6_FMT ".\n"
+		, self.channels_connected.value
+		, ch
+		, Address6_FMT_ITEMS(self.address[ch])
+	);
 }
 
 inline void
@@ -82,7 +115,12 @@ register_disconnect(
 ) {
 	self.changed = true;
 	mark(self.channels_connected, ch, false);
-	self.address[ch] = Address6();
+	dbg("register_disconnect 0x%02x"
+		" channel %u address " Address6_FMT ".\n"
+		, self.channels_connected.value
+		, ch
+		, Address6_FMT_ITEMS(self.address[ch])
+	);
 }
 
 inline uint8_t
@@ -96,6 +134,10 @@ bitsum(uint8_t x)
 	}
 	return n;
 }
+
+inline bool
+no_single_connection(const ConnectionState & self)
+{ return (self.channels_connected.value & 0xfe) == 0; }
 
 inline uint8_t
 count_connections(const ConnectionState & self)

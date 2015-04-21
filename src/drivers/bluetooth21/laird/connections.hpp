@@ -23,23 +23,24 @@ template <typename Device>
 bool
 request_connect(Device & dev, ConnectionState & conn, const Address6 & addr)
 {
-	if (not allowed_connection_request(conn))
-		return false;
+	bool ok = allowed_connection_request(conn);
+	if (ok)
+	{
+		auto cmd = prefill_packet<COMMAND_MAKE_CONNECTION,
+					  CMD_MAKE_CONNECTION>();
+		cmd.hostHandle = 0;
+		copy(begin(addr), end(addr), cmd.bdAddr);
+		host_to_network(uint16_t(UUID_SPP), cmd.uuid);
+		cmd.instanceIndex = 0;
 
-	auto cmd =
-		prefill_packet<COMMAND_MAKE_CONNECTION, CMD_MAKE_CONNECTION>();
-	cmd.hostHandle = 0;
-	copy(begin(addr), end(addr), cmd.bdAddr);
-	host_to_network(uint16_t(UUID_SPP), cmd.uuid);
-	cmd.instanceIndex = 0;
+		ok = write_command(dev, &cmd, sizeof cmd);
 
-	bool ok = write_command(dev, &cmd, sizeof cmd);
-
-	if (ok) { register_connection_request(conn, addr); }
-
-	dbg("-> request MAKE_CONNECTION(" Address6_FMT ") %s.\n"
+		if (ok) { register_connection_request(conn, addr); }
+	}
+	dbg("-> request MAKE_CONNECTION " Address6_FMT " %s.\n"
 		, Address6_FMT_ITEMS(addr)
-		, ok ? "ok": "failed");
+		, ok ? "ok": "failed"
+	);
 	return ok;
 }
 

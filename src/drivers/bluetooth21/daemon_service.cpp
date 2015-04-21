@@ -103,20 +103,22 @@ daemon()
 			svc.conn.changed = false;
 		}
 
-		if (count_connections(svc.conn) > 0)
+		dbg("%i count_connections() %u.\n"
+			, no_single_connection(svc.conn)
+			, count_connections(svc.conn)
+		);
+		if (no_single_connection(svc.conn))
 		{
-			// TODO request rssi
-		}
-		else if (allowed_connection_request(svc.conn))
-		{
-			if (daemon_mode == Mode::ONE_CONNECT)
-			{
+			if (daemon_mode == Mode::ONE_CONNECT
+			and allowed_connection_request(svc.conn)
+			) {
 				request_connect(
 					log_dev, svc.conn, connect_address
 				);
 				dbg("Request connect.\n");
 			}
 		}
+		else { /* TODO request rssi */ }
 	}
 
 	started = running = false;
