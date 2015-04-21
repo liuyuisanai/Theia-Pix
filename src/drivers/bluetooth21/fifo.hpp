@@ -1,5 +1,8 @@
 #pragma once
 
+#include "debug.hpp"
+#include "repr.hpp"
+
 #include "std_algo.hpp"
 #include "std_iter.hpp"
 
@@ -95,6 +98,19 @@ insert_end_n(FIFO< CAPACITY > & self, size_t n, const T & x)
 {
 	n = min(n, space_available(self));
 	self.last = fill_n(self.last, n, x);
+}
+
+template <size_t CAPACITY>
+void
+dbg_dump(const char msg[], const FIFO< CAPACITY > & self)
+{
+#ifdef CONFIG_DEBUG_BLUETOOTH21
+	char hex[2 + (CAPACITY - 1) * 3 + 1];
+	char * tail = repr_n(cbegin(self), size(self), ' ', hex);
+	*tail = '\0';
+
+	dbg("%s:%u:%s.\n", msg, size(self), hex);
+#endif
 }
 
 } // end of namespace BT

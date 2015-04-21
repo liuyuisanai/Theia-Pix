@@ -68,6 +68,7 @@ process_serial_input(Protocol tag, Device & d, RxState & rx)
 		// TODO check channel is opened. Drop data on closed channels.
 		if (ch > 7)
 		{
+			dbg_dump("invalid channel", rx.device_buffer);
 			/*
 			 * Invalid channel index. It means protocol
 			 * synchronization got broken.

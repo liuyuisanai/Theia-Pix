@@ -44,3 +44,35 @@ write_repr(Device &dev, const void *buf, std::size_t buf_size)
 		write(dev, &nl, 1);
 	}
 }
+
+template <typename InputIt, typename InputSize, typename Space, typename OuputIt>
+OuputIt
+repr_n(InputIt first, InputSize n, const Space space, OuputIt out)
+{
+	static_assert(sizeof(*first) == 1, "Only one byte types are suported.");
+
+	if (n > 0)
+	{
+		while (n > 1)
+		{
+			uint8_t x = *first;
+			*out = hex_digit(x >> 4);
+			++out;
+			*out = hex_digit(x);
+			++out;
+			*out = space;
+			++out;
+
+			++first;
+			--n;
+		}
+
+		uint8_t x = *first;
+		*out = hex_digit(x >> 4);
+		++out;
+		*out = hex_digit(x);
+		++out;
+	}
+
+	return out;
+}
