@@ -65,6 +65,17 @@ handle(SyncState & self, const RESPONSE_EVENT_UNION & p)
 		self.level = SyncState::Level::LOST;
 	break;
 
+	case EVT_INVALID_PKTSIZE:
+		dbg("-> EVT_INVALID_PKTSIZE:"
+			" command id 0x%02x actual %u desired %u.\n"
+			, p.evtInvPktSize.command
+			, p.evtInvPktSize.actualSize
+			, p.evtInvPktSize.requiredSize
+		);
+		dbg("Sync LOST.\n");
+		self.level = SyncState::Level::LOST;
+	break;
+
 	default: return false;
 	}
 
