@@ -1,0 +1,52 @@
+echo "Test system power (sensors power should be about 3V, system power - about 4.5-5V)"
+if sensors_switch status
+then
+fi
+echo "------------------------CONTINUING--------------------------"
+echo "Test if internal mag is connected (reports status if ok)"
+if lsm303d info
+then
+fi
+echo "------------------------CONTINUING--------------------------"
+echo "Test if accel/gyro combo is running (reports status if ok)"
+if mpu6000 info
+then
+fi
+echo "------------------------CONTINUING--------------------------"
+echo "Test if baro sensor is working (reports status if ok)"
+if ms5611 info
+then
+fi
+echo "------------------------CONTINUING--------------------------"
+echo "Test calibration of different sensors (should say that test is ok)"
+if config mag check
+then
+fi
+echo "------------------------CONTINUING--------------------------"
+if config accel check
+then
+fi
+echo "------------------------CONTINUING--------------------------"
+if config gyro check
+then
+fi
+echo "------------------------CONTINUING--------------------------"
+echo "Preflight check (no output is ok)"
+if preflight_check
+then
+fi
+echo "------------------------CONTINUING--------------------------"
+echo "Test gps driver (reports status OK and some satellite and fix stats)"
+if gps status
+then
+fi
+echo "------------------------CONTINUING--------------------------"
+echo "Test if SD card is mounted (on FAILURE reports 'no such directory')"
+if ls /fs/microsd
+then
+fi
+echo "------------------------CONTINUING--------------------------"
+echo "You should also check sensor data in QGround control by rotating the board"
+echo "Another thing - try setting a parameter via param set, then save via param save, reboot, check if value is changed"
+echo "And if sonar is connected - disable debug output, connect via usual usb port, run `mb1230serial stop`"
+echo "Then `mb1230serial start /dev/ttyS6` and then `mb1230serial test` and check output data"
