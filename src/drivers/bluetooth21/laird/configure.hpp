@@ -37,9 +37,9 @@ bool
 configure_name(ServiceIO & io)
 {
 #if defined(CONFIG_ARCH_BOARD_AIRDOG_FMU)
-# define BT_LOCAL_NAME_PREFIX "AirDog"
+# define BT_LOCAL_NAME_PREFIX "Dog"
 #elif defined(CONFIG_ARCH_BOARD_AIRLEASH)
-# define BT_LOCAL_NAME_PREFIX "AirLeash"
+# define BT_LOCAL_NAME_PREFIX "Leash"
 #elif defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
 # define BT_LOCAL_NAME_PREFIX "px4"
 #endif
@@ -56,7 +56,7 @@ configure_name(ServiceIO & io)
 		uint32_t device_id = Params::get("A_DEVICE_ID");
 		if (i < n_factory_addresses)
 			l = snprintf(name, sizeof name,
-				BT_LOCAL_NAME_PREFIX "-F-%u-id-%u",
+				"%u-" BT_LOCAL_NAME_PREFIX "-%u",
 				i, device_id);
 		else
 			l = snprintf(name, sizeof name,
