@@ -112,8 +112,10 @@ fi
 
 if param compare A_TELEMETRY_MODE 1
 then
-	bluetooth21 start /dev/ttyS0 factory-param
-	set MAVLINK_TTY /dev/bt1
+	if bluetooth21 start /dev/ttyS0 factory-param
+	then
+		set MAVLINK_TTY /dev/bt1
+	fi
 fi
 
 #

@@ -445,9 +445,10 @@ then
 
 	if param compare A_TELEMETRY_MODE 1
 	then
-		# Power-cycle unavailable.
-		bluetooth21 start $TELEM_TTY factory-param
-		set MAVLINK_TTY /dev/bt1
+		if bluetooth21 start $TELEM_TTY factory-param
+		then
+			set MAVLINK_TTY /dev/bt1
+		fi
 	fi
 
 	#
