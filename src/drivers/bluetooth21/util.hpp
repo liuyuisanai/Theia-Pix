@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cstring>
+#include <cstdlib>
 
 namespace BT
 {
@@ -12,7 +12,7 @@ inline bool
 parse_uint32(const char s[], uint32_t &n, int base=10)
 {
 	char * tail;
-	n = strtoul(s, &tail, base);
+	n = std::strtoul(s, &tail, base);
 	return tail != s and *tail == '\0';
 }
 

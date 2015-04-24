@@ -7,10 +7,11 @@ namespace BT
 namespace Daemon
 {
 
-namespace Multiplexer
+namespace Main
 {
 
-extern const char PROCESS_NAME[];
+extern const char
+PROCESS_NAME[];
 
 bool
 is_running();
@@ -19,7 +20,34 @@ bool
 has_started();
 
 void
+start(const char * argv[]);
+
+void
+report_status(FILE *);
+
+void
+request_stop();
+
+}
+// end of namespace Main
+
+namespace Multiplexer
+{
+
+extern const char
+PROCESS_NAME[];
+
+bool
+is_running();
+
+bool
+has_started();
+
+bool
 start(const char uart_dev_name[]);
+
+void
+join();
 
 void
 report_status(FILE *);
@@ -33,7 +61,8 @@ request_stop();
 namespace Service
 {
 
-extern const char PROCESS_NAME[];
+extern const char
+PROCESS_NAME[];
 
 bool
 is_running();
@@ -41,8 +70,11 @@ is_running();
 bool
 has_started();
 
-void
+bool
 start(const char mode[], const char address_no[]);
+
+void
+join();
 
 void
 report_status(FILE *);

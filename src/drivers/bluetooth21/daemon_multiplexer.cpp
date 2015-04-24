@@ -1,9 +1,8 @@
 #include <nuttx/config.h>
-#include <sched.h>
-#include <sys/types.h> // main_t
-#include <systemlib/systemlib.h> // task_spawn_cmd
+#include <pthread.h>
 
 #include <cstdio>
+#include <cstring>
 
 #include "chardev.hpp"
 #include "daemon.hpp"
@@ -22,8 +21,11 @@ namespace Daemon
 namespace Multiplexer
 {
 
-constexpr int POLL_ms = 5 /*ms*/;
-const char PROCESS_NAME[] = "bt21_io";
+constexpr int
+POLL_ms = 5 /*ms*/;
+
+const char
+PROCESS_NAME[] = "bt21_io";
 
 static volatile bool
 should_run = false;
@@ -34,19 +36,25 @@ running = false;
 static volatile bool
 started = false;
 
-static int
-daemon(int argc, const char * const argv[])
+static char
+dev_name[16];
+
+static pthread_t
+thread;
+
+static pthread_attr_t
+thread_attr;
+
+static void *
+daemon()
 {
+	pthread_setname_np(thread, PROCESS_NAME);
+
 	running = true;
 	started = false;
 	fprintf(stderr, "%s starting ...\n", PROCESS_NAME);
 
-	unique_file dev;
-
-	if (argc == 2)
-		dev.set(tty_open(argv[1]));
-	else
-		fprintf(stderr, "%s: wrong argument count.\n", PROCESS_NAME);
+	unique_file dev(tty_open(dev_name));
 
 	should_run = (
 		fileno(dev) > -1
@@ -94,7 +102,8 @@ daemon(int argc, const char * const argv[])
 
 	started = running = false;
 	fprintf(stderr, "%s stopped.\n", PROCESS_NAME);
-	return 0;
+
+	return nullptr;
 }
 
 bool
@@ -112,19 +121,51 @@ report_status(FILE * fp)
 	);
 }
 
-void
+bool
 start(const char uart_dev_name[])
 {
-	if (running)
-		return;
+	if (strlen(uart_dev_name) >= sizeof dev_name)
+	{
+		fprintf(stderr
+			, "Too long path '%s', max %uchars.\n"
+			, uart_dev_name
+			, sizeof dev_name
+		);
+		return false;
+	}
+	std::strncpy(dev_name, uart_dev_name, sizeof dev_name);
 
-	const char * argv[] = { uart_dev_name, nullptr };
-	task_spawn_cmd(PROCESS_NAME,
-			SCHED_DEFAULT,
-			SCHED_PRIORITY_DEFAULT,
-			STACKSIZE_DAEMON_IO,
-			(main_t)daemon,
-			argv);
+	errno = pthread_attr_init(&thread_attr);
+	if (errno != 0)
+	{
+		perror("Service / pthread_init");
+		return false;
+	}
+
+	errno = pthread_attr_setstacksize(&thread_attr, STACKSIZE_DAEMON_IO);
+	if (errno != 0)
+	{
+		perror("Service / pthread_attr_setstacksize");
+		return false;
+	}
+
+	errno = pthread_create(
+		&thread, &thread_attr, (pthread_func_t)daemon, nullptr
+	);
+	if (errno != 0)
+	{
+		perror("Multiplexer / pthread_create");
+		return false;
+	}
+
+	return true;
+}
+
+void
+join()
+{
+	pthread_join(thread, nullptr);
+	pthread_attr_destroy(&thread_attr);
 }
 
 void

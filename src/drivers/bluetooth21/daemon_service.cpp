@@ -1,7 +1,5 @@
 #include <nuttx/config.h>
-#include <sched.h>
-#include <sys/types.h> // main_t
-#include <systemlib/systemlib.h> // task_spawn_cmd
+#include <pthread.h>
 
 #include <cstdio>
 #include <unistd.h>
@@ -27,7 +25,8 @@ namespace Daemon
 namespace Service
 {
 
-const char PROCESS_NAME[] = "bt21_service";
+const char
+PROCESS_NAME[] = "bt21_service";
 
 static volatile bool
 should_run = false;
@@ -51,10 +50,18 @@ daemon_mode = Mode::UNDEFINED;
 static Address6
 connect_address;
 
-static int
+static pthread_t
+thread;
+
+static pthread_attr_t
+thread_attr;
+
+static void *
 daemon()
 {
 	using namespace BT::Service::Laird;
+
+	pthread_setname_np(thread, PROCESS_NAME);
 
 	running = true;
 	started = false;
@@ -123,7 +130,8 @@ daemon()
 
 	started = running = false;
 	fprintf(stderr, "%s stopped.\n", PROCESS_NAME);
-	return 0;
+
+	return nullptr;
 }
 
 bool
@@ -141,12 +149,9 @@ report_status(FILE * fp)
 	);
 }
 
-void
+bool
 start(const char mode[], const char addr_no[])
 {
-	if (running)
-		return;
-
 	daemon_mode = Mode::UNDEFINED;
 	if (streq(mode, "factory-param"))
 	{
@@ -204,7 +209,7 @@ start(const char mode[], const char addr_no[])
 	}
 
 	if (daemon_mode == Mode::UNDEFINED)
-		return;
+		return false;
 
 	if (daemon_mode == Mode::ONE_CONNECT)
 		fprintf(stderr
@@ -215,12 +220,39 @@ start(const char mode[], const char addr_no[])
 	else
 		fprintf(stderr, "%s: mode listen.\n", PROCESS_NAME);
 
-	task_spawn_cmd(PROCESS_NAME,
-			SCHED_DEFAULT,
-			SCHED_PRIORITY_DEFAULT,
-			STACKSIZE_DAEMON_SERVICE,
-			(main_t)daemon,
-			nullptr);
+	errno = pthread_attr_init(&thread_attr);
+	if (errno != 0)
+	{
+		perror("Service / pthread_init");
+		return false;
+	}
+
+	errno = pthread_attr_setstacksize(
+			&thread_attr, STACKSIZE_DAEMON_SERVICE
+	);
+	if (errno != 0)
+	{
+		perror("Service / pthread_attr_setstacksize");
+		return false;
+	}
+
+	errno = pthread_create(
+		&thread, &thread_attr, (pthread_func_t)daemon, nullptr
+	);
+	if (errno != 0)
+	{
+		perror("Service / pthread_create");
+		return false;
+	}
+
+	return true;
+}
+
+void
+join()
+{
+	pthread_join(thread, nullptr);
+	pthread_attr_destroy(&thread_attr);
 }
 
 void

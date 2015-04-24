@@ -5,7 +5,6 @@
 #include <unistd.h>
 
 #include "daemon.hpp"
-#include "io_multiplexer_global.hpp"
 #include "util.hpp"
 
 constexpr useconds_t
@@ -33,10 +32,10 @@ usage(const char name[])
 #endif
 
 extern "C" __EXPORT int
-main(int argc, const char * const argv[]);
+main(int argc, const char * argv[]);
 
 int
-main(int argc, const char * const argv[])
+main(int argc, const char * argv[])
 {
 	using BT::streq;
 	using namespace BT::Daemon;
@@ -49,68 +48,34 @@ main(int argc, const char * const argv[])
 
 	if (streq(argv[1], "start") and argc >= 4)
 	{
-		printf("%s: Starting...\n", argv[0]);
-
-		if (Multiplexer::is_running())
-			fprintf(stderr, "%s is *already* running.\n",
-					Multiplexer::PROCESS_NAME);
-		else
-		{
-			Multiplexer::start(argv[2]);
-
-			bool wait;
-			do
-			{
-				usleep(WAIT_PERIOD_us);
-				wait =      Multiplexer::is_running()
-					and not Multiplexer::has_started();
-			}
-			while (wait);
-		}
-
-		if (Service::is_running())
-			fprintf(stderr, "%s is *already* running.\n",
-					Service::PROCESS_NAME);
-		else if (Multiplexer::is_running())
-			Service::start(argv[3], argc > 4 ? argv[4] : nullptr);
+		Main::start(argv);
 
 		bool wait;
 		do
 		{
 			usleep(WAIT_PERIOD_us);
-			wait =      Multiplexer::is_running()
-				and not Multiplexer::has_started()
-				and Service::is_running()
-				and not Service::has_started();
+			wait = Main::is_running() and not Main::has_started();
 		}
 		while (wait);
 
-		if (Multiplexer::is_running() and Service::is_running())
-			printf("%s: OK, started.\n", argv[0]);
-		else
+		if (not Main::is_running())
 		{
-			printf("%s: Start failed.\n", argv[0]);
+			Main::report_status(stderr);
 			return 1;
 		}
 	}
 	else if (streq(argv[1], "status") and argc == 2)
 	{
-		Multiplexer::report_status(stdout);
-		Service::report_status(stdout);
+		Main::report_status(stdout);
 	}
 	else if (streq(argv[1], "stop") and argc == 2)
 	{
-		if (Multiplexer::is_running())
-			Multiplexer::request_stop();
+		if (Main::is_running())
+			Main::request_stop();
 		else
-			Multiplexer::report_status(stderr);
+			Main::report_status(stderr);
 
-		if (Service::is_running())
-			Service::request_stop();
-		else
-			Service::report_status(stderr);
-
-		while (Multiplexer::is_running() and Service::is_running())
+		while (Main::is_running())
 		{
 			usleep(WAIT_PERIOD_us);
 			fputc('.', stderr);

@@ -1,10 +1,12 @@
-STACKSIZE_DAEMON_IO = CONFIG_TASK_SPAWN_DEFAULT_STACKSIZE
+STACKSIZE_DAEMON_MAIN = 1024
+STACKSIZE_DAEMON_IO = 2048
 STACKSIZE_DAEMON_SERVICE = 4096
 MODULE_COMMAND = $(notdir $(shell pwd))
 
 SRCS = main.cpp \
 	chardev.cpp \
 	chardev_poll.cpp \
+	daemon_main.cpp \
 	daemon_multiplexer.cpp \
 	daemon_service.cpp \
 	device_connection_map.cpp \
@@ -17,6 +19,7 @@ SRCS = main.cpp \
 
 EXTRACXXFLAGS += -std=c++11 \
 		-DMODULE_COMMAND=$(MODULE_COMMAND) \
+		-DSTACKSIZE_DAEMON_MAIN=$(STACKSIZE_DAEMON_MAIN) \
 		-DSTACKSIZE_DAEMON_IO=$(STACKSIZE_DAEMON_IO) \
 		-DSTACKSIZE_DAEMON_SERVICE=$(STACKSIZE_DAEMON_SERVICE) \
 		-flto \
