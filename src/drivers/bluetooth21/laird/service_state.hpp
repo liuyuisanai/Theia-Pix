@@ -49,6 +49,19 @@ handle_service_packet(ServiceState & svc, const RESPONSE_EVENT_UNION & packet)
 	return processed;
 }
 
+inline bool
+handle_unknown_packet(...) { return false; }
+
+template <typename It, typename Size>
+bool
+handle_unknown_packet(ServiceState & svc, It first, Size n)
+{
+	bool processed = false;
+	processed =   handle_unknown_packet(svc.sync, first, n)   or processed;
+	processed =   handle_unknown_packet(svc.conn, first, n)   or processed;
+	return processed;
+}
+
 }
 // end of namespace Laird
 }

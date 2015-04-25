@@ -82,6 +82,15 @@ handle(SyncState & self, const RESPONSE_EVENT_UNION & p)
 	return true;
 }
 
+template <typename It, typename Size>
+bool
+handle_unknown_packet(SyncState & self, It first, Size n)
+{
+	dbg("Desync by unknown packet.\n");
+	self.level = SyncState::Level::LOST;
+	return true;
+}
+
 }
 // end of namespace Laird
 }

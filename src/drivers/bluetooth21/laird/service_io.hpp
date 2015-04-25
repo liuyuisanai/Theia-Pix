@@ -71,8 +71,12 @@ process_service_packet(State & s, const ResponceEventBuffer & buf)
 	}
 	else
 	{
-		dbg("Dropped packet at channel 0x%02x.\n", ch);
-		dbg_dump("Dropped packet bytes", buf);
+		processed = handle_unknown_packet(s, cbegin(buf), size(buf));
+		dbg("Unknown packet at channel 0x%02x %s.\n"
+			, ch
+			, processed ? "processed" : "dropped."
+		);
+		dbg_dump("Unknown packet bytes", buf);
 	}
 }
 

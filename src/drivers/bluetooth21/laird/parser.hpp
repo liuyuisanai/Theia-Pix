@@ -36,7 +36,7 @@ channel_index_t
 get_channel_number(LairdProtocol, Iterator first, Iterator last)
 {
 	++first;
-	return *first;
+	return *first <= 7 ? *first : 0;
 }
 
 template <typename Iterator>
