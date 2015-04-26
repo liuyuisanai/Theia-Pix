@@ -66,4 +66,8 @@ mark(channel_mask_t & mask, channel_index_t i, bool on)
 	else { mask.value &= ~bit; }
 }
 
+inline channel_mask_t
+operator - (const channel_mask_t & a, const channel_mask_t & b)
+{ return channel_mask_t(a.value & ~b.value); }
+
 } // end of namespace BT

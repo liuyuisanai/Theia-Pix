@@ -56,6 +56,42 @@ thread;
 static pthread_attr_t
 thread_attr;
 
+template <typename ServiceIO, typename ServiceState>
+static void
+synced_loop(MultiPlexer & mp, ServiceIO & service_io, ServiceState & svc)
+{
+	using namespace BT::Service::Laird;
+
+	auto & dev = service_io.dev;
+	while (should_run and not module_rebooted(svc.sync))
+	{
+		wait_process_event(service_io);
+		set_xt_ready_mask(mp, svc.flow.xt_mask);
+
+		if (svc.conn.changed)
+		{
+			dbg("Connect/disconnect.\n");
+			update_connections(mp, svc.conn.channels_connected);
+			svc.conn.changed = false;
+		}
+
+		dbg("Connections waiting %i, total count %u.\n"
+			, no_single_connection(svc.conn)
+			, count_connections(svc.conn)
+		);
+		if (no_single_connection(svc.conn))
+		{
+			if (daemon_mode == Mode::ONE_CONNECT
+			and allowed_connection_request(svc.conn)
+			) {
+				request_connect(dev, svc.conn, connect_address);
+				dbg("Request connect.\n");
+			}
+		}
+		else { /* TODO request rssi */ }
+	}
+}
+
 static void *
 daemon()
 {
@@ -75,14 +111,14 @@ daemon()
 	auto & mp = Globals::Multiplexer::get();
 	ServiceState svc;
 	auto service_io = make_service_io(log_dev, svc);
-
+	const bool connectable = daemon_mode == Mode::LISTEN;
 	should_run = (daemon_mode != Mode::UNDEFINED
 		and fileno(dev) > -1
 		and sync_soft_reset(service_io, svc.sync)
 		and configure_factory(service_io)
 		and configure_before_reboot(service_io)
 		and sync_soft_reset(service_io, svc.sync)
-		and configure_after_reboot(service_io, daemon_mode == Mode::LISTEN)
+		and configure_after_reboot(service_io, connectable)
 		and dump_s_registers(service_io)
 	);
 
@@ -97,35 +133,23 @@ daemon()
 	}
 
 	started = true;
-	while (should_run)
+
+	do
 	{
-		wait_process_event(service_io);
-		set_xt_ready_mask(mp, svc.flow.xt_mask);
+		synced_loop(mp, service_io, svc);
 
-		if (svc.conn.changed)
-		{
-			dbg("Connect/disconnect.\n");
-			update_connections(mp, svc.conn.channels_connected);
-			svc.conn.changed = false;
-		}
-
-		dbg("%i count_connections() %u.\n"
-			, no_single_connection(svc.conn)
-			, count_connections(svc.conn)
+		// We'll get here on stop request or on module reboot
+		bool ok = ( should_run
+			and configure_after_reboot(service_io, connectable)
+			and renew_after_reboot(service_io, svc.conn)
 		);
-		if (no_single_connection(svc.conn))
-		{
-			if (daemon_mode == Mode::ONE_CONNECT
-			and allowed_connection_request(svc.conn)
-			) {
-				request_connect(
-					log_dev, svc.conn, connect_address
-				);
-				dbg("Request connect.\n");
-			}
-		}
-		else { /* TODO request rssi */ }
+
+		if (not ok) { break; }
+
+		// Assume we are syncronized again
+		set_in_sync(svc.sync);
 	}
+	while (true);
 
 	started = running = false;
 	fprintf(stderr, "%s stopped.\n", PROCESS_NAME);
@@ -151,6 +175,7 @@ report_status(FILE * fp)
 bool
 start(const char mode[], const char addr_no[])
 {
+	dbg("%s Service::start(%s, %s).\n", PROCESS_NAME, mode, addr_no);
 	daemon_mode = Mode::UNDEFINED;
 	if (streq(mode, "factory-param"))
 	{
@@ -206,6 +231,8 @@ start(const char mode[], const char addr_no[])
 			, mode
 		);
 	}
+
+	dbg("%s daemon mode %u.\n", PROCESS_NAME, daemon_mode);
 
 	if (daemon_mode == Mode::UNDEFINED)
 		return false;

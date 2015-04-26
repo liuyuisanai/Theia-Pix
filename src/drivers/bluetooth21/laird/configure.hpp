@@ -47,7 +47,8 @@ configure_name(ServiceIO & io)
 			l = snprintf(name, sizeof name,
 				BT_LOCAL_NAME_PREFIX "-%u", device_id);
 
-		ok = local_name_set(io, name, l);
+		ok = local_name_set(io, name, l)
+			and local_name_store(io, name, l);
 	}
 	return ok;
 #undef BT_LOCAL_NAME_PREFIX
@@ -70,10 +71,15 @@ configure_before_reboot(ServiceIO & io)
 	{
 		/* These registers require module reset */
 		{  3, 1 },     // Profiles: SPP only
-		{  4, 0 },     // Default connectable: No
-		{  5, 0 },     // Default discoverable: No
 		{  6, 12 },    // Securty mode
 		{ 12, reg12 }, // Link Supervision Timeout, seconds
+
+		/*
+		 * These registers impact module state after reset/reboot.
+		 * Are used to detect that the module has rebooted.
+		 */
+		{  4, 0 },     // Default connectable: No
+		{  5, 0 },     // Default discoverable: No
 
 		/*
 		 * These S-registers are set before reboot
@@ -104,7 +110,7 @@ configure_after_reboot(ServiceIO & io, bool connectable)
 {
 	bool ok = ( configure_name(io)
 		and switch_discoverable(io, true)
-		and switch_connectable(io, connectable)
+		and switch_connectable(io, true)
 	);
 	dbg("configure_after_reboot %i.\n", ok);
 	return ok;

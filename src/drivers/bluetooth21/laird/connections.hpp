@@ -9,6 +9,7 @@
 #include "../std_algo.hpp"
 #include "../std_iter.hpp"
 
+#include "commands.hpp"
 #include "service_defs.hpp"
 #include "service_io.hpp"
 
@@ -18,6 +19,30 @@ namespace Service
 {
 namespace Laird
 {
+
+template <typename ServiceIO>
+bool
+check_opened_conections(ServiceIO & io, ConnectionState & conn)
+{
+	bool ok;
+	channel_mask_t ch_mask;
+	tie(ok, ch_mask) = opened_channels(io);
+	refresh_connections(conn, ch_mask);
+	return ok;
+}
+
+template <typename ServiceIO>
+bool
+renew_after_reboot(ServiceIO & io, ConnectionState & conn)
+{
+	bool ok = check_opened_conections(io, conn);
+	if (conn.changed)
+	{
+		/* Assume reboot proved */
+		forget_connection_request(conn);
+	}
+	return ok;
+}
 
 template <typename Device>
 bool

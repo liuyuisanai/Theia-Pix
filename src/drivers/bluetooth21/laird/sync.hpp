@@ -25,13 +25,16 @@ struct SyncState
 	SyncState() : level(Level::UNKNOWN) {}
 };
 
-template <typename ServiceIO>
-void
-mark_sync(SyncState & self) { self.level = SyncState::Level::IN_SYNC; }
+inline void
+set_in_sync(SyncState & self) { self.level = SyncState::Level::IN_SYNC; }
 
-template <typename ServiceIO>
-void
-in(SyncState & self) { self.level = SyncState::Level::IN_SYNC; }
+inline bool
+in_sync(const SyncState & self)
+{ return self.level == SyncState::Level::IN_SYNC; }
+
+inline bool
+module_rebooted(const SyncState & self)
+{ return self.level == SyncState::Level::MODULE_REBOOTED; }
 
 template <typename ServiceIO>
 bool

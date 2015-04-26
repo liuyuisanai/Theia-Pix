@@ -4,6 +4,8 @@
 #include "../network_util.hpp"
 #include "../time.hpp"
 
+#include "../std_util.hpp"
+
 #include "service_defs.hpp"
 #include "service_params.hpp"
 
@@ -94,6 +96,31 @@ template <typename ServiceIO>
 inline bool
 local_name_store(ServiceIO & io, const char new_name[], size_t len)
 { return local_name_cmd(io, new_name, len, 1); }
+
+template <typename ServiceIO>
+inline std::pair<bool, channel_mask_t>
+opened_channels(ServiceIO & io)
+{
+	RESPONSE_CHANNEL_LIST rsp;
+
+	auto cmd = prefill_packet<COMMAND_CHANNEL_LIST, CMD_CHANNEL_LIST>();
+
+	bool ok = send_receive_verbose(io, cmd, rsp)
+		and get_response_status(rsp) == MPSTATUS_OK;
+
+	channel_mask_t mask;
+	if (ok)
+	{
+		for(size_t i = 0; i < rsp.openChannels; ++i)
+			if (1 <= rsp.channel[i] and rsp.channel[i] <= 7)
+				mark(mask, rsp.channel[i], 1);
+	}
+
+	dbg("-> command opened_channels() %s 0x%02x.\n",
+		ok ? "ok": "failed", mask.value);
+
+	return std::make_pair(ok, mask);
+}
 
 template <typename ServiceIO>
 bool

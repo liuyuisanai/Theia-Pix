@@ -91,15 +91,16 @@ forget_connection_request(ConnectionState & self)
 	);
 }
 
+template <typename AddrT>
 inline void
 register_incoming_connection(
 	ConnectionState & self,
 	channel_index_t ch,
-	const uint8_t (&bdAddr)[6]
+	const AddrT & addr
 ) {
 	self.changed = true;
 	mark(self.channels_connected, ch, true);
-	self.address[ch] = bdAddr;
+	self.address[ch] = addr;
 	dbg("register_incoming_connection 0x%02x"
 		" channel %u address " Address6_FMT ".\n"
 		, self.channels_connected.value
@@ -121,6 +122,49 @@ register_disconnect(
 		, ch
 		, Address6_FMT_ITEMS(self.address[ch])
 	);
+}
+
+inline void
+refresh_connections(ConnectionState & self, channel_mask_t active_channels)
+{
+	channel_mask_t connected = self.channels_connected;
+	mark(connected, 0, false);
+
+	channel_mask_t to_close = connected - active_channels;
+	channel_mask_t to_open = active_channels - connected;
+
+	dbg("refresh_connections: to close 0x%02x, to open 0x%02x\n",
+		to_close.value, to_open.value);
+
+	if (not empty(to_close))
+	{
+		self.changed = true;
+
+		for (channel_index_t ch = 1; ch <= 7; ++ch)
+		{
+			/* Debug only cycle */
+			if (is_set(to_open, ch))
+			{
+				dbg("disconnected channel %u"
+					" address " Address6_FMT ".\n"
+					, ch
+					, Address6_FMT_ITEMS(self.address[ch])
+				);
+			}
+		}
+
+		self.channels_connected.value &= ~to_close.value;
+	}
+
+	if (not empty(to_open))
+	{
+		Address6 no_addr;
+		for (channel_index_t ch = 1; ch <= 7; ++ch)
+		{
+			if (is_set(to_open, ch))
+				register_incoming_connection(self, ch, no_addr);
+		}
+	}
 }
 
 inline uint8_t
