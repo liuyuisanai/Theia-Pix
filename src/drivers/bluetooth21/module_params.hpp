@@ -2,8 +2,7 @@
 
 #include <systemlib/param/param.h>
 
-#define BT_PARAM_DEFAULT 0x7FffFFff
-#define BT_SREG_AS_IS BT_PARAM_DEFAULT
+#define BT_PARAM_DEFAULT -1
 
 #ifdef __cplusplus
 #include <cstdint>

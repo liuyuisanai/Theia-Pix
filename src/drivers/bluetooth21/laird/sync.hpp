@@ -17,12 +17,21 @@ struct SyncState
 		REQUESTED,
 		IN_SYNC,
 		LOST,
+		MODULE_REBOOTED,
 	};
 
 	Level level;
 
 	SyncState() : level(Level::UNKNOWN) {}
 };
+
+template <typename ServiceIO>
+void
+mark_sync(SyncState & self) { self.level = SyncState::Level::IN_SYNC; }
+
+template <typename ServiceIO>
+void
+in(SyncState & self) { self.level = SyncState::Level::IN_SYNC; }
 
 template <typename ServiceIO>
 bool
@@ -56,6 +65,8 @@ handle(SyncState & self, const RESPONSE_EVENT_UNION & p)
 
 		if (self.level == SyncState::Level::REQUESTED)
 			self.level = SyncState::Level::IN_SYNC;
+		else if (p.evtStatus.discoverable_mode == 0 and p.evtStatus.connectable_mode == 0)
+			self.level = SyncState::Level::MODULE_REBOOTED;
 	break;
 
 	case EVT_UNKNOWN_COMMAND:

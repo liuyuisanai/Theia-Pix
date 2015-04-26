@@ -10,7 +10,7 @@
  * Warning: Default and invalid values keep telemetry disabled!
  *
  */
-PARAM_DEFINE_INT32(A_TELEMETRY_MODE, -1);
+PARAM_DEFINE_INT32(A_TELEMETRY_MODE, BT_PARAM_DEFAULT);
 
 /*
  * Device ID visible to user as a bluetooth name as one of

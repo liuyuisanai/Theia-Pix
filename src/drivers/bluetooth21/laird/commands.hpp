@@ -67,7 +67,7 @@ local_address_read(ServiceIO & io, Address6 & addr)
 
 template <typename ServiceIO>
 bool
-local_name_set(ServiceIO & io, const char new_name[], size_t len)
+local_name_cmd(ServiceIO & io, const char new_name[], size_t len, uint8_t flags)
 {
 	RESPONSE_SET_LCL_FNAME rsp;
 	auto cmd = prefill_packet<COMMAND_SET_LCL_FNAME, CMD_SET_LCL_FNAME>();
@@ -80,10 +80,20 @@ local_name_set(ServiceIO & io, const char new_name[], size_t len)
 	bool ok = send_receive_verbose(io, cmd, rsp)
 		and get_response_status(rsp) == MPSTATUS_OK;
 
-	dbg("-> command local_name_set('%s') %s.\n",
-		cmd.name, ok ? "ok": "failed");
+	dbg("-> command local_name_cmd('%s', 0x%02x) %s.\n",
+		cmd.name, flags, ok ? "ok": "failed");
 	return ok;
 }
+
+template <typename ServiceIO>
+inline bool
+local_name_set(ServiceIO & io, const char new_name[], size_t len)
+{ return local_name_cmd(io, new_name, len, 2); }
+
+template <typename ServiceIO>
+inline bool
+local_name_store(ServiceIO & io, const char new_name[], size_t len)
+{ return local_name_cmd(io, new_name, len, 1); }
 
 template <typename ServiceIO>
 bool

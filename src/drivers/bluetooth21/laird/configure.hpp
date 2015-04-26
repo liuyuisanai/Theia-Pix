@@ -18,52 +18,6 @@ namespace Laird
 {
 
 template <typename ServiceIO>
-std::pair<bool, bool>
-s_register_affirm(ServiceIO & io, const uint32_t regno, const uint32_t value)
-{
-	uint32_t module_value;
-	bool changed = false;
-	bool ok = s_register_get(io, regno, module_value);
-	if (module_value != value)
-		changed = ok = s_register_set(io, regno, value);
-	return std::make_pair(ok, changed);
-}
-
-template <typename ServiceIO>
-bool
-configure_n_reboot(ServiceIO & io)
-{
-	bool ok, as_is;
-
-	tie(ok, as_is) = s_register_affirm(io, 3, 1);
-	if (not ok) { return false; }
-
-	tie(ok, as_is) = s_register_affirm(io, 4, 0);
-	if (not ok) { return false; }
-
-	tie(ok, as_is) = s_register_affirm(io, 5, 0);
-	if (not ok) { return false; }
-
-	tie(ok, as_is) = s_register_affirm(io, 6, 12);
-	if (not ok) { return false; }
-
-	/* Link Supervision Timeout, seconds */
-	const uint32_t r12 = Params::get("A_BT_S12_LINK");
-	if (r12 != BT_SREG_AS_IS)
-	{
-		bool changed;
-		tie(ok, changed) = s_register_affirm(io, 12, r12);
-		if (not ok) { return false; }
-		as_is = as_is and not changed;
-	}
-
-	ok = as_is or (s_register_store(io) and soft_reset(io));
-
-	dbg("configure_n_reboot as-is %i ok %i.\n", as_is, ok);
-	return ok;
-}
-
-template <typename ServiceIO>
 bool
 configure_name(ServiceIO & io)
 {
@@ -104,38 +58,55 @@ configure_name(ServiceIO & io)
 
 template <typename ServiceIO>
 bool
-configure_general(ServiceIO & io, bool connectable)
+configure_before_reboot(ServiceIO & io)
 {
-	bool ok = ( switch_discoverable(io, true)
+	const uint32_t reg12 = Params::get("A_BT_S12_LINK");
+	const uint32_t reg11 = Params::get("A_BT_S11_RFCOMM");
+	const uint32_t reg80 = Params::get("A_BT_S80_LATENCY");
+	const uint32_t reg84 = Params::get("A_BT_S84_POLL");
 
-		and switch_connectable(io, connectable)
+	struct SReg { uint32_t no, value; };
+	SReg regs[] =
+	{
+		/* These registers require module reset */
+		{  3, 1 },     // Profiles: SPP only
+		{  4, 0 },     // Default connectable: No
+		{  5, 0 },     // Default discoverable: No
+		{  6, 12 },    // Securty mode
+		{ 12, reg12 }, // Link Supervision Timeout, seconds
 
-		/* Auto-accept connections */
-		and s_register_set(io, 14, connectable ? 1 : 0)
+		/*
+		 * These S-registers are set before reboot
+		 * to save time on accidental module reboot
+		 */
+		{ 11, reg11 }, // RFCOMM frame size, bytes
+		{ 14, 1 },     // Auto-accept connections
+		{ 34, 1 },     // Number of incoming connections
+		{ 35, 1 },     // Number of outgoing connections
+		{ 80, reg80 }, // UART latency time in microseconds.
+		{ 84, reg84 }, // UART poll mode
+	};
+	const size_t n_regs = sizeof(regs) / sizeof(*regs);
 
-		/* Incoming connection number */
-		and s_register_set(io, 34, 1)
+	bool ok = true;
+	for (size_t i = 0; ok and i < n_regs; ++i)
+		ok = s_register_set(io, regs[i].no, regs[i].value);
 
-		/* Outgoing connection number */
-		and s_register_set(io, 35, 1)
-	);
-	dbg("configure_general %i.\n", ok);
+	if (ok) { ok = s_register_store(io); }
+
+	dbg("configure_before_reboot");
 	return ok;
 }
 
 template <typename ServiceIO>
 bool
-configure_latency(ServiceIO & io)
+configure_after_reboot(ServiceIO & io, bool connectable)
 {
-	uint32_t s11 = Params::get("A_BT_S11_RFCOMM");
-	uint32_t s80 = Params::get("A_BT_S80_LATENCY");
-	uint32_t s84 = Params::get("A_BT_S84_POLL");
-
-	bool ok = ( (s11 == BT_SREG_AS_IS or s_register_set(io, 11, s11))
-		and (s80 == BT_SREG_AS_IS or s_register_set(io, 80, s80))
-		and (s84 == BT_SREG_AS_IS or s_register_set(io, 84, s84))
+	bool ok = ( configure_name(io)
+		and switch_discoverable(io, true)
+		and switch_connectable(io, connectable)
 	);
-	dbg("configure_latency %i.\n", ok);
+	dbg("configure_after_reboot %i.\n", ok);
 	return ok;
 }
 
