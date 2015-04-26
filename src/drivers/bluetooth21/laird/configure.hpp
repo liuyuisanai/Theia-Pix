@@ -38,6 +38,12 @@ configure_n_reboot(ServiceIO & io)
 	tie(ok, as_is) = s_register_affirm(io, 3, 1);
 	if (not ok) { return false; }
 
+	tie(ok, as_is) = s_register_affirm(io, 4, 0);
+	if (not ok) { return false; }
+
+	tie(ok, as_is) = s_register_affirm(io, 5, 0);
+	if (not ok) { return false; }
+
 	tie(ok, as_is) = s_register_affirm(io, 6, 12);
 	if (not ok) { return false; }
 
