@@ -83,8 +83,8 @@ MODULES		+= modules/commander
 MODULES		+= modules/navigator
 MODULES		+= modules/mavlink
 MODULES		+= modules/gpio_led
-#MODULES		+= modules/uavcan
 MODULES 	+= modules/airdog
+#MODULES		+= modules/uavcan
 
 #
 # Estimation modules (EKF/ SO3 / other filters)
@@ -94,7 +94,7 @@ MODULES		+= modules/attitude_estimator_ekf
 #MODULES		+= modules/ekf_att_pos_estimator
 MODULES		+= modules/position_estimator_inav
 #MODULES		+= examples/flow_position_estimator
-MODULES		+= modules/airdog/trajectory_calculator
+#MODULES		+= modules/airdog/trajectory_calculator
 
 #
 # Vehicle Control
@@ -132,12 +132,12 @@ MODULES		+= modules/dataman
 LIBRARIES	+= lib/mathlib/CMSIS
 MODULES		+= lib/mathlib
 MODULES		+= lib/mathlib/math/filter
-MODULES		+= lib/ecl
-MODULES		+= lib/external_lgpl
+#MODULES		+= lib/ecl
+#MODULES		+= lib/external_lgpl
 MODULES		+= lib/geo
 MODULES		+= lib/geo_lookup
 MODULES		+= lib/conversion
-MODULES		+= lib/launchdetection
+#MODULES		+= lib/launchdetection
 
 #
 # OBC challenge

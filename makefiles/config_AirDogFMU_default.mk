@@ -76,7 +76,7 @@ MODULES		+= systemcmds/pwm
 MODULES		+= systemcmds/esc_calib
 MODULES		+= systemcmds/reboot
 MODULES		+= systemcmds/top
-MODULES		+= systemcmds/tests
+#MODULES		+= systemcmds/tests
 MODULES		+= systemcmds/config
 MODULES		+= systemcmds/nshterm
 MODULES		+= systemcmds/mtd
@@ -98,7 +98,7 @@ MODULES 	+= modules/airdog
 #
 # Estimation modules (EKF/ SO3 / other filters)
 #
-MODULES		+= modules/airdog/trajectory_calculator
+#MODULES		+= modules/airdog/trajectory_calculator
 MODULES		+= modules/attitude_estimator_ekf
 MODULES		+= modules/position_estimator_inav
 #MODULES		+= examples/flow_position_estimator
@@ -118,7 +118,7 @@ MODULES		+= modules/mc_pos_control
 # Logging
 #
 MODULES		+= modules/sdlog2
-MODULES		+= modules/sdlog2_lite
+#MODULES		+= modules/sdlog2_lite
 
 #
 # Unit tests
@@ -141,8 +141,8 @@ MODULES		+= modules/dataman
 LIBRARIES	+= lib/mathlib/CMSIS
 MODULES		+= lib/mathlib
 MODULES		+= lib/mathlib/math/filter
-MODULES		+= lib/ecl
-MODULES		+= lib/external_lgpl
+#MODULES		+= lib/ecl
+#MODULES		+= lib/external_lgpl
 MODULES		+= lib/geo
 MODULES		+= lib/geo_lookup
 MODULES		+= lib/conversion
