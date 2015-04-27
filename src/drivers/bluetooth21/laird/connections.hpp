@@ -36,11 +36,7 @@ bool
 renew_after_reboot(ServiceIO & io, ConnectionState & conn)
 {
 	bool ok = check_opened_conections(io, conn);
-	if (conn.changed)
-	{
-		/* Assume reboot proved */
-		forget_connection_request(conn);
-	}
+	forget_connection_request(conn);
 	return ok;
 }
 
