@@ -111,14 +111,13 @@ daemon()
 	auto & mp = Globals::Multiplexer::get();
 	ServiceState svc;
 	auto service_io = make_service_io(log_dev, svc);
-	const bool connectable = daemon_mode == Mode::LISTEN;
 	should_run = (daemon_mode != Mode::UNDEFINED
 		and fileno(dev) > -1
 		and sync_soft_reset(service_io, svc.sync)
 		and configure_factory(service_io)
 		and configure_before_reboot(service_io)
 		and sync_soft_reset(service_io, svc.sync)
-		and configure_after_reboot(service_io, connectable)
+		and configure_after_reboot(service_io)
 		and dump_s_registers(service_io)
 	);
 
@@ -140,7 +139,7 @@ daemon()
 
 		// We'll get here on stop request or on module reboot
 		bool ok = ( should_run
-			and configure_after_reboot(service_io, connectable)
+			and configure_after_reboot(service_io)
 			and renew_after_reboot(service_io, svc.conn)
 		);
 

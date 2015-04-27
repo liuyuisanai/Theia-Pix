@@ -106,7 +106,7 @@ configure_before_reboot(ServiceIO & io)
 
 template <typename ServiceIO>
 bool
-configure_after_reboot(ServiceIO & io, bool connectable)
+configure_after_reboot(ServiceIO & io)
 {
 	bool ok = ( configure_name(io)
 		and switch_discoverable(io, true)
