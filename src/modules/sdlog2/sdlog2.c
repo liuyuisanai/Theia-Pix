@@ -97,6 +97,7 @@
 #include <uORB/topics/debug_data.h>
 #include <uORB/topics/mavlink_receive_stats.h>
 #include <uORB/topics/target_gps_raw.h>
+#include <uORB/topics/bt21_debug.h>
 
 #include <systemlib/systemlib.h>
 #include <systemlib/param/param.h>
@@ -170,6 +171,10 @@ PARAM_DEFINE_INT32(SDLOG_M_ATT, 0);
 PARAM_DEFINE_INT32(SDLOG_M_ATTC, 0);
 PARAM_DEFINE_INT32(SDLOG_M_ATTSP, 0);
 PARAM_DEFINE_INT32(SDLOG_M_BAT, 0);
+PARAM_DEFINE_INT32(SDLOG_M_BT_CH, 2);
+PARAM_DEFINE_INT32(SDLOG_M_BT_CMD, 0);
+PARAM_DEFINE_INT32(SDLOG_M_BT_EVT, 0);
+PARAM_DEFINE_INT32(SDLOG_M_BT_ST, 5);
 PARAM_DEFINE_INT32(SDLOG_M_DEBUGD, 0);
 PARAM_DEFINE_INT32(SDLOG_M_ESC, 0);
 PARAM_DEFINE_INT32(SDLOG_M_EXTRAJ, 0);
@@ -1248,6 +1253,10 @@ int sdlog2_thread_main(int argc, char *argv[])
         struct debug_data_s debug_data;
         struct mavlink_receive_stats_s mav_stats;
         struct target_gps_raw_s target_gps_raw;
+        struct bt_command_s bt_command;
+        struct bt_event_s bt_event;
+        struct bt_status_s bt_status;
+        struct bt_channels_s bt_channels;
 	} buf;
 
 	memset(&buf, 0, sizeof(buf));
@@ -1300,6 +1309,10 @@ int sdlog2_thread_main(int argc, char *argv[])
 			struct log_MVST_s log_MVST;
 			struct log_CMD_s log_CMD;
 			struct log_TGPS_s log_TGPS;
+			struct log_BTCM_s log_BTCM;
+			struct log_BTEV_s log_BTEV;
+			struct log_BTST_s log_BTST;
+			struct log_BTCH_s log_BTCH;
 		} body;
 	} log_msg = {
 		LOG_PACKET_HEADER_INIT(0)
@@ -1345,6 +1358,10 @@ int sdlog2_thread_main(int argc, char *argv[])
         int mav_stats_sub;
         int local_trajectory_sub;
         int target_gps_raw_sub;
+        int bt_command_sub;
+        int bt_event_sub;
+        int bt_status_sub;
+        int bt_channels_sub;
 	} subs;
 
 	int sub_freq;
@@ -1394,6 +1411,10 @@ int sdlog2_thread_main(int argc, char *argv[])
 	// Local reported trajectory for leashes
 	LOG_ORB_PARAM_SUBSCRIBE(subs.local_trajectory_sub, ORB_ID(trajectory), "SDLOG_M_LOTRAJ", sub_freq)
 	LOG_ORB_PARAM_SUBSCRIBE(subs.target_gps_raw_sub, ORB_ID(target_gps_raw), "SDLOG_M_TRGGPS", sub_freq)
+	LOG_ORB_PARAM_SUBSCRIBE(subs.bt_command_sub, ORB_ID(bt_command), "SDLOG_M_BT_CMD", sub_freq)
+	LOG_ORB_PARAM_SUBSCRIBE(subs.bt_event_sub, ORB_ID(bt_event), "SDLOG_M_BT_EVT", sub_freq)
+	LOG_ORB_PARAM_SUBSCRIBE(subs.bt_status_sub, ORB_ID(bt_status), "SDLOG_M_BT_ST", sub_freq)
+	LOG_ORB_PARAM_SUBSCRIBE(subs.bt_channels_sub, ORB_ID(bt_channels), "SDLOG_M_BT_CH", sub_freq)
 
 	thread_running = true;
 
@@ -2101,6 +2122,36 @@ int sdlog2_thread_main(int argc, char *argv[])
 			log_msg.body.log_MVST.combo_count = buf.mav_stats.combo_count;
 
 			LOGBUFFER_WRITE_AND_COUNT(MVST);
+		}
+
+		if (copy_if_updated(ORB_ID(bt_command), subs.bt_command_sub, &buf.bt_command)) {
+			log_msg.msg_type = LOG_BTCM_MSG;
+			log_msg.body.log_BTCM.cmd = buf.bt_command.cmd;
+			log_msg.body.log_BTCM.result = buf.bt_command.result;
+			LOGBUFFER_WRITE_AND_COUNT(BTCM);
+		}
+
+		if (copy_if_updated(ORB_ID(bt_event), subs.bt_event_sub, &buf.bt_event)) {
+			log_msg.msg_type = LOG_BTEV_MSG;
+			log_msg.body.log_BTEV.event = buf.bt_event.event;
+			LOGBUFFER_WRITE_AND_COUNT(BTEV);
+		}
+
+		if (copy_if_updated(ORB_ID(bt_status), subs.bt_status_sub, &buf.bt_status)) {
+			log_msg.msg_type = LOG_BTST_MSG;
+			log_msg.body.log_BTST.connectable = buf.bt_status.connectable;
+			log_msg.body.log_BTST.discoverable = buf.bt_status.discoverable;
+			log_msg.body.log_BTST.service_status = buf.bt_status.service_status;
+			LOGBUFFER_WRITE_AND_COUNT(BTST);
+		}
+
+		if (copy_if_updated(ORB_ID(bt_channels), subs.bt_channels_sub, &buf.bt_channels)) {
+			log_msg.msg_type = LOG_BTCH_MSG;
+			for (int i = 0; i < 7; ++i) {
+				log_msg.body.log_BTCH.bytes_received[i] = buf.bt_channels.bytes_received[i];
+				log_msg.body.log_BTCH.bytes_sent[i] = buf.bt_channels.bytes_sent[i];
+			}
+			LOGBUFFER_WRITE_AND_COUNT(BTCH);
 		}
 
 		/* signal the other thread new data, but not yet unlock */

@@ -278,3 +278,9 @@ ORB_DEFINE(mavlink_receive_stats, struct mavlink_receive_stats_s);
 
 #include "topics/target_gps_raw.h"
 ORB_DEFINE(target_gps_raw, struct target_gps_raw_s);
+
+#include "topics/bt_debug.h"
+ORB_DEFINE(bt_command, struct bt_command_s);
+ORB_DEFINE(bt_event, struct bt_event_s);
+ORB_DEFINE(bt_status, struct bt_status_s);
+ORB_DEFINE(bt_channels, struct bt_channels_s);

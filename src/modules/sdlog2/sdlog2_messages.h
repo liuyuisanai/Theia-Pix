@@ -516,6 +516,30 @@ struct log_TGPS_s {
 	uint8_t sats;
 };
 
+#define LOG_BTCM_MSG 73
+struct log_BTCM_s {
+	uint8_t cmd;
+	uint8_t result;
+};
+
+#define LOG_BTEV_MSG 74
+struct log_BTEV_s {
+	uint8_t event;
+};
+
+#define LOG_BTST_MSG 75
+struct log_BTST_s {
+	uint8_t connectable;
+	uint8_t discoverable;
+	uint8_t service_status;
+};
+
+#define LOG_BTCH_MSG 76
+struct log_BTCH_s {
+	uint32_t bytes_sent[7];
+	uint32_t bytes_received[7];
+};
+
 /********** SYSTEM MESSAGES, ID > 0x80 **********/
 
 /* --- TIME - TIME STAMP --- */
@@ -589,6 +613,10 @@ static const struct log_format_s log_formats[] = {
 	LOG_FORMAT(MVST, "IIIII", "TotalBytes,HrtCount,GposCount,TrajCount,ComboCount"),
 	LOG_FORMAT(CMD, "HBBfff", "Cmd,SrcSys,SrcComp,Par1,Par2,Par3"),
 	LOG_FORMAT(TGPS, "QBffLLfffB", "Time,Fix,EPH,EPV,Lat,Lon,Alt,Vel,COG,nSat"),
+	LOG_FORMAT(BTCM, "BB", "Command,Result"),
+	LOG_FORMAT(BTEV, "B", "Event"),
+	LOG_FORMAT(BTST, "BBB", "Connect,Discover,Status"),
+	LOG_FORMAT(BTCH, "IIIIIIIIIIIIII", "xT1,xT2,xT3,xT4,xT5,xT6,xT7,Rx1,Rx2,Rx3,Rx4,Rx5,Rx6,Rx7"),
 
 	/* system-level messages, ID >= 0x80 */
 	/* FMT: don't write format of format message, it's useless */
