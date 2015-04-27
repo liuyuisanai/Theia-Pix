@@ -35,13 +35,16 @@ then
 	echo "[error] There is NO MAGnetometer!"
 fi
 
-# Sonar share tty with console
-if ll905 start
+if param compare SENS_SON_ON 1
 then
-    echo "[init] Using LIDAR-Lite Laser Ranging Module"
-else
-    echo "Error starting range finders"
+	if ll905 start
+	then
+	    echo "[init] Using LIDAR-Lite Laser Ranging Module"
+	else
+	    echo "Error starting range finders"
+	fi
 fi
+
 #
 # Start the sensor collection task.
 # IMPORTANT: this also loads param offsets

@@ -11,7 +11,7 @@ if ms5611 start
 then
 fi
 
-if [ _$MB_SONAR_TTY = _ ]
+if [ x$MB_SONAR_TTY = x ]
 then
     set MB_SONAR_TTY /dev/ttyS2
 fi
@@ -83,18 +83,21 @@ else
 	fi
 fi
 
-# Start MaxBotix sonar on serial
-# Start Lidar Lite laser range finder if MaxBotix is not presented
-if ll905 start
+if param compare SENS_SON_ON 1
 then
-    echo [init] Using Led LIDAR.
-else
-    if mb1230serial start $MB_SONAR_TTY
-    then
-        echo [init] Using MaxBotix sonar at $MB_SONAR_TTY
-    else
-        echo "Error starting Range-finder sensors"
-    fi
+	# Start Lidar Lite laser range finder
+	if ll905 start
+	then
+		echo [init] Using Led LIDAR.
+	else
+		# Start MaxBotix sonar on serial
+		if mb1230serial start $MB_SONAR_TTY
+		then
+			echo [init] Using MaxBotix sonar at $MB_SONAR_TTY
+		else
+			echo "Error starting Range-finder sensors"
+		fi
+	fi
 fi
 
 #

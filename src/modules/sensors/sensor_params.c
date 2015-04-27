@@ -205,7 +205,7 @@ PARAM_DEFINE_FLOAT(SENS_SON_ERR, 0.5f);
  * @off 0
  * @group Sensor Calibration
  */
-PARAM_DEFINE_INT32(SENS_SON_ON, 1);
+PARAM_DEFINE_INT32(SENS_SON_ON, 0);
 
 /**
  * Minimal distance to surface allowed by sonar
