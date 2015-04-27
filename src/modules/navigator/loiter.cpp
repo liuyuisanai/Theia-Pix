@@ -509,8 +509,11 @@ Loiter::execute_command_in_aim_and_shoot(vehicle_command_s cmd){
 			}
 			case REMOTE_CMD_COME_TO_ME: {
 
-				pos_sp_triplet->current.lat = target_pos->lat;
-				pos_sp_triplet->current.lon = target_pos->lon;
+                double lat = cmd.param5;
+                double lon = cmd.param6;
+
+				pos_sp_triplet->current.lat = lat;
+				pos_sp_triplet->current.lon = lon;
 				pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
 				pos_sp_triplet->current.position_valid = true;
 

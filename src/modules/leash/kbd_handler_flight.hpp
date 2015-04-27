@@ -3,6 +3,7 @@
 #include <type_traits>
 
 #include <uORB/topics/vehicle_command.h>
+#include <uORB/topics/vehicle_global_position.h>
 
 #include "kbd_defines.hpp"
 
@@ -260,7 +261,15 @@ struct handle<ModeId::SHORTCUT, EventKind::SHORT_KEYPRESS, BTN_MASK_UP>
 	exec(App & app)
 	{
 		say("G");
-		app.drone_cmd.send_command(REMOTE_CMD_COME_TO_ME);
+        
+        vehicle_global_position_s global_pos;
+	    int global_pos_sub = orb_subscribe(ORB_ID(vehicle_global_position));
+        orb_copy(ORB_ID(vehicle_global_position), global_pos_sub, &global_pos);
+
+        double lat = global_pos.lat;
+        double lon = global_pos.lon;
+
+        app.drone_cmd.send_come_to_me_command(lat,lon);
 	}
 };
 

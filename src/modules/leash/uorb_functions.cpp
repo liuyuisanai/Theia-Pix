@@ -59,6 +59,22 @@ send_command(enum REMOTE_CMD command)
 }
 
 void DroneCommand::
+send_come_to_me_command(double lat, double lon)
+{
+	struct vehicle_command_s cmd;
+	init(cmd);
+
+	cmd.command = VEHICLE_CMD_NAV_REMOTE_CMD;
+	cmd.param1 = REMOTE_CMD_COME_TO_ME;
+    cmd.param5 = lat;
+    cmd.param6 = lon;
+
+	orb_advertise(ORB_ID(vehicle_command), &cmd);
+	say("Sent remote cmd Come to me");
+}
+
+
+void DroneCommand::
 send_set_mode(uint8_t base_mode, enum PX4_CUSTOM_MAIN_MODE custom_main_mode, int param3)
 {
 	struct vehicle_command_s cmd;
@@ -82,6 +98,8 @@ send_arm_command(const DroneStatus & s)
 
 	//say("ARM command sent.");
 }
+
+
 
 void DroneCommand::
 send_rtl_command(const DroneStatus & s)

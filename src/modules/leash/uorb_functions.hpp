@@ -21,6 +21,7 @@ class DroneCommand
 public:
 	DroneCommand();
 	void send_command(REMOTE_CMD);
+    void send_come_to_me_command(double lat, double lon);
 	void send_arm_command(const DroneStatus &);
 	void send_rtl_command(const DroneStatus &);
 private:
