@@ -3,17 +3,6 @@
 # Standard startup script for PX4FMU onboard sensor drivers.
 #
 
-ms5611 start
-adc start
-
-if mpu6000 start
-then
-fi
-
-if l3gd20 start
-then
-fi
-
 # MAG selection
 set MAG_started no
 if hmc5883spi start
@@ -22,43 +11,54 @@ then
 	set MAG_started yes
 fi
 
-#if [ $DEBUG_MODE = yes -a $MAG_started = no ]
-#then
-#	if lsm303d start
-#	then
-#		set MAG_started yes
-#	fi
-#fi
-
-if [ $MAG_started = no ]
+if [ $MAG_started = yes ]
 then
-	echo "[error] There is NO MAGnetometer!"
-fi
+	ms5611 start
+	adc start
 
-if param compare SENS_SON_ON 1
-then
-	if ll905 start
+	if param compare SENS_DISABLE_MPU 1
 	then
-	    echo "[init] Using LIDAR-Lite Laser Ranging Module"
-	else
-	    echo "Error starting range finders"
-	fi
-fi
+		if l3gd20 start
+		then
+		fi
 
-#
-# Start the sensor collection task.
-# IMPORTANT: this also loads param offsets
-# ALWAYS start this task before the
-# preflight_check.
-#
-if sensors start
-then
-    if preflight_check --fail-on-error
-    then
-    else
-        tone_alarm error #Follows default preflight check tune
-    fi
+		if lsm303d start
+		then
+		fi
+	else
+		if mpu6000 start
+		then
+		fi
+	fi
+
+	if param compare SENS_SON_ON 1
+	then
+		if ll905 start
+		then
+		    echo "[init] Using LIDAR-Lite Laser Ranging Module"
+		else
+		    echo "Error starting range finders"
+		fi
+	fi
+
+	#
+	# Start the sensor collection task.
+	# IMPORTANT: this also loads param offsets
+	# ALWAYS start this task before the
+	# preflight_check.
+	#
+	if sensors start
+	then
+	    if preflight_check --fail-on-error
+	    then
+	    else
+	        tone_alarm error #Follows default preflight check tune
+	    fi
+	else
+	    #In case sensors app returned an error, although it usually doesn't
+	    tone_alarm error
+	fi
 else
-    #In case sensors app returned an error, although it usually doesn't
-    tone_alarm error
+	echo "[error] There is NO MAGnetometer!"
+	tone_alarm error
 fi

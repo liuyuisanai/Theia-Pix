@@ -1015,3 +1015,14 @@ PARAM_DEFINE_FLOAT(RC_OFFB_TH, 0.5f);
  *
  */
 PARAM_DEFINE_FLOAT(RC_FOLLOW_TH, 0.5f);
+
+/**
+ * Specifies if MPU6000 sensor should not be started and lsm303d and l3gd20 used instead
+ *
+ * min: 0
+ * max: 1
+ *
+ * 1 - l3gd20, lsm303d
+ * 0 - MPU6000
+ */
+PARAM_DEFINE_INT32(SENS_DISABLE_MPU, 0);
