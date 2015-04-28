@@ -247,17 +247,39 @@ then
 	#
 
 	unset MAVLINK_TTY
+	unset TELEM_TTY
 
 	if param compare A_TELEMETRY_MODE 0
 	then
+		set TELEM_TTY /dev/ttyS1
 		set MAVLINK_TTY /dev/ttyS1
 	fi
-
 	if param compare A_TELEMETRY_MODE 1
 	then
-		if bluetooth21 start /dev/ttyS1 factory-param
+		set TELEM_TTY /dev/ttyS1
+	fi
+	if param compare A_TELEMETRY_MODE 2
+	then
+		echo
+		echo Turning OFF BL600
+		gpio_tool set pb12=0
+		echo
+		set TELEM_TTY /dev/ttyS2
+	fi
+
+	if [ x$TELEM_TTY = x ]
+	then
+		echo NO Telemetry.
+	else
+		echo Telemetry port $TELEM_TTY
+		if [ x$MAVLINK_TTY = x ]
 		then
-			set MAVLINK_TTY /dev/bt1
+			# if MAVLINK_TTY not set and TELEM_TTY is set.
+			echo bluetooth21 start $TELEM_TTY factory-param
+			if bluetooth21 start $TELEM_TTY factory-param
+			then
+				set MAVLINK_TTY /dev/bt1
+			fi
 		fi
 	fi
 

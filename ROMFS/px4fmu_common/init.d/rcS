@@ -440,11 +440,27 @@ then
 
 	if param compare A_TELEMETRY_MODE 0
 	then
-		set MAVLINK_TTY /dev/ttyS1
+		echo Telemetry port $TELEM_TTY
+		set MAVLINK_TTY $TELEM_TTY
+	else
+		if param compare A_TELEMETRY_MODE 1
+		then
+			echo Telemetry port $TELEM_TTY
+		else
+			if param compare A_TELEMETRY_MODE 2
+			then
+				echo Telemetry port $TELEM_TTY
+			else
+				unset TELEM_TTY
+				echo NO Telemetry.
+			fi
+		fi
 	fi
 
-	if param compare A_TELEMETRY_MODE 1
+	# if MAVLINK_TTY not set and TELEM_TTY is set.
+	if [ x$MAVLINK_TTY = x -a x$TELEM_TTY != x ]
 	then
+		echo bluetooth21 start $TELEM_TTY factory-param
 		if bluetooth21 start $TELEM_TTY factory-param
 		then
 			set MAVLINK_TTY /dev/bt1

@@ -6,6 +6,7 @@
  * Telemetry mode:
  * 0 -- Plain radio modem,
  * 1 -- Long-range bluetooth.
+ * 2 -- Long-range bluetooth ob BL600 port, FMU #22.
  *
  * Warning: Default and invalid values keep telemetry disabled!
  *
