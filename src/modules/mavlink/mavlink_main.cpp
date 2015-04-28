@@ -702,6 +702,11 @@ Mavlink::set_hil_enabled(bool hil_enabled)
 {
 	int ret = OK;
 
+	if (strcmp(_device_name,"/dev/ttyACM0") != 0) {
+		// Skip HIL on anything but USB
+		return ret;
+	}
+
 	/* enable HIL */
 	if (hil_enabled && !_hil_enabled) {
 		_hil_enabled = true;
