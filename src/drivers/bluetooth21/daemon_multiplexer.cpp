@@ -12,7 +12,7 @@
 #include "laird/uart.hpp"
 #include "unique_file.hpp"
 
-#include "read_write_log.hpp"
+#include "trace.hpp"
 
 namespace BT
 {
@@ -54,21 +54,23 @@ daemon()
 	started = false;
 	fprintf(stderr, "%s starting ...\n", PROCESS_NAME);
 
-	unique_file dev(tty_open(dev_name));
+	unique_file raw_dev(tty_open(dev_name));
 
 	should_run = (
-		fileno(dev) > -1
+		fileno(raw_dev) > -1
 		and Globals::Multiplexer::create()
 		and CharacterDevices::register_all_devices()
 	);
 
-	//DevLog log_dev(fileno(dev), 2, "module  ", "host    ");
-	auto & log_dev = dev;
+	auto trace = make_trace_handle<TRACE_MULTIPLEXER_STDERR>(raw_dev,
+								 "module  ",
+								 "host    ");
+	auto & dev = trace.dev;
 
 	if (should_run)
 	{
 		auto & mp = Globals::Multiplexer::get();
-		should_run = setup_serial(mp.protocol_tag, log_dev);
+		should_run = setup_serial(mp.protocol_tag, dev);
 	}
 
 	if (should_run) { fprintf(stderr, "%s started.\n", PROCESS_NAME); }
@@ -84,7 +86,7 @@ daemon()
 	while (should_run)
 	{
 		auto & mp = Globals::Multiplexer::get();
-		perform_poll_io(log_dev, mp, POLL_ms);
+		perform_poll_io(dev, mp, POLL_ms);
 		if (not is_healthy(mp)) { break; }
 	}
 

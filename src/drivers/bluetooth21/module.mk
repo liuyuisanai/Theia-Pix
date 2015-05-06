@@ -1,3 +1,33 @@
+#
+# You can add the following argiments to make's command line
+#
+# * BLUETOOTH21_DEBUG=yes -- enables debug output from the code.
+#
+# * BLUETOOTH21_TRACE_IO=stderr -- enables writing full communication trace
+#   to a bluetooth module.
+#
+# * BLUETOOTH21_TRACE_SERVICE=stderr -- enables writing trace of service
+#   commands, responses and events.
+#
+# Usage example:
+#
+#   make px4fmu-v2_default BLUETOOTH21_DEBUG=yes BLUETOOTH21_TRACE_IO=stderr \
+#   BLUETOOTH21_TRACE_SERVICE=stderr
+#
+# or
+#
+#   export BLUETOOTH21_DEBUG=yes
+#   export BLUETOOTH21_TRACE_IO=stderr
+#   export BLUETOOTH21_TRACE_SERVICE=stderr
+#   make px4fmu-v2_default
+#
+# Changing any of these settings requires _clean_ module rebuild.
+#
+
+ifneq ($(DEBUG_BLUETOOTH21),)
+$(error Use BLUETOOTH21_DEBUG=yes)
+endif
+
 STACKSIZE_DAEMON_MAIN = 1024
 STACKSIZE_DAEMON_IO = 2048
 STACKSIZE_DAEMON_SERVICE = 4096
@@ -28,19 +58,26 @@ EXTRACXXFLAGS += -std=c++11 \
 SHOW_ALL_ERRORS = yes
 TOLERATE_MISSING_DECLARATION = yes
 
-ifneq ($(DEBUG_BLUETOOTH21),)
-#
-# To enable debug output add DEBUG_BLUETOOTH21=yes to make arguments,
-# like follows
-#
-#   make px4fmu-v2_default DEBUG_BLUETOOTH21=yes
-#
-# or define environment variable
-#
-#   export DEBUG_BLUETOOTH21=yes
-#   make px4fmu-v2_default
-#
-# Switching on and off the debug requires _clean_ module rebuild.
-#
+ifeq ($(BLUETOOTH21_DEBUG),yes)
 EXTRACXXFLAGS += -DCONFIG_DEBUG_BLUETOOTH21
+else ifneq ($(BLUETOOTH21_DEBUG),)
+$(error Invalid BLUETOOTH21_DEBUG value: $(BLUETOOTH21_DEBUG))
+endif
+
+ifeq ($(BLUETOOTH21_TRACE_IO),stderr)
+EXTRACXXFLAGS += -DTRACE_MULTIPLEXER_STDERR=true
+else ifneq ($(BLUETOOTH21_DEBUG),)
+else ifneq ($(BLUETOOTH21_TRACE_IO),)
+$(error Invalid BLUETOOTH21_TRACE_IO value: $(BLUETOOTH21_TRACE_IO))
+else
+EXTRACXXFLAGS += -DTRACE_MULTIPLEXER_STDERR=false
+endif
+
+ifeq ($(BLUETOOTH21_TRACE_SERVICE),stderr)
+EXTRACXXFLAGS += -DTRACE_SERVICE_STDERR=true
+else ifneq ($(BLUETOOTH21_DEBUG),)
+else ifneq ($(BLUETOOTH21_TRACE_SERVICE),)
+$(error Invalid BLUETOOTH21_TRACE_SERVICE value: $(BLUETOOTH21_TRACE_SERVICE))
+else
+EXTRACXXFLAGS += -DTRACE_SERVICE_STDERR=false
 endif

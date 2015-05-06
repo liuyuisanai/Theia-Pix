@@ -16,7 +16,7 @@
 #include "unique_file.hpp"
 #include "util.hpp"
 
-#include "read_write_log.hpp"
+#include "trace.hpp"
 
 namespace BT
 {
@@ -103,16 +103,17 @@ daemon()
 	started = false;
 	fprintf(stderr, "%s starting ...\n", PROCESS_NAME);
 
-	unique_file dev = tty_open("/dev/btcmd");// TODO name #define/constexpr
+	unique_file raw_dev = tty_open("/dev/btcmd");// TODO name #define/constexpr
 
-	//DevLog log_dev(fileno(dev), 2, "bt21_io      ", "bt21_service ");
-	auto & log_dev = dev;
+	auto trace = make_trace_handle<TRACE_SERVICE_STDERR>(raw_dev,
+							     "bt21_io      ",
+							     "bt21_service ");
 
 	auto & mp = Globals::Multiplexer::get();
 	ServiceState svc;
-	auto service_io = make_service_io(log_dev, svc);
+	auto service_io = make_service_io(trace.dev, svc);
 	should_run = (daemon_mode != Mode::UNDEFINED
-		and fileno(dev) > -1
+		and fileno(raw_dev) > -1
 		and sync_soft_reset(service_io, svc.sync)
 		and configure_factory(service_io)
 		and configure_before_reboot(service_io)
