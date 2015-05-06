@@ -6,6 +6,7 @@
 #include <cstring>
 
 #include "repr.hpp"
+#include "time.hpp"
 
 struct DevLog {
 	const int dev;
@@ -17,6 +18,8 @@ struct DevLog {
 	const char * const prefix_write;
 	const size_t prefix_write_len;
 
+	BT::Time::stamp_t stamp;
+
 	DevLog(int d, int l, const char * prefix_r, const char * prefix_w)
 	: dev(d)
 	, log(l)
@@ -24,6 +27,7 @@ struct DevLog {
 	, prefix_read_len(strlen(prefix_r))
 	, prefix_write(prefix_w)
 	, prefix_write_len(strlen(prefix_w))
+	, stamp(0)
 	{}
 
 	friend inline int
@@ -50,6 +54,7 @@ struct DevLog {
 	{
 		int save_errno = errno;
 
+		write_stamp(self);
 		if (is_read)
 			write(self.log, self.prefix_read, self.prefix_read_len);
 		else
@@ -59,5 +64,21 @@ struct DevLog {
 		write(self.log, &ch, 1);
 
 		errno = save_errno;
+	}
+
+	friend void
+	write_stamp(DevLog &self)
+	{
+		auto now = BT::Time::now();
+		char buf[24];
+
+		// Use only lower half of useconds as debug session
+		// is unlikely to be several hours long.
+		snprintf(buf, sizeof buf, "%10u %6u+ "
+			, unsigned(now)
+			, unsigned(self.stamp == 0 ? 0 : now - self.stamp)
+		);
+		self.stamp = now;
+		write(self.log, buf, strlen(buf));
 	}
 };

@@ -6,6 +6,7 @@
 
 #ifdef CONFIG_DEBUG_BLUETOOTH21
 #include <syslog.h>
+#include "time.hpp"
 #endif
 
 #ifdef CONFIG_DEBUG_BLUETOOTH21
@@ -29,11 +30,14 @@ dbg(const char fmt[], const types & ... args)
 # define MODULE_COMMAND_STR(X) MODULE_COMMAND_XSTR(X)
 	// syslog does not append newlines itself.
 	syslog(MODULE_COMMAND_STR(MODULE_COMMAND) ": ");
+#endif
+
+	// Use only lower half of useconds as debug session
+	// is unlikely to be several hours long.
+	syslog("%10u: ", (unsigned)Time::now());
 
 	// Restore errno as an arg... could be const int & to errno.
 	errno = save_errno;
-#endif
-
 	syslog(fmt, args...);
 	errno = save_errno;
 #endif
