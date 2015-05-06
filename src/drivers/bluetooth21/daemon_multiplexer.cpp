@@ -55,6 +55,9 @@ daemon()
 	fprintf(stderr, "%s starting ...\n", PROCESS_NAME);
 
 	unique_file raw_dev(tty_open(dev_name));
+	auto trace = make_trace_handle<MULTIPLEXER_TRACE>(
+		MULTIPLEXER_TRACE_FILE, raw_dev, "module  ", "host    "
+	);
 
 	should_run = (
 		fileno(raw_dev) > -1
@@ -62,15 +65,10 @@ daemon()
 		and CharacterDevices::register_all_devices()
 	);
 
-	auto trace = make_trace_handle<TRACE_MULTIPLEXER_STDERR>(raw_dev,
-								 "module  ",
-								 "host    ");
-	auto & dev = trace.dev;
-
 	if (should_run)
 	{
 		auto & mp = Globals::Multiplexer::get();
-		should_run = setup_serial(mp.protocol_tag, dev);
+		should_run = setup_serial(mp.protocol_tag, trace.dev);
 	}
 
 	if (should_run) { fprintf(stderr, "%s started.\n", PROCESS_NAME); }
@@ -86,7 +84,7 @@ daemon()
 	while (should_run)
 	{
 		auto & mp = Globals::Multiplexer::get();
-		perform_poll_io(dev, mp, POLL_ms);
+		perform_poll_io(trace.dev, mp, POLL_ms);
 		if (not is_healthy(mp)) { break; }
 	}
 

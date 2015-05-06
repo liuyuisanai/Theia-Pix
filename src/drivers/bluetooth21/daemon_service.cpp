@@ -104,10 +104,9 @@ daemon()
 	fprintf(stderr, "%s starting ...\n", PROCESS_NAME);
 
 	unique_file raw_dev = tty_open("/dev/btcmd");// TODO name #define/constexpr
-
-	auto trace = make_trace_handle<TRACE_SERVICE_STDERR>(raw_dev,
-							     "bt21_io      ",
-							     "bt21_service ");
+	auto trace = make_trace_handle<SERVICE_TRACE>(
+		SERVICE_TRACE_FILE, raw_dev, "bt21_io  ", "bt21_svc "
+	);
 
 	auto & mp = Globals::Multiplexer::get();
 	ServiceState svc;

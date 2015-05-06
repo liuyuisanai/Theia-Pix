@@ -4,10 +4,16 @@
 # * BLUETOOTH21_DEBUG=yes -- enables debug output from the code.
 #
 # * BLUETOOTH21_TRACE_IO=stderr -- enables writing full communication trace
-#   to a bluetooth module.
+#   to a bluetooth module to stderr.
+#
+# * BLUETOOTH21_TRACE_IO=file   -- enables writing full communication trace
+#   to a bluetooth module to a file.
 #
 # * BLUETOOTH21_TRACE_SERVICE=stderr -- enables writing trace of service
-#   commands, responses and events.
+#   commands, responses and events to stderr.
+#
+# * BLUETOOTH21_TRACE_SERVICE=file   -- enables writing trace of service
+#   commands, responses and events to a file.
 #
 # Usage example:
 #
@@ -64,20 +70,22 @@ else ifneq ($(BLUETOOTH21_DEBUG),)
 $(error Invalid BLUETOOTH21_DEBUG value: $(BLUETOOTH21_DEBUG))
 endif
 
-ifeq ($(BLUETOOTH21_TRACE_IO),stderr)
-EXTRACXXFLAGS += -DTRACE_MULTIPLEXER_STDERR=true
-else ifneq ($(BLUETOOTH21_DEBUG),)
-else ifneq ($(BLUETOOTH21_TRACE_IO),)
-$(error Invalid BLUETOOTH21_TRACE_IO value: $(BLUETOOTH21_TRACE_IO))
+ifeq ($(BLUETOOTH21_TRACE_IO),)
+EXTRACXXFLAGS += -DMULTIPLEXER_TRACE=BT::DebugTraceKind::NO_TRACE
+else ifeq ($(BLUETOOTH21_TRACE_IO),stderr)
+EXTRACXXFLAGS += -DMULTIPLEXER_TRACE=BT::DebugTraceKind::STDERR
+else ifeq ($(BLUETOOTH21_TRACE_IO),file)
+EXTRACXXFLAGS += -DMULTIPLEXER_TRACE=BT::DebugTraceKind::FILE
 else
-EXTRACXXFLAGS += -DTRACE_MULTIPLEXER_STDERR=false
+$(error Invalid BLUETOOTH21_TRACE_IO value: $(BLUETOOTH21_TRACE_IO))
 endif
 
-ifeq ($(BLUETOOTH21_TRACE_SERVICE),stderr)
-EXTRACXXFLAGS += -DTRACE_SERVICE_STDERR=true
-else ifneq ($(BLUETOOTH21_DEBUG),)
-else ifneq ($(BLUETOOTH21_TRACE_SERVICE),)
-$(error Invalid BLUETOOTH21_TRACE_SERVICE value: $(BLUETOOTH21_TRACE_SERVICE))
+ifeq ($(BLUETOOTH21_TRACE_SERVICE),)
+EXTRACXXFLAGS += -DSERVICE_TRACE=BT::DebugTraceKind::NO_TRACE
+else ifeq ($(BLUETOOTH21_TRACE_SERVICE),stderr)
+EXTRACXXFLAGS += -DSERVICE_TRACE=BT::DebugTraceKind::STDERR
+else ifeq ($(BLUETOOTH21_TRACE_SERVICE),file)
+EXTRACXXFLAGS += -DSERVICE_TRACE=BT::DebugTraceKind::FILE
 else
-EXTRACXXFLAGS += -DTRACE_SERVICE_STDERR=false
+$(error Invalid BLUETOOTH21_TRACE_SERVICE value: $(BLUETOOTH21_TRACE_SERVICE))
 endif
