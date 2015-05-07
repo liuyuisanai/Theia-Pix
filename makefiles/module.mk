@@ -166,11 +166,7 @@ endif
 # Adjust compilation flags to implement EXPORT
 ################################################################################
 
-ifeq ($(DEFAULT_VISIBILITY),)
-DEFAULT_VISIBILITY = hidden
-else
-DEFAULT_VISIBILITY = default
-endif
+DEFAULT_VISIBILITY ?= hidden
 
 CFLAGS		+= -fvisibility=$(DEFAULT_VISIBILITY) -include $(PX4_INCLUDE_DIR)visibility.h
 CXXFLAGS	+= -fvisibility=$(DEFAULT_VISIBILITY) -include $(PX4_INCLUDE_DIR)visibility.h
