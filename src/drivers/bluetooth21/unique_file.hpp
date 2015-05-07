@@ -4,10 +4,12 @@
 
 #include <cstdio>
 
+#include "debug.hpp"
 #include "std_util.hpp"
 
 namespace {
 using BT::swap;
+using BT::dbg;
 
 inline int
 fileno(int fd) { return fd; }
@@ -21,7 +23,7 @@ public:
 	unique_file() : fd(-1) {}
 
 	inline
-	unique_file(int x) : fd(x) {}
+	unique_file(int x) : fd(x) { dbg("unique_file(%i).\n", fd); }
 
 	inline
 	unique_file(unique_file && other) : fd(other.fd) { other.fd = -1; }
@@ -31,6 +33,7 @@ public:
 	{
 		if (self.fd > -1)
 		{
+			dbg("unique_file close(%i).\n", self.fd);
 			close(self.fd);
 			self.fd = -1;
 		}
@@ -54,6 +57,7 @@ public:
 	{
 		close(*this);
 		fd = x;
+		dbg("unique_file set (%i).\n", fd);
 	}
 
 	friend inline int
@@ -80,7 +84,9 @@ public:
 	unique_FILE() : fp(nullptr) {}
 
 	inline
-	unique_FILE(FILE * x) : fp(x) {}
+	unique_FILE(FILE * x)
+	: fp(x)
+	{ dbg("unique_FILE(%i @ %p).\n", (fp ? fileno(fp) : -1), fp); }
 
 	inline
 	unique_FILE(unique_FILE && other) : fp(other.fp) { other.fp = nullptr; }
@@ -90,6 +96,8 @@ public:
 	{
 		if (self.fp != nullptr)
 		{
+			dbg("unique_FILE close(%i @ %p).\n",
+				fileno(self.fp), self.fp);
 			fclose(self.fp);
 			self.fp = nullptr;
 		}
@@ -113,6 +121,7 @@ public:
 	{
 		close(*this);
 		fp = x;
+		dbg("unique_FILE set(%i @ %p).\n", (fp ? fileno(fp) : -1), fp);
 	}
 
 	friend inline int
