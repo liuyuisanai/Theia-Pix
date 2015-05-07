@@ -2,6 +2,11 @@
 
 #include <sys/types.h>
 
+#include "debug.hpp"
+
+namespace BT
+{
+
 inline char
 hex_digit(char x)
 {
@@ -23,11 +28,13 @@ write_repr_char(Device &dev, char ch, bool put_space_before)
 	//char buf[] = {' ', '\\', 'x', hex_digit(ch >> 4), hex_digit(ch)};
 	{
 		char buf[3] = {' ', hex_digit(ch >> 4), hex_digit(ch)};
-		write(dev, buf, sizeof(buf));
+		ssize_t r = ::write(dev, buf, sizeof(buf));
+		if (r < 0) { dbg_perror("write_repr_char a"); }
 	}
 	if (' ' <= ch and ch < '\x7f') {
 		char buf[3] = {'(', ch, ')'};
-		write(dev, buf, sizeof(buf));
+		ssize_t r = ::write(dev, buf, sizeof(buf));
+		if (r < 0) { dbg_perror("write_repr_char b"); }
 	}
 }
 
@@ -41,7 +48,8 @@ write_repr(Device &dev, const void *buf, std::size_t buf_size)
 		for(std::size_t i = 1; i < buf_size; ++i)
 			write_repr_char(dev, p[i], true);
 		char nl = '\n';
-		write(dev, &nl, 1);
+		ssize_t r = write(dev, &nl, 1);
+		if (r < 0) { dbg_perror("write_repr"); }
 	}
 }
 
@@ -76,3 +84,6 @@ repr_n(InputIt first, InputSize n, const Space space, OuputIt out)
 
 	return out;
 }
+
+}
+// end of namespace BT

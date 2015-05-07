@@ -8,6 +8,11 @@
 #include "repr.hpp"
 #include "time.hpp"
 
+#include "debug.hpp"
+
+namespace BT
+{
+
 struct DevLog {
 	const int dev;
 	const int log;
@@ -50,24 +55,24 @@ struct DevLog {
 	}
 
 	friend void
-	write_log(DevLog &self, bool is_read, const void *buf, size_t buf_size)
+	log_data(DevLog &self, bool is_read, const void *buf, size_t buf_size)
 	{
 		int save_errno = errno;
 
-		write_stamp(self);
+		log_stamp(self);
 		if (is_read)
-			write(self.log, self.prefix_read, self.prefix_read_len);
+			log_write(self, self.prefix_read, self.prefix_read_len);
 		else
-			write(self.log, self.prefix_write, self.prefix_write_len);
+			log_write(self, self.prefix_write, self.prefix_write_len);
 		write_repr(self.log, buf, buf_size);
 		const char ch = '\n';
-		write(self.log, &ch, 1);
+		log_write(self, &ch, 1);
 
 		errno = save_errno;
 	}
 
 	friend void
-	write_stamp(DevLog &self)
+	log_stamp(DevLog &self)
 	{
 		auto now = BT::Time::now();
 		char buf[24];
@@ -79,7 +84,15 @@ struct DevLog {
 			, unsigned(self.stamp == 0 ? 0 : now - self.stamp)
 		);
 		self.stamp = now;
-		write(self.log, buf, strlen(buf));
+		log_write(self, buf, strlen(buf));
+	}
+
+	friend size_t
+	log_write(DevLog &self, const void * buf, size_t buf_size)
+	{
+		ssize_t r = ::write(self.log, buf, buf_size);
+		if (r < 0) { dbg_perror("DevLog::log_write"); }
+		return r;
 	}
 
 	friend inline int
@@ -89,3 +102,6 @@ struct DevLog {
 		return ::fsync(self.dev);
 	}
 };
+
+}
+// end of namespace BT
