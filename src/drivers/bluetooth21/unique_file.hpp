@@ -66,6 +66,9 @@ public:
 	friend inline std::size_t
 	write(unique_file & uf, const void * buf, size_t buf_size)
 	{ return write(uf.fd, buf, buf_size); }
+
+	friend inline int
+	fsync(unique_file & uf) { return ::fsync(uf.fd); }
 };
 
 class unique_FILE {
@@ -122,6 +125,9 @@ public:
 	friend inline std::size_t
 	write(unique_FILE & uf, const void * buf, size_t buf_size)
 	{ return fwrite(buf, 1, buf_size, uf.fp); }
+
+	friend inline int
+	fsync(unique_FILE & uf) { return ::fsync(fileno(uf.fp)); }
 };
 
 }

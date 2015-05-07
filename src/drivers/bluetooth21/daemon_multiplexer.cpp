@@ -86,6 +86,7 @@ daemon()
 		auto & mp = Globals::Multiplexer::get();
 		perform_poll_io(trace.dev, mp, POLL_ms);
 		if (not is_healthy(mp)) { break; }
+		fsync(trace.dev);
 	}
 
 	while (should_run)

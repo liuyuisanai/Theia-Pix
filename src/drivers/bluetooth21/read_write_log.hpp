@@ -81,4 +81,11 @@ struct DevLog {
 		self.stamp = now;
 		write(self.log, buf, strlen(buf));
 	}
+
+	friend inline int
+	fsync(DevLog & self)
+	{
+		::fsync(self.log);
+		return ::fsync(self.dev);
+	}
 };

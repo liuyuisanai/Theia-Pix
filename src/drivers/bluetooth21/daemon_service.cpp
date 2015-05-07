@@ -89,6 +89,8 @@ synced_loop(MultiPlexer & mp, ServiceIO & service_io, ServiceState & svc)
 			}
 		}
 		else { /* TODO request rssi */ }
+
+		fsync(service_io.dev);
 	}
 }
 
@@ -135,6 +137,8 @@ daemon()
 
 	do
 	{
+		fsync(service_io.dev);
+
 		synced_loop(mp, service_io, svc);
 
 		// We'll get here on stop request or on module reboot
