@@ -48,15 +48,38 @@ struct TraceHandle<DebugTraceKind::FILE, Device>
 	unique_file log;
 	DevLog dev;
 
+	static inline int
+	open_trace_file(const char * fn)
+	{
+		int fd = open(fn, O_CREAT | O_APPEND | O_WRONLY | O_NOCTTY);
+		if (fd < 0)
+		{
+			dbg("Error opening trace '%s': %i %s.\n"
+				, fn
+				, errno
+				, strerror(errno)
+			);
+			dbg("Trace goes to stderr.\n");
+		}
+		else
+		{
+			dbg("Trace '%s' is opened for append at fd %i.\n",
+				fn, fd);
+		}
+		return fd;
+	}
+
 	TraceHandle(const char * fn, Device & d, const char * prefix_r, const char * prefix_w)
-	: log(open(fn, O_CREAT | O_WRONLY | O_NOCTTY))
+	: log(open_trace_file(fn))
 	, dev(fileno(d), (fileno(log) < 0 ? 2 : fileno(log)), prefix_r, prefix_w)
 	{
+		dbg("TraceHandle log fd %i.\n", dev.log);
+
 		if (fileno(log) < 0) { return; }
 
-		lseek(fileno(log), 0, SEEK_END);
 		const char border[] = "\n\n\n--- --- ---\n\n";
-		write(fileno(log), border, strlen(border));
+		ssize_t r = write(log, border, strlen(border));
+		if (r < 0) { dbg_perror("TraceHandle<FILE> / write border"); }
 	}
 };
 
