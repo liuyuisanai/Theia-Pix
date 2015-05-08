@@ -106,5 +106,13 @@ has_repeated_press(ModeId m, ButtonId b);
 
 } // end of namespace kbd_handler
 
-#include "revision/004/masks.hpp"
-#include "revision/004/modes.hpp"
+#ifndef CONFIG_BOARD_REVISION
+# error Define non-empty CONFIG_BOARD_REVISION.
+#endif
+#if CONFIG_BOARD_REVISION <= 4
+# include "revision/004/masks.hpp"
+# include "revision/004/modes.hpp"
+#else
+# include "revision/005/masks.hpp"
+# include "revision/005/modes.hpp"
+#endif

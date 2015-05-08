@@ -101,6 +101,9 @@ ifeq ($(CONFIG_BOARD),)
 $(error Board config does not define CONFIG_BOARD)
 endif
 ARCHDEFINES		+= -DCONFIG_ARCH_BOARD_$(CONFIG_BOARD)
+ifneq ($(CONFIG_BOARD_REVISION),)
+ARCHDEFINES		+= -DCONFIG_BOARD_REVISION=$(CONFIG_BOARD_REVISION)
+endif
 
 # optimisation flags
 #

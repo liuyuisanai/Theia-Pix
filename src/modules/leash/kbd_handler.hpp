@@ -4,7 +4,12 @@
 #include "kbd_defines.hpp"
 #include "kbd_handler_prolog.hpp"
 #include "kbd_power_off.hpp"
-#include "revision/004/kbd.hpp"
+
+#if CONFIG_BOARD_REVISION <= 4
+# include "revision/004/kbd.hpp"
+#else
+# include "revision/005/kbd.hpp"
+#endif
 
 namespace kbd_handler {
 
