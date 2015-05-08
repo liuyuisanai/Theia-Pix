@@ -1,28 +1,16 @@
 #pragma once
 
-#include "kbd_mode.hpp"
 #include <drivers/drv_airleash_kbd.h>
 
 #define BTN_NONE        0
-#define BTN_MASK_POWER  0x001
-#define BTN_MASK_PLAY   0x004
-#define BTN_MASK_UP     0x008
-#define BTN_MASK_DOWN   0x040
-#define BTN_MASK_CENTER 0x200
-#define BTN_MASK_LEFT   0x020
-#define BTN_MASK_RIGHT  0x100
-
-#define ALL_BUTTONS \
-		BTN_MASK_POWER, BTN_MASK_PLAY, \
-		BTN_MASK_UP, BTN_MASK_DOWN, \
-		BTN_MASK_CENTER, \
-		BTN_MASK_LEFT, BTN_MASK_RIGHT
-
 
 namespace kbd_handler
 {
 
 struct Default {};
+
+namespace Debug { using name_t = const char * const; }
+
 
 /*
  * Events
@@ -38,29 +26,53 @@ enum EventKind : uint8_t
 	, COPTER_CHANGED_STATE
 };
 
-using name_t = const char * const;
-template <EventKind> struct EventDebugName;
-template <> struct EventDebugName<EventKind::SHORT_KEYPRESS       > { static constexpr name_t name = "EventKind::SHORT_KEYPRESS      "; };
-template <> struct EventDebugName<EventKind::LONG_KEYPRESS        > { static constexpr name_t name = "EventKind::LONG_KEYPRESS       "; };
-template <> struct EventDebugName<EventKind::REPEAT_KEYPRESS      > { static constexpr name_t name = "EventKind::REPEAT_KEYPRESS     "; };
-template <> struct EventDebugName<EventKind::KEY_RELEASE          > { static constexpr name_t name = "EventKind::KEY_RELEASE         "; };
-template <> struct EventDebugName<EventKind::KEY_TIMEOUT          > { static constexpr name_t name = "EventKind::KEY_TIMEOUT         "; };
-template <> struct EventDebugName<EventKind::COPTER_CHANGED_STATE > { static constexpr name_t name = "EventKind::COPTER_CHANGED_STATE"; };
+constexpr bool
+event_is_short_or_repeat_press(EventKind E)
+{ return E == EventKind::SHORT_KEYPRESS or E == EventKind::REPEAT_KEYPRESS; }
 
-template <ModeId> struct ModeDebugName;
-template <> struct ModeDebugName<ModeId::NONE       > { static constexpr name_t name = "ModeId::NONE       "; };
-template <> struct ModeDebugName<ModeId::INIT       > { static constexpr name_t name = "ModeId::INIT       "; };
-template <> struct ModeDebugName<ModeId::PREFLIGHT  > { static constexpr name_t name = "ModeId::PREFLIGHT  "; };
-template <> struct ModeDebugName<ModeId::MENU       > { static constexpr name_t name = "ModeId::MENU       "; };
-template <> struct ModeDebugName<ModeId::CONFIRM_ARM> { static constexpr name_t name = "ModeId::CONFIRM_ARM"; };
-template <> struct ModeDebugName<ModeId::FLIGHT     > { static constexpr name_t name = "ModeId::FLIGHT     "; };
-template <> struct ModeDebugName<ModeId::FLIGHT_ALT > { static constexpr name_t name = "ModeId::FLIGHT_ALT "; };
-template <> struct ModeDebugName<ModeId::FLIGHT_CAM > { static constexpr name_t name = "ModeId::FLIGHT_CAM "; };
-template <> struct ModeDebugName<ModeId::SHORTCUT   > { static constexpr name_t name = "ModeId::SHORTCUT   "; };
-template <> struct ModeDebugName<ModeId::FLIGHT_NO_SIGNAL> { static constexpr name_t name = "ModeId::FLIGHT_NO_SIGNAL"; };
+namespace Debug
+{
+
+template <EventKind> struct EventName;
+
+template <> struct EventName<EventKind::SHORT_KEYPRESS       >
+{ static constexpr name_t name = "EventKind::SHORT_KEYPRESS      "; };
+
+template <> struct EventName<EventKind::LONG_KEYPRESS        >
+{ static constexpr name_t name = "EventKind::LONG_KEYPRESS       "; };
+
+template <> struct EventName<EventKind::REPEAT_KEYPRESS      >
+{ static constexpr name_t name = "EventKind::REPEAT_KEYPRESS     "; };
+
+template <> struct EventName<EventKind::KEY_RELEASE          >
+{ static constexpr name_t name = "EventKind::KEY_RELEASE         "; };
+
+template <> struct EventName<EventKind::KEY_TIMEOUT          >
+{ static constexpr name_t name = "EventKind::KEY_TIMEOUT         "; };
+
+template <> struct EventName<EventKind::COPTER_CHANGED_STATE >
+{ static constexpr name_t name = "EventKind::COPTER_CHANGED_STATE"; };
+
+} // end of namespace Debug
+
+
+/*
+ * Modes
+ */
+
+enum class ModeId : uint8_t;
+
+constexpr bool
+in_air_mode(ModeId);
+
+constexpr bool
+mode_allows_power_off(ModeId);
 
 /* previous(ModeId) is required by ValueRangeSwitch implementation */
-constexpr ModeId previous(ModeId);
+constexpr ModeId
+previous(ModeId);
+
+namespace Debug { template <ModeId> struct ModeName; }
 
 
 /*
@@ -69,15 +81,16 @@ constexpr ModeId previous(ModeId);
 
 using ButtonId = pressed_mask_t;
 
-template <ButtonId> struct ButtonDebugName { static constexpr name_t name = "ButtonId(unknown)"; };
-template <> struct ButtonDebugName<BTN_NONE       > { static constexpr name_t name = "BTN_NONE       "; };
-template <> struct ButtonDebugName<BTN_MASK_POWER > { static constexpr name_t name = "BTN_MASK_POWER "; };
-template <> struct ButtonDebugName<BTN_MASK_PLAY  > { static constexpr name_t name = "BTN_MASK_PLAY  "; };
-template <> struct ButtonDebugName<BTN_MASK_UP    > { static constexpr name_t name = "BTN_MASK_UP    "; };
-template <> struct ButtonDebugName<BTN_MASK_DOWN  > { static constexpr name_t name = "BTN_MASK_DOWN  "; };
-template <> struct ButtonDebugName<BTN_MASK_CENTER> { static constexpr name_t name = "BTN_MASK_CENTER"; };
-template <> struct ButtonDebugName<BTN_MASK_LEFT  > { static constexpr name_t name = "BTN_MASK_LEFT  "; };
-template <> struct ButtonDebugName<BTN_MASK_RIGHT > { static constexpr name_t name = "BTN_MASK_RIGHT "; };
+namespace Debug
+{
+
+template <ButtonId> struct ButtonName
+{ static constexpr name_t name = "ButtonId(-?-)  "; };
+
+template <> struct ButtonName<BTN_NONE>
+{ static constexpr name_t name = "BTN_NONE       "; };
+
+} // end of namespace Debug
 
 
 /*
@@ -92,3 +105,6 @@ bool
 has_repeated_press(ModeId m, ButtonId b);
 
 } // end of namespace kbd_handler
+
+#include "revision/004/masks.hpp"
+#include "revision/004/modes.hpp"

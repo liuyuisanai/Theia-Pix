@@ -15,6 +15,7 @@ previous(ModeId x)
 
 namespace kbd_handler { namespace details {
 
+
 /*
  * Wrappers calling handle<Mode, Event, Button>::exec that type-check
  * for default case and
@@ -31,11 +32,12 @@ struct call_handle_info
 
 	static inline void
 	call(App & app) {
-		fprintf(stderr, "Event %s Mode %s Button %03x %s\n",
-				EventDebugName<EVENT>::name,
-				ModeDebugName<MODE>::name,
-				BUTTON,
-				ButtonDebugName<BUTTON>::name);
+		fprintf(stderr, "Event %s Mode %s Button %03x %s\n"
+				, Debug::EventName<EVENT>::name
+				, Debug::ModeName<MODE>::name
+				, BUTTON
+				, Debug::ButtonName<BUTTON>::name
+		);
 		handle_type::exec(app);
 	}
 };

@@ -72,7 +72,7 @@
 #include <systemlib/cpuload.h>
 #include <systemlib/perf_counter.h>
 
-#include "kbd/driver.h"
+#include "../kbd/driver.h"
 
 /****************************************************************************
  * Pre-Processor Definitions

@@ -1,16 +1,13 @@
 #pragma once
 
-#include <type_traits>
-
 #include <uORB/topics/vehicle_command.h>
 
-#include "kbd_defines.hpp"
+#include "../../debug.hpp"
+#include "../../kbd_defines.hpp"
+#include "../../kbd_handler_prolog.hpp"
 
-namespace kbd_handler {
-
-constexpr bool
-event_is_short_or_repeat_press(EventKind E)
-{ return E == EventKind::SHORT_KEYPRESS or E == EventKind::REPEAT_KEYPRESS; }
+namespace kbd_handler
+{
 
 /*
  * PLAY button.
