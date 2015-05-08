@@ -43,6 +43,8 @@ daemon(int argc, char *argv[])
 
 	daemon_running = false;
 	fprintf(stderr, "%s has stopped.\n", argv[0]);
+
+	return 0;
 }
 
 static inline bool

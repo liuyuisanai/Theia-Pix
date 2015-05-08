@@ -18,8 +18,9 @@
 
 #include "leds.hpp"
 
-using namespace kbd_handler;
 namespace indication { namespace status {
+
+using kbd_handler::ModeId;
 
 static int status_sub;
 static int airdog_sub;
@@ -83,27 +84,26 @@ update(hrt_abstime now)
 	bool changed_use_blue_led = x != use_blue_led;
 	use_blue_led = x;
 
-
 	if (force_update or changed_use_blue_led
 	or changed_link_valid or changed_pos_valid or changed_mode or led_updated
 	) {
-        uint32_t pattern;
+		uint32_t pattern;
 
 		if (use_blue_led) {
-            switch((ModeId) l_status.menu_mode) {
-                case ModeId::FLIGHT:
-                    pattern = pos_valid ? 0x1000 : 0xFFFFe;
-                    break;
-                case ModeId::FLIGHT_ALT:
-                    pattern = pos_valid ? 0x5000 : 0xFFFFa;
-                    break;
-                case ModeId::FLIGHT_CAM:
-                    pattern = pos_valid ? 0x1500 : 0xFFFea;
-                    break;
-                default:
-                    pattern = pos_valid ? 0x80000000 : 0xFFFF7;
-                    break;
-            }
+			switch((ModeId) l_status.menu_mode) {
+			case ModeId::FLIGHT:
+				pattern = pos_valid ? 0x1000 : 0xFFFFe;
+				break;
+			case ModeId::FLIGHT_ALT:
+				pattern = pos_valid ? 0x5000 : 0xFFFFa;
+				break;
+			case ModeId::FLIGHT_CAM:
+				pattern = pos_valid ? 0x1500 : 0xFFFea;
+				break;
+			default:
+				pattern = pos_valid ? 0x80000000 : 0xFFFF7;
+				break;
+			}
 			leds::set_pattern_repeat(LED_STATUS, pattern);
 
 			if (link_valid)
@@ -115,21 +115,20 @@ update(hrt_abstime now)
 		}
 		else
 		{
-			printf("pattern %x\n", pattern);
-            switch((ModeId) l_status.menu_mode) {
-                case ModeId::FLIGHT:
-                    pattern = 0xFFFFFFFe;
-                    break;
-                case ModeId::FLIGHT_ALT:
-                    pattern = 0xFFFFFFFa;
-                    break;
-                case ModeId::FLIGHT_CAM:
-                    pattern = 0xFFFFFFea;
-                    break;
-                default:
-                    pattern = 0x15000000;
-                    break;
-            }
+			switch((ModeId) l_status.menu_mode) {
+			case ModeId::FLIGHT:
+				pattern = 0xFFFFFFFe;
+				break;
+			case ModeId::FLIGHT_ALT:
+				pattern = 0xFFFFFFFa;
+				break;
+			case ModeId::FLIGHT_CAM:
+				pattern = 0xFFFFFFea;
+				break;
+			default:
+				pattern = 0x15000000;
+				break;
+			}
 			leds::set_pattern_repeat(LED_STATUS, pattern);
 			leds::set_pattern_repeat(LED_LEASHED, 0xFFFFFFFF);
 		}
