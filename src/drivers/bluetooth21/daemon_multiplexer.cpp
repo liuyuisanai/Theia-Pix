@@ -1,5 +1,6 @@
 #include <nuttx/config.h>
 #include <pthread.h>
+#include <termios.h>
 
 #include <cstdio>
 #include <cstring>
@@ -10,6 +11,7 @@
 #include "io_multiplexer_poll.hpp"
 #include "io_tty.hpp"
 #include "laird/uart.hpp"
+#include "module_params.hpp"
 #include "unique_file.hpp"
 
 #include "trace.hpp"
@@ -59,11 +61,20 @@ daemon()
 		MULTIPLEXER_TRACE_FILE, raw_dev, "module  ", "host    "
 	);
 
+	const bool use_ctsrts = Params::get("A_TELEMETRY_FLOW");
+
 	should_run = (
 		fileno(raw_dev) > -1
+		and tty_switch_ctsrts(fileno(raw_dev), use_ctsrts)
 		and Globals::Multiplexer::create()
 		and CharacterDevices::register_all_devices()
 	);
+
+	if (not use_ctsrts)
+		fprintf(stderr
+			, "\n%s: WARNING: CTS/RTS flow control DISABLED.\n\n"
+			, PROCESS_NAME
+		);
 
 	if (should_run)
 	{

@@ -89,3 +89,21 @@ EXTRACXXFLAGS += -DSERVICE_TRACE=BT::DebugTraceKind::FILE
 else
 $(error Invalid BLUETOOTH21_TRACE_SERVICE value: $(BLUETOOTH21_TRACE_SERVICE))
 endif
+
+# Older electronics revisions did not have CTS/RTS connected to the module.
+# This defines a default setting for the A_TELEMETRY_FLOW parameter.
+ifeq ($(CONFIG_BOARD),AIRDOG_FMU)
+EXTRACFLAGS += -DCONFIG_TELEMETRY_HAS_CTSRTS=$(shell            \
+	sh -c "[ 0$(CONFIG_BOARD_REVISION) -le 5 ] ; echo $$?"  \
+)
+else ifeq ($(CONFIG_BOARD),AIRLEASH)
+EXTRACFLAGS += -DCONFIG_TELEMETRY_HAS_CTSRTS=$(shell            \
+	sh -c "[ 0$(CONFIG_BOARD_REVISION) -le 4 ] ; echo $$?"  \
+)
+else ifeq ($(CONFIG_BOARD),PX4FMU_V2)
+EXTRACFLAGS += -DCONFIG_TELEMETRY_HAS_CTSRTS=1
+else
+# It does not forbid use CTS/RTS on the telemetry port,
+# just it is not used by default. Switch A_TELEMETRY_FLOW.
+EXTRACFLAGS += -DCONFIG_TELEMETRY_HAS_CTSRTS=0
+endif

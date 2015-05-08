@@ -1,10 +1,13 @@
 #include <nuttx/config.h>
 #include <fcntl.h>
 #include <poll.h>
+#include <termios.h>
 
 #include <cstdio>
 #include <cstring>
 
+#include "../../io_tty.hpp"
+#include "../../module_params.hpp"
 #include "../../unique_file.hpp"
 
 static const char * const devname[7] = {
@@ -95,6 +98,13 @@ cat_loopback(const char * name)
 	{
 		perror("cat_loopback / open");
 		return 1;
+	}
+
+	// In NuttX all serial terminal names start with "/dev/ttyS".
+	if (strncmp(name, "/dev/ttyS", strlen("/dev/ttyS")) == 0)
+	{
+		const bool use_ctsrts = BT::Params::get("A_TELEMETRY_FLOW");
+		BT::tty_switch_ctsrts(fileno(dev), use_ctsrts);
 	}
 
 	while (true)

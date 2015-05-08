@@ -3,6 +3,12 @@
 #include "module_params.hpp"
 
 /*
+ * Does telemetry port have CTS and RTS signals connected to MCU?
+ * 0 -- no, anything else -- yes.
+ */
+PARAM_DEFINE_INT32(A_TELEMETRY_FLOW, CONFIG_TELEMETRY_HAS_CTSRTS);
+
+/*
  * Telemetry mode:
  * 0 -- Plain radio modem,
  * 1 -- Long-range bluetooth.
