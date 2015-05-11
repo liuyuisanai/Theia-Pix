@@ -142,16 +142,20 @@ $(FIRMWARES): $(BUILD_DIR)%.build/firmware.px4:
 # and forces the _default config in all cases. There has to be a better way to do this...
 #
 FMU_VERSION		 = $(patsubst px4fmu-%,%,$(word 1, $(subst _, ,$(1))))
-define FMU_DEP
+define PX4_FMU_DEP
 $(BUILD_DIR)$(1).build/firmware.px4: $(IMAGE_DIR)px4io-$(call FMU_VERSION,$(1))_default.px4
 endef
-FMU_CONFIGS		:= $(filter px4fmu%,$(CONFIGS))
-$(foreach config,$(FMU_CONFIGS),$(eval $(call FMU_DEP,$(config))))
+PX4_FMU_CONFIGS		:= $(filter px4fmu%,$(CONFIGS))
+$(foreach config,$(PX4_FMU_CONFIGS),$(eval $(call PX4_FMU_DEP,$(config))))
 
 # Explicit AirDogFMU dependency on px4io-v2.
-$(BUILD_DIR)AirDogFMU_default.build/firmware.px4: $(IMAGE_DIR)px4io-v2_default.px4
+define AIRDOG_FMU_DEP
+$(BUILD_DIR)$(1).build/firmware.px4: $(IMAGE_DIR)px4io-v2_default.px4
 # Depend on custom AirDogIO firmware. Unstable.
-#$(BUILD_DIR)AirDogFMU_default.build/firmware.px4: $(IMAGE_DIR)AirDogIO_default.px4
+#$(BUILD_DIR)AirDogFMU$(1).build/firmware.px4: $(IMAGE_DIR)AirDogIO_default.px4
+endef
+AIRDOG_FMU_CONFIGS := $(filter AirDogFMU%,$(CONFIGS))
+$(foreach config,$(AIRDOG_FMU_CONFIGS),$(eval $(call AIRDOG_FMU_DEP,$(config))))
 
 #
 # Build the NuttX export archives.

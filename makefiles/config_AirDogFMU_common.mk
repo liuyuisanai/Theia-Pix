@@ -20,13 +20,16 @@ ROMFS_OPTIONAL_FILES = $(PX4_BASE)/Images/px4io-v2_default.bin
 #
 # Board support modules
 #
-MODULES		+= drivers/boards/AirDogFMU
+#MODULES		+= drivers/bluetooth21
+MODULES		+= drivers/boards/AirDogFMU/$(CONFIG_BOARD_REVISION)
+MODULES		+= drivers/calibration
 MODULES		+= drivers/device
 MODULES		+= drivers/frsky_telemetry
 MODULES		+= drivers/gps
 MODULES		+= drivers/hmc5883spi
 MODULES		+= drivers/l3gd20
 MODULES		+= drivers/led
+MODULES		+= drivers/ll905
 MODULES		+= drivers/lsm303d
 MODULES		+= drivers/mpu6000
 MODULES		+= drivers/ms5611
@@ -34,20 +37,18 @@ MODULES		+= drivers/px4io
 MODULES		+= drivers/stm32
 MODULES		+= drivers/stm32/adc
 MODULES		+= drivers/stm32/tone_alarm
+MODULES		+= modules/airdog
 MODULES		+= modules/debug_button
 MODULES		+= modules/gpio_tool
 MODULES		+= modules/sensors
 MODULES		+= modules/sensors_probe
 MODULES		+= modules/sensors_switch
-#MODULES		+= modules/SiKUploader
 MODULES		+= modules/spi_exchange
-MODULES		+= drivers/ll905
-MODULES		+= drivers/calibration
 #MODULES		+= drivers/airspeed
 #MODULES		+= drivers/blinkm
 #MODULES		+= drivers/ets_airspeed
-#MODULES		+= drivers/hmc5883
 #MODULES		+= drivers/hil
+#MODULES		+= drivers/hmc5883
 #MODULES		+= drivers/hott/hott_sensors
 #MODULES		+= drivers/hott/hott_telemetry
 #MODULES		+= drivers/mb1230serial
@@ -58,6 +59,7 @@ MODULES		+= drivers/calibration
 #MODULES		+= drivers/px4fmu
 #MODULES		+= drivers/rgbled
 #MODULES		+= drivers/sf0x
+#MODULES		+= modules/SiKUploader
 
 # Needs to be burned to the ground and re-written; for now,
 # just don't build it.
@@ -66,42 +68,41 @@ MODULES		+= drivers/calibration
 #
 # System commands
 #
+MODULES		+= modules/airdog/calibrator
 MODULES		+= systemcmds/bl_update
 MODULES		+= systemcmds/boardinfo
+MODULES		+= systemcmds/config
+MODULES		+= systemcmds/dumpfile
+MODULES		+= systemcmds/esc_calib
 MODULES		+= systemcmds/mixer
+MODULES		+= systemcmds/mtd
+MODULES		+= systemcmds/nshterm
 MODULES		+= systemcmds/param
 MODULES		+= systemcmds/perf
 MODULES		+= systemcmds/preflight_check
 MODULES		+= systemcmds/pwm
-MODULES		+= systemcmds/esc_calib
 MODULES		+= systemcmds/reboot
 MODULES		+= systemcmds/top
-#MODULES		+= systemcmds/tests
-MODULES		+= systemcmds/config
-MODULES		+= systemcmds/nshterm
-MODULES		+= systemcmds/mtd
-MODULES		+= systemcmds/dumpfile
 MODULES		+= systemcmds/ver
 MODULES		+= systemcmds/writefile
-MODULES		+= modules/airdog/calibrator
+#MODULES		+= systemcmds/tests
 
 #
 # General system control
 #
 MODULES		+= modules/commander
-MODULES		+= modules/navigator
-MODULES		+= modules/mavlink
 MODULES		+= modules/gpio_led
-MODULES 	+= modules/airdog
+MODULES		+= modules/mavlink
+MODULES		+= modules/navigator
 #MODULES		+= modules/uavcan
 
 #
 # Estimation modules (EKF/ SO3 / other filters)
 #
-#MODULES		+= modules/airdog/trajectory_calculator
 MODULES		+= modules/attitude_estimator_ekf
 MODULES		+= modules/position_estimator_inav
 #MODULES		+= examples/flow_position_estimator
+#MODULES		+= modules/airdog/trajectory_calculator
 #MODULES		+= modules/attitude_estimator_so3
 #MODULES		+= modules/ekf_att_pos_estimator
 
@@ -110,42 +111,38 @@ MODULES		+= modules/position_estimator_inav
 #
 MODULES		+= modules/mc_att_control
 MODULES		+= modules/mc_pos_control
-#MODULES		+= modules/segway # XXX Needs GCC 4.7 fix
-#MODULES		+= modules/fw_pos_control_l1
-#MODULES		+= modules/fw_att_control
 
 #
 # Logging
 #
 MODULES		+= modules/sdlog2
-#MODULES		+= modules/sdlog2_lite
 
 #
 # Unit tests
 #
-#MODULES 	+= modules/unit_test
 #MODULES 	+= modules/commander/commander_tests
+#MODULES 	+= modules/unit_test
 
 #
 # Library modules
 #
+MODULES		+= modules/controllib
+MODULES		+= modules/dataman
 MODULES		+= modules/systemlib
 MODULES		+= modules/systemlib/mixer
-MODULES		+= modules/controllib
 MODULES		+= modules/uORB
-MODULES		+= modules/dataman
 
 #
 # Libraries
 #
-LIBRARIES	+= lib/mathlib/CMSIS
-MODULES		+= lib/mathlib
-MODULES		+= lib/mathlib/math/filter
-#MODULES		+= lib/ecl
-#MODULES		+= lib/external_lgpl
+MODULES		+= lib/conversion
 MODULES		+= lib/geo
 MODULES		+= lib/geo_lookup
-MODULES		+= lib/conversion
+MODULES		+= lib/mathlib
+MODULES		+= lib/mathlib/math/filter
+LIBRARIES	+= lib/mathlib/CMSIS
+#MODULES		+= lib/ecl
+#MODULES		+= lib/external_lgpl
 #MODULES		+= lib/launchdetection
 
 #
@@ -176,7 +173,6 @@ MODULES		+= lib/conversion
 # Hardware test
 #MODULES		+= examples/hwtest
 #MODULES		+= modules/serial_echo
-MODULES		+= modules/bt_cfg
 
 #
 # Transitional support - add commands from the NuttX export archive.
