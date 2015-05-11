@@ -11,7 +11,8 @@
 #include "kbd_defines.hpp"
 #include "unique_file.hpp"
 
-namespace airleash {
+namespace kbd_handler
+{
 
 __EXPORT void send_command(enum REMOTE_CMD command);
 __EXPORT void send_arm_command();
@@ -60,11 +61,10 @@ private:
 class LeashStatus
 {
 public:
-	LeashStatus();
-	void set_mode(kbd_handler::ModeId mode);
+        LeashStatus();
+        void set_mode(kbd_handler::ModeId mode);
 private:
-	orb_advert_t leash_status_pub;
-	struct leash_status_s l_status;
+	orb_advert_t pub;
 };
 
-} // end of namespace airleash
+} // end of namespace kbd_handler

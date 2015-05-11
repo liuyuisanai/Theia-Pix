@@ -10,8 +10,6 @@
 
 namespace kbd_handler {
 
-using namespace airleash;
-
 constexpr bool
 in_air_mode(ModeId m)
 {

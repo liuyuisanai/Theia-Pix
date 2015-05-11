@@ -111,14 +111,14 @@ daemon(int argc, char *argv[])
 
 		// if (btn.actual_button)
 		// {
-		// 	if (btn.time_released)
-		// 		printf("%04x mask was pressed for %u usec.\n",
-		// 			btn.actual_button,
-		// 			btn.time_released - btn.time_pressed);
-		// 	else
-		// 		printf("%04x mask is pressed for %u usec.\n",
-		// 			btn.actual_button,
-		// 			now - btn.time_pressed);
+		//	if (btn.time_released)
+		//		printf("%04x mask was pressed for %u usec.\n",
+		//			btn.actual_button,
+		//			btn.time_released - btn.time_pressed);
+		//	else
+		//		printf("%04x mask is pressed for %u usec.\n",
+		//			btn.actual_button,
+		//			now - btn.time_pressed);
 		// }
 	}
 

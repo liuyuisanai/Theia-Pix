@@ -103,12 +103,12 @@ struct App
 	Tone           tone;
 	ButtonId       last_button;
 
-	airleash::DroneCommand drone_cmd;
-	airleash::DroneStatus  drone_status;
-    airleash::LeashStatus  leash_status;
+	kbd_handler::DroneCommand drone_cmd;
+	kbd_handler::DroneStatus  drone_status;
+	kbd_handler::LeashStatus  leash_status;
 
 	PeriodicSayAlive debug_heart_beat;
-	Timeout	         timeout_keypress;
+	Timeout		 timeout_keypress;
 
 	void check_drone_status();
 
@@ -200,11 +200,11 @@ struct App
 			fprintf(stderr, "Mode transition %i -> %i\n",
 					mode, transition_next_mode);
 
-			if (mode != transition_next_mode) 
-            {
+			if (mode != transition_next_mode)
+			{
 				tone.mode_switch();
-                leash_status.set_mode(transition_next_mode);
-            }
+				leash_status.set_mode(transition_next_mode);
+			}
 			mode = transition_next_mode;
 			transition_requested = false;
 			timeout_keypress.restart(now, mode);

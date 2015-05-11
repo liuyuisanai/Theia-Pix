@@ -8,8 +8,6 @@
 
 namespace kbd_handler {
 
-using namespace airleash;
-
 constexpr bool
 event_is_short_or_repeat_press(EventKind E)
 { return E == EventKind::SHORT_KEYPRESS or E == EventKind::REPEAT_KEYPRESS; }

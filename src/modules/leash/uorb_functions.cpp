@@ -2,6 +2,7 @@
 #include <cstring>
 
 #include <uORB/uORB.h>
+#include <uORB/topics/leash_status.h>
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/vehicle_global_position.h>
 
@@ -24,7 +25,12 @@ enum MAV_MODE_FLAG {
 	MAV_MODE_FLAG_SAFETY_ARMED = 128,
 };
 
-namespace airleash {
+namespace kbd_handler
+{
+
+/*
+ * DroneCommand
+ */
 
 DroneCommand::
 DroneCommand()
@@ -117,32 +123,18 @@ send_rtl_command(const DroneStatus & s)
 	//say("RTL command sent.");
 }
 
-LeashStatus::LeashStatus() :
-        leash_status_pub(-1)
-{
-	struct leash_status_s l_status;
-	l_status.menu_mode = (int8_t) kbd_handler::ModeId::NONE;
-	leash_status_pub = orb_advertise(ORB_ID(leash_status), &l_status);
-}
+/*
+ * DroneStatus
+ */
 
-void
-LeashStatus::set_mode(kbd_handler::ModeId mode) {
-    struct leash_status_s l_status;
-    l_status.menu_mode = (int8_t) mode; //TODO[max] key_mode
-    orb_publish(ORB_ID(leash_status), leash_status_pub, &l_status);
-}
+DroneStatus::
+DroneStatus() : sub(orb_subscribe(ORB_ID(airdog_status))) {}
 
-DroneStatus::DroneStatus()
-	: sub(orb_subscribe(ORB_ID(airdog_status)))
-{}
+DroneStatus::
+~DroneStatus() { orb_unsubscribe(sub); }
 
-DroneStatus::~DroneStatus()
-{
-	orb_unsubscribe(sub);
-}
-
-void
-DroneStatus::update(hrt_abstime now)
+void DroneStatus::
+update(hrt_abstime now)
 {
 	struct airdog_status_s x = airdog_status;
 	orb_copy(ORB_ID(airdog_status), sub, &x);
@@ -179,36 +171,55 @@ DroneStatus::update(hrt_abstime now)
 	signal_timeout = x_timeout;
 }
 
-bool
-DroneStatus::active() const
+bool DroneStatus::
+active() const
 {
 	bool r = not signal_timeout;
 	fprintf(stderr, "DroneStatus %s.\n", r ? "is active." : "is NOT active.");
 	return r;
 }
 
-bool
-DroneStatus::armed() const
+bool DroneStatus::
+armed() const
 {
 	bool r = airdog_status.base_mode & MAV_MODE_FLAG_SAFETY_ARMED;
 	fprintf(stderr, "DroneStatus %s.\n", r ? "is armed." : "is NOT armed.");
 	return r;
 }
 
-bool
-DroneStatus::in_air() const
+bool DroneStatus::
+in_air() const
 {
 	bool r = airdog_status.state_aird > AIRD_STATE_LANDED;
 	fprintf(stderr, "DroneStatus %s.\n", r ? "is in air" : "is NOT in air");
 	return r;
 }
 
-bool
-DroneStatus::ready_to_arm() const
+bool DroneStatus::
+ready_to_arm() const
 {
 	bool r = not in_air();
 	fprintf(stderr, "DroneStatus %s.\n", r ? "is ready to arm" : "is NOT ready to arm");
 	return r;
 }
 
-} // end of namespace airleash
+
+/*
+ * LeashStatus
+ */
+
+LeashStatus::
+LeashStatus()
+{
+    leash_status_s l_status { uint8_t(kbd_handler::ModeId::NONE) };
+    pub = orb_advertise(ORB_ID(leash_status), &l_status);
+}
+
+void LeashStatus::
+set_mode(kbd_handler::ModeId mode)
+{
+    leash_status_s l_status { uint8_t(mode) };
+    orb_publish(ORB_ID(leash_status), pub, &l_status);
+}
+
+} // end of namespace kbd_handler
