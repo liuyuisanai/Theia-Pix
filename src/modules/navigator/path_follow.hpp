@@ -101,6 +101,9 @@ private:
 
     float _target_speed;
 
+    float _dst_to_tunnel_middle;
+    float _dst_to_gate;
+
     // Speed we want to move with until distance changes
 	float _desired_speed;                   
     // Distances to use when following
@@ -121,15 +124,21 @@ private:
     math::LowPassFilter<float> _fp_d_lpf;
     math::LowPassFilter<float> _vel_lpf;
 
-    int added_points = 0;
-    int removed_points = 0;
-
     hrt_abstime _calc_vel_pid_t_prev;
 
     float _fp_p_last;
 
     hrt_abstime _last_dpos_t;
     hrt_abstime _last_tpos_t;
+
+    // Altitude which must be reached till current trajectory point have been reached
+    float _z_goal;
+    // Altitude when drone started to reach for current trajectory point
+    float _z_start; 
+    float _x_start;
+    float _y_start;
+    // How big was distance to trajectory point, when drone started to reach for it
+    float _z_start_dst_to_gate; 
 
 	// Updates saved trajectory and trajectory distance with a new point
 	void update_traj_point_queue();
@@ -157,4 +166,9 @@ private:
     inline float euclidean_distance(float x1, float y1, float x2, float y2);
     // Calculate altitude in local coordinates at which drone should be currently
     inline float calculate_desired_z();
+    // Calculate distance to gate for first trajectory point.
+    inline void calculate_dst_to_gate();
+    // Calculate needed values for calculating altitude in the next trajectory segment
+    inline void calculate_alt_values();
+
 };
