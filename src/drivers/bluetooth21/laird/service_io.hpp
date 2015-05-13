@@ -171,10 +171,14 @@ wait_service_packet(Device & dev, ResponceEventBuffer & buf)
 
 template <typename Device, typename State>
 bool
-wait_command_response(Device & dev, State & state, event_id_t cmd, void * buf, size_t bufsize)
-{
+wait_command_response(
+	Device & dev, State & state,
+	event_id_t cmd,
+	void * buf, size_t bufsize,
+	Time::duration_t wait_for
+) {
 	// TODO add timeout parameter
-	auto time_limit = Time::now() + MAX_COMMAND_DURATION;
+	auto time_limit = Time::now() + wait_for;
 	ResponceEventBuffer packet;
 
 	while (true)
@@ -262,6 +266,7 @@ send_receive(
 	ServiceBlockingIO< Device, State > & self
 	, const PacketPOD & p
 	, ResponcePOD & r
+	, Time::duration_t wait_for = MAX_COMMAND_DURATION
 ) {
 	if (not write_command(self.dev, &p, sizeof p))
 	{
@@ -270,7 +275,7 @@ send_receive(
 	}
 
 	event_id_t cmd = get_event_id(p);
-	return wait_command_response(self.dev, self.state, cmd, &r, sizeof r);
+	return wait_command_response(self.dev, self.state, cmd, &r, sizeof r, wait_for);
 }
 
 template <typename Device, typename State, typename PacketPOD, typename ResponcePOD>
@@ -279,10 +284,11 @@ send_receive_verbose(
 	ServiceBlockingIO< Device, State > & self
 	, const PacketPOD & p
 	, ResponcePOD & r
+	, Time::duration_t wait_for = MAX_COMMAND_DURATION
 ) {
 	event_id_t cmd = get_event_id(p);
 	dbg("<- Command 0x%02x sent.\n", cmd);
-	bool ok = send_receive(self, p, r);
+	bool ok = send_receive(self, p, r, wait_for);
 	if (ok)
 	{
 		auto status = get_response_status(r);

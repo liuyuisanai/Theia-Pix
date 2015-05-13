@@ -71,13 +71,15 @@ inquiry(ServiceIO & io, InquiryState & inq)
 	cmd.timeout_sec = 9;
 	cmd.flags = 1 << 7;
 
-	bool ok = send_receive_verbose(io, cmd, rsp)
+	const auto wait_for =Time::duration_sec(cmd.timeout_sec);
+	bool ok = send_receive_verbose(io, cmd, rsp, wait_for)
 		and get_response_status(rsp) == MPSTATUS_OK
 		and inq.n_results > 0;
 
-	dbg("<- request INQUIRY_REQ %s, N results %u.\n"
+	dbg("<- request INQUIRY_REQ %s, N results %u of %u.\n"
 		, ok ? "ok": "failed"
 		, inq.n_results
+		, rsp.totalResponses
 	);
 	return ok;
 }
