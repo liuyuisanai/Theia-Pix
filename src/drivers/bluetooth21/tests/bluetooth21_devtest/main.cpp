@@ -2,18 +2,25 @@
 #include <fcntl.h>
 #include <poll.h>
 #include <termios.h>
+#include <unistd.h>
 
+#include <cstdlib>
 #include <cstdio>
 #include <cstring>
 
 #include "../../io_tty.hpp"
 #include "../../module_params.hpp"
+#include "../../time.hpp"
 #include "../../unique_file.hpp"
+
+#include "../../std_algo.hpp"
 
 static const char * const devname[7] = {
 	"/dev/bt1", "/dev/bt2", "/dev/bt3", "/dev/bt4",
 	"/dev/bt5", "/dev/bt6", "/dev/bt7"
 };
+
+constexpr size_t MAX_PACKET_SIZE = 256;
 
 static int
 all_open_close_test()
@@ -91,21 +98,29 @@ all_open_close_twice_test()
 }
 
 static int
-cat_loopback(const char * name)
+tty_open_flow(const char * name)
 {
-	unique_file dev = open(name, O_RDWR);
-	if (fileno(dev) == -1)
+	int fd = BT::tty_open(name);
+
+	if (fd == -1)
 	{
 		perror("cat_loopback / open");
-		return 1;
 	}
-
 	// In NuttX all serial terminal names start with "/dev/ttyS".
-	if (strncmp(name, "/dev/ttyS", strlen("/dev/ttyS")) == 0)
+	else if (strncmp(name, "/dev/ttyS", strlen("/dev/ttyS")) == 0)
 	{
 		const bool use_ctsrts = BT::Params::get("A_TELEMETRY_FLOW");
-		BT::tty_switch_ctsrts(fileno(dev), use_ctsrts);
+		BT::tty_switch_ctsrts(fd, use_ctsrts);
 	}
+
+	return fd;
+}
+
+
+static int
+cat_loopback(const char * port)
+{
+	unique_file dev = tty_open_flow(port);
 
 	while (true)
 	{
@@ -162,15 +177,82 @@ cat_loopback(const char * name)
 	return 0;
 }
 
+static int
+fixed_load(const char * port, uint32_t freq, uint32_t size)
+{
+	const int interval_ms = 1000 / freq;
+	if (interval_ms == 0) { return 1; }
+
+	if (size == 0 or size > MAX_PACKET_SIZE) { return 1; }
+
+	unique_file dev = tty_open_flow(port);
+	if (fileno(dev) == -1) { return 1; }
+
+	pollfd p;
+	p.fd = 0;
+	p.events = POLLIN;
+
+	uint8_t packet[MAX_PACKET_SIZE];
+	uint8_t counter = 0;
+
+	auto stamp = BT::Time::now();
+	const useconds_t interval_us = interval_ms * 1000;
+	while (true)
+	{
+		int r;
+
+		r = poll(&p, 1, interval_ms);
+		if (r == 1)
+		{
+			char ch;
+			r = read(0, &ch, 1);
+			if (r == 1 and ch == 0x03) { break; }
+		}
+
+		BT::fill_n(packet, size, counter);
+		r = write(dev, packet, size);
+		if (r == size)
+		{
+			auto now = BT::Time::now();
+			printf("%7.2fHz\n", 1000000. / (now - stamp));
+			stamp = now;
+		}
+		else
+		{
+			perror("fixed_load / write");
+			usleep(interval_us);
+		}
+
+		++counter;
+
+	}
+
+	return 0;
+}
+
 static inline bool
 streq(const char a[], const char b[]) { return std::strcmp(a, b) == 0; }
+
+bool
+parse_uint(const char s[], uint32_t &n, const char * & tail)
+{
+	char *p;
+	n = strtoul(s, &p, 10);
+	tail = p;
+	return tail != s;
+}
 
 static void
 usage(const char name[])
 {
-	fprintf(stderr, "Usage: %s all-open-close\n", name);
-	fprintf(stderr, "       %s all-open-close-twice\n", name);
-	fprintf(stderr, "\n");
+	fprintf(stderr,
+		"Usage: %s all-open-close\n"
+		"       %s all-open-close-twice\n"
+		"       %s loopback tty-like\n"
+		"       %s fixed-load tty-like hz bytes\n"
+		"\n",
+		name, name, name, name
+	);
 }
 
 #ifdef MODULE_COMMAND
@@ -200,8 +282,21 @@ main(int argc, const char * const argv[])
 	}
 	else if (argc == 3)
 	{
-		if (streq(argv[1], "cat-loopback"))
+		if (streq(argv[1], "loopback"))
 			return cat_loopback(argv[2]);
+	}
+	else if (argc == 5)
+	{
+		if (streq(argv[1], "fixed-load"))
+		{
+			uint32_t freq, size;
+			const char * tail;
+			if (parse_uint(argv[3], freq, tail)
+			and parse_uint(argv[4], size, tail)
+			) {
+				return fixed_load(argv[2], freq, size);
+			}
+		}
 	}
 
 	usage(argv[0]);
