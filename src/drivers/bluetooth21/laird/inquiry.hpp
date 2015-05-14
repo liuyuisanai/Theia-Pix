@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <cstdlib>
 
 #include "../bt_types.hpp"
 #include "../debug.hpp"
@@ -23,12 +24,16 @@ struct InquiryResult
 	Address6 addr;
 	Class_of_Device cod;
 	int8_t rssi;
+
+	friend inline bool
+	operator < (const InquiryResult & a, const InquiryResult & b)
+	{ return abs(a.rssi) < abs(b.rssi); }
 };
 
 inline void
 dbg_dump(const InquiryResult & r)
 {
-	dbg("-> INQUIRY Result " Address6_FMT " CoD 0x%06x RSSI %i.\n",
+	dbg("-> INQUIRY reply " Address6_FMT " CoD 0x%06x RSSI %i.\n",
 		Address6_FMT_ITEMS(r.addr), r.cod, r.rssi);
 }
 
@@ -71,10 +76,11 @@ inquiry(ServiceIO & io, InquiryState & inq)
 	cmd.timeout_sec = 9;
 	cmd.flags = 1 << 7;
 
-	const auto wait_for =Time::duration_sec(cmd.timeout_sec);
+	/* One second is added to let BT module to report timeout itself. */
+	const auto wait_for = Time::duration_sec(cmd.timeout_sec + 1);
+
 	bool ok = send_receive_verbose(io, cmd, rsp, wait_for)
-		and get_response_status(rsp) == MPSTATUS_OK
-		and inq.n_results > 0;
+		and get_response_status(rsp) == MPSTATUS_OK;
 
 	dbg("<- request INQUIRY_REQ %s, N results %u of %u.\n"
 		, ok ? "ok": "failed"

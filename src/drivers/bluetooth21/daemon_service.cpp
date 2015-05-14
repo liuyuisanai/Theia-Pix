@@ -25,6 +25,8 @@ namespace Daemon
 namespace Service
 {
 
+using namespace BT::Service;
+
 const char
 PROCESS_NAME[] = "bt21_service";
 
@@ -63,7 +65,7 @@ template <typename ServiceIO, typename ServiceState>
 static void
 synced_loop(MultiPlexer & mp, ServiceIO & service_io, ServiceState & svc)
 {
-	using namespace BT::Service::Laird;
+	using namespace Laird;
 
 	auto & dev = service_io.dev;
 	while (should_run and not module_rebooted(svc.sync))
@@ -95,6 +97,45 @@ synced_loop(MultiPlexer & mp, ServiceIO & service_io, ServiceState & svc)
 
 		fsync(service_io.dev);
 	}
+}
+
+template <typename ServiceIO, typename ServiceState>
+static void
+keep_sync_loop(MultiPlexer & mp, ServiceIO & service_io, ServiceState & svc)
+{
+	using namespace Laird;
+
+	do
+	{
+		synced_loop(mp, service_io, svc);
+
+		// We'll get here on stop request or on module reboot
+		bool ok = ( should_run
+			and configure_after_reboot(service_io)
+			and renew_after_reboot(service_io, svc.conn)
+		);
+
+		if (not ok) { break; }
+
+		// Assume we are syncronized again
+		set_in_sync(svc.sync);
+	}
+	while (true);
+}
+
+template <typename ServiceIO>
+static void
+inquiry_loop(ServiceIO & service_io, Laird::InquiryState & inq)
+{
+	dbg("Discovery started.\n");
+	while (should_run and inquiry(service_io, inq) and inq.n_results != 1)
+	{
+		dbg("Discovered %u BT devices of class 0x%06x.\n"
+			, inq.n_results
+			, (unsigned) inq.DRONE_COD
+		);
+	}
+	dbg("Discovery finished.\n");
 }
 
 static void *
@@ -138,33 +179,20 @@ daemon()
 
 	started = true;
 
-	while (should_run and pairing_required)
-	{
-		if (inquiry(service_io, svc.inq))
-		{
-			// TODO
-			pairing_required = false;
-		}
-	}
-
-	do
+	if (should_run and pairing_required)
 	{
 		fsync(service_io.dev);
-
-		synced_loop(mp, service_io, svc);
-
-		// We'll get here on stop request or on module reboot
-		bool ok = ( should_run
-			and configure_after_reboot(service_io)
-			and renew_after_reboot(service_io, svc.conn)
-		);
-
-		if (not ok) { break; }
-
-		// Assume we are syncronized again
-		set_in_sync(svc.sync);
+		inquiry_loop(service_io, svc.inq);
+		should_run = svc.inq.n_results == 1;
+		if (should_run)
+			connect_address = svc.inq.first_results[0].addr;
 	}
-	while (true);
+
+	if (should_run)
+	{
+		fsync(service_io.dev);
+		keep_sync_loop(mp, service_io, svc);
+	}
 
 	started = running = false;
 	fprintf(stderr, "%s stopped.\n", PROCESS_NAME);
