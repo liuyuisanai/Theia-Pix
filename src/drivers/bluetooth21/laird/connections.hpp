@@ -3,8 +3,8 @@
 #include <cstdint>
 
 #include "../bt_types.hpp"
-#include "../connection_state.hpp"
 #include "../network_util.hpp"
+#include "../svc_connections.hpp"
 
 #include "../std_algo.hpp"
 #include "../std_iter.hpp"

@@ -3,8 +3,8 @@
 #include <cstdint>
 
 #include "../bt_types.hpp"
-#include "../connection_state.hpp"
 #include "../debug.hpp"
+#include "../svc_connections.hpp"
 
 #include "connections.hpp"
 #include "inquiry.hpp"

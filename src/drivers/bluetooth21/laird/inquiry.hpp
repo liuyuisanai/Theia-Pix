@@ -5,7 +5,8 @@
 
 #include "../bt_types.hpp"
 #include "../debug.hpp"
-#include "../service_settings.hpp"
+#include "../svc_inquiry.hpp"
+#include "../svc_settings.hpp"
 
 #include "../std_array.hpp"
 
@@ -19,51 +20,6 @@ namespace Service
 namespace Laird
 {
 
-struct InquiryResult
-{
-	Address6 addr;
-	Class_of_Device cod;
-	int8_t rssi;
-
-	friend inline bool
-	operator < (const InquiryResult & a, const InquiryResult & b)
-	{ return abs(a.rssi) < abs(b.rssi); }
-};
-
-inline void
-dbg_dump(const InquiryResult & r)
-{
-	dbg("-> INQUIRY reply " Address6_FMT " CoD 0x%06x RSSI %i.\n",
-		Address6_FMT_ITEMS(r.addr), r.cod, r.rssi);
-}
-
-inline bool
-parse_inquiry_enhanced_data(InquiryResult & r, const uint8_t buf[], size_t n)
-{
-	bool ok = n >= 12;
-	if (ok)
-	{
-		copy_n(buf + 2, 6, begin(r.addr));
-		r.cod = (Class_of_Device) network24_to_host_unsafe(buf + 8);
-		r.rssi = buf[11];
-	}
-	return ok;
-}
-
-struct InquiryState
-{
-	static constexpr size_t CAPACITY = 4;
-	static constexpr auto DRONE_COD = Class_of_Device::DRONE;
-
-	PODArray<InquiryResult, CAPACITY> first_results;
-	uint8_t n_results;
-
-	InquiryState() : n_results(0) {}
-};
-
-void
-reset(InquiryState & self) { self.n_results = 0; }
-
 template <typename ServiceIO>
 bool
 inquiry(ServiceIO & io, InquiryState & inq)
@@ -73,8 +29,8 @@ inquiry(ServiceIO & io, InquiryState & inq)
 	RESPONSE_INQUIRY_REQ rsp;
 	auto cmd = prefill_packet<COMMAND_INQUIRY_REQ, CMD_INQUIRY_REQ>();
 	cmd.maxResponses = inq.CAPACITY;
-	cmd.timeout_sec = 9;
-	cmd.flags = 1 << 7;
+	cmd.timeout_sec = inq.INQUIRY_DURATION_sec;
+	cmd.flags = 1 << 7; /* Enhanced inquiry responces */
 
 	/* One second is added to let BT module to report timeout itself. */
 	const auto wait_for = Time::duration_sec(cmd.timeout_sec + 1);
@@ -90,9 +46,18 @@ inquiry(ServiceIO & io, InquiryState & inq)
 	return ok;
 }
 
-bool
-filter(const InquiryState & self, const InquiryResult & r)
-{ return r.cod == self.DRONE_COD; }
+inline bool
+parse_inquiry_enhanced_data(InquiryResult & r, const uint8_t buf[], size_t n)
+{
+	bool ok = n >= 12;
+	if (ok)
+	{
+		copy_n(buf + 2, 6, begin(r.addr));
+		r.cod = (Class_of_Device) network24_to_host_unsafe(buf + 8);
+		r.rssi = buf[11];
+	}
+	return ok;
+}
 
 bool
 handle_inquiry_enhanced_data(InquiryState & self, const uint8_t buf[], size_t n)

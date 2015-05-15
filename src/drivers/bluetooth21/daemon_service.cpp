@@ -125,7 +125,7 @@ keep_sync_loop(MultiPlexer & mp, ServiceIO & service_io, ServiceState & svc)
 
 template <typename ServiceIO>
 static void
-inquiry_loop(ServiceIO & service_io, Laird::InquiryState & inq)
+inquiry_loop(ServiceIO & service_io, InquiryState & inq)
 {
 	dbg("Discovery started.\n");
 	while (should_run and inquiry(service_io, inq) and inq.n_results != 1)

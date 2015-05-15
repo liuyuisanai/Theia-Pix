@@ -5,6 +5,8 @@
 
 namespace BT
 {
+namespace Service
+{
 
 struct ConnectionState
 {
@@ -191,5 +193,7 @@ inline uint8_t
 count_requests(const ConnectionState & self)
 { return self.channels_connected.value & 1; }
 
+}
+// end of namespace Service
 }
 // end of namespace BT

@@ -3,7 +3,7 @@
 #include "../debug.hpp"
 #include "../factory_addresses.hpp"
 #include "../module_params.hpp"
-#include "../service_settings.hpp"
+#include "../svc_settings.hpp"
 
 #include "../std_util.hpp"
 
