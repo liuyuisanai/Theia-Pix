@@ -9,7 +9,6 @@
 
 namespace {
 using BT::swap;
-using BT::dbg;
 
 inline int
 fileno(int fd) { return fd; }

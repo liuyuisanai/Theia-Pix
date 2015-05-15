@@ -25,7 +25,7 @@ struct MutexSem
 	try_lock_interruptable()
 	{
 		auto r = sem_wait(&nuttx_sem);
-		if (r != 0) { ASSERT(r == -EINTR); }
+		if (r != 0) { D_ASSERT(r == -EINTR); }
 		return r == 0;
 	};
 
