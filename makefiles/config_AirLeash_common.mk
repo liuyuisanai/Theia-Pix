@@ -38,6 +38,7 @@ MODULES		+= modules/sensors
 MODULES		+= modules/sensors_probe
 MODULES		+= modules/sensors_switch
 MODULES		+= modules/spi_exchange
+MODULES		+= modules/fs_test
 #MODULES		+= drivers/airspeed
 #MODULES		+= drivers/blinkm
 #MODULES		+= drivers/bluetooth21
@@ -154,7 +155,7 @@ MODULES		+= lib/conversion
 #MODULES			+= examples/hwtest
 
 # Airdog modules
-#MODULES			+= modules/bt_cfg
+MODULES			+= modules/bt_cfg
 #MODULES			+= modules/serial_echo
 #MODULES			+= modules/serial_measure_latency
 #MODULES			+= modules/SiKUploader

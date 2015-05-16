@@ -71,6 +71,7 @@ MODULES		+= modules/spi_exchange
 MODULES		+= modules/airdog/calibrator
 MODULES		+= systemcmds/bl_update
 MODULES		+= systemcmds/boardinfo
+MODULES		+= modules/bt_cfg
 MODULES		+= systemcmds/config
 MODULES		+= systemcmds/dumpfile
 MODULES		+= systemcmds/esc_calib
