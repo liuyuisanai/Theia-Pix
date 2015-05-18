@@ -153,15 +153,19 @@ void PathFollow::on_active() {
 
     calculate_dst_to_gate();
 
+    _tp_just_reached = false; 
+
     if (_first_tp_flag == true && traj_point_reached()) {
 
         _last_passed_point = _first_tp;
         _first_tp_flag = false;
 
         // Trajectory point has been reached. Current z is starting z for next trajectory segment.
-        _z_start = _drone_local_pos.z - _vertical_offset;
+        _z_start = _z_goal;
         _x_start = _drone_local_pos.x;
         _y_start = _drone_local_pos.y;
+
+        _tp_just_reached = true; 
 
     }
 
@@ -180,7 +184,7 @@ void PathFollow::on_active() {
             calculate_dst_to_gate();
 
             // calculate new z_start, z_goal
-            calculate_alt_values();
+            calculate_alt_values(_tp_just_reached);
 
         }
 
@@ -395,7 +399,12 @@ float PathFollow::calculate_desired_velocity() {
 
         if (!(going_bckw_st(0) == _drone_local_pos.x && going_bckw_st(1) == _drone_local_pos.y) && 
                 euclidean_distance(going_bckw_st(0), going_bckw_st(1), _drone_local_pos.x, _drone_local_pos.y)> _parameters.pafol_backward_distance_limit )
+        {
             vel_new = 0.0f;
+
+            if (_fp_i < -10.0f)       
+                _fp_i = -10.0f;
+        }
 
     }
 
@@ -643,9 +652,9 @@ PathFollow::calculate_desired_z() {
             rate_done = 1.0f - rate_left;
 
             if (rate_done < 0.0f) rate_done = 0.0f;
-            ret_z = _z_start + (_z_goal-_z_start) * rate_done;
+            ret_z = _z_start + ( _z_goal - _z_start) * rate_done;
 
-            dd_log.log(3,1);
+            dd_log.log(3,_dst_to_gate);
 
         // Follow target - no trajectory points
         } else {
@@ -676,9 +685,11 @@ PathFollow::calculate_desired_z() {
 }
 
 void
-PathFollow::calculate_alt_values(){
+PathFollow::calculate_alt_values(bool tp_just_reached){
 
-    _z_start = _drone_local_pos.z - _vertical_offset;
+    if (!tp_just_reached)
+        _z_start = _drone_local_pos.z - _vertical_offset;
+
     _x_start = _drone_local_pos.x;
     _y_start = _drone_local_pos.y;
 
@@ -696,3 +707,4 @@ PathFollow::calculate_alt_values(){
     }
 
 }
+

@@ -140,6 +140,8 @@ private:
     // How big was distance to trajectory point, when drone started to reach for it
     float _z_start_dst_to_gate; 
 
+    bool _tp_just_reached;
+
 	// Updates saved trajectory and trajectory distance with a new point
 	void update_traj_point_queue();
 
@@ -169,6 +171,6 @@ private:
     // Calculate distance to gate for first trajectory point.
     inline void calculate_dst_to_gate();
     // Calculate needed values for calculating altitude in the next trajectory segment
-    inline void calculate_alt_values();
+    inline void calculate_alt_values(bool tp_just_reached);
 
 };
