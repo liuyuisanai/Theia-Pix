@@ -1,5 +1,6 @@
 #pragma once
 
+#include "std_iter.hpp"
 #include "std_util.hpp"
 
 namespace BT
@@ -101,6 +102,42 @@ equal_n(InputIt1 first1, Size1 n, InputIt2 first2)
 template <typename T>
 const T&
 min(const T& a, const T& b) { return (b < a) ? b : a; }
+
+template<class ForwardIt>
+ForwardIt
+min_element(ForwardIt first, ForwardIt last)
+{
+	if (first == last) { return last; }
+
+	ForwardIt r = first;
+	++first;
+	while (first != last)
+	{
+		if (*first < *r) { r = first; }
+		++first;
+	}
+	return r;
+}
+
+template<class ForwardIt>
+std::pair<ForwardIt, ForwardIt>
+two_min_elements(ForwardIt first, ForwardIt last)
+{
+	if (first == last) { return std::make_pair(last, last); }
+
+	ForwardIt a = min_element(first, last);
+	ForwardIt l = min_element(first, a);
+	ForwardIt r = min_element(next(a), last);
+	ForwardIt b;
+	if (l == a)
+		b = r;
+	else if (r == last)
+		b = l;
+	else
+		b = *l < *r ? l : r;
+
+	return std::make_pair(a, b);
+}
 
 }
 // end of namespace BT

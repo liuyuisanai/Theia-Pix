@@ -128,8 +128,10 @@ static void
 inquiry_loop(ServiceIO & service_io, InquiryState & inq)
 {
 	dbg("Discovery started.\n");
-	while (should_run and inquiry(service_io, inq) and inq.n_results != 1)
-	{
+	while (should_run
+	and inquiry(service_io, inq)
+	and not closest_is_obvious(inq)
+	) {
 		dbg("Discovered %u BT devices of class 0x%06x.\n"
 			, inq.n_results
 			, (unsigned) inq.DRONE_COD
@@ -183,9 +185,9 @@ daemon()
 	{
 		fsync(service_io.dev);
 		inquiry_loop(service_io, svc.inq);
-		should_run = svc.inq.n_results == 1;
+		should_run = should_run and closest_is_obvious(svc.inq);
 		if (should_run)
-			connect_address = svc.inq.first_results[0].addr;
+			connect_address = closest_address(svc.inq);
 	}
 
 	if (should_run)

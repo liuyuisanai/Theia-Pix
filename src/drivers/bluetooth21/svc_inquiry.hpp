@@ -51,6 +51,35 @@ bool
 filter(const InquiryState & self, const InquiryResult & r)
 { return r.cod == self.DRONE_COD; }
 
+bool
+closest_is_obvious(const InquiryState & self)
+{
+	dbg("closest_is_obvious() n_results %u.\n", self.n_results);
+
+	if (self.n_results == 0) { return false; }
+	if (self.n_results == 1) { return true; }
+
+	auto first = cbegin(self.first_results);
+	auto last = next(first, self.n_results);
+	auto p = two_min_elements(first, last);
+	dbg("closest_is_obvious() [%u] %i [%u] %i: %i.\n"
+		, p.first - first
+		, p.first->rssi
+		, p.second - first
+		, p.second->rssi
+		, *p.first < *p.second
+	);
+	return *p.first < *p.second;
+}
+
+Address6 // valid only if closest_is_obvious()
+closest_address(const InquiryState & self)
+{
+	auto first = cbegin(self.first_results);
+	auto last = first + self.n_results;
+	return min_element(first, last)->addr;
+}
+
 }
 // end of namespace Service
 }
