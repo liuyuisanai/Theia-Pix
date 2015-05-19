@@ -4,6 +4,8 @@
 #include <cstdio>
 #include <unistd.h>
 
+#include <drivers/drv_tone_alarm.h>
+
 #include "daemon.hpp"
 #include "device_connection_map.hpp"
 #include "factory_addresses.hpp"
@@ -127,6 +129,8 @@ template <typename ServiceIO>
 static void
 inquiry_loop(ServiceIO & service_io, InquiryState & inq)
 {
+	unique_file tones = open(TONEALARM_DEVICE_PATH, O_WRONLY);
+
 	dbg("Discovery started.\n");
 	while (should_run
 	and inquiry(service_io, inq)
@@ -136,7 +140,19 @@ inquiry_loop(ServiceIO & service_io, InquiryState & inq)
 			, inq.n_results
 			, (unsigned) inq.DRONE_COD
 		);
+
+		// TODO move tones to modules/indication
+		int tune;
+		if (inq.n_results == 0)
+			tune = TONE_NOTIFY_NEUTRAL_TUNE;
+		else
+			tune = TONE_NOTIFY_NEGATIVE_TUNE;
+		ioctl(fileno(tones), TONE_SET_ALARM, tune);
 	}
+
+	if (not closest_is_obvious(inq))
+		ioctl(fileno(tones), TONE_SET_ALARM, TONE_ERROR_TUNE);
+
 	dbg("Discovery finished.\n");
 }
 
