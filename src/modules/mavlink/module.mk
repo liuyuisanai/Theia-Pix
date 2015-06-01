@@ -47,7 +47,7 @@ SRCS		 += mavlink_main.cpp \
 			mavlink_rate_limiter.cpp \
 			mavlink_ftp.cpp
 
-INCLUDE_DIRS	 += $(MAVLINK_SRC)/include/mavlink
+INCLUDE_DIRS	 += $(MAVLINK_SRC)
 
 MAXOPTIMIZATION	 = -Os
 

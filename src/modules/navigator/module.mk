@@ -65,8 +65,6 @@ SRCS		= navigator_main.cpp \
 		  leashed_follow_params.c \
 		  land.cpp
 
-INCLUDE_DIRS	 += $(MAVLINK_SRC)/include/mavlink
-
 MODULE_STACKSIZE = 1200
 
 MAXOPTIMIZATION = -Os

@@ -41,7 +41,7 @@ SRCS			= mavlink_tests.cpp \
 			../mavlink_ftp.cpp \
 			../mavlink.c
 
-INCLUDE_DIRS	 += $(MAVLINK_SRC)/include/mavlink
+INCLUDE_DIRS	 += $(MAVLINK_SRC)
 
 MODULE_STACKSIZE = 5000
 

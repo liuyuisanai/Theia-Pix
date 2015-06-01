@@ -1,9 +1,9 @@
-[submodule "mavlink/include/mavlink/v1.0"]
-	path = mavlink/include/mavlink/v1.0
-	url = git://github.com/mavlink/c_library.git
 [submodule "NuttX"]
 	path = NuttX
 	url = git@gitlab.com:airdog/nuttx.git
 [submodule "uavcan"]
 	path = uavcan
 	url = git://github.com/pavel-kirienko/uavcan.git
+[submodule "mavlink"]
+	path = mavlink
+	url = git@gitlab.com:airdog/mavlink.git
