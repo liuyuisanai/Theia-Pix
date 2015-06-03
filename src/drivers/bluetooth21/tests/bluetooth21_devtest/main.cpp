@@ -10,6 +10,7 @@
 
 #include "../../io_tty.hpp"
 #include "../../module_params.hpp"
+#include "../../read_write_log.hpp"
 #include "../../time.hpp"
 #include "../../unique_file.hpp"
 
@@ -178,7 +179,7 @@ cat_loopback(const char * port)
 }
 
 static int
-fixed_load(const char * port, uint32_t freq, uint32_t size)
+fixed_load(const char * port, unsigned freq, unsigned size, unsigned break_period)
 {
 	const int interval_ms = 1000 / freq;
 	if (interval_ms == 0) { return 1; }
@@ -193,40 +194,119 @@ fixed_load(const char * port, uint32_t freq, uint32_t size)
 	p.events = POLLIN;
 
 	uint8_t packet[MAX_PACKET_SIZE];
-	uint8_t counter = 0;
+	BT::iota_n(packet, MAX_PACKET_SIZE, 0x80);
+	//uint8_t counter = 0;
 
 	auto stamp = BT::Time::now();
 	const useconds_t interval_us = interval_ms * 1000;
+	bool should_run = true;
 	while (true)
 	{
-		int r;
+		ssize_t r;
+		do {
+			r = poll(&p, 1, 0);
+			if (r == 0) { break; }
 
-		r = poll(&p, 1, interval_ms);
-		if (r == 1)
-		{
-			char ch;
+			char ch = 0;
 			r = read(0, &ch, 1);
-			if (r == 1 and ch == 0x03) { break; }
-		}
+			if (ch == 0x03) { should_run = false; }
+		} while (r == 1 and should_run);
 
-		BT::fill_n(packet, size, counter);
-		r = write(dev, packet, size);
-		if (r == size)
+		if (not should_run) { break; }
+
+		int dt = 0;
+		auto hz_lpf = 1.;
+		for (unsigned i = 0; i < break_period; ++i)
 		{
-			auto now = BT::Time::now();
-			printf("%7.2fHz\n", 1000000. / (now - stamp));
-			stamp = now;
-		}
-		else
-		{
-			perror("fixed_load / write");
-			usleep(interval_us);
-		}
+			if (i > 0) { usleep(interval_us /*- dt*/ - 1000); }
 
-		++counter;
+			//BT::fill_n(packet, size, 0x80 | counter);
+			//for (unsigned i = 0; i < size; ++i)
+			//	packet[i] = 0x80 + counter + i;
 
+			r = write(dev, packet, size);
+			if (r == size)
+			{
+				auto now = BT::Time::now();
+				dt = now - stamp;
+
+				auto hz = 1000000. / dt;
+				(hz_lpf *= 0.9) += (hz * 0.1);
+				printf("k=%.4f, %7.2fHz, %7.2fHz\n"
+					, (1. * dt) / interval_us
+					, hz
+					, hz_lpf
+				);
+				stamp = now;
+
+				dt = dt > interval_us ? dt - interval_us: 0;
+			}
+			else
+			{
+				perror("fixed_load / write");
+				dt = 0;
+			}
+
+			//++counter;
+		}
 	}
 
+	printf("\n\nstopped\n\n");
+	return 0;
+}
+
+static int
+cat_repr(const char port[])
+{
+	unique_file dev = tty_open_flow(port);
+	if (fileno(dev) == -1) { return 1; }
+
+	BT::DevLog log(fileno(dev), 1, ": ", "debug");
+
+	pollfd p[2];
+	p[0].fd = 0;
+	p[0].events = POLLIN;
+	p[1].fd = fileno(dev);
+	p[1].events = POLLIN;
+
+
+	char packet[MAX_PACKET_SIZE];
+	ssize_t r;
+	ssize_t total = 0;
+
+	while (true)
+	{
+		r = poll(p, 2, -1);
+		if (r < 0)
+		{
+			perror("poll");
+			break;
+		}
+
+		if (p[0].revents)
+		{
+			r = read(0, packet, 1);
+			if (packet[0] == 0x03) { break; }
+		}
+
+		if (p[1].revents)
+		{
+			r = read(dev, packet, sizeof packet);
+			while (r > 0)
+			{
+				total += r;
+				r = read(dev, packet, sizeof packet);
+			}
+			if (r == 0) { break; }
+			if (r < 0 and errno != EAGAIN)
+			{
+				perror("read");
+				break;
+			}
+		}
+	}
+
+	printf("\n\nTotal bytes read: %u\n\n", total);
 	return 0;
 }
 
@@ -234,12 +314,19 @@ static inline bool
 streq(const char a[], const char b[]) { return std::strcmp(a, b) == 0; }
 
 bool
-parse_uint(const char s[], uint32_t &n, const char * & tail)
+parse_uint(const char s[], unsigned &n, const char * & tail)
 {
 	char *p;
 	n = strtoul(s, &p, 10);
 	tail = p;
 	return tail != s;
+}
+
+bool
+parse_uint(const char s[], unsigned &n)
+{
+	const char * tail;
+	return parse_uint(s, n, tail) and *tail == 0;
 }
 
 static void
@@ -284,17 +371,21 @@ main(int argc, const char * const argv[])
 	{
 		if (streq(argv[1], "loopback"))
 			return cat_loopback(argv[2]);
+		else if (streq(argv[1], "cat_repr"))
+			return cat_repr(argv[2]);
 	}
-	else if (argc == 5)
+	else if (argc == 5 or argc == 6)
 	{
 		if (streq(argv[1], "fixed-load"))
 		{
-			uint32_t freq, size;
-			const char * tail;
-			if (parse_uint(argv[3], freq, tail)
-			and parse_uint(argv[4], size, tail)
+			unsigned break_period = 300;
+			unsigned freq, size;
+			if (parse_uint(argv[3], freq)
+			and parse_uint(argv[4], size)
+			and (argc == 5 or parse_uint(argv[5], break_period))
 			) {
-				return fixed_load(argv[2], freq, size);
+				return fixed_load(argv[2], freq, size,
+							break_period);
 			}
 		}
 	}
