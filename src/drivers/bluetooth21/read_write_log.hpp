@@ -23,7 +23,7 @@ struct DevLog {
 	const char * const prefix_write;
 	const size_t prefix_write_len;
 
-	BT::Time::stamp_t stamp;
+	BT::Time::stamp_t stamp_read, stamp_write;
 
 	DevLog(int d, int l, const char * prefix_r, const char * prefix_w)
 	: dev(d)
@@ -32,7 +32,8 @@ struct DevLog {
 	, prefix_read_len(strlen(prefix_r))
 	, prefix_write(prefix_w)
 	, prefix_write_len(strlen(prefix_w))
-	, stamp(0)
+	, stamp_read(0)
+	, stamp_write(0)
 	{}
 
 	friend inline int
@@ -59,11 +60,17 @@ struct DevLog {
 	{
 		int save_errno = errno;
 
-		log_stamp(self);
 		if (is_read)
+		{
+			log_stamp(self, self.stamp_read, buf_size);
 			log_write(self, self.prefix_read, self.prefix_read_len);
+		}
 		else
+		{
+			log_stamp(self, self.stamp_write, buf_size);
 			log_write(self, self.prefix_write, self.prefix_write_len);
+		}
+
 		write_repr(self.log, buf, buf_size);
 		const char ch = '\n';
 		log_write(self, &ch, 1);
@@ -72,18 +79,19 @@ struct DevLog {
 	}
 
 	friend void
-	log_stamp(DevLog &self)
+	log_stamp(DevLog &self, BT::Time::stamp_t & stamp, size_t buf_size)
 	{
 		auto now = BT::Time::now();
-		char buf[24];
+		char buf[36];
 
 		// Use only lower half of useconds as debug session
 		// is unlikely to be several hours long.
-		snprintf(buf, sizeof buf, "%10u %6u+ "
+		snprintf(buf, sizeof buf, "%10u %8udt %4ub "
 			, unsigned(now)
-			, unsigned(self.stamp == 0 ? 0 : now - self.stamp)
+			, unsigned(stamp == 0 ? 0 : now - stamp)
+			, unsigned(buf_size)
 		);
-		self.stamp = now;
+		stamp = now;
 		log_write(self, buf, strlen(buf));
 	}
 
