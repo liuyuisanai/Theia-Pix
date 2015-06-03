@@ -90,6 +90,9 @@ configure_before_reboot(ServiceIO & io)
 		{ 34, 1 },     // Number of incoming connections
 		{ 35, 1 },     // Number of outgoing connections
 		{ 80, reg80 }, // UART latency time in microseconds.
+		{ 81, 50 },    // MP mode: Memory % for UART RX processing.
+		{ 82, 60 },    // UART buffer fill level to *DE*assert RTS.
+		{ 83, 50 },    // UART buffer fill level to *re*assert RTS.
 		{ 84, reg84 }, // UART poll mode
 	};
 	const size_t n_regs = sizeof(regs) / sizeof(*regs);
