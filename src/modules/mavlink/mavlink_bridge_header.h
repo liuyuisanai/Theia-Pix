@@ -57,6 +57,11 @@ __BEGIN_DECLS
 #define MAVLINK_GET_CHANNEL_BUFFER mavlink_get_channel_buffer
 #define MAVLINK_GET_CHANNEL_STATUS mavlink_get_channel_status
 
+#define MAVLINK_COMBO_MESSAGE_HEARTBEAT 	1
+#define MAVLINK_COMBO_MESSAGE_GPOS 			2
+#define MAVLINK_COMBO_MESSAGE_TRAJECTORY 	4
+#define MAVLINK_COMBO_MESSAGE_COMMAND 		8
+
 #include <mavlink_types.h>
 #include <unistd.h>
 

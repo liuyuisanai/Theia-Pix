@@ -2174,6 +2174,159 @@ protected:
 	}
 };
 
+class MavlinkStreamHRT_GPOS_TRAJ_COMMAND : public MavlinkStream {
+public:
+	static const char *get_name_static() {
+		return "HRT_GPOS_TRAJ_COMMAND";
+	}
+	const char *get_name() const {
+		return MavlinkStreamTrajectory::get_name_static();
+	}
+	uint8_t get_id() {
+		return MAVLINK_MSG_ID_HRT_GPOS_TRAJ_COMMAND;
+	}
+	static MavlinkStream *new_instance(Mavlink *mavlink)
+	{
+		return new MavlinkStreamHRT_GPOS_TRAJ_COMMAND(mavlink);
+	}
+	unsigned get_size() {
+		// TODO! Change to if published -> length, else -> 0 when correct topic will be available
+		return MAVLINK_MSG_ID_HRT_GPOS_TRAJ_COMMAND_LEN + MAVLINK_NUM_NON_PAYLOAD_BYTES;
+	}
+private:
+	// Heartbeat variables
+	MavlinkOrbSubscription *_status_sub;
+	MavlinkOrbSubscription *_pos_sp_triplet_sub;
+
+	// Command variables
+	MavlinkOrbSubscription *_cmd_sub;
+	uint64_t _cmd_time;
+
+	// GPOS variables
+	MavlinkOrbSubscription *_pos_sub;
+	uint64_t _pos_time;
+	MavlinkOrbSubscription *_home_sub;
+	uint64_t _home_time;
+	MavlinkOrbSubscription *_gps_sub;
+	uint64_t _gps_time;
+
+	// Trajectory variables
+	MavlinkOrbSubscription *trajectory_sub;
+	uint64_t trajectory_time;
+	/* do not allow top copying this class */
+	MavlinkStreamHRT_GPOS_TRAJ_COMMAND(MavlinkStreamHRT_GPOS_TRAJ_COMMAND &);
+	MavlinkStreamHRT_GPOS_TRAJ_COMMAND& operator = (const MavlinkStreamHRT_GPOS_TRAJ_COMMAND &);
+protected:
+	explicit MavlinkStreamHRT_GPOS_TRAJ_COMMAND(Mavlink *mavlink) : MavlinkStream(mavlink),
+			// Heartbeat inits
+			_status_sub(_mavlink->add_orb_subscription(ORB_ID(vehicle_status))),
+			_pos_sp_triplet_sub(_mavlink->add_orb_subscription(ORB_ID(position_setpoint_triplet))),
+			// Command inits
+			_cmd_sub(_mavlink->add_orb_subscription(ORB_ID(vehicle_command))),
+			_cmd_time(0),
+			// GPOS inits
+			_pos_sub(_mavlink->add_orb_subscription(ORB_ID(vehicle_global_position))),
+			_pos_time(0),
+			_home_sub(_mavlink->add_orb_subscription(ORB_ID(home_position))),
+			_home_time(0),
+			_gps_sub(_mavlink->add_orb_subscription(ORB_ID(vehicle_gps_position))),
+			_gps_time(0),
+			// Trajectory inits
+			trajectory_sub(mavlink->add_orb_subscription(ORB_ID(trajectory))),
+			trajectory_time(0)
+	{}
+	void send(const hrt_abstime t) {
+		mavlink_hrt_gpos_traj_command_t msg;
+		msg.fresh_messages = 0; // by default no fields were updated
+
+		struct vehicle_status_s status;
+		struct position_setpoint_triplet_s pos_sp_triplet;
+		struct vehicle_global_position_s pos;
+		struct home_position_s home;
+		struct vehicle_gps_position_s gps;
+		trajectory_s report;
+		struct vehicle_command_s cmd;
+
+		/* always send the heartbeat, independent of the update status of the topics */
+		msg.fresh_messages |= MAVLINK_COMBO_MESSAGE_HEARTBEAT;
+		if (!_status_sub->update(&status)) {
+			/* if topic update failed fill it with defaults */
+			memset(&status, 0, sizeof(status));
+		}
+
+		if (!_pos_sp_triplet_sub->update(&pos_sp_triplet)) {
+			/* if topic update failed fill it with defaults */
+			memset(&pos_sp_triplet, 0, sizeof(pos_sp_triplet));
+		}
+
+		msg.HRT_base_mode = 0;
+		msg.HRT_custom_mode = 0;
+		get_mavlink_mode_state(&status, &pos_sp_triplet, &msg.HRT_system_status, &msg.HRT_base_mode, &msg.HRT_custom_mode);
+		msg.HRT_type = mavlink_system.type;
+		msg.HRT_autopilot = MAV_AUTOPILOT_PX4;
+		msg.HRT_mavlink_version = 3;
+
+		bool updated = _pos_sub->update(&_pos_time, &pos);
+		updated |= _home_sub->update(&_home_time, &home);
+		updated |= _gps_sub->update(&_gps_time, &gps);
+
+		if (_pos_time != 0 && updated) {
+			msg.fresh_messages |= MAVLINK_COMBO_MESSAGE_GPOS;
+
+			msg.GPOS_time_boot_ms = pos.timestamp / 1000;
+			msg.GPOS_lat = pos.lat * 1e7;
+			msg.GPOS_lon = pos.lon * 1e7;
+			msg.GPOS_alt = pos.alt * 1000.0f;
+			msg.GPOS_relative_alt = (pos.alt - home.alt) * 1000.0f;
+			msg.GPOS_vx = pos.vel_n * 100.0f;
+			msg.GPOS_vy = pos.vel_e * 100.0f;
+			msg.GPOS_vz = pos.vel_d * 100.0f;
+			msg.GPOS_eph = cm_uint16_from_m_float(gps.eph);
+			msg.GPOS_epv = cm_uint16_from_m_float(gps.epv);
+			msg.GPOS_hdg = _wrap_2pi(pos.yaw) * M_RAD_TO_DEG_F * 100.0f;
+		}
+
+		if (trajectory_sub->update(&trajectory_time, &report)) {
+			msg.fresh_messages |= MAVLINK_COMBO_MESSAGE_TRAJECTORY;
+
+			msg.TRAJ_time_boot_ms = report.timestamp / 1000; // uint32_t Timestamp (milliseconds since system boot)
+			msg.TRAJ_lat = report.lat * 1e7; // int32_t Latitude, expressed as * 1E7
+			msg.TRAJ_lon = report.lon * 1e7; // int32_t Longitude, expressed as * 1E7
+			// TODO! Check the altitude. Is it WGS84 or AMSL?!
+			msg.TRAJ_alt = report.alt * 1000.0f; // int32_t Altitude in meters, expressed as * 1000 (millimeters)
+			msg.TRAJ_relative_alt = report.relative_alt * 1000.0f; // int32_t Altitude above ground in meters, expressed as * 1000 (millimeters)
+			msg.TRAJ_vx = report.vel_n * 100.0f; // int16_t Ground X Speed (Latitude), expressed as m/s * 100
+			msg.TRAJ_vy = report.vel_e * 100.0f; // int16_t Ground Y Speed (Longitude), expressed as m/s * 100
+			msg.TRAJ_vz = report.vel_d * 100.0f; // int16_t Ground Z Speed (Altitude), expressed as m/s * 100
+			msg.TRAJ_hdg = report.heading * M_RAD_TO_DEG_F * 100.0f; // uint16_t Compass heading in degrees * 100, 0.0..359.99 degrees. If unknown, set to: UINT16_MAX
+			msg.TRAJ_point_type = report.point_type; // uint8_t Indicates type of the trajectory reference point. Currently 0 is for "still point" and 1 is for "valid point".
+		}
+
+		if (_cmd_sub->update(&_cmd_time, &cmd)) {
+			/* only send commands for other systems/components */
+			if (cmd.target_system != mavlink_system.sysid || cmd.target_component != mavlink_system.compid) {
+				msg.fresh_messages |= MAVLINK_COMBO_MESSAGE_COMMAND;
+
+				msg.CMD_target_system = cmd.target_system;
+				msg.CMD_target_component = cmd.target_component;
+				msg.CMD_command = cmd.command;
+				msg.CMD_confirmation = cmd.confirmation;
+				msg.CMD_param1 = cmd.param1;
+				msg.CMD_param2 = cmd.param2;
+				msg.CMD_param3 = cmd.param3;
+				msg.CMD_param4 = cmd.param4;
+				msg.CMD_param5 = cmd.param5;
+				msg.CMD_param6 = cmd.param6;
+				msg.CMD_param7 = cmd.param7;
+			}
+		}
+
+		if (msg.fresh_messages != 0) {
+			_mavlink->send_message(MAVLINK_MSG_ID_HRT_GPOS_TRAJ_COMMAND, &msg);
+		}
+	}
+};
+
 
 StreamListItem * const streams_list[] = {
 	new StreamListItem(&MavlinkStreamHeartbeat::new_instance, &MavlinkStreamHeartbeat::get_name_static),
@@ -2205,6 +2358,7 @@ StreamListItem * const streams_list[] = {
 	new StreamListItem(&MavlinkStreamCameraCapture::new_instance, &MavlinkStreamCameraCapture::get_name_static),
 	new StreamListItem(&MavlinkStreamDistanceSensor::new_instance, &MavlinkStreamDistanceSensor::get_name_static),
 	new StreamListItem(&MavlinkStreamTrajectory::new_instance, &MavlinkStreamTrajectory::get_name_static),
+	new StreamListItem(&MavlinkStreamHRT_GPOS_TRAJ_COMMAND::new_instance, &MavlinkStreamHRT_GPOS_TRAJ_COMMAND::get_name_static),
 };
 
 unsigned const streams_list_len = sizeof streams_list / sizeof *streams_list;

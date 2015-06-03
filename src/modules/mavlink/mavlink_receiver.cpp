@@ -213,6 +213,8 @@ MavlinkReceiver::handle_message(mavlink_message_t *msg)
 	case MAVLINK_MSG_ID_GPS_RAW_INT:
 		handle_message_gps_raw_int(msg);
 		break;
+	case MAVLINK_MSG_ID_HRT_GPOS_TRAJ_COMMAND:
+		handle_combo_message(msg);
 	default:
 		break;
 	}
@@ -272,6 +274,12 @@ MavlinkReceiver::handle_message_command_long(mavlink_message_t *msg)
 	mavlink_command_long_t cmd_mavlink;
 	mavlink_msg_command_long_decode(msg, &cmd_mavlink);
 
+	internal_command_long_handle(cmd_mavlink, msg);
+}
+
+// Notice that msg might not be just command_long message, so use only as a general mavlink message!
+void
+MavlinkReceiver::internal_command_long_handle(const mavlink_command_long_t &cmd_mavlink, mavlink_message_t *msg) {
 	if (cmd_mavlink.target_system == mavlink_system.sysid && ((cmd_mavlink.target_component == mavlink_system.compid)
 			|| (cmd_mavlink.target_component == MAV_COMP_ID_ALL))) {
 		//check for MAVLINK terminate command
@@ -895,6 +903,12 @@ MavlinkReceiver::handle_message_global_position_int(mavlink_message_t *msg)
 	mavlink_global_position_int_t pos;
 	mavlink_msg_global_position_int_decode(msg, &pos);
 
+	internal_global_position_int_handle(pos, msg);
+}
+
+// Notice that msg might be not just global_position_int message, so use only as general mavlink message
+void
+MavlinkReceiver::internal_global_position_int_handle(const mavlink_global_position_int_t &pos, mavlink_message_t *msg) {
 	struct target_global_position_s target_pos;
 	memset(&target_pos, 0, sizeof(target_pos));
 
@@ -964,54 +978,57 @@ MavlinkReceiver::handle_message_heartbeat(mavlink_message_t *msg)
         mavlink_heartbeat_t hb;
         mavlink_msg_heartbeat_decode(msg, &hb);
 
-        switch (hb.type){
-            case MAV_TYPE_GCS:
-                /* telemetry status supported only on first TELEMETRY_STATUS_ORB_ID_NUM mavlink channels */
-                if (_mavlink->get_channel() < TELEMETRY_STATUS_ORB_ID_NUM) {
-                        struct telemetry_status_s &tstatus = _mavlink->get_rx_status();
-                        /* set heartbeat time and topic time and publish -
-                         * the telem status also gets updated on telemetry events
-                         */
-                        tstatus.timestamp = hrt_absolute_time();
-                        tstatus.heartbeat_time = tstatus.timestamp;
-                        if (_telemetry_status_pub < 0) {
-                            _telemetry_status_pub = orb_advertise(telemetry_status_orb_id[_mavlink->get_channel()], &tstatus);
-                        } else {
-                            orb_publish(telemetry_status_orb_id[_mavlink->get_channel()], _telemetry_status_pub, &tstatus);
-                        }
-                    }
-
-
-                break;
-
-            case MAV_TYPE_QUADROTOR:
-
-                if(msg->sysid == 1) { //SIMIS TODO get sysid from linked airdog
-                    mavlink_heartbeat_t heartbeat;
-                    mavlink_msg_heartbeat_decode(msg, &heartbeat);
-
-                    union px4_custom_mode custom_mode;
-                    custom_mode.data = heartbeat.custom_mode;
-
-                    _airdog_status.main_mode = custom_mode.main_mode;
-                    _airdog_status.sub_mode = custom_mode.sub_mode;
-                    _airdog_status.state_main = custom_mode.state_main;
-                    _airdog_status.state_aird = custom_mode.state_aird;
-                    _airdog_status.base_mode = heartbeat.base_mode;
-                    _airdog_status.system_status = heartbeat.system_status;
-                    _airdog_status.timestamp = hrt_absolute_time();
-
-                    if (_airdog_status_pub < 0) {
-                        _airdog_status_pub = orb_advertise(ORB_ID(airdog_status), &_airdog_status);
-
-                    } else {
-                        orb_publish(ORB_ID(airdog_status), _airdog_status_pub, &_airdog_status);
-                    }
-                }
-
-            break;
-        }
+        internal_heartbeat_handle(hb, msg);
     }
+}
+
+// Notice that msg might not be just heartbeat message, so use only as a general mavlink message!
+void
+MavlinkReceiver::internal_heartbeat_handle(const mavlink_heartbeat_t &hb, mavlink_message_t *msg) {
+	switch (hb.type){
+		case MAV_TYPE_GCS:
+			/* telemetry status supported only on first TELEMETRY_STATUS_ORB_ID_NUM mavlink channels */
+			if (_mavlink->get_channel() < TELEMETRY_STATUS_ORB_ID_NUM) {
+					struct telemetry_status_s &tstatus = _mavlink->get_rx_status();
+					/* set heartbeat time and topic time and publish -
+					 * the telem status also gets updated on telemetry events
+					 */
+					tstatus.timestamp = hrt_absolute_time();
+					tstatus.heartbeat_time = tstatus.timestamp;
+					if (_telemetry_status_pub < 0) {
+						_telemetry_status_pub = orb_advertise(telemetry_status_orb_id[_mavlink->get_channel()], &tstatus);
+					} else {
+						orb_publish(telemetry_status_orb_id[_mavlink->get_channel()], _telemetry_status_pub, &tstatus);
+					}
+				}
+
+
+			break;
+
+		case MAV_TYPE_QUADROTOR:
+
+			if(msg->sysid == 1) { //SIMIS TODO get sysid from linked airdog
+				union px4_custom_mode custom_mode;
+				custom_mode.data = hb.custom_mode;
+
+				_airdog_status.main_mode = custom_mode.main_mode;
+				_airdog_status.sub_mode = custom_mode.sub_mode;
+				_airdog_status.state_main = custom_mode.state_main;
+				_airdog_status.state_aird = custom_mode.state_aird;
+				_airdog_status.base_mode = hb.base_mode;
+				_airdog_status.system_status = hb.system_status;
+				_airdog_status.timestamp = hrt_absolute_time();
+
+				if (_airdog_status_pub < 0) {
+					_airdog_status_pub = orb_advertise(ORB_ID(airdog_status), &_airdog_status);
+
+				} else {
+					orb_publish(ORB_ID(airdog_status), _airdog_status_pub, &_airdog_status);
+				}
+			}
+
+		break;
+	}
 }
 
 void
@@ -1065,6 +1082,12 @@ MavlinkReceiver::handle_message_trajectory(mavlink_message_t *msg)
 	mavlink_trajectory_t msg_traj;
 	mavlink_msg_trajectory_decode(msg, &msg_traj);
 
+	internal_trajectory_handle(msg_traj, msg);
+}
+
+// Notice that msg might not be just trajectory message, so use only as a general mavlink message!
+void
+MavlinkReceiver::internal_trajectory_handle(const mavlink_trajectory_t &msg_traj, mavlink_message_t *msg) {
 	struct external_trajectory_s ext_traj;
 
 	ext_traj.timestamp = ((uint64_t) msg_traj.time_boot_ms) * 1000;
@@ -1085,6 +1108,83 @@ MavlinkReceiver::handle_message_trajectory(mavlink_message_t *msg)
 
 	} else {
 		orb_publish(ORB_ID(external_trajectory), _external_trajectory_pub, &ext_traj);
+	}
+}
+
+void
+MavlinkReceiver::handle_combo_message(mavlink_message_t *msg)
+{
+	mavlink_hrt_gpos_traj_command_t msg_combo;
+	mavlink_msg_hrt_gpos_traj_command_decode(msg, &msg_combo);
+
+	if (msg_combo.fresh_messages & MAVLINK_COMBO_MESSAGE_HEARTBEAT) {
+		mavlink_heartbeat_t msg_hrt = {
+			msg_combo.HRT_custom_mode,
+			msg_combo.HRT_type,
+			msg_combo.HRT_autopilot,
+			msg_combo.HRT_base_mode,
+			msg_combo.HRT_system_status,
+			msg_combo.HRT_mavlink_version
+		};
+//		msg_hrt.autopilot = msg_combo.HRT_autopilot;
+//		msg_hrt.base_mode = msg_combo.HRT_base_mode;
+//		msg_hrt.custom_mode = msg_combo.HRT_custom_mode;
+//		msg_hrt.mavlink_version = msg_combo.HRT_mavlink_version;
+//		msg_hrt.system_status = msg_combo.HRT_system_status;
+//		msg_hrt.type = msg_combo.HRT_type;
+
+		internal_heartbeat_handle(msg_hrt, msg);
+	}
+	if (msg_combo.fresh_messages & MAVLINK_COMBO_MESSAGE_GPOS) {
+		mavlink_global_position_int_t msg_gpos = {
+			msg_combo.GPOS_time_boot_ms,
+			msg_combo.GPOS_lat,
+			msg_combo.GPOS_lon,
+			msg_combo.GPOS_alt,
+			msg_combo.GPOS_relative_alt,
+			msg_combo.GPOS_vx,
+			msg_combo.GPOS_vy,
+			msg_combo.GPOS_vz,
+			msg_combo.GPOS_eph,
+			msg_combo.GPOS_epv,
+			msg_combo.GPOS_hdg
+		};
+
+		internal_global_position_int_handle(msg_gpos, msg);
+	}
+	// Process command message after gpos and heartbeat to renew target's status before processing a command
+	if (msg_combo.fresh_messages & MAVLINK_COMBO_MESSAGE_COMMAND) {
+		mavlink_command_long_t msg_command = {
+			msg_combo.CMD_param1,
+			msg_combo.CMD_param2,
+			msg_combo.CMD_param3,
+			msg_combo.CMD_param4,
+			msg_combo.CMD_param5,
+			msg_combo.CMD_param6,
+			msg_combo.CMD_param7,
+			msg_combo.CMD_command,
+			msg_combo.CMD_target_system,
+			msg_combo.CMD_target_component,
+			msg_combo.CMD_confirmation
+		};
+
+		internal_command_long_handle(msg_command, msg);
+	}
+	if (msg_combo.fresh_messages & MAVLINK_COMBO_MESSAGE_TRAJECTORY) {
+		mavlink_trajectory_t msg_traj = {
+			msg_combo.TRAJ_time_boot_ms,
+			msg_combo.TRAJ_lat,
+			msg_combo.TRAJ_lon,
+			msg_combo.TRAJ_alt,
+			msg_combo.TRAJ_relative_alt,
+			msg_combo.TRAJ_vx,
+			msg_combo.TRAJ_vy,
+			msg_combo.TRAJ_vz,
+			msg_combo.TRAJ_hdg,
+			msg_combo.TRAJ_point_type
+		};
+
+		internal_trajectory_handle(msg_traj, msg);
 	}
 }
 

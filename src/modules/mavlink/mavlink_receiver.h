@@ -115,6 +115,7 @@ private:
 
 	void handle_message(mavlink_message_t *msg);
 	void handle_message_command_long(mavlink_message_t *msg);
+	void internal_command_long_handle(const mavlink_command_long_t &cmd_mavlink, mavlink_message_t *msg);
 	void handle_message_command_int(mavlink_message_t *msg);
 	void handle_message_optical_flow(mavlink_message_t *msg);
 	void handle_message_hil_optical_flow(mavlink_message_t *msg);
@@ -127,7 +128,9 @@ private:
 	void handle_message_radio_status(mavlink_message_t *msg);
 	void handle_message_manual_control(mavlink_message_t *msg);
 	void handle_message_global_position_int(mavlink_message_t *msg);
+	void internal_global_position_int_handle(const mavlink_global_position_int_t &pos, mavlink_message_t *msg);
 	void handle_message_heartbeat(mavlink_message_t *msg);
+	void internal_heartbeat_handle(const mavlink_heartbeat_t &hb, mavlink_message_t *msg);
 	void handle_message_request_data_stream(mavlink_message_t *msg);
 	void handle_message_hil_sensor(mavlink_message_t *msg);
 	void handle_message_hil_gps(mavlink_message_t *msg);
@@ -135,7 +138,10 @@ private:
 	void handle_message_drone_heartbeat(mavlink_message_t *msg);
 	void handle_message_drone_status(mavlink_message_t *msg);
 	void handle_message_trajectory(mavlink_message_t *msg);
+	void internal_trajectory_handle(const mavlink_trajectory_t &msg_traj, mavlink_message_t *msg);
+	void handle_combo_message(mavlink_message_t *msg);
 	void handle_message_gps_raw_int(mavlink_message_t *msg);
+
 
 
 	void *receive_thread(void *arg);
