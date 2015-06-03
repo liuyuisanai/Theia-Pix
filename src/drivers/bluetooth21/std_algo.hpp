@@ -59,6 +59,19 @@ fill_n(OutputIt first, Size count, const T& value)
 	return first;
 }
 
+template<class OutputIt, class Size, class T>
+OutputIt
+iota_n(OutputIt first, Size count, T value=0)
+{
+	for (Size i = 0; i < count; ++i)
+	{
+		*first = value;
+		++first;
+		++value;
+	}
+	return first;
+}
+
 template<class ForwardIt, class Size, class T>
 std::pair<ForwardIt, Size>
 find_n2(ForwardIt first, Size count, const T& value)
