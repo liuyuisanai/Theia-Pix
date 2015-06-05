@@ -172,6 +172,38 @@ CFLAGS		+= -fvisibility=$(DEFAULT_VISIBILITY) -include $(PX4_INCLUDE_DIR)visibil
 CXXFLAGS	+= -fvisibility=$(DEFAULT_VISIBILITY) -include $(PX4_INCLUDE_DIR)visibility.h
 
 ################################################################################
+#
+# Add debug output if module is present on DOG_DEBUG list.
+# *If* the module uses DOG_DEBUG for debug output.
+#
+# Usage:
+#   make <board> DOG_DEBUG='module1 module2'
+#
+# It requires clean built when the list is changed.
+# (While these modules use DOG_DEBUG :)
+#
+# Example:
+#   make AirLeash DOG_DEBUG='x y z'
+#
+# It works for all of
+#    modules/x, modules/y, modules/z,
+#    drivers/x, drivers/y, drivers/z,
+#    drivers/boards/x, drivers/boards/y, drivers/boards/z, ...
+# and so on.
+#
+################################################################################
+
+ifneq ($(findstring $(notdir $(MODULE_WORK_DIR)),$(DOG_DEBUG)),)
+$(info %  DBG_MODULE      = $(DBG_MODULE))
+CFLAGS += -DENABLE_DOG_DEBUG
+CXXFLAGS += -DENABLE_DOG_DEBUG
+endif
+
+CFLAGS += -include $(PX4_MODULE_SRC)include/dog_debug.hpp
+CXXFLAGS += -include $(PX4_MODULE_SRC)include/dog_debug.hpp
+
+
+################################################################################
 # Build rules
 ################################################################################
 
