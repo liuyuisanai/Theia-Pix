@@ -40,6 +40,9 @@ get_event_id(const PacketPOD & packet)
 inline bool
 is_command(event_id_t x) { return 0 < x and x < 0x80; }
 
+inline bool
+is_event(event_id_t x) { return  0x81 <= x /*and x <= 0xFF/ event_id_t can be up to 0xFF so no need to use this check (actually compiler wont let me) mf */; }
+ 
 inline channel_mask_t
 get_xt_flow(const RESPONSE_EVENT_UNION & buf)
 {

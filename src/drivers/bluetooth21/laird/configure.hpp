@@ -100,6 +100,7 @@ configure_before_reboot(ServiceIO & io)
 		{ 14, 1 },     // Auto-accept connections
 		{ 34, 1 },     // Number of incoming connections
 		{ 35, 1 },     // Number of outgoing connections
+        { 47, 1 },      // Link key is sent during pairing(EVT_LINK_KEY_EX is sent insteady of EVT_LINK_KEY): Yes 
 		{ 80, reg80 }, // UART latency time in microseconds.
 		{ 81, 50 },    // MP mode: Memory % for UART RX processing.
 		{ 82, 60 },    // UART buffer fill level to *DE*assert RTS.

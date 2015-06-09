@@ -238,6 +238,14 @@ wait_process_event(Device & dev, State & state)
 	}
 }
 
+enum ANSWER_PACKET_TYPE {
+    NO_ANSWER = 0,
+    ANSWER_EVENT = 1,
+    ANSWER_COMMAND = 2,
+    ANSWER_RESPONSE = 3
+};
+
+
 template <typename Device, typename State>
 struct ServiceBlockingIO
 {
@@ -305,6 +313,62 @@ template <typename Device, typename State>
 void
 wait_process_event(ServiceBlockingIO< Device, State > & self)
 { wait_process_event(self.dev, self.state); }
+
+
+template <typename Device, typename State>
+uint8_t
+wait_any_answer(
+	ServiceBlockingIO< Device, State > & self,
+	event_id_t cmd,
+	void * buf, 
+    size_t bufsize,
+	Time::duration_t wait_for
+) {
+	// TODO add timeout parameter
+	auto time_limit = Time::now() + wait_for;
+	ResponceEventBuffer packet;
+
+    while (true){
+
+        ssize_t r = wait_service_packet(self.dev, packet);
+        if (r < 0)
+        {
+            if (errno != EAGAIN)
+            {
+                dbg_perror("wait_command_response");
+                return NO_ANSWER;
+            }
+        }
+        else
+        {
+
+            process_service_packet(self.state, packet);
+
+            size_t read_size = r;
+
+            if (read_size == bufsize and cmd == get_event_id(packet)) {
+                copy_n(cbegin(packet), bufsize, (uint8_t*)buf);
+                return ANSWER_RESPONSE;
+            }
+            else if (is_command(get_event_id(packet))){
+
+                return ANSWER_COMMAND;
+            } else if (is_event(get_event_id(packet))){
+
+                return ANSWER_EVENT;
+            }
+
+        }
+
+        if (time_limit < Time::now())
+        {
+            dbg("wait_any_response timeout.\n");
+            return NO_ANSWER;
+        }
+    }
+
+    clear(packet);
+}
 
 }
 // end of namespace Laird

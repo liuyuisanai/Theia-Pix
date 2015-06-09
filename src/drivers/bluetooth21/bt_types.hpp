@@ -11,6 +11,9 @@ using Address6 = PODArray<uint8_t, 6>;
 #define Address6_FMT "%02x:%02x:%02x:%02x:%02x:%02x"
 #define Address6_FMT_ITEMS(x) (x)[0], (x)[1], (x)[2], (x)[3], (x)[4], (x)[5]
 
+#define LinkKey16_FMT "%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x"
+#define LinkKey16_FMT_ITEMS(x) (x)[0], (x)[1], (x)[2], (x)[3], (x)[4], (x)[5], (x)[6], (x)[7], (x)[8], (x)[9], (x)[10], (x)[11],(x)[12], (x)[13], (x)[14], (x)[15]
+
 using LinkKey16 = PODArray<uint8_t, 16>;
 
 using channel_index_t = uint8_t; // 0..7

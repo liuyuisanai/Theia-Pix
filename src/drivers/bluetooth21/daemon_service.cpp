@@ -57,6 +57,9 @@ connect_address;
 static bool
 pairing_required = false;
 
+static bool
+paired = false;
+
 static pthread_t
 thread;
 
@@ -204,6 +207,20 @@ daemon()
 		should_run = should_run and closest_is_obvious(svc.inq);
 		if (should_run)
 			connect_address = closest_address(svc.inq);
+        
+        //
+        // paired = pair(service_io, connect_address);
+        //
+        // if (paired) {
+        //
+        //     bool ok = add_trusted_key(service_io, connect_address, svc.pairing.link_key);
+        //     if (!ok) should_run = false;
+        //
+        // } else {
+        //
+        //     should_run = false;
+        //
+        // }
 	}
 
 	if (should_run)

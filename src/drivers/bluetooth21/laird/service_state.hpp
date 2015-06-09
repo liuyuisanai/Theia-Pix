@@ -8,6 +8,7 @@
 
 #include "connections.hpp"
 #include "inquiry.hpp"
+#include "pairing.hpp"
 #include "service_defs.hpp"
 #include "sync.hpp"
 
@@ -33,6 +34,7 @@ struct ServiceState
 	FlowState flow;
 	InquiryState inq;
 	SyncState sync;
+    PairingState pairing;
 };
 
 bool
@@ -49,6 +51,7 @@ handle_service_packet(ServiceState & svc, const RESPONSE_EVENT_UNION & packet)
 	processed =   handle(svc.sync, packet)   or processed;
 	processed =   handle(svc.conn, packet)   or processed;
 	processed =   handle(svc.inq, packet)    or processed;
+    processed =   handle(svc.pairing, packet) or processed;
 	return processed;
 }
 
