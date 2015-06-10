@@ -17,7 +17,7 @@ frame_size< LairdProtocol >() { return 2; }
 
 template <>
 constexpr size_t
-packet_capacity< LairdProtocol >() { return 253; }
+packet_capacity< LairdProtocol >() { return 112; }
 
 template <>
 struct DataFrame< LairdProtocol >
