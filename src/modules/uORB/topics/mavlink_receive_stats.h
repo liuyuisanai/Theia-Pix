@@ -14,6 +14,7 @@ struct mavlink_receive_stats_s {
 	unsigned heartbeat_count;
 	unsigned gpos_count;
 	unsigned trajectory_count;
+	unsigned combo_count;
 };
 
 /**

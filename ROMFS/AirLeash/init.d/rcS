@@ -159,6 +159,16 @@ else
 		usleep 1000
 		mavlink stream -r 10 -d $MAVLINK_TTY -s GPS_RAW_INT
 	fi
+
+	if param compare AIRD_LEASH_MODE 4
+	then
+		#Combo message leash. Make sure MAVLINK_MINIMALISTIC is 2.
+		param set MAVLINK_MINIMALISTIC 2
+		trajectory_calculator start
+		mavlink start -d $MAVLINK_TTY -r 3000 -m custom
+		usleep 1000
+		mavlink stream -r 20 -d $MAVLINK_TTY -s HRT_GPOS_TRAJ_COMMAND
+	fi
 fi
 
 #

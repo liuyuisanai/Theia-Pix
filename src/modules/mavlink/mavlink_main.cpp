@@ -139,6 +139,8 @@ Mavlink::Mavlink() :
 	_logbuffer {},
 	_total_counter(0),
 	_receive_thread {},
+	_mavlink_log_enabled(true),
+	_silent_mode(false),
 	_verbose(false),
 	_forwarding_on(false),
 	_passing_on(false),
@@ -171,6 +173,8 @@ Mavlink::Mavlink() :
 	_param_component_id(0),
 	_param_system_type(0),
 	_param_use_hil_gps(0),
+	_param_mavlink_log_enabled(0),
+	_param_minimalistic(0),
 
 	/* performance counters */
 	_loop_perf(perf_alloc(PC_ELAPSED, "mavlink_el")),
@@ -429,7 +433,7 @@ Mavlink::mavlink_dev_ioctl(struct file *filep, int cmd, unsigned long arg)
 
 			Mavlink *inst;
 			LL_FOREACH(_mavlink_instances, inst) {
-				if (!inst->_task_should_exit) {
+				if (!inst->_task_should_exit && inst->_mavlink_log_enabled) {
 					mavlink_logbuffer_write(&inst->_logbuffer, &msg);
 					inst->_total_counter++;
 				}
@@ -451,6 +455,8 @@ void Mavlink::mavlink_update_system(void)
 		_param_system_type = param_find("MAV_TYPE");
 		_param_use_hil_gps = param_find("MAV_USEHILGPS");
 		_param_forward_externalsp = param_find("MAV_FWDEXTSP");
+		_param_mavlink_log_enabled = param_find("MAV_ENABLE_LOG");
+		_param_minimalistic = param_find("MAV_MINIMALISTIC");
 	}
 
 	/* update system and component id */
@@ -502,6 +508,14 @@ void Mavlink::mavlink_update_system(void)
 	param_get(_param_forward_externalsp, &forward_externalsp);
 
 	_forward_externalsp = (bool)forward_externalsp;
+
+	int32_t mavlink_log_enabled;
+	param_get(_param_mavlink_log_enabled, &mavlink_log_enabled);
+	_mavlink_log_enabled = (bool)mavlink_log_enabled;
+
+	int32_t minimalistic;
+	param_get(_param_minimalistic, &minimalistic);
+	_silent_mode = (minimalistic == 2);
 }
 
 int Mavlink::get_system_id()
@@ -856,11 +870,13 @@ Mavlink::send_statustext_emergency(const char *string)
 void
 Mavlink::send_statustext(unsigned char severity, const char *string)
 {
-	struct mavlink_logmessage logmsg;
-	strncpy(logmsg.text, string, sizeof(logmsg.text));
-	logmsg.severity = severity;
+	if (_mavlink_log_enabled) {
+		struct mavlink_logmessage logmsg;
+		strncpy(logmsg.text, string, sizeof(logmsg.text));
+		logmsg.severity = severity;
 
-	mavlink_logbuffer_write(&_logbuffer, &logmsg);
+		mavlink_logbuffer_write(&_logbuffer, &logmsg);
+	}
 }
 
 MavlinkOrbSubscription *Mavlink::add_orb_subscription(const orb_id_t topic)
@@ -1351,28 +1367,30 @@ Mavlink::task_main(int argc, char *argv[])
 
 	/* add default streams depending on mode */
 
-	/* HEARTBEAT is constant rate stream, rate never adjusted */
-	configure_stream("HEARTBEAT", 1.0f);
+	if (!_silent_mode) {
+		/* HEARTBEAT is constant rate stream, rate never adjusted */
+		configure_stream("HEARTBEAT", 1.0f);
 
-	// TODO! Consider if any streams except Heartbeat are required on Target
-	/* STATUSTEXT stream is like normal stream but gets messages from logbuffer instead of uORB */
-	configure_stream("STATUSTEXT", 20.0f);
+		// TODO! Consider if any streams except Heartbeat are required on Target
+		/* STATUSTEXT stream is like normal stream but gets messages from logbuffer instead of uORB */
+		configure_stream("STATUSTEXT", 20.0f);
 
-	/* COMMAND_LONG stream: use high rate to avoid commands skipping */
-	configure_stream("COMMAND_LONG", 100.0f);
+		/* COMMAND_LONG stream: use high rate to avoid commands skipping */
+		configure_stream("COMMAND_LONG", 100.0f);
 
-	/* PARAM_VALUE stream */
-	_parameters_manager = (MavlinkParametersManager *) MavlinkParametersManager::new_instance(this);
-	_parameters_manager->set_interval(interval_from_rate(30.0f));
-	LL_APPEND(_streams, _parameters_manager);
+		/* PARAM_VALUE stream */
+		_parameters_manager = (MavlinkParametersManager *) MavlinkParametersManager::new_instance(this);
+		_parameters_manager->set_interval(interval_from_rate(30.0f));
+		LL_APPEND(_streams, _parameters_manager);
 
-	/* MISSION_STREAM stream, actually sends all MISSION_XXX messages at some rate depending on
-	 * remote requests rate. Rate specified here controls how much bandwidth we will reserve for
-	 * mission messages. */
-	_mission_manager = (MavlinkMissionManager *) MavlinkMissionManager::new_instance(this);
-	_mission_manager->set_interval(interval_from_rate(10.0f));
-	_mission_manager->set_verbose(_verbose);
-	LL_APPEND(_streams, _mission_manager);
+		/* MISSION_STREAM stream, actually sends all MISSION_XXX messages at some rate depending on
+		 * remote requests rate. Rate specified here controls how much bandwidth we will reserve for
+		 * mission messages. */
+		_mission_manager = (MavlinkMissionManager *) MavlinkMissionManager::new_instance(this);
+		_mission_manager->set_interval(interval_from_rate(10.0f));
+		_mission_manager->set_verbose(_verbose);
+		LL_APPEND(_streams, _mission_manager);
+	}
 
 	switch (_mode) {
 	// TODO! Consider limiting copter's topics
@@ -1631,7 +1649,7 @@ Mavlink::start(int argc, char *argv[])
 	task_spawn_cmd(buf,
 		       SCHED_DEFAULT,
 		       SCHED_PRIORITY_DEFAULT,
-		       2700,
+		       4700,
 		       (main_t)&Mavlink::start_helper,
 		       (const char **)argv);
 

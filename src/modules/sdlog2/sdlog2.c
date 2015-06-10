@@ -2098,6 +2098,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 			log_msg.body.log_MVST.gpos_count = buf.mav_stats.gpos_count;
 			log_msg.body.log_MVST.heartbeat_count = buf.mav_stats.heartbeat_count;
 			log_msg.body.log_MVST.trajectory_count = buf.mav_stats.trajectory_count;
+			log_msg.body.log_MVST.combo_count = buf.mav_stats.combo_count;
 
 			LOGBUFFER_WRITE_AND_COUNT(MVST);
 		}

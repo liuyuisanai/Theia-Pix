@@ -80,9 +80,18 @@ PARAM_DEFINE_INT32(MAV_FWDEXTSP, 1);
  * Indicates whether to use minimalistic stream configuration
  * If set to rcS will start mavlink with very few streams allowing
  * more bandwidth for target messages
+ * If set to 2, then default streams (like heartbeat and command)
+ * will be disabled too allowing usage of combo-message
  * @group MAVLink
  */
 PARAM_DEFINE_INT32(MAV_MINIMALISTIC, 0);
+
+/**
+ * Indicates whether mavlink_log_info (warning and critical) functions are enabled
+ * On 0 - disabled, otherwise - enabled
+ * @group MAVLink
+ */
+PARAM_DEFINE_INT32(MAV_ENABLE_LOG, 1);
 
 mavlink_system_t mavlink_system = {
 	100,

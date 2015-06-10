@@ -1700,6 +1700,7 @@ MavlinkReceiver::receive_thread(void *arg)
 				/* handle packet with parent object */
 				_mavlink->handle_message(&msg);
 
+				//fprintf(stderr, "%d: ", hrt_absolute_time());
 				switch (msg.msgid) {
 				case MAVLINK_MSG_ID_HEARTBEAT:
 					++stats.heartbeat_count;
@@ -1709,6 +1710,10 @@ MavlinkReceiver::receive_thread(void *arg)
 					break;
 				case MAVLINK_MSG_ID_TRAJECTORY:
 					++stats.trajectory_count;
+					break;
+				case MAVLINK_MSG_ID_HRT_GPOS_TRAJ_COMMAND:
+					++stats.combo_count;
+					//fprintf(stderr, "Mavlink got combo message!\n");
 					break;
 				default:
 					break;

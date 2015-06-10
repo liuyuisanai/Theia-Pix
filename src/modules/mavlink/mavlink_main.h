@@ -310,6 +310,8 @@ private:
 
 	pthread_t		_receive_thread;
 
+	bool			_mavlink_log_enabled;
+	bool			_silent_mode;
 	bool			_verbose;
 	bool			_forwarding_on;
 	bool			_passing_on;
@@ -364,6 +366,8 @@ private:
 	param_t			_param_system_type;
 	param_t			_param_use_hil_gps;
 	param_t			_param_forward_externalsp;
+	param_t			_param_mavlink_log_enabled;
+	param_t			_param_minimalistic;
 
 	perf_counter_t		_loop_perf;			/**< loop performance counter */
 	perf_counter_t		_txerr_perf;			/**< TX error counter */

@@ -342,11 +342,16 @@ then
 		then
 			set MAVLINK_MODE "-m airdog"
 		else
-			# set MAVLINK_MODE "" produces new line on substitution.
-			unset MAVLINK_MODE
+			if param compare MAV_MINIMALISTIC 2
+			then
+				set MAVLINK_MODE "-m custom"
+			else
+				# set MAVLINK_MODE "" produces new line on substitution.
+				unset MAVLINK_MODE
+			fi
 		fi
-		echo mavlink start $MAVLINK_MODE -r 1000 -d $MAVLINK_TTY
-		mavlink start $MAVLINK_MODE -r 1000 -d $MAVLINK_TTY
+		echo mavlink start $MAVLINK_MODE -r 3000 -d $MAVLINK_TTY
+		mavlink start $MAVLINK_MODE -r 3000 -d $MAVLINK_TTY
 	fi
 	echo "Mavlink start OK" >> $LOG_FILE
 

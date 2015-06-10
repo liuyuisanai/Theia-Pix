@@ -487,6 +487,7 @@ struct log_MVST_s {
 	uint32_t heartbeat_count;
 	uint32_t gpos_count;
 	uint32_t trajectory_count;
+	uint32_t combo_count;
 };
 
 /* --- Vehicle command --- */
@@ -585,7 +586,7 @@ static const struct log_format_s log_formats[] = {
 	LOG_FORMAT(LOTJ, "BQLLffffff", "Type,Time,Lat,Lon,Alt,RAlt,VelN,VelE,VelD,Head"),
 	LOG_FORMAT(GPRE, "BLLfB",		"NavState,Lat,Lon,Alt,Type"),
 	LOG_FORMAT(GNEX, "BLLfB",		"NavState,Lat,Lon,Alt,Type"),
-	LOG_FORMAT(MVST, "IIII", "TotalBytes,HrtCount,GposCount,TrajCount"),
+	LOG_FORMAT(MVST, "IIIII", "TotalBytes,HrtCount,GposCount,TrajCount,ComboCount"),
 	LOG_FORMAT(CMD, "HBBfff", "Cmd,SrcSys,SrcComp,Par1,Par2,Par3"),
 	LOG_FORMAT(TGPS, "QBffLLfffB", "Time,Fix,EPH,EPV,Lat,Lon,Alt,Vel,COG,nSat"),
 
