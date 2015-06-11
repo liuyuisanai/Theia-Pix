@@ -54,6 +54,9 @@ daemon_mode = Mode::UNDEFINED;
 static Address6
 connect_address;
 
+static Address6
+pairing_address;
+
 static bool
 pairing_required = false;
 
@@ -198,31 +201,55 @@ daemon()
 		);
 	}
 
+
 	started = true;
+
+    drop_trusted_db(service_io);
+
+    svc.pairing.pairing_active = true;
+    svc.pairing.pairing_initiator = false;
+
+    if (pairing_required)
+        svc.pairing.pairing_initiator = true;
+
 
 	if (should_run and pairing_required)
 	{
+
 		fsync(service_io.dev);
 		inquiry_loop(service_io, svc.inq);
 		should_run = should_run and closest_is_obvious(svc.inq);
 		if (should_run)
 			connect_address = closest_address(svc.inq);
         
-        //
-        // paired = pair(service_io, connect_address);
-        //
-        // if (paired) {
-        //
-        //     bool ok = add_trusted_key(service_io, connect_address, svc.pairing.link_key);
-        //     if (!ok) should_run = false;
-        //
-        // } else {
-        //
-        //     should_run = false;
-        //
-        // }
-	}
+        pairing_address = connect_address;
 
+        svc.pairing.addr = pairing_address;
+
+        paired = pair(service_io);
+
+        if (paired) {
+
+            dbg("Pairing done successfuly. ");
+            // TODO: MOVE ROLLING TRUSTED BD to PERSISTANT DB
+
+        } else {
+
+            should_run = false;
+
+        }
+	} 
+    
+    if (should_run && !pairing_required) { 
+
+        while (true){
+        // TODO: Make time limit here.
+            pair(service_io);
+        }
+
+    }
+
+    should_run = false;
 	if (should_run)
 	{
 		fsync(service_io.dev);

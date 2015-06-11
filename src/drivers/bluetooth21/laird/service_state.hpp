@@ -37,8 +37,9 @@ struct ServiceState
     PairingState pairing;
 };
 
+template <typename Device>
 bool
-handle_service_packet(ServiceState & svc, const RESPONSE_EVENT_UNION & packet)
+handle_service_packet(Device & dev, ServiceState & svc, const RESPONSE_EVENT_UNION & packet)
 {
 	handle(svc.flow, packet);
 	bool processed = false;
@@ -51,7 +52,7 @@ handle_service_packet(ServiceState & svc, const RESPONSE_EVENT_UNION & packet)
 	processed =   handle(svc.sync, packet)   or processed;
 	processed =   handle(svc.conn, packet)   or processed;
 	processed =   handle(svc.inq, packet)    or processed;
-    processed =   handle(svc.pairing, packet) or processed;
+    processed =   handle(dev, svc.pairing, packet) or processed;
 	return processed;
 }
 

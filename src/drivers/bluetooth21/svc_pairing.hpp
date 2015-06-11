@@ -14,33 +14,20 @@ namespace BT
 namespace Service
 {
 
-/* See SSP_ACTION_XXXX #defines in BmHostProtocol 
- * every PAIRING_STAGE definition from 0 to 3  
- * have it's corresponding define there according to its
- * number */
-enum PAIRING_STAGE{
-    STAGE_COMPLETE = 0,
-    STAGE_DISPLAYED,
-    STAGE_DISPLAY_YESNO,
-    STAGE_ENTER_PASSCODE,
-    STAGE_INITIATED,
-    STAGE_NONE
-};
-
 struct PairingState
 {
-    PAIRING_STAGE pairing_stage = STAGE_NONE;
 
-    Address6 addr;
-    LinkKey16 link_key;
+    bool pairing_active;
+    bool pairing_initiator;
+
+    // If pairing_initiator is true then addr contains target device address 
+	Address6 addr;
 
 };
 
 inline void
 dbg_dump(const PairingState & p){
 
-	dbg("-> Pairing State " Address6_FMT " " LinkKey16_FMT "\n",
-		Address6_FMT_ITEMS(p.addr), LinkKey16_FMT_ITEMS(p.link_key));
 
 }
 

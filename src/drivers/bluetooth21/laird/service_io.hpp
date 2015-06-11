@@ -41,9 +41,9 @@ const RESPONSE_EVENT_UNION &
 as_packet(const ResponceEventBuffer & buf)
 { return *(const RESPONSE_EVENT_UNION *)cbegin(buf); }
 
-template <typename State>
+template <typename Device, typename State>
 void
-process_service_packet(State & s, const ResponceEventBuffer & buf)
+process_service_packet(Device & dev, State & s, const ResponceEventBuffer & buf)
 {
 	uint8_t ch = get_channel_id(buf);
 	bool processed;
@@ -51,7 +51,7 @@ process_service_packet(State & s, const ResponceEventBuffer & buf)
 	if (ch == 0)
 	{
 		const auto & packet = as_packet(buf);
-		processed = handle_service_packet(s, packet);
+		processed = handle_service_packet(dev, s, packet);
 		if (not processed)
 		{
 			auto evt = get_event_id(packet);
@@ -195,7 +195,7 @@ wait_command_response(
 		else
 		{
 			size_t read_size = r;
-			process_service_packet(state, packet);
+			process_service_packet(dev, state, packet);
 			if (read_size == bufsize and cmd == get_event_id(packet))
 			{
 				copy_n(cbegin(packet), bufsize, (uint8_t*)buf);
@@ -231,19 +231,13 @@ wait_process_event(Device & dev, State & state)
 	}
 	else
 	{
-		process_service_packet(state, packet);
+		process_service_packet(dev, state, packet);
 		event_id_t event = get_event_id(packet);
 		if (is_command(event))
 			dbg("Unexpected command response 0x%02x.\n", event);
 	}
 }
 
-enum ANSWER_PACKET_TYPE {
-    NO_ANSWER = 0,
-    ANSWER_EVENT = 1,
-    ANSWER_COMMAND = 2,
-    ANSWER_RESPONSE = 3
-};
 
 
 template <typename Device, typename State>
@@ -315,6 +309,13 @@ wait_process_event(ServiceBlockingIO< Device, State > & self)
 { wait_process_event(self.dev, self.state); }
 
 
+enum ANSWER_PACKET_TYPE {
+    NO_ANSWER = 0,
+    ANSWER_EVENT = 1,
+    ANSWER_COMMAND = 2,
+    ANSWER_RESPONSE = 3
+};
+
 template <typename Device, typename State>
 uint8_t
 wait_any_answer(
@@ -328,6 +329,8 @@ wait_any_answer(
 	auto time_limit = Time::now() + wait_for;
 	ResponceEventBuffer packet;
 
+    dbg("wait_any_answer() started \n");
+
     while (true){
 
         ssize_t r = wait_service_packet(self.dev, packet);
@@ -335,14 +338,14 @@ wait_any_answer(
         {
             if (errno != EAGAIN)
             {
-                dbg_perror("wait_command_response");
+                dbg_perror("wait_any_answer() fail");
                 return NO_ANSWER;
             }
         }
         else
         {
 
-            process_service_packet(self.state, packet);
+            process_service_packet(self.dev, self.state, packet);
 
             size_t read_size = r;
 
