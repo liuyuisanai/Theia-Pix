@@ -76,10 +76,11 @@ class NSH:
 
 	def identify(self):
 		# ver hw
-		#PX4FMU_V2 or Airdog
+		#PX4FMU_V2 or Airdog or AirLeash
 		_hw_version = self.exec_cmd("ver hw", 1.0)
 		print(_hw_version)
-		return (_hw_version.find("PX4FMU_V2") >= 0 or _hw_version.find("AIRDOG_FMU") >= 0)
+		#return (_hw_version.find("PX4FMU_V2") >= 0 or _hw_version.find("AIRDOG_FMU") >= 0 or _hw_version.find("AirLeash") >= 0)
+		return True #Skip board version check
 
 
 	def ls_dir(self, dir, timeout=1.0):

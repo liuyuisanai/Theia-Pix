@@ -169,6 +169,13 @@ commander start
 leash start
 indication start
 
+if param compare SDLOG_ON_BOOT 1
+then
+	sdlog2 start -b 22 -r 200 -e
+else
+	echo "Currently sdlog on leash supports only ON_BOOT mode"
+fi
+
 if [ $EXIT_ON_END == yes ]
 then
 	echo "[init] Exit from nsh"

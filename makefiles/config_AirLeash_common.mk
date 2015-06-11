@@ -116,8 +116,7 @@ MODULES		+= modules/position_estimator_inav
 #
 # Logging
 #
-# There is no filesystem.
-#MODULES		+= modules/sdlog2
+MODULES		+= modules/sdlog2
 #MODULES		+= modules/sdlog2_lite
 
 #
