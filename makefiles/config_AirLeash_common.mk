@@ -117,7 +117,6 @@ MODULES		+= modules/position_estimator_inav
 # Logging
 #
 MODULES		+= modules/sdlog2
-#MODULES		+= modules/sdlog2_lite
 
 #
 # Unit tests
