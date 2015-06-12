@@ -41,7 +41,7 @@ bool
 sync_soft_reset(ServiceIO & io, SyncState & self)
 {
 	self.level = SyncState::Level::REQUESTED;
-	dbg("Sync: waiting restart.\n");
+	log_info("Sync: waiting restart.\n");
 	bool ok = soft_reset(io);
 	if (ok)
 	{
@@ -49,7 +49,7 @@ sync_soft_reset(ServiceIO & io, SyncState & self)
 		ok = self.level == SyncState::Level::IN_SYNC;
 	}
 	if (not ok) { self.level = SyncState::Level::LOST; }
-	dbg("Sync %s.\n", ok ? "ok" : "failed");
+	log_info("Sync %s.\n", ok ? "ok" : "failed");
 	return ok;
 }
 
@@ -59,7 +59,7 @@ handle(SyncState & self, const RESPONSE_EVENT_UNION & p)
 	switch (get_event_id(p))
 	{
 	case EVT_STATUS:
-		dbg("-> EVT_STATUS: %d disco %d conn %d sec %d.\n"
+		log_info("-> EVT_STATUS: %d disco %d conn %d sec %d.\n"
 			, p.evtStatus.status
 			, p.evtStatus.discoverable_mode
 			, p.evtStatus.connectable_mode
@@ -73,20 +73,20 @@ handle(SyncState & self, const RESPONSE_EVENT_UNION & p)
 	break;
 
 	case EVT_UNKNOWN_COMMAND:
-		dbg("-> EVT_UNKNOWN_COMMAND: command id 0x%02x.\n",
+		log_err("-> EVT_UNKNOWN_COMMAND: command id 0x%02x.\n",
 			p.evtUnknownCmd.command);
-		dbg("Sync LOST.\n");
+		log_err("Sync LOST.\n");
 		self.level = SyncState::Level::LOST;
 	break;
 
 	case EVT_INVALID_PKTSIZE:
-		dbg("-> EVT_INVALID_PKTSIZE:"
+		log_err("-> EVT_INVALID_PKTSIZE:"
 			" command id 0x%02x actual %u desired %u.\n"
 			, p.evtInvPktSize.command
 			, p.evtInvPktSize.actualSize
 			, p.evtInvPktSize.requiredSize
 		);
-		dbg("Sync LOST.\n");
+		log_err("Sync LOST.\n");
 		self.level = SyncState::Level::LOST;
 	break;
 
@@ -100,7 +100,7 @@ template <typename It, typename Size>
 bool
 handle_unknown_packet(SyncState & self, It first, Size n)
 {
-	dbg("Desync by unknown packet.\n");
+	log_err("Desync by unknown packet.\n");
 	self.level = SyncState::Level::LOST;
 	return true;
 }

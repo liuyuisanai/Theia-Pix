@@ -7,8 +7,6 @@
 #define D_ASSERT(...)
 #endif
 
-#ifdef CONFIG_DEBUG_BLUETOOTH21
-
 #include <cerrno>
 #include <cstring>
 #include <syslog.h>
@@ -25,7 +23,7 @@
 
 // dbg() uses only lower half of useconds as debug session
 // is unlikely to be several hours long.
-# define dbg(...) do {                             \
+#define log_printf(...) do {                       \
 	const int save_errno = errno;              \
 	syslog(DEBUG_BLUETOOTH21_PREFIX "%10u: ",  \
 		(unsigned)BT::Time::now());        \
@@ -34,7 +32,14 @@
 	errno = save_errno;                        \
 } while (false)
 
-#define dbg_perror(ref) dbg("%s: %i %s.\n", ref, errno, strerror(errno))
+#define log_err(...) log_printf(__VA_ARGS__)
+#define log_info(...) log_printf(__VA_ARGS__)
+
+#define dbg_perror(ref) log_printf("%s: %i %s.\n", ref, errno, strerror(errno))
+
+#ifdef CONFIG_DEBUG_BLUETOOTH21
+
+#define dbg(...) log_printf(__VA_ARGS__)
 
 #else
 
@@ -43,8 +48,10 @@ template <typename ... types>
 inline void
 dbg(const char fmt[], const types & ... args) {}
 
+#ifndef dbg_perror
 inline void
 dbg_perror(const char ref[])
 {}
+#endif
 
 #endif

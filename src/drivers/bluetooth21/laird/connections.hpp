@@ -58,7 +58,7 @@ request_connect(Device & dev, ConnectionState & conn, const Address6 & addr)
 
 		if (ok) { register_connection_request(conn, addr); }
 	}
-	dbg("-> request MAKE_CONNECTION " Address6_FMT " %s.\n"
+	log_info("-> request MAKE_CONNECTION " Address6_FMT " %s.\n"
 		, Address6_FMT_ITEMS(addr)
 		, ok ? "ok": "failed"
 	);
@@ -93,7 +93,7 @@ handle(ConnectionState & conn, const RESPONSE_EVENT_UNION & p)
 			register_requested_connection(conn, ch);
 
 			const Address6 & addr = get_address(conn, ch);
-			dbg("-> MAKE_CONNECTION:"
+			log_info("-> MAKE_CONNECTION:"
 				" Channel %u got connected connection"
 				" to " Address6_FMT ".\n"
 				, ch
@@ -103,21 +103,21 @@ handle(ConnectionState & conn, const RESPONSE_EVENT_UNION & p)
 		else
 		{
 			forget_connection_request(conn);
-			dbg("-> MAKE_CONNECTION failed with status 0x%02x.\n",
+			log_info("-> MAKE_CONNECTION failed with status 0x%02x.\n",
 				get_response_status(p));
 		}
 	break;
 
 	case EVT_DISCONNECT:
 		if (p.evtDisconnect.channelId > 7)
-			dbg("-> EVT_DISCONNECT: Invalid channel %u.\n"
+			log_info("-> EVT_DISCONNECT: Invalid channel %u.\n"
 				, p.evtDisconnect.channelId
 			);
 		else
 		{
 			channel_index_t ch = p.evtDisconnect.channelId;
 			register_disconnect(conn, ch);
-			dbg("-> EVT_DISCONNECT: at channel %u reason 0x%02x.\n"
+			log_info("-> EVT_DISCONNECT: at channel %u reason 0x%02x.\n"
 				, ch
 				, p.evtDisconnect.reason
 			);
@@ -131,7 +131,7 @@ handle(ConnectionState & conn, const RESPONSE_EVENT_UNION & p)
 			channel_index_t ch = p.evtIncomingConnection.channelId;
 			auto uuid =
 				network_to_host(p.evtIncomingConnection.uuid);
-			dbg("-> EVT_INCOMING_CONNECTION: Error"
+			log_info("-> EVT_INCOMING_CONNECTION: Error"
 				" unsupported uuid 0x%04x at channel %u.\n"
 				, uuid
 				, ch
@@ -144,7 +144,7 @@ handle(ConnectionState & conn, const RESPONSE_EVENT_UNION & p)
 				conn, ch, p.evtIncomingConnection.bdAddr
 			);
 			const Address6 & addr = get_address(conn, ch);
-			dbg("-> EVT_INCOMING_CONNECTION:"
+			log_info("-> EVT_INCOMING_CONNECTION:"
 				" Channel %u got connected"
 				" to " Address6_FMT ".\n"
 				, ch
