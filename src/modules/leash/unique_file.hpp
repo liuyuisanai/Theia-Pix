@@ -25,6 +25,15 @@ public:
 		if (fd > -1) close(fd);
 	}
 
+	inline unique_file &
+	operator = (unique_file && other)
+	{
+		int tmp = fd;
+		fd = other.fd;
+		other.fd = tmp;
+		return *this;
+	}
+
 	inline
 	int get() const { return fd; }
 

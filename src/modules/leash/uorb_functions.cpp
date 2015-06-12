@@ -3,6 +3,7 @@
 
 #include <uORB/uORB.h>
 #include <uORB/topics/vehicle_status.h>
+#include <uORB/topics/vehicle_global_position.h>
 
 #include "debug.hpp"
 #include "settings.hpp"
@@ -29,7 +30,9 @@ DroneCommand::
 DroneCommand()
 	: param_system_id(param_find("MAV_SYS_ID"))
 	, param_component_id(param_find("MAV_COMP_ID"))
-{}
+{
+	global_pos_sub = orb_subscribe(ORB_ID(vehicle_global_position));
+}
 
 void DroneCommand::
 init(struct vehicle_command_s & cmd)
@@ -59,15 +62,19 @@ send_command(enum REMOTE_CMD command)
 }
 
 void DroneCommand::
-send_come_to_me_command(double lat, double lon)
+send_come_to_me_command()
 {
+        vehicle_global_position_s global_pos;
+        orb_copy(ORB_ID(vehicle_global_position),
+		global_pos_sub.get(), &global_pos);
+
 	struct vehicle_command_s cmd;
 	init(cmd);
 
 	cmd.command = VEHICLE_CMD_NAV_REMOTE_CMD;
 	cmd.param1 = REMOTE_CMD_COME_TO_ME;
-	cmd.param5 = lat;
-	cmd.param6 = lon;
+	cmd.param5 = global_pos.lat;
+	cmd.param6 = global_pos.lon;
 
 	orb_advertise(ORB_ID(vehicle_command), &cmd);
 	say("Sent remote cmd Come to me");
