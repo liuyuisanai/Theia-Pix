@@ -66,8 +66,8 @@ send_come_to_me_command(double lat, double lon)
 
 	cmd.command = VEHICLE_CMD_NAV_REMOTE_CMD;
 	cmd.param1 = REMOTE_CMD_COME_TO_ME;
-    cmd.param5 = lat;
-    cmd.param6 = lon;
+	cmd.param5 = lat;
+	cmd.param6 = lon;
 
 	orb_advertise(ORB_ID(vehicle_command), &cmd);
 	say("Sent remote cmd Come to me");
@@ -99,8 +99,6 @@ send_arm_command(const DroneStatus & s)
 	//say("ARM command sent.");
 }
 
-
-
 void DroneCommand::
 send_rtl_command(const DroneStatus & s)
 {
@@ -115,12 +113,9 @@ send_rtl_command(const DroneStatus & s)
 LeashStatus::LeashStatus() :
         leash_status_pub(-1)
 {
-    struct leash_status_s l_status;
-    l_status.menu_mode = (int8_t) kbd_handler::ModeId::NONE;
-    leash_status_pub = orb_advertise(ORB_ID(leash_status), &l_status);
-}
-
-LeashStatus::~LeashStatus() {
+	struct leash_status_s l_status;
+	l_status.menu_mode = (int8_t) kbd_handler::ModeId::NONE;
+	leash_status_pub = orb_advertise(ORB_ID(leash_status), &l_status);
 }
 
 void

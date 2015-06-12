@@ -21,7 +21,7 @@ class DroneCommand
 public:
 	DroneCommand();
 	void send_command(REMOTE_CMD);
-    void send_come_to_me_command(double lat, double lon);
+	void send_come_to_me_command(double lat, double lon);
 	void send_arm_command(const DroneStatus &);
 	void send_rtl_command(const DroneStatus &);
 private:
@@ -56,14 +56,12 @@ private:
 
 class LeashStatus
 {
-    public:
-        LeashStatus();
-        ~LeashStatus();
-        void set_mode(kbd_handler::ModeId mode);
-    private:
-        orb_advert_t leash_status_pub;	
-        struct leash_status_s l_status;
-
+public:
+	LeashStatus();
+	void set_mode(kbd_handler::ModeId mode);
+private:
+	orb_advert_t leash_status_pub;
+	struct leash_status_s l_status;
 };
 
 } // end of namespace airleash

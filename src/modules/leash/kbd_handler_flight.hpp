@@ -239,7 +239,7 @@ struct handle<ModeId::FLIGHT_CAM, EventKind::LONG_KEYPRESS, BTN_MASK_CENTER>
  */
 template <ModeId MODE, ButtonId BUTTON>
 struct handle< MODE, EventKind::KEY_RELEASE, BUTTON, When<
-    BUTTON != BTN_MASK_CENTER 
+	BUTTON != BTN_MASK_CENTER
 	and (MODE == ModeId::FLIGHT_ALT or MODE == ModeId::FLIGHT_CAM)
 > > {
 	static void
@@ -261,7 +261,7 @@ struct handle<ModeId::SHORTCUT, EventKind::SHORT_KEYPRESS, BTN_MASK_UP>
 	exec(App & app)
 	{
 		say("G");
-        
+
         vehicle_global_position_s global_pos;
 	    int global_pos_sub = orb_subscribe(ORB_ID(vehicle_global_position));
         orb_copy(ORB_ID(vehicle_global_position), global_pos_sub, &global_pos);
