@@ -224,7 +224,7 @@ uint16_t		r_page_rc_input_config[PX4IO_RC_INPUT_CHANNELS * PX4IO_P_RC_CONFIG_STR
  * PAGE 105
  *
  * Failsafe servo PWM values
- * 
+ *
  * Disable pulses as default.
  */
 uint16_t		r_page_servo_failsafe[PX4IO_SERVO_COUNT] = { 0, 0, 0, 0, 0, 0, 0, 0 };
@@ -276,7 +276,7 @@ registers_set(uint8_t page, uint8_t offset, const uint16_t *values, unsigned num
 		system_state.fmu_data_received_time = hrt_absolute_time();
 		r_status_flags |= PX4IO_P_STATUS_FLAGS_FMU_OK;
 		r_status_flags &= ~PX4IO_P_STATUS_FLAGS_RAW_PWM;
-		
+
 		break;
 
 		/* handle raw PWM input */
@@ -345,7 +345,7 @@ registers_set(uint8_t page, uint8_t offset, const uint16_t *values, unsigned num
 			values++;
 		}
 		break;
-	
+
 	case PX4IO_PAGE_CONTROL_MAX_PWM:
 
 		/* copy channel data */
@@ -442,7 +442,7 @@ registers_set_one(uint8_t page, uint8_t offset, uint16_t value)
 			break;
 
 		case PX4IO_P_STATUS_FLAGS:
-			/* 
+			/*
 			 * Allow FMU override of arming state (to allow in-air restores),
 			 * but only if the arming state is not in sync on the IO side.
 			 */

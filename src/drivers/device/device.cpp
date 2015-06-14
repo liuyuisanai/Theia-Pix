@@ -94,7 +94,7 @@ Device::Device(const char *name,
 	_irq_attached(false)
 {
 	sem_init(&_lock, 0, 1);
-        
+
 	/* setup a default device ID. When bus_type is UNKNOWN the
 	   other fields are invalid */
 	_device_id.devid = 0;

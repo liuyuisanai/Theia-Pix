@@ -1,7 +1,7 @@
 #include "i2c_controller.h"
 
 #include <nuttx/config.h>
-#include <nuttx/clock.h> 
+#include <nuttx/clock.h>
 
 #include <drivers/drv_hrt.h>
 
@@ -119,7 +119,7 @@ I2C_CONTROLLER::get_buttons_state_from_r1()
     uint8_t requests[1] = {0x00};
 
     int ret = transfer(&requests[0], sizeof(requests), nullptr, 0);
-    ret = transfer(nullptr, 0, response, sizeof(response)); 
+    ret = transfer(nullptr, 0, response, sizeof(response));
 
     if (ret == OK) {
         return response[0];
@@ -135,7 +135,7 @@ I2C_CONTROLLER::get_buttons_state_from_r2()
     uint8_t requests[2] = {0x00, 0x41};
 
     int ret = transfer(requests, sizeof(requests), nullptr, 0);
-    ret = transfer(nullptr, 0, response, sizeof(response)); 
+    ret = transfer(nullptr, 0, response, sizeof(response));
 
     if (ret == OK) {
         return response[0];

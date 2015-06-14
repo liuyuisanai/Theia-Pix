@@ -142,7 +142,7 @@ private:
 	* @return		True if the device is present.
 	*/
 	int					probe_address(uint8_t address);
-    
+
     /**
      * Reset the device and start a new cycle
      *
@@ -229,11 +229,11 @@ LL905::~LL905()
 	if (_reports != nullptr) {
 		delete _reports;
 	}
-	
+
 	if (_class_instance != -1) {
 		unregister_class_devname(RANGE_FINDER_DEVICE_PATH, _class_instance);
 	}
-	
+
 	// free perf counters
 	perf_free(_sample_perf);
 	perf_free(_comms_errors);
@@ -259,7 +259,7 @@ LL905::init()
 
 	_class_instance = register_class_devname(RANGE_FINDER_DEVICE_PATH);
 
-	if (_class_instance == CLASS_DEVICE_PRIMARY) {	
+	if (_class_instance == CLASS_DEVICE_PRIMARY) {
 		/* get a publish handle on the range finder topic */
 		struct range_finder_report rf_report;
 		measure();

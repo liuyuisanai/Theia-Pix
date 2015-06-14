@@ -30,7 +30,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
- 
+
  /*
  * @file attitude_estimator_so3_main.cpp
  *
@@ -163,7 +163,7 @@ int attitude_estimator_so3_main(int argc, char *argv[])
 		while (thread_running){
 			usleep(200000);
 		}
-		
+
 		warnx("stopped");
 		exit(0);
 	}
@@ -188,7 +188,7 @@ int attitude_estimator_so3_main(int argc, char *argv[])
 //---------------------------------------------------------------------------------------------------
 // Fast inverse square-root
 // See: http://en.wikipedia.org/wiki/Fast_inverse_square_root
-float invSqrt(float number) 
+float invSqrt(float number)
 {
     volatile long i;
     volatile float x, y;
@@ -253,7 +253,7 @@ void NonlinearSO3AHRSinit(float ax, float ay, float az, float mx, float my, floa
     q3q3 = q3 * q3;
 }
 
-void NonlinearSO3AHRSupdate(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz, float twoKp, float twoKi, float dt) 
+void NonlinearSO3AHRSupdate(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz, float twoKp, float twoKi, float dt)
 {
 	float recipNorm;
 	float halfex = 0.0f, halfey = 0.0f, halfez = 0.0f;
@@ -265,31 +265,31 @@ void NonlinearSO3AHRSupdate(float gx, float gy, float gz, float ax, float ay, fl
 		NonlinearSO3AHRSinit(ax,ay,az,mx,my,mz);
 		bFilterInit = true;
 	}
-        	
+
 	//! If magnetometer measurement is available, use it.
 	if(!((mx == 0.0f) && (my == 0.0f) && (mz == 0.0f))) {
 		float hx, hy, hz, bx, bz;
 		float halfwx, halfwy, halfwz;
-	
+
 		// Normalise magnetometer measurement
 		// Will sqrt work better? PX4 system is powerful enough?
     	recipNorm = invSqrt(mx * mx + my * my + mz * mz);
     	mx *= recipNorm;
     	my *= recipNorm;
     	mz *= recipNorm;
-    
+
     	// Reference direction of Earth's magnetic field
     	hx = 2.0f * (mx * (0.5f - q2q2 - q3q3) + my * (q1q2 - q0q3) + mz * (q1q3 + q0q2));
     	hy = 2.0f * (mx * (q1q2 + q0q3) + my * (0.5f - q1q1 - q3q3) + mz * (q2q3 - q0q1));
 		hz = 2.0f * mx * (q1q3 - q0q2) + 2.0f * my * (q2q3 + q0q1) + 2.0f * mz * (0.5f - q1q1 - q2q2);
     	bx = sqrt(hx * hx + hy * hy);
     	bz = hz;
-    
+
     	// Estimated direction of magnetic field
     	halfwx = bx * (0.5f - q2q2 - q3q3) + bz * (q1q3 - q0q2);
     	halfwy = bx * (q1q2 - q0q3) + bz * (q0q1 + q2q3);
     	halfwz = bx * (q0q2 + q1q3) + bz * (0.5f - q1q1 - q2q2);
-    
+
     	// Error is sum of cross product between estimated direction and measured direction of field vectors
     	halfex += (my * halfwz - mz * halfwy);
     	halfey += (mz * halfwx - mx * halfwz);
@@ -299,7 +299,7 @@ void NonlinearSO3AHRSupdate(float gx, float gy, float gz, float ax, float ay, fl
 	// Compute feedback only if accelerometer measurement valid (avoids NaN in accelerometer normalisation)
 	if(!((ax == 0.0f) && (ay == 0.0f) && (az == 0.0f))) {
 		float halfvx, halfvy, halfvz;
-	
+
 		// Normalise accelerometer measurement
 		recipNorm = invSqrt(ax * ax + ay * ay + az * az);
 		ax *= recipNorm;
@@ -310,7 +310,7 @@ void NonlinearSO3AHRSupdate(float gx, float gy, float gz, float ax, float ay, fl
 		halfvx = q1q3 - q0q2;
 		halfvy = q0q1 + q2q3;
 		halfvz = q0q0 - 0.5f + q3q3;
-	
+
 		// Error is sum of cross product between estimated direction and measured direction of field vectors
 		halfex += ay * halfvz - az * halfvy;
 		halfey += az * halfvx - ax * halfvz;
@@ -324,7 +324,7 @@ void NonlinearSO3AHRSupdate(float gx, float gy, float gz, float ax, float ay, fl
 			gyro_bias[0] += twoKi * halfex * dt;	// integral error scaled by Ki
 			gyro_bias[1] += twoKi * halfey * dt;
 			gyro_bias[2] += twoKi * halfez * dt;
-			
+
 			// apply integral feedback
 			gx += gyro_bias[0];
 			gy += gyro_bias[1];
@@ -341,13 +341,13 @@ void NonlinearSO3AHRSupdate(float gx, float gy, float gz, float ax, float ay, fl
 		gy += twoKp * halfey;
 		gz += twoKp * halfez;
 	}
-	
+
 	//! Integrate rate of change of quaternion
 #if 0
 	gx *= (0.5f * dt);		// pre-multiply common factors
 	gy *= (0.5f * dt);
 	gz *= (0.5f * dt);
-#endif 
+#endif
 
 	// Time derivative of quaternion. q_dot = 0.5*q\otimes omega.
 	//! q_k = q_{k-1} + dt*\dot{q}
@@ -355,13 +355,13 @@ void NonlinearSO3AHRSupdate(float gx, float gy, float gz, float ax, float ay, fl
 	dq0 = 0.5f*(-q1 * gx - q2 * gy - q3 * gz);
 	dq1 = 0.5f*(q0 * gx + q2 * gz - q3 * gy);
 	dq2 = 0.5f*(q0 * gy - q1 * gz + q3 * gx);
-	dq3 = 0.5f*(q0 * gz + q1 * gy - q2 * gx); 
+	dq3 = 0.5f*(q0 * gz + q1 * gy - q2 * gx);
 
 	q0 += dt*dq0;
 	q1 += dt*dq1;
 	q2 += dt*dq2;
 	q3 += dt*dq3;
-	
+
 	// Normalise quaternion
 	recipNorm = invSqrt(q0 * q0 + q1 * q1 + q2 * q2 + q3 * q3);
 	q0 *= recipNorm;
@@ -379,7 +379,7 @@ void NonlinearSO3AHRSupdate(float gx, float gy, float gz, float ax, float ay, fl
    	q1q3 = q1 * q3;
     q2q2 = q2 * q2;
     q2q3 = q2 * q3;
-    q3q3 = q3 * q3;   
+    q3q3 = q3 * q3;
 }
 
 /*
@@ -394,10 +394,10 @@ int attitude_estimator_so3_thread_main(int argc, char *argv[])
 {
 	//! Time constant
 	float dt = 0.005f;
-	
+
 	/* output euler angles */
 	float euler[3] = {0.0f, 0.0f, 0.0f};
-	
+
 	/* Initialization */
 	float Rot_matrix[9] = {1.f,  0.0f,  0.0f, 0.0f,  1.f,  0.0f, 0.0f,  0.0f,  1.f };		/**< init: identity matrix */
 	float acc[3] = {0.0f, 0.0f, 0.0f};
@@ -564,7 +564,7 @@ int attitude_estimator_so3_thread_main(int argc, char *argv[])
 										-acc[0], -acc[1], -acc[2],
 										mag[0], mag[1], mag[2],
 										so3_comp_params.Kp,
-										so3_comp_params.Ki, 
+										so3_comp_params.Ki,
 										dt);
 
 					// Convert q->R, This R converts inertial frame to body frame.
@@ -579,13 +579,13 @@ int attitude_estimator_so3_thread_main(int argc, char *argv[])
 					Rot_matrix[8] = q0q0 - q1q1 - q2q2 + q3q3;// 33
 
 					//1-2-3 Representation.
-					//Equation (290) 
+					//Equation (290)
 					//Representing Attitude: Euler Angles, Unit Quaternions, and Rotation Vectors, James Diebel.
 					// Existing PX4 EKF code was generated by MATLAB which uses coloum major order matrix.
 					euler[0] = atan2f(Rot_matrix[5], Rot_matrix[8]);	//! Roll
 					euler[1] = -asinf(Rot_matrix[2]);	//! Pitch
 					euler[2] = atan2f(Rot_matrix[1], Rot_matrix[0]);		//! Yaw
-					
+
 					/* swap values for next iteration, check for fatal inputs */
 					if (isfinite(euler[0]) && isfinite(euler[1]) && isfinite(euler[2])) {
 						// Publish only finite euler angles
@@ -611,7 +611,7 @@ int attitude_estimator_so3_thread_main(int argc, char *argv[])
 
 					/* send out */
 					att.timestamp = raw.timestamp;
-					
+
 					// Quaternion
 					att.q[0] = q0;
 					att.q[1] = q1;
@@ -639,7 +639,7 @@ int attitude_estimator_so3_thread_main(int argc, char *argv[])
 					/* copy rotation matrix */
 					memcpy(&att.R, Rot_matrix, sizeof(float)*9);
 					att.R_valid = true;
-					
+
 					// Publish
 					if (att_pub > 0) {
 						orb_publish(ORB_ID(vehicle_attitude), att_pub, &att);

@@ -292,7 +292,7 @@ private:
     math::Vector<3> _vel_ff_sp_mv_r;
     // Velocity feed foward componenet derived from target movements
     math::Vector<3> _vel_ff_t;
-    // Velocity feed foward component read from position setpoint vx, vy, vz  
+    // Velocity feed foward component read from position setpoint vx, vy, vz
     math::Vector<3> _vel_ff_sp_v;
 
 	math::Vector<3> _sp_move_rate;
@@ -420,7 +420,7 @@ private:
      * returned values are in range from 0.0 to 1.0 - zero to hundred percent of full feed foward
 	 */
 	float		follow_grad_ff(float distance);
-    
+
 
 	/**
 	 * Control camera and copter yaw depending on mode
@@ -450,7 +450,7 @@ private:
 	/**
      * Change setpoint Z coordinate according to sonar measurements
      */
-    bool       ground_dist_correction(); 
+    bool       ground_dist_correction();
 
     /**
      * Calculate landing coefficient if needed
@@ -689,7 +689,7 @@ MulticopterPositionControl::parameters_update(bool force)
 
         param_get(_params_handles.yaw_rate_max, &_params.yaw_rate_max);
         _params.yaw_rate_max = math::radians(_params.yaw_rate_max);
-		
+
 		param_get(_params_handles.follow_talt_offs, &_params.follow_talt_offs);
 		param_get(_params_handles.follow_yaw_off_max, &_params.follow_yaw_off_max);
 		_params.follow_yaw_off_max = math::radians(_params.follow_yaw_off_max);
@@ -717,7 +717,7 @@ MulticopterPositionControl::parameters_update(bool force)
         // If NAV_RPT_ALT or NAV_USE_ALT changes our Z offset calculations change, so we need recalculation
         if (old_follow_rpt_alt != new_follow_rpt_alt || old_follow_use_alt != new_follow_use_alt){
             update_target_pos();
-            _reset_follow_offset = true; 
+            _reset_follow_offset = true;
             reset_follow_offset();
         }
         old_follow_rpt_alt = _params.follow_rpt_alt;
@@ -929,7 +929,7 @@ MulticopterPositionControl::reset_follow_offset()
 
         // If target does not repeat altitude - offset is calculated from ref_alt
         if (!_params.follow_rpt_alt){
-            _follow_offset(2) = _pos(2) - _ref_alt; 
+            _follow_offset(2) = _pos(2) - _ref_alt;
         }
 
 		mavlink_log_info(_mavlink_fd, "[mpc] reset follow offs: %.2f, %.2f, %.2f",
@@ -1285,15 +1285,15 @@ MulticopterPositionControl::control_auto_vel(float dt) {
             xy_move_direction = xy_pos_delta.normalized();
 
             if (_pos_sp_triplet.next.valid) {
-                // TODO:  L1 implementation using next/ prev setpoints 
+                // TODO:  L1 implementation using next/ prev setpoints
             }
-            else 
+            else
             {
 
                 float z_delta_len = pos_delta(2);
                 float xy_speed = _pos_sp_triplet.current.abs_velocity;
 
-                float z_speed = z_delta_len * _params.pos_p(2); 
+                float z_speed = z_delta_len * _params.pos_p(2);
 
                 _vel_sp(0) = xy_move_direction(0) * xy_speed;
                 _vel_sp(1) = xy_move_direction(1) * xy_speed;
@@ -1390,7 +1390,7 @@ MulticopterPositionControl::control_cablepark()
     } else {
     /* -- We are on path and could follow target now -- */
         //Calculating dot product of target vector and path vector
-        float target_dot_product = _ref_vector * target_pos; 
+        float target_dot_product = _ref_vector * target_pos;
         if (target_dot_product >= _ref_vector_module) {
             target_dot_product = _ref_vector_module;
         } else if (target_dot_product < 0.0f) {
@@ -1401,7 +1401,7 @@ MulticopterPositionControl::control_cablepark()
             float required_velocity = target_velocity * _ref_vector * _params.follow_vel_ff;
 
             math::Vector<2> resulting_velocity = _ref_vector * required_velocity;
-            
+
             // Correcting velocity if near first or last point
             //float current_allowed_velocity;
             if (fabsf(target_dot_product) > fabsf(vehicle_dot_product)) {
@@ -1467,7 +1467,7 @@ MulticopterPositionControl::control_auto(float dt)
            _vel_ff_sp_v(0) = _pos_sp_triplet.current.vx;
            _vel_ff_sp_v(1) = _pos_sp_triplet.current.vy;
            _vel_ff_sp_v(2) = _pos_sp_triplet.current.vz;
-        } 
+        }
 
 		/* project setpoint to local frame */
 		math::Vector<3> curr_sp;
@@ -1740,7 +1740,7 @@ MulticopterPositionControl::control_follow(float dt)
 
 	/* update position setpoint and feed-forward velocity if not repeating target altitude */
 	if (!_params.follow_rpt_alt) {
-		//_pos_sp(2) = -(_alt_start - _ref_alt + _params.follow_talt_offs) + _follow_offset(2); 
+		//_pos_sp(2) = -(_alt_start - _ref_alt + _params.follow_talt_offs) + _follow_offset(2);
         _pos_sp(2) = _ref_alt + _follow_offset(2);
 		_vel_ff_t(2) -= _tvel(2) * _params.follow_vel_ff;
 	}
@@ -1762,10 +1762,10 @@ MulticopterPositionControl::follow_grad_ff(float distance){
 
         if (distance > grad_end) return 0.0f;
         else return 1.0f;
-    
+
     }
 
-    return 1.0f - (grad_dst / grad_interval); 
+    return 1.0f - (grad_dst / grad_interval);
 }
 
 void MulticopterPositionControl::set_camera_yaw(){
@@ -1782,7 +1782,7 @@ void MulticopterPositionControl::set_camera_pitch(float pitch){
 	if (fabsf(pitch_delta) > pitch_change_speed){
 		if (pitch_delta > 0.0f) {
 			last_pitch += (pitch_delta_20th > pitch_change_speed ? pitch_change_speed : pitch_delta_20th);
-		}	
+		}
 		else {
 			last_pitch -= (-pitch_delta_20th > pitch_change_speed ? pitch_change_speed : -pitch_delta_20th);
 		}
@@ -1807,7 +1807,7 @@ MulticopterPositionControl::point_to_target()
 	/* don't try to rotate near singularity */
 	float current_offset_xy_len = current_offset_xy.length();
 
-    if (current_offset_xy_len >= _params.yaw_gradient_zone_r) 
+    if (current_offset_xy_len >= _params.yaw_gradient_zone_r)
         _att_sp.yawrate_limit = 0.0f; // no limit
 
 	if (current_offset_xy_len > _params.yaw_dead_zone_r) {
@@ -1820,7 +1820,7 @@ MulticopterPositionControl::point_to_target()
 
         if (current_offset_xy_len < _params.yaw_gradient_zone_r && _params.yaw_dead_zone_r + 1e-6f < _params.yaw_gradient_zone_r) {
 
-            float fraction = (current_offset_xy_len - _params.yaw_dead_zone_r) / (_params.yaw_gradient_zone_r - _params.yaw_dead_zone_r); 
+            float fraction = (current_offset_xy_len - _params.yaw_dead_zone_r) / (_params.yaw_gradient_zone_r - _params.yaw_dead_zone_r);
             _att_sp.yawrate_limit = _params.yaw_rate_max * fraction;
 
         }
@@ -1887,7 +1887,7 @@ MulticopterPositionControl::task_main()
 
 	while (!_task_should_exit) {
 		_ground_position_invalid = false;
-		_ground_setpoint_corrected = false;	
+		_ground_setpoint_corrected = false;
 		_ground_position_available_drop = 0;
 
 		/* wait for up to 500ms for data */
@@ -2028,7 +2028,7 @@ MulticopterPositionControl::task_main()
                     ground_dist_correction();
                     if (_ground_setpoint_corrected) {
                         //correct altitude velocity
-                        
+
                         _vel_ff_sp_v(2) = 0.0f;
                         _vel_ff_sp_mv_r(2) = 0.0f;
                         _vel_ff_t(2) = 0.0f;
@@ -2145,7 +2145,7 @@ MulticopterPositionControl::task_main()
 				}
 
 				// TODO! AK: Check what values can be for uninitialized camera_pitch!
-                // It makes sense to change yaw and pich trough setpoint when point_to_target is not used                 
+                // It makes sense to change yaw and pich trough setpoint when point_to_target is not used
                 if (!_control_mode.flag_control_point_to_target && _pos_sp_triplet.current.valid && _pos_sp_triplet.current.camera_pitch_valid) {
                 	//_cam_control.control[1] = _pos_sp_triplet.current.camera_pitch;
 					set_camera_pitch(_pos_sp_triplet.current.camera_pitch);
@@ -2181,7 +2181,7 @@ MulticopterPositionControl::task_main()
                                 if (drop < _params.sonar_min_dist) {
 
                                     float coef = 1 - (_local_pos.dist_bottom/_params.sonar_min_dist);
-                                    coef = pow(coef, _params.sonar_smooth_coef); 
+                                    coef = pow(coef, _params.sonar_smooth_coef);
 
                                     float max_vel_z = - _params.vel_max(2) * coef;
 
@@ -2211,7 +2211,7 @@ MulticopterPositionControl::task_main()
                         // If resulted max speed is higher than allowed by parameters - limit it with parameter defined
                         // TODO [Max]: There should be universal way for all range finders, not limited to Ultrasound sonar maximal distance
                         max_vel_z = max_vel_z > _params.vel_max(2) ? _params.vel_max(2) : max_vel_z;
-                        
+
                             //limit down speed
                             if (_vel_sp(2) > max_vel_z) {
                                 _vel_sp(2) = max_vel_z;
@@ -2220,7 +2220,7 @@ MulticopterPositionControl::task_main()
                             }
                             _sp_move_rate(2)= 0.0f;
 
-                        } 
+                        }
                     }
                 }
 
@@ -2647,7 +2647,7 @@ float MulticopterPositionControl::landing_speed_correction() {
 /* @Author: Max Shvetsov, Ilja Nevdahs
  * @Name:   ground_dist_correction
  *
- * @descr:  
+ * @descr:
  *
  * @out:    position correction variable
  */
@@ -2655,7 +2655,7 @@ bool MulticopterPositionControl::ground_dist_correction(){
     // No correction if not valid
     if (!_local_pos.dist_bottom_valid || !_params.sonar_correction_on)
         return false;
-    
+
     //desired drop (positive = want to go down, negative = want to go up)
 	float desired_drop = _pos_sp(2) - _pos(2);
 

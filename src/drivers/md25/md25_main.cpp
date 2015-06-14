@@ -205,7 +205,7 @@ int md25_main(int argc, char *argv[])
 
 		exit(0);
 	}
-	
+
 
 	if (!strcmp(argv[1], "search")) {
 		if (argc < 3) {

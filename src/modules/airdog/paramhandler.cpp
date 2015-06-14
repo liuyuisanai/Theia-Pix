@@ -62,12 +62,12 @@ void cParamHandler::loadCycle(void) {
 	if(is_requested) {
 		int res;
 		bool updated;
-        
+
 		res = orb_check(passed_param_sub, &updated);
 		if(res == -1) {
             //orb check failed
 		} else if(updated) {
-           
+
 			ad_param_t *pparam;
 			struct pass_drone_param_s param;
 			orb_copy(ORB_ID(pass_drone_parameter), passed_param_sub, &param);

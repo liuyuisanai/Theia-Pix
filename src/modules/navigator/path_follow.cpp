@@ -2,7 +2,7 @@
  *
  * @file path_follow.cpp
  *
- * Path follow navigator mode implementation 
+ * Path follow navigator mode implementation
  *
  * @author Anthony Kenga <anton.k@airdog.vom>
  * @author Martins Frolovs <martins.f@airdog.vom>
@@ -87,7 +87,7 @@ void PathFollow::on_activation() {
     if (_parameters.follow_rpt_alt == 0) {
         _starting_z = _drone_local_pos.z;
         _vertical_offset = 0.0f;
-    } 
+    }
 
     if (_parameters.follow_rpt_alt == 1) {
         _vertical_offset = _drone_local_pos.z - _target_local_pos.z;
@@ -98,7 +98,7 @@ void PathFollow::on_activation() {
     _y_start = _drone_local_pos.y;
     _x_start = _drone_local_pos.x;
 
-    
+
 	if (!_inited) {
 		mavlink_log_critical(_mavlink_fd, "Follow Path mode wasn't initialized! Aborting...");
 		int buzzer = open(TONEALARM_DEVICE_PATH, O_WRONLY);
@@ -153,7 +153,7 @@ void PathFollow::on_active() {
 
     calculate_dst_to_gate();
 
-    _tp_just_reached = false; 
+    _tp_just_reached = false;
 
     if (_first_tp_flag == true && traj_point_reached()) {
 
@@ -165,7 +165,7 @@ void PathFollow::on_active() {
         _x_start = _drone_local_pos.x;
         _y_start = _drone_local_pos.y;
 
-        _tp_just_reached = true; 
+        _tp_just_reached = true;
 
     }
 
@@ -176,7 +176,7 @@ void PathFollow::on_active() {
 
         if (_first_tp_flag == false && _second_tp_flag == true) {
 
-            _first_tp = _second_tp; 
+            _first_tp = _second_tp;
             _second_tp_flag = false;
             _first_tp_flag = true;
 
@@ -297,7 +297,7 @@ void PathFollow::update_traj_point_queue() {
 
         if (!isfinite(new_point.distance))
             new_point.distance = 0.0f;
-     
+
 		if (_traj_point_queue.add(new_point, true)) {
 
             _latest_added_tp = new_point;
@@ -355,9 +355,9 @@ float PathFollow::calculate_desired_velocity() {
     // Solution to problem when accumulated error is very big, drone is to close and comes closer because of the accumulated error (integral part), which
     // is decreasing to slow in this case.
 
-    // dst_to_optimal is below zero and trajectory distance is still decreasing[ because dirivative is smaller than zero], so the pulling power[integral part] is to big and needs 
+    // dst_to_optimal is below zero and trajectory distance is still decreasing[ because dirivative is smaller than zero], so the pulling power[integral part] is to big and needs
     // some extra help to decrease it, we do it with factor pafol_vel_i_add_dec_rate [follow path velocity integral part aditional decrease rate]
-    if (dst_to_optimal < -1.0f && _fp_d < -1.0f && _drone_speed > 2.0f) { 
+    if (dst_to_optimal < -1.0f && _fp_d < -1.0f && _drone_speed > 2.0f) {
 
         float additional_i_dec = _fp_d * _parameters.pafol_vel_i_add_dec_rate;
         if (additional_i_dec < 0.0f) additional_i_dec = -additional_i_dec;
@@ -366,7 +366,7 @@ float PathFollow::calculate_desired_velocity() {
     }
 
     // In some cases the same extra help is needed to increase the integral part a bit faster.
-    if (dst_to_optimal > 1.0f && _fp_d > 1.0f && _drone_speed > 2.0f) { 
+    if (dst_to_optimal > 1.0f && _fp_d > 1.0f && _drone_speed > 2.0f) {
 
         float additional_i_inc = _fp_d * _parameters.pafol_vel_i_add_inc_rate;
         if (additional_i_inc < 0.0f) additional_i_inc = -additional_i_inc;
@@ -397,12 +397,12 @@ float PathFollow::calculate_desired_velocity() {
         if (vel_new < -1.0f)
             vel_new = -1.0f;
 
-        if (!(going_bckw_st(0) == _drone_local_pos.x && going_bckw_st(1) == _drone_local_pos.y) && 
+        if (!(going_bckw_st(0) == _drone_local_pos.x && going_bckw_st(1) == _drone_local_pos.y) &&
                 euclidean_distance(going_bckw_st(0), going_bckw_st(1), _drone_local_pos.x, _drone_local_pos.y)> _parameters.pafol_backward_distance_limit )
         {
             vel_new = 0.0f;
 
-            if (_fp_i < -10.0f)       
+            if (_fp_i < -10.0f)
                 _fp_i = -10.0f;
         }
 
@@ -414,9 +414,9 @@ float PathFollow::calculate_desired_velocity() {
 
     // mavlink_log_info(_mavlink_fd, "i:%.3f, p:%.3f d:%.3f", (double)fp_d_coif, (double)fp_p_coif, (double)fp_i_coif);
     // mavlink_log_info(_mavlink_fd, "dst:%.3f, fp_i:%.3f fp_d:%.3f, ad:%.3f", (double)dst_to_optimal, (double)_fp_i, (double)_fp_d);
-    // mavlink_log_info(_mavlink_fd, "ul:%.3f, ll:%.3f ir:%.3f dr:%.3f", (double)_parameters.pafol_vel_i_lower_limit, (double)_parameters.pafol_vel_i_upper_limit, 
+    // mavlink_log_info(_mavlink_fd, "ul:%.3f, ll:%.3f ir:%.3f dr:%.3f", (double)_parameters.pafol_vel_i_lower_limit, (double)_parameters.pafol_vel_i_upper_limit,
     //        (double)_parameters.pafol_vel_i_add_inc_rate, (double)_parameters.pafol_vel_i_add_dec_rate);
-    
+
     _calc_vel_pid_t_prev = t;
 
     return vel_new;
@@ -452,13 +452,13 @@ float PathFollow::calculate_current_distance() {
             float acc_dst_to_gate = _parameters.pafol_acc_dst_to_gate;
             float traj_radius = _parameters.airdog_traj_radius;
 
-            if (_dst_to_gate > traj_radius) 
+            if (_dst_to_gate > traj_radius)
                 rate_a = 1.0f;
-            else if (_dst_to_gate < acc_dst_to_gate) 
+            else if (_dst_to_gate < acc_dst_to_gate)
                 rate_a = 0.0f;
-            else 
+            else
                 rate_a = (_dst_to_gate - acc_dst_to_gate) / (traj_radius - acc_dst_to_gate);
-            
+
             rate_b = 1.0f - rate_a;
     }
 
@@ -470,24 +470,24 @@ float PathFollow::calculate_current_distance() {
         } else if (_first_tp_flag == true && _second_tp_flag == false) {
         // One trajectory point
 
-            float distance_a = euclidean_distance(drone_lpos(0), drone_lpos(1), _first_tp.x, _first_tp.y) + 
+            float distance_a = euclidean_distance(drone_lpos(0), drone_lpos(1), _first_tp.x, _first_tp.y) +
                             euclidean_distance(_first_tp.x, _first_tp.y, target_lpos(0), target_lpos(1));
 
             float distance_b = euclidean_distance(drone_lpos(0), drone_lpos(1), target_lpos(0), target_lpos(1));
 
             full_distance = rate_a * distance_a  + rate_b * distance_b;
 
-         
+
         } else {
         // Two or more trajectory points
 
-            float distance_a = euclidean_distance(drone_lpos(0), drone_lpos(1), _first_tp.x, _first_tp.y) + 
+            float distance_a = euclidean_distance(drone_lpos(0), drone_lpos(1), _first_tp.x, _first_tp.y) +
                             euclidean_distance(_first_tp.x, _first_tp.y, _second_tp.x, _second_tp.y);
 
             float distance_b = euclidean_distance(drone_lpos(0), drone_lpos(1), _second_tp.x, _second_tp.y);
 
-            full_distance = rate_a * distance_a  + rate_b * distance_b + 
-                            _trajectory_distance + 
+            full_distance = rate_a * distance_a  + rate_b * distance_b +
+                            _trajectory_distance +
                             euclidean_distance(_latest_added_tp.x, _latest_added_tp.y, target_lpos(0), target_lpos(1));
 
             // dd_log.log(5,distance_a);
@@ -512,7 +512,7 @@ bool PathFollow::traj_point_reached() {
 
     float acc_dst_to_gate = _parameters.pafol_acc_dst_to_gate;
     float gate_width = _parameters.pafol_gate_width;
-   
+
     calculate_dst_to_gate();
 
     if (_dst_to_gate <= acc_dst_to_gate && abs(_dst_to_tunnel_middle) * 2.0f <= gate_width )
@@ -549,7 +549,7 @@ void PathFollow::calculate_dst_to_gate(){
  void
 PathFollow::update_target_pos(){
 
-    
+
     if (_vstatus->condition_target_position_valid)
         _target_global_pos = _navigator->get_target_position();
 
@@ -584,7 +584,7 @@ PathFollow::update_drone_pos(){
 
     if (_drone_global_pos->timestamp != _drone_local_pos.timestamp){
 
-        uint64_t last_timestamp  = _drone_local_pos.timestamp;		
+        uint64_t last_timestamp  = _drone_local_pos.timestamp;
         float last_drone_speed = _drone_speed;
 
         _drone_local_pos.timestamp = _drone_global_pos->timestamp;
@@ -611,7 +611,7 @@ PathFollow::update_drone_pos(){
 
         if (dt > 1e-7f)
             _drone_speed_d = (_drone_speed - last_drone_speed) / dt;
-        else 
+        else
             _drone_speed_d = 0.0f;
 
     }
@@ -636,7 +636,7 @@ PathFollow::calculate_desired_z() {
 
         ret_z = _starting_z;
 
-    } else { 
+    } else {
 
         float length_full = 0.0f;
         float length_left = 0.0f;
@@ -668,7 +668,7 @@ PathFollow::calculate_desired_z() {
             ret_z = _z_start + (_target_local_pos.z - _z_start) * rate_done;
 
             dd_log.log(3,2);
-        } 
+        }
 
         dd_log.log(4,length_full);
 
@@ -676,7 +676,7 @@ PathFollow::calculate_desired_z() {
         dd_log.log(6,rate_done);
         dd_log.log(7,ret_z);
 
-        
+
         //mavlink_log_info(_mavlink_fd, "zs:%.3f, zg:%.3f rz:%.3f, ll:%.3f", (double)_z_start, (double)_z_goal, (double)ret_z, (double)length_left);
 
     }
@@ -701,7 +701,7 @@ PathFollow::calculate_alt_values(bool tp_just_reached){
         float rate = dst_to_reaching_point / _dst_to_gate;
 
         _z_goal = _z_start + (_first_tp.z - _z_start) * rate;
-    
+
     } else {
         _z_goal = _first_tp.z;
     }

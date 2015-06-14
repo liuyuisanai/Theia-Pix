@@ -34,7 +34,7 @@
 /**
  * @file px4_daemon_app.c
  * daemon application example for PX4 autopilot
- * 
+ *
  * @author Example User <mail@example.com>
  */
 
@@ -77,7 +77,7 @@ usage(const char *reason)
  * The daemon app only briefly exists to start
  * the background job. The stack size assigned in the
  * Makefile does only apply to this management task.
- * 
+ *
  * The actual stack size should be set in the call
  * to task_create().
  */

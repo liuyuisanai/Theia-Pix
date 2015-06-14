@@ -53,4 +53,4 @@ private:
 	#include "asciisymbolmap.h"
 };
 
-#endif 
+#endif

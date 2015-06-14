@@ -54,7 +54,7 @@ PARAM_DEFINE_FLOAT(CAM_PITCH_STEP, 0.05f);
  * Camera yaw correction step
  *
  * @min 0.0
- * @max 
+ * @max
  * @group camera
  * */
 PARAM_DEFINE_FLOAT(CAM_YAW_STEP, 0.05f);

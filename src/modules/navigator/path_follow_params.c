@@ -46,7 +46,7 @@ PARAM_DEFINE_FLOAT(PAFOL_ALT_OFF, 3.0f);
 PARAM_DEFINE_FLOAT(PAFOL_ACC_RAD, 5.0f);
 
 /**
- * Path follow acceptance distance to line 
+ * Path follow acceptance distance to line
  *
  * @unit meters
  * @min 0.1
@@ -67,7 +67,7 @@ PARAM_DEFINE_FLOAT(PAFOL_GT_WIDTH, 8.0f);
 
 
 /**
- * Coefficient for integral part of velocity PID controller 
+ * Coefficient for integral part of velocity PID controller
  * @min 0
  * @max 50
  * @group PathFollow
@@ -76,7 +76,7 @@ PARAM_DEFINE_FLOAT(PAFOL_VPID_I, 0.0f);
 
 
 /**
- * Coefficient for proportional part of velocity PID controller 
+ * Coefficient for proportional part of velocity PID controller
  * @min 0
  * @max 50
  * @group PathFollow
@@ -84,7 +84,7 @@ PARAM_DEFINE_FLOAT(PAFOL_VPID_I, 0.0f);
 PARAM_DEFINE_FLOAT(PAFOL_VPID_P, 0.0f);
 
 /**
- * Coefficient for dirivative part of velocity PID controller 
+ * Coefficient for dirivative part of velocity PID controller
  * @min 0
  * @max 50
  * @group PathFollow
@@ -94,14 +94,14 @@ PARAM_DEFINE_FLOAT(PAFOL_VPID_D, 0.0f);
 
 /**
  * Follow path vel PID control integral part aditional decrease rate
- * when aditional decrease necessary. 
+ * when aditional decrease necessary.
  * @group PathFollow
  */
 PARAM_DEFINE_FLOAT(PAFOL_VPID_I_DR, 5.0f);
 
 /**
  * Follow path vel PID control integral part aditional increase rate
- * when aditional increase necessary. 
+ * when aditional increase necessary.
  * @group PathFollow
  */
 PARAM_DEFINE_FLOAT(PAFOL_VPID_I_IR, 5.0f);

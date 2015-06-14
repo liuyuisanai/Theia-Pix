@@ -158,7 +158,7 @@ param_main(int argc, char *argv[])
 			}
 		}
 	}
-	
+
 	errx(1, "expected a command, try 'load', 'import', 'show', 'set', 'compare', 'select', 'save' or 'text_load'");
 }
 
@@ -409,7 +409,7 @@ do_compare(const char* name, char* vals[], unsigned comparisons)
 				float g = strtod(vals[k], &end);
 				if (fabsf(f - g) < 1e-7f) {
 					printf(" %4.4f: ", (double)f);
-					ret = 0;	
+					ret = 0;
 				}
 			}
 		}

@@ -185,7 +185,7 @@ test_mtd(int argc, char *argv[])
 				print_fail();
 				return 1;
 			}
-			
+
 			/* compare value */
 			bool compare_ok = true;
 

@@ -69,16 +69,16 @@ static uint8_t get_value(uint32_t ofs)
 
 static void test_corruption(const char *filename, uint32_t write_chunk, uint32_t write_size, uint16_t flags)
 {
-	printf("Testing on %s with write_chunk=%u write_size=%u\n", 
+	printf("Testing on %s with write_chunk=%u write_size=%u\n",
 	       filename, (unsigned)write_chunk, (unsigned)write_size);
-	
+
 	uint32_t ofs = 0;
 	int fd = open(filename, O_CREAT | O_RDWR | O_TRUNC);
 	if (fd == -1) {
 		perror(filename);
 		exit(1);
 	}
-	
+
 	// create a file of size write_size, in write_chunk blocks
 	uint8_t counter = 0;
 	while (ofs < write_size) {
@@ -100,9 +100,9 @@ static void test_corruption(const char *filename, uint32_t write_chunk, uint32_t
         counter++;
 	}
 	close(fd);
-	
+
 	printf("write ofs=%u\n", ofs);
-	
+
 	// read and check
 	fd = open(filename, O_RDONLY);
 	if (fd == -1) {
@@ -136,7 +136,7 @@ static void test_corruption(const char *filename, uint32_t write_chunk, uint32_t
 	printf("read ofs=%u\n", ofs);
 	close(fd);
 	unlink(filename);
-	printf("All OK\n");    
+	printf("All OK\n");
 }
 
 static void usage(void)

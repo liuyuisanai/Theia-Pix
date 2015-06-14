@@ -352,12 +352,12 @@ main_state_transition(struct vehicle_status_s *status, main_state_t new_main_sta
 
     case MAIN_STATE_EMERGENCY_RTL:
         if (status->condition_global_position_valid && status->condition_home_position_valid) {
-            ret = TRANSITION_CHANGED; 
+            ret = TRANSITION_CHANGED;
         }
         break;
 
     case MAIN_STATE_EMERGENCY_LAND:
-        ret = TRANSITION_CHANGED; 
+        ret = TRANSITION_CHANGED;
         break;
 
 	case MAIN_STATE_CABLE_PARK:
@@ -909,7 +909,7 @@ int prearm_check(const struct vehicle_status_s *status, const int mavlink_fd)
 
     /* check valid GPS if required and controll if current local_position change rate is low
      * this should be done due to specific lpos altitude calculation. Arm without low vertical speed
-     * (still correcting initial *without GPS* altitude) can result in wrong initial possition 
+     * (still correcting initial *without GPS* altitude) can result in wrong initial possition
      */
 	if (status->require_gps && !status->condition_global_position_valid) {
         failed = true;

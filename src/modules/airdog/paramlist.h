@@ -33,7 +33,7 @@
 	X(1,	/* FRA */				FOL_RPT_ALT,		0, 0, 1.0f,		PTYPE_INT,		0,		1,		1,		"FRA" ) \
 	X(2,	/* FUA */				FOL_USE_ALT,		0, 0, 1.0f,		PTYPE_INT,		0,		1,		1,		"FUA" ) \
 	X(3,	/* FF */				FOL_VEL_FF,			0, 0, 1.0f,		PTYPE_FLOAT,	0.0f,	1.0f,	0.05f,	" FF" ) \
-	X(4,	/* LPF */				FOL_LPF,			0, 0, 1.0f,		PTYPE_FLOAT,	0.0f,	10.0f,	0.05f,	"LPF" ) 
+	X(4,	/* LPF */				FOL_LPF,			0, 0, 1.0f,		PTYPE_FLOAT,	0.0f,	10.0f,	0.05f,	"LPF" )
 
 	/*								Parameter id		cv ev mul		Type			Min		Max		Step	Display symbols */\
 //	X(0,	/* AYAW */				MPC_YAW_OFF,		0, 0, 1.0f,		PTYPE_INT,		0,		1,		1,		"AYA" ) \

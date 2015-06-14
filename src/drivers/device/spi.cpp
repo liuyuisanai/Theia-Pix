@@ -80,7 +80,7 @@ SPI::SPI(const char *name,
 	_device_id.devid_s.bus = bus;
 	_device_id.devid_s.address = (uint8_t)device;
 	// devtype needs to be filled in by the driver
-	_device_id.devid_s.devtype = 0; 
+	_device_id.devid_s.devtype = 0;
 }
 
 SPI::~SPI()
@@ -168,7 +168,7 @@ SPI::transfer(uint8_t *send, uint8_t *recv, unsigned len)
 	return result;
 }
 
-void 
+void
 SPI::set_frequency(uint32_t frequency)
 {
 	_frequency = frequency;

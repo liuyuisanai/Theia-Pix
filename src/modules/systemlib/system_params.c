@@ -53,7 +53,7 @@ PARAM_DEFINE_INT32(SYS_AUTOSTART, 0);
  * Automatically configure default values.
  *
  * Set to 1 to set platform-specific parameters to their default
- * values on next system startup. 
+ * values on next system startup.
  *
  * @min 0
  * @max 1

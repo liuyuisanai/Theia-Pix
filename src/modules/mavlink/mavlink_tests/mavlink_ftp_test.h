@@ -45,26 +45,26 @@ class MavlinkFtpTest : public UnitTest
 public:
 	MavlinkFtpTest();
 	virtual ~MavlinkFtpTest();
-	
+
 	virtual bool run_tests(void);
-	
+
 	static void receive_message(const mavlink_message_t *msg, MavlinkFtpTest* ftpTest);
-	
+
 	static const uint8_t serverSystemId = 50;	///< System ID for server
 	static const uint8_t serverComponentId = 1;	///< Component ID for server
 	static const uint8_t serverChannel = 0;		///< Channel to send to
-	
+
 	static const uint8_t clientSystemId = 1;	///< System ID for client
 	static const uint8_t clientComponentId = 0;	///< Component ID for client
-	
+
 	// We don't want any of these
 	MavlinkFtpTest(const MavlinkFtpTest&);
 	MavlinkFtpTest& operator=(const MavlinkFtpTest&);
-	
+
 private:
 	virtual void _init(void);
 	virtual void _cleanup(void);
-	
+
 	bool _ack_test(void);
 	bool _bad_opcode_test(void);
 	bool _bad_datasize_test(void);
@@ -78,7 +78,7 @@ private:
 	bool _removedirectory_test(void);
 	bool _createdirectory_test(void);
 	bool _removefile_test(void);
-	
+
 	void _receive_message(const mavlink_message_t *msg);
 	void _setup_ftp_msg(MavlinkFTP::PayloadHeader *payload_header, uint8_t size, const uint8_t *data, mavlink_message_t *msg);
 	bool _decode_message(const mavlink_message_t *msg, mavlink_file_transfer_protocol_t *ftp_msg, MavlinkFTP::PayloadHeader **payload);
@@ -88,19 +88,19 @@ private:
                            mavlink_file_transfer_protocol_t	*ftp_msg_reply,
                            MavlinkFTP::PayloadHeader		**payload_reply);
 	void _cleanup_microsd(void);
-	
+
 	MavlinkFTP *_ftp_server;
-    
+
 	mavlink_message_t _reply_msg;
-    
+
 	uint16_t _lastOutgoingSeqNumber;
-	
+
 	struct ReadTestCase {
 		const char	*file;
 		const uint16_t	length;
 	};
 	static const ReadTestCase _rgReadTestCases[];
-	
+
 	static const char _unittest_microsd_dir[];
 	static const char _unittest_microsd_file[];
 };

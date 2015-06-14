@@ -174,7 +174,7 @@ rx_handle_packet(void)
 			dma_packet.count_code = PKT_CODE_SUCCESS;
 		}
 		return;
-	} 
+	}
 
 	if (PKT_CODE(dma_packet) == PKT_CODE_READ) {
 
@@ -270,7 +270,7 @@ serial_interrupt(int irq, void *context)
 
 	if (sr & USART_SR_IDLE) {
 
-		/* 
+		/*
 		 * If we saw an error, don't bother looking at the packet - it should have
 		 * been aborted by the sender and will definitely be bad. Get the DMA reconfigured
 		 * ready for their retry.
@@ -284,7 +284,7 @@ serial_interrupt(int irq, void *context)
 
 		/*
 		 * The sender has stopped sending - this is probably the end of a packet.
-		 * Check the received length against the length in the header to see if 
+		 * Check the received length against the length in the header to see if
 		 * we have something that looks like a packet.
 		 */
 		unsigned length = sizeof(dma_packet) - stm32_dmaresidual(rx_dma);

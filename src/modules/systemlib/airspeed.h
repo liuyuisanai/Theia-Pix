@@ -47,7 +47,7 @@
 #include "conversions.h"
 
  __BEGIN_DECLS
- 
+
  /**
   * Calculate indicated airspeed.
   *
@@ -60,7 +60,7 @@
   * @return indicated airspeed in m/s
   */
  __EXPORT float calc_indicated_airspeed(float differential_pressure);
- 
+
  /**
   * Calculate true airspeed from indicated airspeed.
   *
@@ -72,7 +72,7 @@
   * @return true airspeed in m/s
   */
  __EXPORT float calc_true_airspeed_from_indicated(float speed_indicated, float pressure_ambient, float temperature_celsius);
- 
+
  /**
   * Directly calculate true airspeed
   *

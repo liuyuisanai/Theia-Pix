@@ -30,10 +30,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
- 
+
 /**
  * @file board_config.h
- * 
+ *
  * PX4IO hardware definitions.
  */
 
@@ -86,7 +86,7 @@
 #define GPIO_ADC_VBATT	(GPIO_INPUT|GPIO_CNF_ANALOGIN|GPIO_MODE_INPUT|GPIO_PORTA|GPIO_PIN4)
 #define GPIO_ADC_IN5	(GPIO_INPUT|GPIO_CNF_ANALOGIN|GPIO_MODE_INPUT|GPIO_PORTA|GPIO_PIN5)
 
-/* 
+/*
  * High-resolution timer
  */
 #define HRT_TIMER		1	/* use timer1 for the HRT */

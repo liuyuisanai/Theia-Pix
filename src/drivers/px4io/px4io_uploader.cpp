@@ -436,7 +436,7 @@ PX4IO_Uploader::program(size_t fw_size)
 		count = read_with_retry(_fw_fd, file_buf, n);
 
 		if (count != (ssize_t)n) {
-			log("firmware read of %u bytes at %u failed -> %d errno %d", 
+			log("firmware read of %u bytes at %u failed -> %d errno %d",
 			    (unsigned)n,
 			    (unsigned)sent,
 			    (int)count,
@@ -490,7 +490,7 @@ PX4IO_Uploader::verify_rev2(size_t fw_size)
 		count = read_with_retry(_fw_fd, file_buf, n);
 
 		if (count != (ssize_t)n) {
-			log("firmware read of %u bytes at %u failed -> %d errno %d", 
+			log("firmware read of %u bytes at %u failed -> %d errno %d",
 			    (unsigned)n,
 			    (unsigned)sent,
 			    (int)count,
@@ -570,7 +570,7 @@ PX4IO_Uploader::verify_rev3(size_t fw_size_local)
 		count = read_with_retry(_fw_fd, file_buf, n);
 
 		if (count != (ssize_t)n) {
-			log("firmware read of %u bytes at %u failed -> %d errno %d", 
+			log("firmware read of %u bytes at %u failed -> %d errno %d",
 			    (unsigned)n,
 			    (unsigned)bytes_read,
 			    (int)count,

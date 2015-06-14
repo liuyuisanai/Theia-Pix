@@ -34,7 +34,7 @@
 /**
  * @file test_sensors.c
  * Tests the onboard sensors.
- * 
+ *
  * @author Lorenz Meier <lm@inf.ethz.ch>
  */
 

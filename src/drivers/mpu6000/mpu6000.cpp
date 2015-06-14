@@ -497,7 +497,7 @@ MPU6000::init()
 		case CLASS_DEVICE_PRIMARY:
 			_accel_orb_id = ORB_ID(sensor_accel0);
 			break;
-		
+
 		case CLASS_DEVICE_SECONDARY:
 			_accel_orb_id = ORB_ID(sensor_accel1);
 			break;
@@ -611,7 +611,7 @@ void MPU6000::reset()
 	case MPU6000_REV_D9:
 	case MPU6000_REV_D10:
 	// default case to cope with new chip revisions, which
-	// presumably won't have the accel scaling bug		
+	// presumably won't have the accel scaling bug
 	default:
 		// Accel scale 8g (4096 LSB/g)
 		write_reg(MPUREG_ACCEL_CONFIG, 2 << 3);
@@ -689,7 +689,7 @@ MPU6000::_set_dlpf_filter(uint16_t frequency_hz)
 {
 	uint8_t filter;
 
-	/* 
+	/*
 	   choose next highest filter frequency available
 	 */
         if (frequency_hz == 0) {
@@ -927,14 +927,14 @@ MPU6000::ioctl(struct file *filp, int cmd, unsigned long arg)
 		/* lower bound is mandatory, upper bound is a sanity check */
 		if ((arg < 1) || (arg > 100))
 			return -EINVAL;
-		
+
 		irqstate_t flags = irqsave();
 		if (!_accel_reports->resize(arg)) {
 			irqrestore(flags);
 			return -ENOMEM;
 		}
 		irqrestore(flags);
-		
+
 		return OK;
 	}
 
@@ -1267,7 +1267,7 @@ MPU6000::measure()
 		perf_end(_sample_perf);
 		return;
 	}
-	    
+
 
 	/*
 	 * Swap axes and negate y
@@ -1323,7 +1323,7 @@ MPU6000::measure()
 	float x_in_new = ((report.accel_x * _accel_range_scale) - _accel_calibration.offsets(0)) * _accel_calibration.scales(0);
 	float y_in_new = ((report.accel_y * _accel_range_scale) - _accel_calibration.offsets(1)) * _accel_calibration.scales(1);
 	float z_in_new = ((report.accel_z * _accel_range_scale) - _accel_calibration.offsets(2)) * _accel_calibration.scales(2);
-	
+
 	arb.x = _accel_filter_x.apply(x_in_new);
 	arb.y = _accel_filter_y.apply(y_in_new);
 	arb.z = _accel_filter_z.apply(z_in_new);
@@ -1344,7 +1344,7 @@ MPU6000::measure()
 	float x_gyro_in_new = ((report.gyro_x * _gyro_range_scale) - _gyro_calibration.offsets(0)) * _gyro_calibration.scales(0);
 	float y_gyro_in_new = ((report.gyro_y * _gyro_range_scale) - _gyro_calibration.offsets(1)) * _gyro_calibration.scales(1);
 	float z_gyro_in_new = ((report.gyro_z * _gyro_range_scale) - _gyro_calibration.offsets(2)) * _gyro_calibration.scales(2);
-	
+
 	grb.x = _gyro_filter_x.apply(x_gyro_in_new);
 	grb.y = _gyro_filter_y.apply(y_gyro_in_new);
 	grb.z = _gyro_filter_z.apply(z_gyro_in_new);

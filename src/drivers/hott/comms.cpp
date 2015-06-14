@@ -57,8 +57,8 @@ open_uart(const char *device)
 	if (uart < 0) {
 		err(1, "Error opening port: %s", device);
 	}
-	
-	/* Back up the original uart configuration to restore it after exit */	
+
+	/* Back up the original uart configuration to restore it after exit */
 	int termios_state;
 	struct termios uart_config_original;
 	if ((termios_state = tcgetattr(uart, &uart_config_original)) < 0) {

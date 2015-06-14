@@ -61,7 +61,7 @@ MavlinkFtpTest::MavlinkFtpTest() :
 
 MavlinkFtpTest::~MavlinkFtpTest()
 {
-	
+
 }
 
 /// @brief Called before every test to initialize the FTP Server.
@@ -77,7 +77,7 @@ void MavlinkFtpTest::_init(void)
 void MavlinkFtpTest::_cleanup(void)
 {
 	delete _ftp_server;
-	
+
 	_cleanup_microsd();
 }
 
@@ -87,7 +87,7 @@ bool MavlinkFtpTest::_ack_test(void)
 	MavlinkFTP::PayloadHeader		payload;
 	mavlink_file_transfer_protocol_t	ftp_msg;
 	MavlinkFTP::PayloadHeader		*reply;
-	
+
 	payload.opcode = MavlinkFTP::kCmdNone;
 
 	bool success = _send_receive_msg(&payload,	// FTP payload header
@@ -98,10 +98,10 @@ bool MavlinkFtpTest::_ack_test(void)
 	if (!success) {
 		return false;
 	}
-	
+
 	ut_compare("Didn't get Ack back", reply->opcode, MavlinkFTP::kRspAck);
 	ut_compare("Incorrect payload size", reply->size, 0);
-	
+
 	return true;
 }
 
@@ -111,7 +111,7 @@ bool MavlinkFtpTest::_bad_opcode_test(void)
 	MavlinkFTP::PayloadHeader		payload;
 	mavlink_file_transfer_protocol_t	ftp_msg;
 	MavlinkFTP::PayloadHeader		*reply;
-	
+
 	payload.opcode = 0xFF;	// bogus opcode
 
 	bool success = _send_receive_msg(&payload,	// FTP payload header
@@ -122,11 +122,11 @@ bool MavlinkFtpTest::_bad_opcode_test(void)
 	if (!success) {
 		return false;
 	}
-	
+
 	ut_compare("Didn't get Nak back", reply->opcode, MavlinkFTP::kRspNak);
 	ut_compare("Incorrect payload size", reply->size, 1);
 	ut_compare("Incorrect error code", reply->data[0], MavlinkFTP::kErrUnknownCommand);
-	
+
 	return true;
 }
 
@@ -137,24 +137,24 @@ bool MavlinkFtpTest::_bad_datasize_test(void)
 	MavlinkFTP::PayloadHeader		payload;
 	mavlink_file_transfer_protocol_t	ftp_msg;
 	MavlinkFTP::PayloadHeader		*reply;
-	
+
 	payload.opcode = MavlinkFTP::kCmdListDirectory;
-	
+
 	_setup_ftp_msg(&payload, 0, nullptr, &msg);
-	
+
 	// Set the data size to be one larger than is legal
 	((MavlinkFTP::PayloadHeader*)((mavlink_file_transfer_protocol_t*)msg.payload64)->payload)->size = MAVLINK_MSG_FILE_TRANSFER_PROTOCOL_FIELD_PAYLOAD_LEN + 1;
-	
+
 	_ftp_server->handle_message(nullptr /* mavlink */, &msg);
-	
+
 	if (!_decode_message(&_reply_msg, &ftp_msg, &reply)) {
 		return false;
 	}
-	
+
 	ut_compare("Didn't get Nak back", reply->opcode, MavlinkFTP::kRspNak);
 	ut_compare("Incorrect payload size", reply->size, 1);
 	ut_compare("Incorrect error code", reply->data[0], MavlinkFTP::kErrInvalidDataSize);
-	
+
 	return true;
 }
 
@@ -163,10 +163,10 @@ bool MavlinkFtpTest::_list_test(void)
 	MavlinkFTP::PayloadHeader		payload;
 	mavlink_file_transfer_protocol_t	ftp_msg;
 	MavlinkFTP::PayloadHeader		*reply;
-	
+
 	char response1[] = "Dempty_dir|Ftest_238.data\t238|Ftest_239.data\t239|Ftest_240.data\t240";
 	char response2[] = "Ddev|Detc|Dfs|Dobj";
-	
+
 	struct _testCase {
 		const char	*dir;		///< Directory to run List command on
 		char		*response;	///< Expected response entries from List command
@@ -181,10 +181,10 @@ bool MavlinkFtpTest::_list_test(void)
 
 	for (size_t i=0; i<sizeof(rgTestCases)/sizeof(rgTestCases[0]); i++) {
 		const struct _testCase *test = &rgTestCases[i];
-		
+
 		payload.opcode = MavlinkFTP::kCmdListDirectory;
 		payload.offset = 0;
-		
+
 		bool success = _send_receive_msg(&payload,		// FTP payload header
 						strlen(test->dir)+1,	// size in bytes of data
 						(uint8_t*)test->dir,	// Data to start into FTP message payload
@@ -193,21 +193,21 @@ bool MavlinkFtpTest::_list_test(void)
 		if (!success) {
 			return false;
 		}
-		
+
 		if (test->success) {
 			ut_compare("Didn't get Ack back", reply->opcode, MavlinkFTP::kRspAck);
 			ut_compare("Incorrect payload size", reply->size, strlen(test->response) + 1);
-			
+
 			// The return order of directories from the List command is not repeatable. So we can't do a direct comparison
 			// to a hardcoded return result string.
-			
+
 			// Convert null terminators to seperator char so we can use strok to parse returned data
 			for (uint8_t j=0; j<reply->size-1; j++) {
 				if (reply->data[j] == 0) {
 					reply->data[j] = '|';
 				}
 			}
-			
+
 			// Loop over returned directory entries trying to find then in the response list
 			char *dir;
 			int response_count = 0;
@@ -217,7 +217,7 @@ bool MavlinkFtpTest::_list_test(void)
 				response_count++;
 				dir = strtok(nullptr, "|");
 			}
-			
+
 			ut_compare("Incorrect number of directory entires returned", test->response_count, response_count);
 		} else {
 			ut_compare("Didn't get Nak back", reply->opcode, MavlinkFTP::kRspNak);
@@ -225,7 +225,7 @@ bool MavlinkFtpTest::_list_test(void)
 			ut_compare("Incorrect error code", reply->data[0], MavlinkFTP::kErrFailErrno);
 		}
 	}
-	
+
 	return true;
 }
 
@@ -237,10 +237,10 @@ bool MavlinkFtpTest::_list_eof_test(void)
 	mavlink_file_transfer_protocol_t	ftp_msg;
 	MavlinkFTP::PayloadHeader		*reply;
 	const char				*dir = "/";
-	
+
 	payload.opcode = MavlinkFTP::kCmdListDirectory;
 	payload.offset = 4;	// offset past top level dirs
-	
+
 	bool success = _send_receive_msg(&payload,	// FTP payload header
 					strlen(dir)+1,	// size in bytes of data
 					(uint8_t*)dir,	// Data to start into FTP message payload
@@ -253,7 +253,7 @@ bool MavlinkFtpTest::_list_eof_test(void)
 	ut_compare("Didn't get Nak back", reply->opcode, MavlinkFTP::kRspNak);
 	ut_compare("Incorrect payload size", reply->size, 1);
 	ut_compare("Incorrect error code", reply->data[0], MavlinkFTP::kErrEOF);
-	
+
 	return true;
 }
 
@@ -264,10 +264,10 @@ bool MavlinkFtpTest::_open_badfile_test(void)
 	mavlink_file_transfer_protocol_t	ftp_msg;
 	MavlinkFTP::PayloadHeader		*reply;
 	const char				*dir = "/foo";	// non-existent file
-	
+
 	payload.opcode = MavlinkFTP::kCmdOpenFileRO;
 	payload.offset = 0;
-	
+
 	bool success = _send_receive_msg(&payload,	// FTP payload header
 					strlen(dir)+1,	// size in bytes of data
 					(uint8_t*)dir,	// Data to start into FTP message payload
@@ -276,11 +276,11 @@ bool MavlinkFtpTest::_open_badfile_test(void)
 	if (!success) {
 		return false;
 	}
-	
+
 	ut_compare("Didn't get Nak back", reply->opcode, MavlinkFTP::kRspNak);
 	ut_compare("Incorrect payload size", reply->size, 2);
 	ut_compare("Incorrect error code", reply->data[0], MavlinkFTP::kErrFailErrno);
-	
+
 	return true;
 }
 
@@ -290,14 +290,14 @@ bool MavlinkFtpTest::_open_terminate_test(void)
 	MavlinkFTP::PayloadHeader		payload;
 	mavlink_file_transfer_protocol_t	ftp_msg;
 	MavlinkFTP::PayloadHeader		*reply;
-	
+
 	for (size_t i=0; i<sizeof(_rgReadTestCases)/sizeof(_rgReadTestCases[0]); i++) {
 		struct stat st;
 		const ReadTestCase *test = &_rgReadTestCases[i];
-		
+
 		payload.opcode = MavlinkFTP::kCmdOpenFileRO;
 		payload.offset = 0;
-		
+
 		bool success = _send_receive_msg(&payload,		// FTP payload header
 						 strlen(test->file)+1,	// size in bytes of data
 						 (uint8_t*)test->file,	// Data to start into FTP message payload
@@ -306,10 +306,10 @@ bool MavlinkFtpTest::_open_terminate_test(void)
 		if (!success) {
 			return false;
 		}
-		
+
 		ut_compare("stat failed", stat(test->file, &st), 0);
-		
-		
+
+
 		ut_compare("Didn't get Ack back", reply->opcode, MavlinkFTP::kRspAck);
 		ut_compare("Incorrect payload size", reply->size, sizeof(uint32_t));
 		ut_compare("File size incorrect", *((uint32_t*)&reply->data[0]), (uint32_t)st.st_size);
@@ -317,7 +317,7 @@ bool MavlinkFtpTest::_open_terminate_test(void)
 		payload.opcode = MavlinkFTP::kCmdTerminateSession;
 		payload.session = reply->session;
 		payload.size = 0;
-		
+
 		success = _send_receive_msg(&payload,	// FTP payload header
 					    0,		// size in bytes of data
 					    nullptr,	// Data to start into FTP message payload
@@ -326,7 +326,7 @@ bool MavlinkFtpTest::_open_terminate_test(void)
 		if (!success) {
 			return false;
 		}
-		
+
 		ut_compare("Didn't get Ack back", reply->opcode, MavlinkFTP::kRspAck);
 		ut_compare("Incorrect payload size", reply->size, 0);
 	}
@@ -341,10 +341,10 @@ bool MavlinkFtpTest::_terminate_badsession_test(void)
 	mavlink_file_transfer_protocol_t	ftp_msg;
 	MavlinkFTP::PayloadHeader		*reply;
 	const char				*file = _rgReadTestCases[0].file;
-	
+
 	payload.opcode = MavlinkFTP::kCmdOpenFileRO;
 	payload.offset = 0;
-	
+
 	bool success = _send_receive_msg(&payload,	// FTP payload header
 					strlen(file)+1,	// size in bytes of data
 					(uint8_t*)file,	// Data to start into FTP message payload
@@ -353,13 +353,13 @@ bool MavlinkFtpTest::_terminate_badsession_test(void)
 	if (!success) {
 		return false;
 	}
-	
+
 	ut_compare("Didn't get Ack back", reply->opcode, MavlinkFTP::kRspAck);
-	
+
 	payload.opcode = MavlinkFTP::kCmdTerminateSession;
 	payload.session = reply->session + 1;
 	payload.size = 0;
-	
+
 	success = _send_receive_msg(&payload,	// FTP payload header
 				   0,		// size in bytes of data
 				   nullptr,	// Data to start into FTP message payload
@@ -368,11 +368,11 @@ bool MavlinkFtpTest::_terminate_badsession_test(void)
 	if (!success) {
 		return false;
 	}
-	
+
 	ut_compare("Didn't get Nak back", reply->opcode, MavlinkFTP::kRspNak);
 	ut_compare("Incorrect payload size", reply->size, 1);
 	ut_compare("Incorrect error code", reply->data[0], MavlinkFTP::kErrInvalidSession);
-	
+
 	return true;
 }
 
@@ -382,11 +382,11 @@ bool MavlinkFtpTest::_read_test(void)
 	MavlinkFTP::PayloadHeader		payload;
 	mavlink_file_transfer_protocol_t	ftp_msg;
 	MavlinkFTP::PayloadHeader		*reply;
-	
+
 	for (size_t i=0; i<sizeof(_rgReadTestCases)/sizeof(_rgReadTestCases[0]); i++) {
 		struct stat st;
 		const ReadTestCase *test = &_rgReadTestCases[i];
-		
+
 		// Read in the file so we can compare it to what we get back
 		ut_compare("stat failed", stat(test->file, &st), 0);
 		uint8_t *bytes = new uint8_t[st.st_size];
@@ -396,13 +396,13 @@ bool MavlinkFtpTest::_read_test(void)
 		int bytes_read = ::read(fd, bytes, st.st_size);
 		ut_compare("read failed", bytes_read, st.st_size);
 		::close(fd);
-		
+
 		// Test case data files are created for specific boundary conditions
 		ut_compare("Test case data files are out of date", test->length, st.st_size);
-		
+
 		payload.opcode = MavlinkFTP::kCmdOpenFileRO;
 		payload.offset = 0;
-		
+
 		bool success = _send_receive_msg(&payload,		// FTP payload header
 						 strlen(test->file)+1,	// size in bytes of data
 						 (uint8_t*)test->file,	// Data to start into FTP message payload
@@ -411,13 +411,13 @@ bool MavlinkFtpTest::_read_test(void)
 		if (!success) {
 			return false;
 		}
-		
+
 		ut_compare("Didn't get Ack back", reply->opcode, MavlinkFTP::kRspAck);
-		
+
 		payload.opcode = MavlinkFTP::kCmdReadFile;
 		payload.session = reply->session;
 		payload.offset = 0;
-		
+
 		success = _send_receive_msg(&payload,	// FTP payload header
 					    0,		// size in bytes of data
 					    nullptr,	// Data to start into FTP message payload
@@ -426,19 +426,19 @@ bool MavlinkFtpTest::_read_test(void)
 		if (!success) {
 			return false;
 		}
-		
+
 		ut_compare("Didn't get Ack back", reply->opcode, MavlinkFTP::kRspAck);
 		ut_compare("Offset incorrect", reply->offset, 0);
-		
+
 		if (test->length <= MAVLINK_MSG_FILE_TRANSFER_PROTOCOL_FIELD_PAYLOAD_LEN - sizeof(MavlinkFTP::PayloadHeader)) {
 			ut_compare("Payload size incorrect", reply->size, (uint32_t)st.st_size);
 			ut_compare("File contents differ", memcmp(reply->data, bytes, st.st_size), 0);
 		}
-		
+
 		payload.opcode = MavlinkFTP::kCmdTerminateSession;
 		payload.session = reply->session;
 		payload.size = 0;
-		
+
 		success = _send_receive_msg(&payload,	// FTP payload header
 					    0,		// size in bytes of data
 					    nullptr,	// Data to start into FTP message payload
@@ -447,11 +447,11 @@ bool MavlinkFtpTest::_read_test(void)
 		if (!success) {
 			return false;
 		}
-		
+
 		ut_compare("Didn't get Ack back", reply->opcode, MavlinkFTP::kRspAck);
 		ut_compare("Incorrect payload size", reply->size, 0);
 	}
-	
+
 	return true;
 }
 
@@ -462,10 +462,10 @@ bool MavlinkFtpTest::_read_badsession_test(void)
 	mavlink_file_transfer_protocol_t	ftp_msg;
 	MavlinkFTP::PayloadHeader		*reply;
 	const char				*file = _rgReadTestCases[0].file;
-	
+
 	payload.opcode = MavlinkFTP::kCmdOpenFileRO;
 	payload.offset = 0;
-	
+
 	bool success = _send_receive_msg(&payload,	// FTP payload header
 					 strlen(file)+1,	// size in bytes of data
 					 (uint8_t*)file,	// Data to start into FTP message payload
@@ -474,13 +474,13 @@ bool MavlinkFtpTest::_read_badsession_test(void)
 	if (!success) {
 		return false;
 	}
-	
+
 	ut_compare("Didn't get Ack back", reply->opcode, MavlinkFTP::kRspAck);
-	
+
 	payload.opcode = MavlinkFTP::kCmdReadFile;
 	payload.session = reply->session + 1;	// Invalid session
 	payload.offset = 0;
-	
+
 	success = _send_receive_msg(&payload,	// FTP payload header
 				    0,		// size in bytes of data
 				    nullptr,	// Data to start into FTP message payload
@@ -489,11 +489,11 @@ bool MavlinkFtpTest::_read_badsession_test(void)
 	if (!success) {
 		return false;
 	}
-	
+
 	ut_compare("Didn't get Nak back", reply->opcode, MavlinkFTP::kRspNak);
 	ut_compare("Incorrect payload size", reply->size, 1);
 	ut_compare("Incorrect error code", reply->data[0], MavlinkFTP::kErrInvalidSession);
-	
+
 	return true;
 }
 
@@ -503,7 +503,7 @@ bool MavlinkFtpTest::_removedirectory_test(void)
 	mavlink_file_transfer_protocol_t	ftp_msg;
 	MavlinkFTP::PayloadHeader		*reply;
 	int					fd;
-	
+
 	struct _testCase {
 		const char	*dir;
 		bool		success;
@@ -516,21 +516,21 @@ bool MavlinkFtpTest::_removedirectory_test(void)
 		{ _unittest_microsd_file,				false,	false },
 		{ _unittest_microsd_dir,				true,	true },
 	};
-	
+
 	ut_compare("mkdir failed", ::mkdir(_unittest_microsd_dir, S_IRWXU | S_IRWXG | S_IRWXO), 0);
 	ut_assert("open failed", (fd = ::open(_unittest_microsd_file, O_CREAT | O_EXCL)) != -1);
 	::close(fd);
-	
+
 	for (size_t i=0; i<sizeof(rgTestCases)/sizeof(rgTestCases[0]); i++) {
 		const struct _testCase *test = &rgTestCases[i];
-		
+
 		if (test->deleteFile) {
 			ut_compare("unlink failed", ::unlink(_unittest_microsd_file), 0);
 		}
-		
+
 		payload.opcode = MavlinkFTP::kCmdRemoveDirectory;
 		payload.offset = 0;
-		
+
 		bool success = _send_receive_msg(&payload,		// FTP payload header
 						 strlen(test->dir)+1,	// size in bytes of data
 						 (uint8_t*)test->dir,	// Data to start into FTP message payload
@@ -539,7 +539,7 @@ bool MavlinkFtpTest::_removedirectory_test(void)
 		if (!success) {
 			return false;
 		}
-		
+
 		if (test->success) {
 			ut_compare("Didn't get Ack back", reply->opcode, MavlinkFTP::kRspAck);
 			ut_compare("Incorrect payload size", reply->size, 0);
@@ -549,7 +549,7 @@ bool MavlinkFtpTest::_removedirectory_test(void)
 			ut_compare("Incorrect error code", reply->data[0], MavlinkFTP::kErrFailErrno);
 		}
 	}
-	
+
 	return true;
 }
 
@@ -558,7 +558,7 @@ bool MavlinkFtpTest::_createdirectory_test(void)
 	MavlinkFTP::PayloadHeader		payload;
 	mavlink_file_transfer_protocol_t	ftp_msg;
 	MavlinkFTP::PayloadHeader		*reply;
-	
+
 	struct _testCase {
 		const char	*dir;
 		bool		success;
@@ -569,13 +569,13 @@ bool MavlinkFtpTest::_createdirectory_test(void)
 		{ _unittest_microsd_dir,	false },
 		{ "/fs/microsd/bogus/bogus",	false },
 	};
-	
+
 	for (size_t i=0; i<sizeof(rgTestCases)/sizeof(rgTestCases[0]); i++) {
 		const struct _testCase *test = &rgTestCases[i];
-		
+
 		payload.opcode = MavlinkFTP::kCmdCreateDirectory;
 		payload.offset = 0;
-		
+
 		bool success = _send_receive_msg(&payload,		// FTP payload header
 						 strlen(test->dir)+1,	// size in bytes of data
 						 (uint8_t*)test->dir,	// Data to start into FTP message payload
@@ -584,7 +584,7 @@ bool MavlinkFtpTest::_createdirectory_test(void)
 		if (!success) {
 			return false;
 		}
-		
+
 		if (test->success) {
 			ut_compare("Didn't get Ack back", reply->opcode, MavlinkFTP::kRspAck);
 			ut_compare("Incorrect payload size", reply->size, 0);
@@ -594,7 +594,7 @@ bool MavlinkFtpTest::_createdirectory_test(void)
 			ut_compare("Incorrect error code", reply->data[0], MavlinkFTP::kErrFailErrno);
 		}
 	}
-	
+
 	return true;
 }
 
@@ -604,7 +604,7 @@ bool MavlinkFtpTest::_removefile_test(void)
 	mavlink_file_transfer_protocol_t	ftp_msg;
 	MavlinkFTP::PayloadHeader		*reply;
 	int					fd;
-	
+
 	struct _testCase {
 		const char	*file;
 		bool		success;
@@ -616,17 +616,17 @@ bool MavlinkFtpTest::_removefile_test(void)
 		{ _unittest_microsd_file,	true },
 		{ _unittest_microsd_file,	false },
 	};
-	
+
 	ut_compare("mkdir failed", ::mkdir(_unittest_microsd_dir, S_IRWXU | S_IRWXG | S_IRWXO), 0);
 	ut_assert("open failed", (fd = ::open(_unittest_microsd_file, O_CREAT | O_EXCL)) != -1);
 	::close(fd);
-	
+
 	for (size_t i=0; i<sizeof(rgTestCases)/sizeof(rgTestCases[0]); i++) {
 		const struct _testCase *test = &rgTestCases[i];
-		
+
 		payload.opcode = MavlinkFTP::kCmdRemoveFile;
 		payload.offset = 0;
-		
+
 		bool success = _send_receive_msg(&payload,		// FTP payload header
 						 strlen(test->file)+1,	// size in bytes of data
 						 (uint8_t*)test->file,	// Data to start into FTP message payload
@@ -635,7 +635,7 @@ bool MavlinkFtpTest::_removefile_test(void)
 		if (!success) {
 			return false;
 		}
-		
+
 		if (test->success) {
 			ut_compare("Didn't get Ack back", reply->opcode, MavlinkFTP::kRspAck);
 			ut_compare("Incorrect payload size", reply->size, 0);
@@ -645,7 +645,7 @@ bool MavlinkFtpTest::_removefile_test(void)
 			ut_compare("Incorrect error code", reply->data[0], MavlinkFTP::kErrFailErrno);
 		}
 	}
-	
+
 	return true;
 }
 
@@ -669,20 +669,20 @@ bool MavlinkFtpTest::_decode_message(const mavlink_message_t		*msg,		///< Mavlin
 				     MavlinkFTP::PayloadHeader		**payload)	///< Payload inside FTP message response
 {
 	mavlink_msg_file_transfer_protocol_decode(msg, ftp_msg);
-	
+
 	// Make sure the targets are correct
 	ut_compare("Target network non-zero", ftp_msg->target_network, 0);
 	ut_compare("Target system id mismatch", ftp_msg->target_system, clientSystemId);
 	ut_compare("Target component id mismatch", ftp_msg->target_component, clientComponentId);
-	
+
 	*payload = reinterpret_cast<MavlinkFTP::PayloadHeader *>(ftp_msg->payload);
-	
+
 	// Make sure we have a good sequence number
 	ut_compare("Sequence number mismatch", (*payload)->seqNumber, _lastOutgoingSeqNumber + 1);
-	
+
 	// Bump sequence number for next outgoing message
 	_lastOutgoingSeqNumber++;
-	
+
 	return true;
 }
 
@@ -694,18 +694,18 @@ void MavlinkFtpTest::_setup_ftp_msg(MavlinkFTP::PayloadHeader	*payload_header,	/
 {
 	uint8_t payload_bytes[MAVLINK_MSG_FILE_TRANSFER_PROTOCOL_FIELD_PAYLOAD_LEN];
 	MavlinkFTP::PayloadHeader *payload = reinterpret_cast<MavlinkFTP::PayloadHeader *>(payload_bytes);
-			     
+
 	memcpy(payload, payload_header, sizeof(MavlinkFTP::PayloadHeader));
-	
+
 	payload->seqNumber = _lastOutgoingSeqNumber;
 	payload->size = size;
 	if (size != 0) {
 		memcpy(payload->data, data, size);
 	}
-    
+
 	payload->padding[0] = 0;
 	payload->padding[1] = 0;
-	
+
 	msg->checksum = 0;
 	mavlink_msg_file_transfer_protocol_pack(clientSystemId,		// Sender system id
 						clientComponentId,	// Sender component id
@@ -729,7 +729,7 @@ bool MavlinkFtpTest::_send_receive_msg(MavlinkFTP::PayloadHeader	*payload_header
 	_ftp_server->handle_message(nullptr /* mavlink */, &msg);
 	return _decode_message(&_reply_msg, ftp_msg_reply, payload_reply);
 }
-	
+
 /// @brief Cleans up an files created on microsd during testing
 void MavlinkFtpTest::_cleanup_microsd(void)
 {
@@ -753,7 +753,7 @@ bool MavlinkFtpTest::run_tests(void)
 	ut_run_test(_removedirectory_test);
 	ut_run_test(_createdirectory_test);
 	ut_run_test(_removefile_test);
-	
+
 	return (_tests_failed == 0);
 
 }

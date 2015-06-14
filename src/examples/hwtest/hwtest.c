@@ -63,7 +63,7 @@ int ex_hwtest_main(int argc, char *argv[])
         while (hrt_absolute_time() - stime < 1000000) {
             for (i=0; i<8; i++)
                 actuators.control[i] = rcvalue;
-            actuators.timestamp = hrt_absolute_time(); 
+            actuators.timestamp = hrt_absolute_time();
             orb_publish(ORB_ID(actuator_controls_0), actuator_pub_fd, &actuators);
         }
         warnx("servos set to %.1f", rcvalue);

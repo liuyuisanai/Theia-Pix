@@ -426,7 +426,7 @@ extern "C" __EXPORT int calibrator_main(int argc, char ** argv)
 			long samples = strtol(argv[2], nullptr, 0);
 			long max_errors = strtol(argv[3], nullptr, 0);
 			long timeout = strtol(argv[4], nullptr, 0);
-			if (samples < 1 || samples > 1000000 || 
+			if (samples < 1 || samples > 1000000 ||
 					timeout < 2 || timeout > 10000 ||
 					max_errors < 0 || max_errors > 5000) { // sanity checks
 				fprintf(stderr, MSG_CALIBRATION_GYRO_WRONG_PARAM);

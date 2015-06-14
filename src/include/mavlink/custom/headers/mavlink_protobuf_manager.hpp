@@ -93,7 +93,7 @@ public:
 
 		for (int i = 0; i < fragmentCount; ++i)
 		{
-			mavlink_extended_message_t fragment;			
+			mavlink_extended_message_t fragment;
 
 			// write extended header data
 			uint8_t* payload = reinterpret_cast<uint8_t*>(fragment.base_msg.payload64);
@@ -120,7 +120,7 @@ public:
 
 			fragment.base_msg.msgid = MAVLINK_MSG_ID_EXTENDED_MESSAGE;
 			mavlink_finalize_message(&fragment.base_msg, system_id, component_id, kExtendedHeaderSize, 0);
-			
+
 			// write extended payload data
 			fragment.extended_payload_len = length;
 			memcpy(fragment.extended_payload, &data[offset], length);

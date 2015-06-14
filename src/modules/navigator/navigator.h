@@ -305,7 +305,7 @@ private:
 	 * Update parameters
 	 */
 	void		params_update();
-	
+
 	/**
 	 * Retrieve target global position
 	 */

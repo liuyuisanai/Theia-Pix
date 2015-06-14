@@ -112,7 +112,7 @@ public:
 	 * @param data		The buffer from which values should be read.
 	 * @param count		The number of items to write.
 	 * @return		The number of items written on success, negative errno otherwise.
-	 */	 
+	 */
 	virtual int	write(unsigned address, void *data, unsigned count);
 
 	/**

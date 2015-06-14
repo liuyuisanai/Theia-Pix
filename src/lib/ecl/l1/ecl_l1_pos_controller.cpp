@@ -133,7 +133,7 @@ void ECL_L1_Pos_Controller::navigate_waypoints(const math::Vector<2> &vector_A, 
 
 	/* estimate airplane position WRT to B */
 	math::Vector<2> vector_B_to_P_unit = get_local_planar_vector(vector_B, vector_curr_position).normalized();
-	
+
 	/* calculate angle of airplane position vector relative to line) */
 
 	// XXX this could probably also be based solely on the dot product
@@ -161,7 +161,7 @@ void ECL_L1_Pos_Controller::navigate_waypoints(const math::Vector<2> &vector_A, 
 	} else if (fabsf(AB_to_BP_bearing) < math::radians(100.0f)) {
 		/*
 		 * Extension, fly back to waypoint.
-		 * 
+		 *
 		 * This corner case is possible if the system was following
 		 * the AB line from waypoint A to waypoint B, then is
 		 * switched to manual mode (or otherwise misses the waypoint)
@@ -169,7 +169,7 @@ void ECL_L1_Pos_Controller::navigate_waypoints(const math::Vector<2> &vector_A, 
 		 */
 
 		/* calculate eta to fly to waypoint B */
-		
+
 		/* velocity across / orthogonal to line */
 		xtrack_vel = ground_speed_vector % (-vector_B_to_P_unit);
 		/* velocity along line */
@@ -314,7 +314,7 @@ void ECL_L1_Pos_Controller::navigate_heading(float navigation_heading, float cur
 
 	float eta;
 
-	/* 
+	/*
 	 * As the commanded heading is the only reference
 	 * (and no crosstrack correction occurs),
 	 * target and navigation bearing become the same
@@ -324,7 +324,7 @@ void ECL_L1_Pos_Controller::navigate_heading(float navigation_heading, float cur
 	eta = _wrap_pi(eta);
 
 	/* consequently the bearing error is exactly eta: */
-	_bearing_error = eta; 
+	_bearing_error = eta;
 
 	/* ground speed is the length of the ground speed vector */
 	float ground_speed = ground_speed_vector.length();

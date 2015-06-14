@@ -33,7 +33,7 @@
 
 /**
  * @file mcu_version.c
- * 
+ *
  * Read out the microcontroller version from the board
  *
  * @author Lorenz Meier <lorenz@px4.io>

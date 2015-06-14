@@ -72,7 +72,7 @@ void cButtonController::check(enum button_set bs, struct button_s *buttons, int 
 
         // Center button special handling
         if (i==4 && buttons[i].pressed) {
-        
+
             // Handle button press the first time
             if (buttons[i].last_command_sent == 0) {
                 (*cb_clicked)(callback_args[bs][BCBT_CLICKED], i, false);
@@ -129,7 +129,7 @@ void cButtonController::check(enum button_set bs, struct button_s *buttons, int 
 
 
                 if ( i== 2) {
-                    
+
                     // Long press sent once the press time is longer than LONG_PRESS_LENGTH
                     if (now - buttons[i].time_pressed > LONG_PRESS_LENGTH) {
                         (*cb_clicked)(callback_args[bs][BCBT_CLICKED], i, true);
@@ -138,7 +138,7 @@ void cButtonController::check(enum button_set bs, struct button_s *buttons, int 
 
                 }
                 else {
-                
+
 
                     // Handle button press the first time
                     if (buttons[i].last_command_sent == 0) {

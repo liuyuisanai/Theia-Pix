@@ -113,9 +113,9 @@ void pwm_limit_calc(const bool armed, const unsigned num_channels, const uint16_
 				progress = diff * 10000 / RAMP_TIME_US;
 
 				for (unsigned i=0; i<num_channels; i++) {
-	                
+
 					uint16_t ramp_min_pwm;
-	                
+
 					/* if a disarmed pwm value was set, blend between disarmed and min */
 					if (disarmed_pwm[i] > 0) {
 
@@ -129,7 +129,7 @@ void pwm_limit_calc(const bool armed, const unsigned num_channels, const uint16_
 						ramp_min_pwm = disarmed + (disarmed_min_diff * progress) / 10000;
 
 					} else {
-	                    
+
 						/* no disarmed pwm value set, choose min pwm */
 						ramp_min_pwm = min_pwm[i];
 					}

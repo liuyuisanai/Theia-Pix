@@ -87,7 +87,7 @@ decode_callback(bson_decoder_t decoder, void *private, bson_node_t node)
 			return 1;
 		}
 		if (node->b != sample_bool) {
-			warnx("FAIL: decoder: bool1 value %s, expected %s", 
+			warnx("FAIL: decoder: bool1 value %s, expected %s",
 				(node->b ? "true" : "false"),
 				(sample_bool ? "true" : "false"));
 			return 1;
@@ -177,7 +177,7 @@ decode_callback(bson_decoder_t decoder, void *private, bson_node_t node)
 			warnx("FAIL: decoder: data1 length %d, expected %d", len, sizeof(sample_data));
 			return 1;
 		}
-		
+
 		if (node->subtype != BSON_BIN_BINARY) {
 			warnx("FAIL: decoder: data1 subtype %d, expected %d", node->subtype, BSON_BIN_BINARY);
 			return 1;

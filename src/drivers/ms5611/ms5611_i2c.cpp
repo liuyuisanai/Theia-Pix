@@ -234,7 +234,7 @@ int
 MS5611_I2C::_measure(unsigned addr)
 {
 	/*
-	 * Disable retries on this command; we can't know whether failure 
+	 * Disable retries on this command; we can't know whether failure
 	 * means the device did or did not see the command.
 	 */
 	_retries = 0;

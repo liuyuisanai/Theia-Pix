@@ -34,7 +34,7 @@
  ****************************************************************************/
 
 /// @file	LowPassFilter.cpp
-/// @brief	A class to implement a second order low pass filter 
+/// @brief	A class to implement a second order low pass filter
 /// Author: Leonard Hall <LeonardTHall@gmail.com>
 
 #include "LowPassFilter2p.hpp"
@@ -73,7 +73,7 @@ float LowPassFilter2p::apply(float sample)
         delay_element_0 = sample;
     }
     float output = delay_element_0 * _b0 + _delay_element_1 * _b1 + _delay_element_2 * _b2;
-    
+
     _delay_element_2 = _delay_element_1;
     _delay_element_1 = delay_element_0;
 

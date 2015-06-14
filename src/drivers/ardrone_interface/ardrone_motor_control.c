@@ -108,7 +108,7 @@ void ar_enable_broadcast(int fd)
 int ar_multiplexing_init()
 {
 	int		fd;
-	
+
 	fd = open(PX4FMU_DEVICE_PATH, 0);
 
 	if (fd < 0) {
@@ -176,7 +176,7 @@ int ar_select_motor(int fd, uint8_t motor)
 		ret += ioctl(fd, GPIO_CLEAR, motor_gpios);
 
 	} else {
-		/* select reqested motor */	
+		/* select reqested motor */
 		ret += ioctl(fd, GPIO_CLEAR, motor_gpio[motor - 1]);
 	}
 
@@ -199,7 +199,7 @@ int ar_deselect_motor(int fd, uint8_t motor)
 		ret += ioctl(fd, GPIO_SET, motor_gpios);
 
 	} else {
-		/* deselect reqested motor */	
+		/* deselect reqested motor */
 		ret = ioctl(fd, GPIO_SET, motor_gpio[motor - 1]);
 	}
 

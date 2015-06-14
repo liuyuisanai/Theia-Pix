@@ -74,8 +74,8 @@ COPYRIGHT NOTICE AND DISCLAIMER:
 
 Copyright (C) 1997 Gregory Pietsch
 
-This file and the accompanying getopt.c implementation file are hereby 
-placed in the public domain without restrictions.  Just give the author 
+This file and the accompanying getopt.c implementation file are hereby
+placed in the public domain without restrictions.  Just give the author
 credit, don't claim you wrote it or prevent anyone else from using it.
 
 Gregory Pietsch's current e-mail address:

@@ -80,7 +80,7 @@ nshterm_main(int argc, char *argv[])
     }
 
     /* set up the serial port with output processing */
-    
+
     /* Try to set baud rate */
     struct termios uart_config;
     int termios_state;

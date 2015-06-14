@@ -2,7 +2,7 @@
 #include "common.h"
 
 #include <nuttx/config.h>
-#include <nuttx/clock.h> 
+#include <nuttx/clock.h>
 
 #include <drivers/drv_hrt.h>
 
@@ -37,7 +37,7 @@ void MENU_CONTROLLER::handlePressedButton(uint8_t button, hrt_abstime time) {
 		return;
 
 	//button_map_t cb = this->buttonMap[currentLevel][button];
-    /* 
+    /*
 	switch(cb.type) {
 		case BCBT_PRESSED:
 			(this->*cb.func.pressed)(time);
@@ -80,36 +80,36 @@ void MENU_CONTROLLER::handleClickedButton(uint8_t button/*, bool long_press*/) {
             if (currentLevel == MENU_LEVEL_SET) {
                 saveCurrentParam();
                 cancelEditing();
-            } 
-            else 
+            }
+            else
             if (currentLevel == MENU_LEVEL_PARAMS) {
                 editCurrentParam();
-            } 
-           
+            }
+
 			break;
 		case 5:
 			// CENTER DOWN
             if (currentLevel == MENU_LEVEL_SET) {
                 decCurrentParam();
-            } 
-            else 
+            }
+            else
             if (currentLevel == MENU_LEVEL_PARAMS) {
                 selectPrevParam();
-            } 
+            }
 			break;
 		case 6:
 			// CENTER RIGHT
 			break;
 		case 7:
 			// CENTER UP
-            
+
             if (currentLevel == MENU_LEVEL_SET) {
                 incCurrentParam();
-            } 
-            else 
+            }
+            else
             if (currentLevel == MENU_LEVEL_PARAMS) {
                 selectNextParam();
-            } 
+            }
 			break;
 		case 8:
 			// CENTER LEFT

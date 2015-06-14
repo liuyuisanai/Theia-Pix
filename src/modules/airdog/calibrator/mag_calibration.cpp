@@ -132,7 +132,7 @@ bool sample_offsets(sample_stat_s &res_stats, unsigned int sample_count, unsigne
 	int res = 0;
 
 	// collect the stats for fit_sphere until the time is up
-	
+
 	unsigned int success_count = 0;
 	unsigned int error_count = 0;
 	orb_set_interval(mag_topic, interval); // limit the topic update frequency
@@ -142,7 +142,7 @@ bool sample_offsets(sample_stat_s &res_stats, unsigned int sample_count, unsigne
 		if (res == 1) {
 			if (orb_copy(ORB_ID(sensor_mag0), mag_topic, &report) == 0) {
 				++success_count;
-				calc_stats(report, res_stats);				
+				calc_stats(report, res_stats);
 			}
 			else {
 				++error_count;
@@ -286,11 +286,11 @@ bool sphere_fit_least_squares(sample_stat_s &res_stats, math::Vector<3> &sphere_
 		aC = (fabsf(aC) < FLT_EPSILON) ? 1.0f : aC;
 
 		//Compute next iteration
-		nA = A - ((F2 + 16.0f * (B * res_stats.xy_sum + C * res_stats.xz_sum + res_stats.x.sumplain * (-A2 - Q0) + 
+		nA = A - ((F2 + 16.0f * (B * res_stats.xy_sum + C * res_stats.xz_sum + res_stats.x.sumplain * (-A2 - Q0) +
 				A * (res_stats.x.sumsq + Q1 - C * res_stats.z.sumplain - B * res_stats.y.sumplain))) / aA);
-		nB = B - ((F3 + 16.0f * (A * res_stats.xy_sum + C * res_stats.yz_sum + res_stats.y.sumplain * (-B2 - Q0) + 
+		nB = B - ((F3 + 16.0f * (A * res_stats.xy_sum + C * res_stats.yz_sum + res_stats.y.sumplain * (-B2 - Q0) +
 				B * (res_stats.y.sumsq + Q1 - A * res_stats.x.sumplain - C * res_stats.z.sumplain))) / aB);
-		nC = C - ((F4 + 16.0f * (A * res_stats.xz_sum + B * res_stats.yz_sum + res_stats.z.sumplain * (-C2 - Q0) + 
+		nC = C - ((F4 + 16.0f * (A * res_stats.xz_sum + B * res_stats.yz_sum + res_stats.z.sumplain * (-C2 - Q0) +
 				C * (res_stats.z.sumsq + Q1 - A * res_stats.x.sumplain - B * res_stats.y.sumplain))) / aC);
 
 		//Check for stop condition

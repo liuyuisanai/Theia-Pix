@@ -170,7 +170,7 @@ void BlockMultiModeBacksideAutopilot::update()
 	if (_status.main_state == MAIN_STATE_AUTO) {
 
 		// calculate velocity, XXX should be airspeed,
-		// but using ground speed for now for the purpose 
+		// but using ground speed for now for the purpose
 		// of control we will limit the velocity feedback between
 		// the min/max velocity
 		float v = _vLimit.update(sqrtf(

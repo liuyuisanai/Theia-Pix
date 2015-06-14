@@ -22,20 +22,20 @@ class debug_data_log{
     public:
 
         debug_data_log(){
-            
+
             for (int i=0;i<8;i++)
                 debug_data.val[i] = 0.0f;
 
             debug_data_pub = -1;
-        
+
         }
        void log(int idx, double value){
 
             debug_data.val[idx] = value;
 
-            if (debug_data_pub == -1) 
+            if (debug_data_pub == -1)
                 debug_data_pub = orb_advertise(ORB_ID(debug_data), &debug_data);
-            else 
+            else
                 orb_publish(ORB_ID(debug_data), debug_data_pub, &debug_data);
 
         }

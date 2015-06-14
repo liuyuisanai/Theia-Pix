@@ -27,7 +27,7 @@ sinPsi_2 = sin(psi/2)
 C_nb = [cosTheta*cosPsi, -cosPhi*sinPsi + sinPhi*sinTheta*cosPsi, sinPhi*sinPsi + cosPhi*sinTheta*cosPsi;
         cosTheta*sinPsi, cosPhi*cosPsi + sinPhi*sinTheta*sinPsi, -sinPhi*cosPsi + cosPhi*sinTheta*sinPsi;
         -sinTheta, sinPhi*cosTheta, cosPhi*cosTheta]
-    
+
 disp(C_nb)
 //C_nb = float_truncate(C_nb,3)
 //disp(C_nb)
@@ -43,7 +43,7 @@ q = [cosPhi_2*cosTheta_2*cosPsi_2 + sinPhi_2*sinTheta_2*sinPsi_2;
      sinPhi_2*cosTheta_2*cosPsi_2 - cosPhi_2*sinTheta_2*sinPsi_2;
      cosPhi_2*sinTheta_2*cosPsi_2 + sinPhi_2*cosTheta_2*sinPsi_2;
      cosPhi_2*cosTheta_2*sinPsi_2 - sinPhi_2*sinTheta_2*cosPsi_2]
-     
+
 //q = float_truncate(q,3)
 
 a = q(1)

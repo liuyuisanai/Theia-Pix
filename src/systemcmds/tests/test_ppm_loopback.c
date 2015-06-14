@@ -97,7 +97,7 @@ int test_ppm_loopback(int argc, char *argv[])
 	// result = ioctl(servo_fd, PWM_SERVO_SET_ARM_OK, 0);
 	// if (result != OK)
 	// 	warnx("FAIL: PWM_SERVO_SET_ARM_OK");
-	//  tell output device that the system is armed (it will output values if safety is off) 
+	//  tell output device that the system is armed (it will output values if safety is off)
 	// result = ioctl(servo_fd, PWM_SERVO_ARM, 0);
 	// if (result != OK)
 	// 	warnx("FAIL: PWM_SERVO_ARM");

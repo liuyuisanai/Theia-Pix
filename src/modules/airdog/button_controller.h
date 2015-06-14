@@ -114,7 +114,7 @@ public:
 
 	void setCallback(enum button_set bs, enum button_callback_type bct, void *cb, void *arg = nullptr);
 
-    
+
 
 private:
 	struct button_s {

@@ -229,20 +229,20 @@ PARAM_DEFINE_INT32(BAT_FLAT_USE, 1);
 PARAM_DEFINE_INT32(A_TRGT_DLINK_TO, 1000);
 
 /**
- * Target visibility timeout 1. Length of time when no data from target received visibility will be considered lost. 
+ * Target visibility timeout 1. Length of time when no data from target received visibility will be considered lost.
  *
  * @group Airdog
- * @min 0.1f 
- * @max 30.0f 
+ * @min 0.1f
+ * @max 30.0f
  */
 PARAM_DEFINE_FLOAT(A_TRGT_VSB_TO_1, 1.0f);
 
 /**
- * Target visibility timeout 2. Length of time when no data from target received visibility will be considered lost to long and action should be taken.  
+ * Target visibility timeout 2. Length of time when no data from target received visibility will be considered lost to long and action should be taken.
  *
  * @group Airdog
- * @min 0.1f 
- * @max 30.0f 
+ * @min 0.1f
+ * @max 30.0f
  */
 PARAM_DEFINE_FLOAT(A_TRGT_VSB_TO_2, 5.0f);
 
@@ -250,8 +250,8 @@ PARAM_DEFINE_FLOAT(A_TRGT_VSB_TO_2, 5.0f);
  * Valid GPS position is required to arm copter
  *
  * @group Airdog
- * @min 0 
- * @max 1 
+ * @min 0
+ * @max 1
  */
 PARAM_DEFINE_INT32(A_REQUIRE_GPS, 1);
 

@@ -1346,7 +1346,7 @@ void AttPosEKF::FuseAirspeed()
         SH_TAS[0] = 1/(sqrt(sq(ve - vwe) + sq(vn - vwn) + sq(vd)));
         SH_TAS[1] = (SH_TAS[0]*(2.0f*ve - 2*vwe))/2.0f;
         SH_TAS[2] = (SH_TAS[0]*(2.0f*vn - 2*vwn))/2.0f;
-        
+
         float H_TAS[21];
         for (uint8_t i=0; i<=20; i++) H_TAS[i] = 0.0f;
         H_TAS[4] = SH_TAS[2];

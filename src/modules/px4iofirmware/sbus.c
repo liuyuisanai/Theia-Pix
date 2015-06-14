@@ -61,7 +61,7 @@
 /*
   Measured values with Futaba FX-30/R6108SB:
     -+100% on TX:  PCM 1.100/1.520/1.950ms -> SBus raw values: 350/1024/1700  (100% ATV)
-    -+140% on TX:  PCM 0.930/1.520/2.112ms -> SBus raw values:  78/1024/1964  (140% ATV)  
+    -+140% on TX:  PCM 0.930/1.520/2.112ms -> SBus raw values:  78/1024/1964  (140% ATV)
     -+152% on TX:  PCM 0.884/1.520/2.160ms -> SBus raw values:   1/1024/2047  (140% ATV plus dirty tricks)
 */
 
@@ -307,9 +307,9 @@ sbus_decode(hrt_abstime frame_time, uint16_t *values, uint16_t *num_values, bool
 	}
 	else if (frame[SBUS_FLAGS_BYTE] & (1 << SBUS_FRAMELOST_BIT)) { /* a frame was lost */
 		/* set a special warning flag
-		 * 
-		 * Attention! This flag indicates a skipped frame only, not a total link loss! Handling this 
-		 * condition as fail-safe greatly reduces the reliability and range of the radio link, 
+		 *
+		 * Attention! This flag indicates a skipped frame only, not a total link loss! Handling this
+		 * condition as fail-safe greatly reduces the reliability and range of the radio link,
 		 * e.g. by prematurely issueing return-to-launch!!! */
 
 		*sbus_failsafe = false;

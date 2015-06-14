@@ -77,7 +77,7 @@ SimpleMixer::parse_output_scaler(const char *buf, unsigned &buflen, mixer_scaler
 	int ret;
 	int s[5];
 	int n = -1;
-	
+
 	buf = findtag(buf, buflen, 'O');
 	if ((buf == nullptr) || (buflen < 12)) {
 		debug("output parser failed finding tag, ret: '%s'", buf);

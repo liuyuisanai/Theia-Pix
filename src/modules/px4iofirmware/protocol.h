@@ -43,7 +43,7 @@
  *
  * The first two bytes of each write select a page and offset address
  * respectively. Subsequent reads and writes increment the offset within
- * the page. 
+ * the page.
  *
  * Some pages are read- or write-only.
  *
@@ -53,7 +53,7 @@
  * Writes to unimplemented registers are ignored. Reads from unimplemented
  * registers return undefined values.
  *
- * As convention, values that would be floating point in other parts of 
+ * As convention, values that would be floating point in other parts of
  * the PX4 system are expressed as signed integer values scaled by 10000,
  * e.g. control values range from -10000..10000.  Use the REG_TO_SIGNED and
  * SIGNED_TO_REG macros to convert between register representation and
@@ -63,7 +63,7 @@
  * readable pages to be densely packed. Page numbers do not need to be
  * packed.
  *
- * Definitions marked [1] are only valid on PX4IOv1 boards. Likewise, 
+ * Definitions marked [1] are only valid on PX4IOv1 boards. Likewise,
  * [2] denotes definitions specific to the PX4IOv2 board.
  */
 

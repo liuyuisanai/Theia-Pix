@@ -38,7 +38,7 @@ ASHTECH::~ASHTECH()
 int ASHTECH::handle_message(int len)
 {
 	char * endp;
-	
+
 	if (len < 7) { return 0; }
 
 	int uiCalcComma = 0;
@@ -611,8 +611,8 @@ void ASHTECH::decode_init(void)
 
 }
 
-/* 
- * ashtech board configuration script 
+/*
+ * ashtech board configuration script
  */
 
 const char comm[] = "$PASHS,POP,20\r\n"\

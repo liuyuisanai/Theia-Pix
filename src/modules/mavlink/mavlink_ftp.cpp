@@ -100,7 +100,7 @@ MavlinkFTP::handle_message(Mavlink* mavlink, mavlink_message_t *msg)
 
 	if (msg->msgid == MAVLINK_MSG_ID_FILE_TRANSFER_PROTOCOL) {
 		mavlink_msg_file_transfer_protocol_decode(msg, &req->message);
-		
+
 #ifdef MAVLINK_FTP_UNIT_TEST
 		if (!_utRcvMsgFunc) {
 			warnx("Incorrectly written unit test\n");
@@ -116,10 +116,10 @@ MavlinkFTP::handle_message(Mavlink* mavlink, mavlink_message_t *msg)
 		req->serverComponentId = mavlink->get_component_id();
 		req->serverChannel = mavlink->get_channel();
 #endif
-		
+
 		// This is the system id we want to target when sending
 		req->targetSystemId = msg->sysid;
-			
+
 		if (req->message.target_system == req->serverSystemId) {
 			req->mavlink = mavlink;
 #ifdef MAVLINK_FTP_UNIT_TEST
@@ -216,11 +216,11 @@ MavlinkFTP::_process_request(Request *req)
 	case kCmdCreateDirectory:
 		errorCode = _workCreateDirectory(payload);
 		break;
-			
+
 	case kCmdRemoveDirectory:
 		errorCode = _workRemoveDirectory(payload);
 		break;
-			
+
 
 	case kCmdCalcFileCRC32:
 		errorCode = _workCalcFileCRC32(payload);
@@ -228,7 +228,7 @@ MavlinkFTP::_process_request(Request *req)
 
 	default:
 		errorCode = kErrUnknownCommand;
-		break;	
+		break;
 	}
 
 out:
@@ -252,7 +252,7 @@ out:
 		}
 	}
 
-	
+
 	// respond to the request
 	_reply(req);
 
@@ -264,7 +264,7 @@ void
 MavlinkFTP::_reply(Request *req)
 {
 	PayloadHeader *payload = reinterpret_cast<PayloadHeader *>(&req->message.payload[0]);
-	
+
 	payload->seqNumber = payload->seqNumber + 1;
 
 	mavlink_message_t msg;
@@ -280,18 +280,18 @@ MavlinkFTP::_reply(Request *req)
 								    req->targetSystemId,	// Target system id
 								    0,				// Target component id
 								    (const uint8_t*)payload);	// Payload to pack into message
-	
+
 	bool success = true;
 #ifdef MAVLINK_FTP_UNIT_TEST
 	// Unit test hook is set, call that instead
 	_utRcvMsgFunc(&msg, _ftp_test);
 #else
 	Mavlink	*mavlink = req->mavlink;
-	
+
 	mavlink->lockMessageBufferMutex();
 	success = mavlink->message_buffer_write(&msg, len);
 	mavlink->unlockMessageBufferMutex();
-		
+
 #endif
 
 	if (!success) {
@@ -314,14 +314,14 @@ MavlinkFTP::_workList(PayloadHeader* payload)
 {
     char dirPath[kMaxDataLength];
     strncpy(dirPath, _data_as_cstring(payload), kMaxDataLength);
-    
+
 	DIR *dp = opendir(dirPath);
 
 	if (dp == nullptr) {
 		warnx("FTP: can't open path '%s'", dirPath);
 		return kErrFailErrno;
 	}
-    
+
 #ifdef MAVLINK_FTP_DEBUG
 	warnx("FTP: list %s offset %d", dirPath, payload->offset);
 #endif
@@ -379,7 +379,7 @@ MavlinkFTP::_workList(PayloadHeader* payload)
 			// We only send back file and diretory entries, skip everything else
 			direntType = kDirentSkip;
 		}
-		
+
 		if (direntType == kDirentSkip) {
 			// Skip send only dirent identifier
 			buf[0] = '\0';
@@ -397,7 +397,7 @@ MavlinkFTP::_workList(PayloadHeader* payload)
 		if ((offset + nameLen + 2) > kMaxDataLength) {
 			break;
 		}
-		
+
 		// Move the data into the buffer
 		payload->data[offset++] = direntType;
 		strcpy((char *)&payload->data[offset], buf);
@@ -520,7 +520,7 @@ MavlinkFTP::_workRemoveFile(PayloadHeader* payload)
 {
 	char file[kMaxDataLength];
 	strncpy(file, _data_as_cstring(payload), kMaxDataLength);
-	
+
 	if (unlink(file) == 0) {
 		payload->size = 0;
 		return kErrNone;
@@ -611,10 +611,10 @@ MavlinkFTP::_workTerminate(PayloadHeader* payload)
 	if (!_valid_session(payload->session)) {
 		return kErrInvalidSession;
 	}
-    
+
 	::close(_session_fds[payload->session]);
 	_session_fds[payload->session] = -1;
-	
+
 	payload->size = 0;
 
 	return kErrNone;
@@ -632,7 +632,7 @@ MavlinkFTP::_workReset(PayloadHeader* payload)
 	}
 
 	payload->size = 0;
-	
+
 	return kErrNone;
 }
 
@@ -669,7 +669,7 @@ MavlinkFTP::_workRemoveDirectory(PayloadHeader* payload)
 {
 	char dir[kMaxDataLength];
 	strncpy(dir, _data_as_cstring(payload), kMaxDataLength);
-	
+
 	if (rmdir(dir) == 0) {
 		payload->size = 0;
 		return kErrNone;
@@ -684,7 +684,7 @@ MavlinkFTP::_workCreateDirectory(PayloadHeader* payload)
 {
 	char dir[kMaxDataLength];
 	strncpy(dir, _data_as_cstring(payload), kMaxDataLength);
-	
+
 	if (mkdir(dir, S_IRWXU | S_IRWXG | S_IRWXO) == 0) {
 		payload->size = 0;
 		return kErrNone;

@@ -207,7 +207,7 @@ private:
 
 	struct hrt_call		_call;
 	unsigned		_call_interval;
-	
+
 	RingBuffer		*_reports;
 
 	gyro_calibration_s	_gyro_calibration;
@@ -359,7 +359,7 @@ L3GD20::L3GD20(int bus, const char* path, spi_dev_e device, enum Rotation rotati
 	_gyro_filter_y(L3GD20_DEFAULT_RATE, L3GD20_DEFAULT_FILTER_FREQ),
 	_gyro_filter_z(L3GD20_DEFAULT_RATE, L3GD20_DEFAULT_FILTER_FREQ),
 	_is_l3g4200d(false),
-        _rotation(rotation)                                            
+        _rotation(rotation)
 {
 	// enable debug() calls
 	_debug_enabled = true;
@@ -585,7 +585,7 @@ L3GD20::ioctl(struct file *filp, int cmd, unsigned long arg)
 			return -ENOMEM;
 		}
 		irqrestore(flags);
-		
+
 		return OK;
 	}
 
@@ -875,7 +875,7 @@ L3GD20::measure()
               we waited for DRDY, but did not see DRDY on all axes
               when we captured. That means a transfer error of some sort
              */
-            perf_count(_errors);            
+            perf_count(_errors);
             return;
         }
 #endif
@@ -895,7 +895,7 @@ L3GD20::measure()
 	 */
 	report.timestamp = hrt_absolute_time();
         report.error_count = 0; // not recorded
-	
+
 	switch (_orientation) {
 
 		case SENSOR_BOARD_ROTATION_000_DEG:

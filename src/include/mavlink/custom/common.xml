@@ -120,7 +120,7 @@
                <entry value="20" name="MAV_TYPE_VTOL_QUADROTOR">
                     <description>Quad-rotor VTOL using a V-shaped quad config in vertical operation. Tailsitter.</description>
                </entry>
-               <!-- Entries up to 25 reserved for other VTOL airframes -->          
+               <!-- Entries up to 25 reserved for other VTOL airframes -->
 	</enum>
           <!-- WARNING: MAV_ACTION Enum is no longer supported - has been removed. Please use MAV_CMD -->
           <enum name="MAV_MODE_FLAG">
@@ -788,7 +788,7 @@
                     <param index="5">Latitude</param>
                     <param index="6">Longitude</param>
                     <param index="7">Empty</param>
-                </entry>                
+                </entry>
                 <entry value="190" name="MAV_CMD_DO_RALLY_LAND">
                     <description>Mission command to perform a landing from a rally point.</description>
                     <param index="1">Break altitude (meters)</param>
@@ -2526,7 +2526,7 @@
             <field type="float" name="current_height">Current vehicle height above lat/lon terrain height (meters)</field>
             <field type="uint16_t" name="pending">Number of 4x4 terrain blocks waiting to be received or read from disk</field>
             <field type="uint16_t" name="loaded">Number of 4x4 terrain blocks in memory</field>
-         </message>         
+         </message>
 	<message id="147" name="BATTERY_STATUS">
             <description>Battery information</description>
             <field type="uint8_t" name="id">Battery ID</field>
@@ -2578,7 +2578,7 @@
                <field type="float" name="yawspeed">Yaw angular speed (rad/s)</field>
                <field type="float[9]" name="covariance">Attitude covariance</field>
           </message>
-          
+
 	  <message id="152" name="V2_EXTENSION">
             <description>Message implementing parts of the V2 payload specs in V1 frames for transitional support.</description>
             <field type="uint8_t" name="target_network">Network ID (0 for broadcast)</field>
@@ -2586,7 +2586,7 @@
             <field type="uint8_t" name="target_component">Component ID (0 for broadcast)</field>
             <field type="uint16_t" name="message_type">A code that identifies the software component that understands this message (analogous to usb device classes or mime type strings).  If this code is less than 32768, it is considered a 'registered' protocol extension and the corresponding entry should be added to https://github.com/mavlink/mavlink/extension-message-ids.xml.  Software creators can register blocks of message IDs as needed (useful for GCS specific metadata, etc...). Message_types greater than 32767 are considered local experiments and should not be checked in to any widely distributed codebase.</field>
             <field type="uint8_t[249]" name="payload">Variable length payload. The length is defined by the remaining message length when subtracting the header and other fields.  The entire content of this block is opaque unless you understand any the encoding message_type.  The particular encoding used can be extension specific and might not always be documented as part of the mavlink specification.</field>
-          </message>	
+          </message>
 	  <message id="153" name="GLOBAL_POSITION_INT_COV">
               <description>The filtered global position (e.g. fused GPS and accelerometers). The position is in GPS-frame (right-handed, Z-up). It  is designed as scaled integer message since the resolution of float is not sufficient. NOTE: This message is intended for onboard networks / companion computers and higher-bandwidth links and optimized for accuracy and completeness. Please use the GLOBAL_POSITION_INT message for a minimal subset.</description>
               <field type="uint32_t" name="time_boot_ms">Timestamp (milliseconds since system boot)</field>
@@ -2613,7 +2613,7 @@
               <field type="float" name="vy">Y Speed</field>
               <field type="float" name="vz">Z Speed</field>
               <field type="float[36]" name="covariance">Covariance matrix (first six entries are the first ROW, next six entries are the second row, etc.)</field>
-          </message>  
+          </message>
           <message id="155" name="SET_ATTITUDE_TARGET">
                <description>Set the vehicle attitude and body angular rates.</description>
                <field type="uint32_t" name="time_boot_ms">Timestamp in milliseconds since system boot</field>
@@ -2716,7 +2716,7 @@
             <field type="uint8_t[251]" name="payload">Variable length payload. The length is defined by the remaining message length when subtracting the header and other fields.  The entire content of this block is opaque unless you understand any the encoding message_type.  The particular encoding used can be extension specific and might not always be documented as part of the mavlink specification.</field>
         </message>
 <!-- MESSAGE IDs 162 - 240: Space for custom messages in individual projectname_messages.xml files -->
-          
+
 	  <message id="249" name="MEMORY_VECT">
                <description>Send raw controller memory. The use of this message is discouraged for normal packets, but a quite efficient way for testing new messages and getting experimental debug output.</description>
                <field type="uint16_t" name="address">Starting address of the debug variables</field>

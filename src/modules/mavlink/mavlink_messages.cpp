@@ -249,7 +249,7 @@ void get_mavlink_mode_state(struct vehicle_status_s *status, struct position_set
 
 	} else {
 		*mavlink_state = MAV_STATE_CRITICAL;
-    
+
 	}
 }
 
@@ -968,7 +968,7 @@ protected:
 		struct vehicle_global_position_s pos;
         struct home_position_s home;
         struct vehicle_gps_position_s gps;
- 
+
         bool updated = _pos_sub->update(&_pos_time, &pos);
         updated |= _home_sub->update(&_home_time, &home);
         updated |= _gps_sub->update(&_gps_time, &gps);

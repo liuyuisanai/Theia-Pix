@@ -81,7 +81,7 @@ config_main(int argc, char *argv[])
 			do_device(argc - 1, argv + 1);
 		}
 	}
-	
+
 	errx(1, "expected a command, try 'gyro', 'accel', 'mag'");
 }
 

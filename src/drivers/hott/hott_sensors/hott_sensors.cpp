@@ -104,11 +104,11 @@ int
 recv_data(int uart, uint8_t *buffer, size_t *size, uint8_t *id)
 {
 	static const int timeout_ms = 1000;
-	
+
 	struct pollfd fds;
 	fds.fd = uart;
 	fds.events = POLLIN;
-	
+
 	// XXX should this poll be inside the while loop???
 	if (poll(&fds, 1, timeout_ms) > 0) {
 		int i = 0;

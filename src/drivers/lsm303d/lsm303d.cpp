@@ -310,10 +310,10 @@ private:
 	// accel logging
 	int			_accel_log_fd;
 	bool			_accel_logging_enabled;
-	uint64_t		_last_extreme_us;	
-	uint64_t		_last_log_us;	
-	uint64_t		_last_log_sync_us;	
-	uint64_t		_last_log_reg_us;	
+	uint64_t		_last_extreme_us;
+	uint64_t		_last_log_us;
+	uint64_t		_last_log_sync_us;
+	uint64_t		_last_log_reg_us;
 	uint64_t		_last_log_alarm_us;
 	enum Rotation		_rotation;
 
@@ -724,7 +724,7 @@ LSM303D::probe()
 
 	/* verify that the device is attached and functioning */
 	bool success = (read_reg(ADDR_WHO_AM_I) == WHO_I_AM);
-	
+
 	if (success)
 		return OK;
 
@@ -741,8 +741,8 @@ LSM303D::check_extremes(const accel_report *arb)
 {
 	const float extreme_threshold = 30;
         static bool boot_ok = false;
-	bool is_extreme = (fabsf(arb->x) > extreme_threshold && 
-			   fabsf(arb->y) > extreme_threshold && 
+	bool is_extreme = (fabsf(arb->x) > extreme_threshold &&
+			   fabsf(arb->y) > extreme_threshold &&
 			   fabsf(arb->z) > extreme_threshold);
 	if (is_extreme) {
 		perf_count(_extreme_values);
@@ -785,7 +785,7 @@ LSM303D::check_extremes(const accel_report *arb)
 	    now - _last_log_us > 1000*1000) {
 		_last_log_us = now;
 		::dprintf(_accel_log_fd, "ARB %llu %.3f %.3f %.3f %d %d %d boot_ok=%u\r\n",
-			  (unsigned long long)arb->timestamp, 
+			  (unsigned long long)arb->timestamp,
 			  (double)arb->x, (double)arb->y, (double)arb->z,
 			  (int)arb->x_raw,
 			  (int)arb->y_raw,
@@ -793,16 +793,16 @@ LSM303D::check_extremes(const accel_report *arb)
 			  (unsigned)boot_ok);
 	}
 
-        const uint8_t reglist[] = { ADDR_WHO_AM_I, 0x02, 0x15, ADDR_STATUS_A, ADDR_STATUS_M, ADDR_CTRL_REG0, ADDR_CTRL_REG1, 
-                                    ADDR_CTRL_REG2, ADDR_CTRL_REG3, ADDR_CTRL_REG4, ADDR_CTRL_REG5, ADDR_CTRL_REG6, 
-                                    ADDR_CTRL_REG7, ADDR_OUT_TEMP_L, ADDR_OUT_TEMP_H, ADDR_INT_CTRL_M, ADDR_INT_SRC_M, 
-                                    ADDR_REFERENCE_X, ADDR_REFERENCE_Y, ADDR_REFERENCE_Z, ADDR_OUT_X_L_A, ADDR_OUT_X_H_A, 
-                                    ADDR_OUT_Y_L_A, ADDR_OUT_Y_H_A, ADDR_OUT_Z_L_A, ADDR_OUT_Z_H_A, ADDR_FIFO_CTRL, 
-                                    ADDR_FIFO_SRC, ADDR_IG_CFG1, ADDR_IG_SRC1, ADDR_IG_THS1, ADDR_IG_DUR1, ADDR_IG_CFG2, 
-                                    ADDR_IG_SRC2, ADDR_IG_THS2, ADDR_IG_DUR2, ADDR_CLICK_CFG, ADDR_CLICK_SRC, 
-                                    ADDR_CLICK_THS, ADDR_TIME_LIMIT, ADDR_TIME_LATENCY, ADDR_TIME_WINDOW, 
+        const uint8_t reglist[] = { ADDR_WHO_AM_I, 0x02, 0x15, ADDR_STATUS_A, ADDR_STATUS_M, ADDR_CTRL_REG0, ADDR_CTRL_REG1,
+                                    ADDR_CTRL_REG2, ADDR_CTRL_REG3, ADDR_CTRL_REG4, ADDR_CTRL_REG5, ADDR_CTRL_REG6,
+                                    ADDR_CTRL_REG7, ADDR_OUT_TEMP_L, ADDR_OUT_TEMP_H, ADDR_INT_CTRL_M, ADDR_INT_SRC_M,
+                                    ADDR_REFERENCE_X, ADDR_REFERENCE_Y, ADDR_REFERENCE_Z, ADDR_OUT_X_L_A, ADDR_OUT_X_H_A,
+                                    ADDR_OUT_Y_L_A, ADDR_OUT_Y_H_A, ADDR_OUT_Z_L_A, ADDR_OUT_Z_H_A, ADDR_FIFO_CTRL,
+                                    ADDR_FIFO_SRC, ADDR_IG_CFG1, ADDR_IG_SRC1, ADDR_IG_THS1, ADDR_IG_DUR1, ADDR_IG_CFG2,
+                                    ADDR_IG_SRC2, ADDR_IG_THS2, ADDR_IG_DUR2, ADDR_CLICK_CFG, ADDR_CLICK_SRC,
+                                    ADDR_CLICK_THS, ADDR_TIME_LIMIT, ADDR_TIME_LATENCY, ADDR_TIME_WINDOW,
                                     ADDR_ACT_THS, ADDR_ACT_DUR,
-                                    ADDR_OUT_X_L_M, ADDR_OUT_X_H_M, 
+                                    ADDR_OUT_X_L_M, ADDR_OUT_X_H_M,
                                     ADDR_OUT_Y_L_M, ADDR_OUT_Y_H_M, ADDR_OUT_Z_L_M, ADDR_OUT_Z_H_M, 0x02, 0x15, ADDR_WHO_AM_I};
         uint8_t regval[sizeof(reglist)];
         for (uint8_t i=0; i<sizeof(reglist); i++) {
@@ -828,7 +828,7 @@ LSM303D::check_extremes(const accel_report *arb)
 	}
 
 	// play alarm every 10s if we have had an extreme value
-	if (perf_event_count(_extreme_values) != 0 && 
+	if (perf_event_count(_extreme_values) != 0 &&
 	    (now - _last_log_alarm_us > 10*1000*1000)) {
 		_last_log_alarm_us = now;
 		int tfd = ::open(TONEALARM_DEVICE_PATH, 0);
@@ -843,7 +843,7 @@ LSM303D::check_extremes(const accel_report *arb)
 			}
 			::ioctl(tfd, TONE_SET_ALARM, tone);
 			::close(tfd);
-		}		
+		}
 	}
 }
 
@@ -1116,7 +1116,7 @@ LSM303D::mag_ioctl(struct file *filp, int cmd, unsigned long arg)
 			return SENSOR_POLLRATE_MANUAL;
 
 		return 1000000 / _call_mag_interval;
-	
+
 	case SENSORIOCSQUEUEDEPTH: {
 		/* lower bound is mandatory, upper bound is a sanity check */
 		if ((arg < 1) || (arg > 100))

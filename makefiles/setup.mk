@@ -37,7 +37,7 @@
 # Some useful paths.
 #
 # Note that in general we always keep directory paths with the separator
-# at the end, and join paths without explicit separators. This reduces 
+# at the end, and join paths without explicit separators. This reduces
 # the number of duplicate slashes we have lying around in paths,
 # and is consistent with joining the results of $(dir) and $(notdir).
 #

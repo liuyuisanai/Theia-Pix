@@ -506,9 +506,9 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
                 if (range_finder.valid) {
                         switch(range_finder.type)
                         {
-                            case RANGE_FINDER_TYPE_ULTRASONIC: 
+                            case RANGE_FINDER_TYPE_ULTRASONIC:
                             case RANGE_FINDER_TYPE_LASER: {
-                                        
+
                                         prev_range = current_range;
 
                                         current_range.timestamp = t;
@@ -1258,7 +1258,7 @@ float pwm_lpf_filtering(float current_value, float low_filtering_coeff, float hi
 
     if ( delta > epsilon) {
         corr_sonar_filtered = high_filtering_coeff * current_value + (1 - high_filtering_coeff) * corr_sonar_filtered;
-    } else { 
+    } else {
         corr_sonar_filtered = low_filtering_coeff * current_value + (1 - low_filtering_coeff) * corr_sonar_filtered;
     }
     return corr_sonar_filtered;

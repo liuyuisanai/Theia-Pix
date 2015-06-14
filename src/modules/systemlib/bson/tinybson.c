@@ -390,7 +390,7 @@ bson_encoder_init_buf(bson_encoder_t encoder, void *buf, unsigned bufsize)
 	if (write_int32(encoder, 0))
 		CODER_KILL(encoder, "write error on document length");
 
-	return 0;		
+	return 0;
 }
 
 int

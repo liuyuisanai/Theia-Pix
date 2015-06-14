@@ -237,7 +237,7 @@ test_mount(int argc, char *argv[])
 					warnx("READ ERROR!");
 					return 1;
 				}
-				
+
 				/* compare value */
 				bool compare_ok = true;
 

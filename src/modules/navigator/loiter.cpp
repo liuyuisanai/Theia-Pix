@@ -188,7 +188,7 @@ Loiter::on_active()
 		}
 		else if (_parameters.airdog_init_pos_use == 1){
             set_sub_mode(LOITER_SUB_MODE_GO_TO_POSITION, 2);
-            go_to_intial_position(); 
+            go_to_intial_position();
         }
         else {
         	if (_parameters.start_follow_immediately == 1) {
@@ -236,7 +236,7 @@ Loiter::on_active()
 
 	if ( update_vehicle_command() )
 			execute_vehicle_command();
-	
+
 }
 
 void
@@ -623,11 +623,11 @@ Loiter::set_sub_mode(LOITER_SUB_MODE new_sub_mode, uint8_t reset_setpoint, int8_
 		pos_sp_triplet->next.valid = false;
 
 		pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
-		
+
 		if (reset_setpoint == 1) {
 			// Reset setpoint position to current global position
 			global_pos = _navigator->get_global_position();
-			
+
 			pos_sp_triplet->current.alt = global_pos->alt;
 			pos_sp_triplet->current.lon = global_pos->lon;
 			pos_sp_triplet->current.lat = global_pos->lat;
@@ -683,7 +683,7 @@ Loiter::start_follow() {
 		_navigator->set_commander_request_updated();
 
     } else if (_parameters.afol_mode == 1) {
-         
+
         commander_request_s *commander_request = _navigator->get_commander_request();
         commander_request->request_type = V_MAIN_STATE_CHANGE;
         commander_request->main_state = MAIN_STATE_AUTO_PATH_FOLLOW;
@@ -691,7 +691,7 @@ Loiter::start_follow() {
         _navigator->set_flag_reset_pfol_offs(true);
 
         _navigator->set_commander_request_updated();
-    
+
     } else if (_parameters.afol_mode == 2) {
         commander_request_s *commander_request = _navigator->get_commander_request();
         commander_request->request_type = V_MAIN_STATE_CHANGE;

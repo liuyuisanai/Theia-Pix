@@ -1353,7 +1353,7 @@ HMC5883::print_info()
 	printf("poll interval:  %u ticks\n", _measure_ticks);
 	printf("output  (%.2f %.2f %.2f)\n", (double)_last_report.x, (double)_last_report.y, (double)_last_report.z);
 	printf("offsets (%.2f %.2f %.2f)\n", (double)_calibration.offsets(0), (double)_calibration.offsets(1), (double)_calibration.offsets(2));
-	printf("scaling (%.2f %.2f %.2f) 1/range_scale %.2f range_ga %.2f\n", 
+	printf("scaling (%.2f %.2f %.2f) 1/range_scale %.2f range_ga %.2f\n",
 	       (double)_calibration.scales(0), (double)_calibration.scales(1), (double)_calibration.scales(2),
 	       (double)(1.0f/_range_scale), (double)_range_ga);
 	_reports->print_info("report queue");

@@ -1,7 +1,7 @@
 #include "i2c_display_controller.h"
 
 #include <nuttx/config.h>
-#include <nuttx/clock.h> 
+#include <nuttx/clock.h>
 
 #include <drivers/drv_hrt.h>
 

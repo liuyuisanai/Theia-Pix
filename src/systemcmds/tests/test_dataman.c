@@ -140,7 +140,7 @@ int test_dataman(int argc, char *argv[])
 
 	if (argc > 1)
 		num_tasks = atoi(argv[1]);
-	
+
 	sems = (sem_t *)malloc(num_tasks * sizeof(sem_t));
 	warnx("Running %d tasks", num_tasks);
 	for (i = 0; i < num_tasks; i++) {

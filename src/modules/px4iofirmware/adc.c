@@ -108,7 +108,7 @@ adc_init(void)
 
 	/*
 	 * Configure sampling time.
-	 * 
+	 *
 	 * For electrical protection reasons, we want to be able to have
 	 * 10K in series with ADC inputs that leave the board. At 12MHz this
 	 * means we need 28.5 cycles of sampling time (per table 43 in the

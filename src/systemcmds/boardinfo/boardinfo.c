@@ -389,7 +389,7 @@ boardinfo_test(const struct eeprom_info_s *eeprom, const char *property, const c
 	}
 	free(buf);
 
-	/* if we matched, we exit with zero success */	
+	/* if we matched, we exit with zero success */
 	exit((result == 2) ? 0 : 1);
 }
 

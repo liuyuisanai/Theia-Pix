@@ -152,9 +152,9 @@ public:
 
 		float mpc_max_speed;
 
-        float airdog_dst_inv; 
+        float airdog_dst_inv;
         float airdog_init_pos_dst;
-        int airdog_init_pos_use; 
+        int airdog_init_pos_use;
 
         int follow_rpt_alt;
 
@@ -166,7 +166,7 @@ public:
 
         float airdog_traj_radius;
 
-	} _parameters;		
+	} _parameters;
 
 
 	struct {
@@ -216,7 +216,7 @@ public:
 		param_t mpc_max_speed;
 
         param_t airdog_dst_inv;
-        param_t airdog_init_pos_dst; 
+        param_t airdog_init_pos_dst;
         param_t airdog_init_pos_use;
 
         param_t follow_rpt_alt;

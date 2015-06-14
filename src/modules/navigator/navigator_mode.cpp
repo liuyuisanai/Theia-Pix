@@ -129,7 +129,7 @@ NavigatorMode::updateParamHandles() {
     _parameter_handles.pafol_vel_i = param_find("PAFOL_VPID_I");
     _parameter_handles.pafol_vel_p = param_find("PAFOL_VPID_P");
     _parameter_handles.pafol_vel_d = param_find("PAFOL_VPID_D");
-    
+
     _parameter_handles.pafol_vel_i_add_dec_rate = param_find("PAFOL_VPID_I_DR");
     _parameter_handles.pafol_vel_i_add_inc_rate = param_find("PAFOL_VPID_I_IR");
     _parameter_handles.pafol_vel_i_upper_limit = param_find("PAFOL_VPID_I_UL");
@@ -207,7 +207,7 @@ NavigatorMode::updateParamValues() {
     param_get(_parameter_handles.start_follow_immediately, &(_parameters.start_follow_immediately));
 
     param_get(_parameter_handles.airdog_traj_radius, &(_parameters.airdog_traj_radius));
-    
+
 }
 
 
@@ -215,7 +215,7 @@ void
 NavigatorMode::run(bool active, bool parameters_updated) {
 
     if (parameters_updated) {
-        updateParameters();    
+        updateParameters();
     }
 
 	if (active) {
@@ -300,7 +300,7 @@ NavigatorMode::set_camera_mode(camera_mode_t camera_mode, bool force_change)
 			pos_sp_triplet->current.yaw_valid = true;
 			switch (camera_mode) {
 				case HORIZONTAL :
-					pos_sp_triplet->current.camera_pitch = 0.0f;		
+					pos_sp_triplet->current.camera_pitch = 0.0f;
 					break;
 				case LOOK_DOWN :
 					pos_sp_triplet->current.camera_pitch = -1.0f;
@@ -318,15 +318,15 @@ NavigatorMode::set_camera_mode(camera_mode_t camera_mode, bool force_change)
 
 bool
 NavigatorMode::check_current_pos_sp_reached(SETPOINT_TYPE expected_sp_type)
-{	
+{
 	pos_sp_triplet = _navigator->get_position_setpoint_triplet();
 	if (expected_sp_type != SETPOINT_TYPE_UNDEFINED && pos_sp_triplet->current.type != expected_sp_type) {
 		return false;
 	}
 
-	struct vehicle_status_s *vstatus = _navigator->get_vstatus();	
+	struct vehicle_status_s *vstatus = _navigator->get_vstatus();
 	global_pos = _navigator->get_global_position();;
-	
+
 	switch (pos_sp_triplet->current.type)
 	{
 	case SETPOINT_TYPE_IDLE:
@@ -366,7 +366,7 @@ NavigatorMode::check_current_pos_sp_reached(SETPOINT_TYPE expected_sp_type)
         }
 
         return false;
-        
+
 		break;
 	}
 	case SETPOINT_TYPE_POSITION:
@@ -381,7 +381,7 @@ NavigatorMode::check_current_pos_sp_reached(SETPOINT_TYPE expected_sp_type)
 		);
 
         if (_parameters.acceptance_radius >= distance){
-            return true; 
+            return true;
         }
 
         return false;
@@ -517,7 +517,7 @@ NavigatorMode::go_to_intial_position(){
             double lat_new;
             double lon_new;
             //double alt_new = target_pos->alt + _parameters.takeoff_alt;
-            
+
             add_vector_to_global_position(
                     target_pos->lat,
                     target_pos->lon,
@@ -526,7 +526,7 @@ NavigatorMode::go_to_intial_position(){
                     &lat_new,
                     &lon_new
             );
-            
+
             float dst = sqrt( offset_x * offset_x + offset_y * offset_y);
 
             if (dst <= _parameters.airdog_dst_inv && dst > _parameters.airdog_init_pos_dst) {
@@ -544,7 +544,7 @@ NavigatorMode::go_to_intial_position(){
                 //pos_sp_triplet->current.alt = alt_new;
                 pos_sp_triplet->current.type = SETPOINT_TYPE_POSITION;
                 pos_sp_triplet->current.position_valid = true;
-                
+
                 _navigator->set_position_setpoint_triplet_updated();
             }
 }

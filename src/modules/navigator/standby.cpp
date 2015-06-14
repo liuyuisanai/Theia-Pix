@@ -37,7 +37,7 @@ Standby::on_inactive() {
 }
 
 void
-Standby::on_activation() {    
+Standby::on_activation() {
     mavlink_log_info(_navigator->get_mavlink_fd(), "Activating Standby navigation mode");
 }
 

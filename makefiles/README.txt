@@ -15,14 +15,14 @@ with Makefile in the parent directory.
 
 firmware.mk
 
-	Manages the build for one specific firmware configuration. 
+	Manages the build for one specific firmware configuration.
 	See the comments at the top of this file for detailed documentation.
 
 	Builds modules, builtin command lists and the ROMFS (if configured).
 
 	This is the makefile directly used by external build systems; it can
 	be configured to compile modules both inside and outside the PX4
-	source tree. When used in this mode, at least BOARD, MODULES and 
+	source tree. When used in this mode, at least BOARD, MODULES and
 	CONFIG_FILE must be set.
 
 module.mk

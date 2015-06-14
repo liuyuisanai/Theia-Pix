@@ -13,7 +13,7 @@ include::toc.txt[]
 This document is written for C programmers. Since you're reading this, chances
 are that you know a hash is used for looking up items using a key. In scripting
 languages like Perl, hashes are used all the time.  In C, hashes don't exist in
-the language itself. This software provides a hash table for C structures.  
+the language itself. This software provides a hash table for C structures.
 
 What can it do?
 ~~~~~~~~~~~~~~~~~
@@ -25,18 +25,18 @@ This software supports these operations on items in a hash table:
 4. count
 5. iterate
 6. sort
-7. select 
+7. select
 
 Is it fast?
 ~~~~~~~~~~~
 Add, find and delete are normally constant-time operations. This is influenced
-by your key domain and the hash function. 
+by your key domain and the hash function.
 
 This hash aims to be minimalistic and efficient. It's around 900 lines of C.
 It inlines automatically because it's implemented as macros. It's fast as long
 as the hash function is suited to your keys. You can use the default hash
 function, or easily compare performance and choose from among several other
-<<hash_functions,built-in hash functions>>. 
+<<hash_functions,built-in hash functions>>.
 
 Is it a library?
 ~~~~~~~~~~~~~~~~
@@ -54,7 +54,7 @@ This software can be used in C and C++ programs.  It has been tested on:
  * Linux
  * Mac OS X
  * Windows using Visual Studio 2008 and 2010
- * Solaris 
+ * Solaris
  * OpenBSD
  * FreeBSD
 
@@ -62,19 +62,19 @@ Test suite
 ^^^^^^^^^^
 To run the test suite, enter the `tests` directory. Then,
 
- * on Unix platforms, run `make` 
+ * on Unix platforms, run `make`
  * on Windows, run the "do_tests_win32.cmd" batch file. (You may edit the
    batch file if your Visual Studio is installed in a non-standard location).
 
 BSD licensed
 ~~~~~~~~~~~~
-This software is made available under the 
-link:license.html[revised BSD license]. 
-It is free and open source. 
+This software is made available under the
+link:license.html[revised BSD license].
+It is free and open source.
 
 Obtaining uthash
 ~~~~~~~~~~~~~~~~
-Please follow the link to download on the 
+Please follow the link to download on the
 http://uthash.sourceforge.net[uthash website] at http://uthash.sourceforge.net.
 
 A number of platforms include uthash in their package repositories. For example,
@@ -93,9 +93,9 @@ releases. Also, there are some extra bonus headers included with uthash.
 News::
  The author has a news feed for http://troydhanson.wordpress.com/[software updates] image:img/rss.png[(RSS)].
 Extras included with uthash::
- uthash ships with these "extras"-- independent headers similar to uthash. 
+ uthash ships with these "extras"-- independent headers similar to uthash.
  First link:utlist.html[utlist.h] provides linked list macros for C structures.
- Second, link:utarray.html[utarray.h] implements dynamic arrays using macros. 
+ Second, link:utarray.html[utarray.h] implements dynamic arrays using macros.
  Third, link:utstring.html[utstring.h] implements a basic dynamic string.
 Other software::
  Other open-source software by the author is listed at http://tkhanson.net.
@@ -104,7 +104,7 @@ Who's using it?
 ~~~~~~~~~~~~~~~
 Since releasing uthash in 2006, it has been downloaded thousands of times,
 incorporated into commercial software, academic research, and into other
-open-source software.  
+open-source software.
 
 Your structure
 --------------
@@ -119,7 +119,7 @@ The structure pointer itself is the value.
 
 struct my_struct {
     int id;                    /* key */
-    char name[10];             
+    char name[10];
     UT_hash_handle hh;         /* makes this structure hashable */
 };
 ----------------------------------------------------------------------
@@ -138,7 +138,7 @@ can also comprise multiple contiguous fields, having any names and data types.
 *****************************************************************************
 Yes, your key and structure can have any data type. Unlike function calls with
 fixed prototypes, uthash consists of macros-- whose arguments are untyped-- and
-thus able to work with any type of structure or key.  
+thus able to work with any type of structure or key.
 *****************************************************************************
 
 Unique keys
@@ -166,7 +166,7 @@ Hash operations
 ---------------
 
 This section introduces the uthash macros by example. For a more succinct
-listing, see <<Macro_reference,Macro Reference>>. 
+listing, see <<Macro_reference,Macro Reference>>.
 
 .Convenience vs. general macros:
 *****************************************************************************
@@ -174,7 +174,7 @@ The uthash macros fall into two categories. The 'convenience' macros can be used
 with integer, pointer or string keys (and require that you chose the conventional
 name `hh` for the `UT_hash_handle` field).  The convenience macros take fewer
 arguments than the general macros, making their usage a bit simpler for these
-common types of keys. 
+common types of keys.
 
 The 'general' macros can be used for any types of keys, or for multi-field keys,
 or when the `UT_hash_handle` has been named something other than `hh`. These
@@ -216,7 +216,7 @@ last parameter is a pointer to the structure being added.
 *******************************************************************************
 If you find it strange that `id`, which is the 'name of a field' in the
 structure, can be passed as a parameter, welcome to the world of macros. Don't
-worry- the C preprocessor expands this to valid C code. 
+worry- the C preprocessor expands this to valid C code.
 *******************************************************************************
 
 Key must not be modified while in-use
@@ -227,17 +227,17 @@ Instead, delete the item from the hash, change the key, and then re-add it.
 Passing the hash pointer into functions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 In the example above `users` is a global variable, but what if the caller wanted
-to pass the hash pointer 'into' the `add_user` function? At first glance it would 
+to pass the hash pointer 'into' the `add_user` function? At first glance it would
 appear that you could simply pass `users` as an argument, but that won't work
-right. 
+right.
 
   /* bad */
-  void add_user(struct my_struct *users, int user_id, char *name) { 
+  void add_user(struct my_struct *users, int user_id, char *name) {
     ...
-    HASH_ADD_INT( users, id, s );  
+    HASH_ADD_INT( users, id, s );
   }
 
-You really need to pass 'a pointer' to the hash pointer: 
+You really need to pass 'a pointer' to the hash pointer:
 
   /* good */
   void add_user(struct my_struct **users, int user_id, char *name) { ...
@@ -249,9 +249,9 @@ Note that we dereferenced the pointer in the `HASH_ADD` also.
 
 The reason it's necessary to deal with a pointer to the hash pointer is simple:
 the hash macros modify it (in other words, they modify the 'pointer itself' not
-just what it points to). 
+just what it points to).
 
-Find item 
+Find item
 ~~~~~~~~~
 To look up a structure in a hash, you need its key.  Then call `HASH_FIND`.
 (Here we use the convenience macro `HASH_FIND_INT` for keys of type `int`).
@@ -267,7 +267,7 @@ struct my_struct *find_user(int user_id) {
 ----------------------------------------------------------------------
 
 Here, the hash table is `users`, and `&user_id` points to the key (an integer
-in this case).  Last, `s` is the 'output' variable of `HASH_FIND_INT`. The 
+in this case).  Last, `s` is the 'output' variable of `HASH_FIND_INT`. The
 final result is that `s` points to the structure with the given key, or
 is `NULL` if the key wasn't found in the hash.
 
@@ -313,12 +313,12 @@ to a simple 'for' loop.
 .Delete all items from a hash
 ----------------------------------------------------------------------
 void delete_all() {
-  struct my_struct *current_user, *tmp; 
+  struct my_struct *current_user, *tmp;
 
   HASH_ITER(hh, users, current_user, tmp) {
     HASH_DEL(users,current_user);  /* delete; users advances to next */
     free(current_user);            /* optional- if you want to free  */
-  } 
+  }
 }
 ----------------------------------------------------------------------
 
@@ -343,10 +343,10 @@ num_users = HASH_COUNT(users);
 printf("there are %u users\n", num_users);
 ----------------------------------------------------------------------
 
-Incidentally, this works even the list (`users`, here) is `NULL`, in 
+Incidentally, this works even the list (`users`, here) is `NULL`, in
 which case the count is 0.
 
-Iterating and sorting 
+Iterating and sorting
 ~~~~~~~~~~~~~~~~~~~~~
 
 You can loop over the items in the hash by starting from the beginning and
@@ -388,7 +388,7 @@ deletion-safe iteration macro, `HASH_ITER`, is included. It expands to a
 Iterating backward and forward through the items in the hash is possible
 because of the `hh.prev` and `hh.next` fields. All the items in the hash can
 be reached by repeatedly following these pointers, thus the hash is also a
-doubly-linked list. 
+doubly-linked list.
 *******************************************************************************
 
 If you're using uthash in a C++ program, you need an extra cast on the `for`
@@ -434,7 +434,7 @@ A complete example
 ~~~~~~~~~~~~~~~~~~
 
 We'll repeat all the code and embellish it with a `main()` function to form a
-working example. 
+working example.
 
 If this code was placed in a file called `example.c` in the same directory as
 `uthash.h`, it could be compiled and run like this:
@@ -444,7 +444,7 @@ If this code was placed in a file called `example.c` in the same directory as
 
 Follow the prompts to try the program.
 
-.A complete program 
+.A complete program
 ----------------------------------------------------------------------
 #include <stdio.h>   /* gets */
 #include <stdlib.h>  /* atoi, malloc */
@@ -453,7 +453,7 @@ Follow the prompts to try the program.
 
 struct my_struct {
     int id;                    /* key */
-    char name[10];             
+    char name[10];
     UT_hash_handle hh;         /* makes this structure hashable */
 };
 
@@ -481,12 +481,12 @@ void delete_user(struct my_struct *user) {
 }
 
 void delete_all() {
-  struct my_struct *current_user, *tmp; 
+  struct my_struct *current_user, *tmp;
 
   HASH_ITER(hh, users, current_user, tmp) {
     HASH_DEL(users,current_user);  /* delete it (users advances to next) */
     free(current_user);            /* free it */
-  } 
+  }
 }
 
 void print_users() {
@@ -579,7 +579,7 @@ This program is included in the distribution in `tests/example.c`. You can run
 Standard key types
 ------------------
 This section goes into specifics of how to work with different kinds of keys.
-You can use nearly any type of key-- integers, strings, pointers, structures, etc. 
+You can use nearly any type of key-- integers, strings, pointers, structures, etc.
 
 [NOTE]
 .A note about float
@@ -606,7 +606,7 @@ the key itself is 'outside' of the structure); in contrast, use `HASH_ADD_STR`
 for a string key that is contained *within* your structure.
 
 [NOTE]
-.char[ ] vs. char* 
+.char[ ] vs. char*
 ================================================================================
 The string is 'within' the structure in the first example below-- `name` is a
 `char[10]` field.  In the second example, the key is 'outside' of the
@@ -627,7 +627,7 @@ String 'within' structure
 
 struct my_struct {
     char name[10];             /* key (string is WITHIN the structure) */
-    int id;                    
+    int id;
     UT_hash_handle hh;         /* makes this structure hashable */
 };
 
@@ -641,7 +641,7 @@ int main(int argc, char *argv[]) {
         s = (struct my_struct*)malloc(sizeof(struct my_struct));
         strncpy(s->name, *n,10);
         s->id = i++;
-        HASH_ADD_STR( users, name, s );  
+        HASH_ADD_STR( users, name, s );
     }
 
     HASH_FIND_STR( users, "betty", s);
@@ -674,7 +674,7 @@ Now, here is the same example but using a `char *` key instead of `char [ ]`:
 
 struct my_struct {
     const char *name;          /* key */
-    int id;                    
+    int id;
     UT_hash_handle hh;         /* makes this structure hashable */
 };
 
@@ -688,7 +688,7 @@ int main(int argc, char *argv[]) {
         s = (struct my_struct*)malloc(sizeof(struct my_struct));
         s->name = *n;
         s->id = i++;
-        HASH_ADD_KEYPTR( hh, users, s->name, strlen(s->name), s );  
+        HASH_ADD_KEYPTR( hh, users, s->name, strlen(s->name), s );
     }
 
     HASH_FIND_STR( users, "betty", s);
@@ -806,15 +806,15 @@ int main(int argc, char *argv[]) {
 This usage is nearly the same as use of a compound key explained below.
 
 Note that the general macros require the name of the `UT_hash_handle` to be
-passed as the first argument (here, this is `hh`). The general macros are 
-documented in <<Macro_reference,Macro Reference>>. 
+passed as the first argument (here, this is `hh`). The general macros are
+documented in <<Macro_reference,Macro Reference>>.
 
 Advanced Topics
 ---------------
 
 Compound keys
 ~~~~~~~~~~~~~
-Your key can even comprise multiple contiguous fields. 
+Your key can even comprise multiple contiguous fields.
 
 .A multi-field key
 ----------------------------------------------------------------------
@@ -834,8 +834,8 @@ typedef struct {
 } msg_t;
 
 typedef struct {
-    char encoding; 
-    int text[]; 
+    char encoding;
+    int text[];
 } lookup_key_t;
 
 int main(int argc, char *argv[]) {
@@ -886,7 +886,7 @@ If you use multi-field keys, recognize that the compiler pads adjacent fields
 requirement of each field. For example a structure containing a `char` followed
 by an `int` will normally have 3 "wasted" bytes of padding after the char, in
 order to make the `int` field start on a multiple-of-4 address (4 is the length
-of the int). 
+of the int).
 
 .Calculating the length of a multi-field key:
 *******************************************************************************
@@ -896,8 +896,8 @@ intervening structure padding the compiler adds for alignment purposes.
 An easy way to calculate the key length is to use the `offsetof` macro from
 `<stddef.h>`.  The formula is:
 
-     key length =   offsetof(last_key_field) 
-                  + sizeof(last_key_field) 
+     key length =   offsetof(last_key_field)
+                  + sizeof(last_key_field)
                   - offsetof(first_key_field)
 
 In the example above, the `keylen` variable is set using this formula.
@@ -920,11 +920,11 @@ own secondary hash table. There can be any number of levels. In a scripting
 language you might see:
 
   $items{bob}{age}=37
-  
+
 The C program below builds this example in uthash: the hash table is called
 `items`. It contains one element (`bob`) whose own hash table contains one
 element (`age`) with value 37.  No special functions are necessary to build
-a multi-level hash table. 
+a multi-level hash table.
 
 While this example represents both levels (`bob` and `age`) using the same
 structure, it would also be fine to use two different structure definitions.
@@ -984,7 +984,7 @@ int main(int argc, char *argvp[]) {
   return 0;
 }
 ----------------------------------------------------------------------
-The example above is included in `tests/test59.c`.  
+The example above is included in `tests/test59.c`.
 
 [[multihash]]
 Items in several hash tables
@@ -992,10 +992,10 @@ Items in several hash tables
 A structure can be added to more than one hash table. A few reasons you might do
 this include:
 
-- each hash table may use an alternative key; 
-- each hash table may have its own sort order; 
+- each hash table may use an alternative key;
+- each hash table may have its own sort order;
 - or you might simply use multiple hash tables for grouping purposes.  E.g.,
-  you could have users in an `admin_users` and a `users` hash table. 
+  you could have users in an `admin_users` and a `users` hash table.
 
 Your structure needs to have a `UT_hash_handle` field for each hash table to
 which it might be added. You can name them anything. E.g.,
@@ -1099,7 +1099,7 @@ To enable the Bloom filter, simply compile with `-DHASH_BLOOM=n` like:
 where the number can be any value up to 32 which determines the amount of memory
 used by the filter, as shown below. Using more memory makes the filter more
 accurate and has the potential to speed up your program by making misses bail
-out faster. 
+out faster.
 
 .Bloom filter sizes for selected values of n
 [width="50%",cols="10m,30",grid="none",options="header"]
@@ -1150,7 +1150,7 @@ parameter is the 'select condition'. Here we used a macro `is_admin()` but we
 could just as well have used a function.
 
   int is_admin(void *userv) {
-    user_t *user = (user_t*)userv; 
+    user_t *user = (user_t*)userv;
     return (user->id < 1024) ? 1 : 0;
   }
 
@@ -1175,20 +1175,20 @@ if another hash function will give you better performance.
 
 You can use a different hash function by compiling your program with
 `-DHASH_FUNCTION=HASH_xyz` where `xyz` is one of the symbolic names listed
-below. E.g., 
+below. E.g.,
 
     cc -DHASH_FUNCTION=HASH_BER -o program program.c
 
 .Built-in hash functions
 [width="50%",cols="^5m,20",grid="none",options="header"]
 |===============================================================================
-|Symbol |   Name    
+|Symbol |   Name
 |JEN    |   Jenkins (default)
 |BER    |   Bernstein
 |SAX    |   Shift-Add-Xor
 |OAT    |   One-at-a-time
 |FNV    |   Fowler/Noll/Vo
-|SFH    |   Paul Hsieh 
+|SFH    |   Paul Hsieh
 |MUR    |   MurmurHash v3 (see note)
 |===============================================================================
 
@@ -1231,9 +1231,9 @@ BER   86.2%       1219        256    0%  ok        121        129            27
 
 [NOTE]
 The number 3 in `-DHASH_EMIT_KEYS=3` is a file descriptor. Any file descriptor
-that your program doesn't use for its own purposes can be used instead of 3. 
+that your program doesn't use for its own purposes can be used instead of 3.
 The data-collection mode enabled by `-DHASH_EMIT_KEYS=x` should not be used in
-production code. 
+production code.
 
 Usually, you should just pick the first hash function that is listed. Here, this
 is `SFH`.  This is the function that provides the most even distribution for
@@ -1255,7 +1255,7 @@ dup%::
     the percent of duplicate keys encountered in the emitted key file.
     Duplicates keys are filtered out to maintain key uniqueness. (Duplicates
     are normal.  For example, if the application adds an item to a hash,
-    deletes it, then re-adds it, the key is written twice to the emitted file.)  
+    deletes it, then re-adds it, the key is written twice to the emitted file.)
 flags::
     this is either `ok`, or `nx` (noexpand) if the expansion inhibited flag is
     set, described in <<expansion,Expansion internals>>.  It is not recommended
@@ -1278,7 +1278,7 @@ would contain an equal share '(n/k)' of the items. In other words, the maximum
 linear position of any item in a bucket chain would be 'n/k' if every bucket is
 equally used. If some buckets are overused and others are underused, the
 overused buckets will contain items whose linear position surpasses 'n/k'.
-Such items are considered non-ideal. 
+Such items are considered non-ideal.
 
 As you might guess, `ideal%` is the percentage of ideal items in the hash. These
 items have favorable linear positions in their bucket chains.  As `ideal%`
@@ -1312,7 +1312,7 @@ Now that we have a test program, let's run `hashscan` on it:
   ./hashscan 9711
   Address            ideal    items  buckets mc fl bloom/sat fcn keys saved to
   ------------------ ----- -------- -------- -- -- --------- --- -------------
-  0x862e038            81%    10000     4096 11 ok 16    14% JEN 
+  0x862e038            81%    10000     4096 11 ok 16    14% JEN
 
 If we wanted to copy out all its keys for external analysis using `keystats`,
 add the `-k` flag:
@@ -1345,9 +1345,9 @@ bloom/sat::
     if the hash table uses a Bloom filter, this is the size (as a power of two)
     of the filter (e.g. 16 means the filter is 2^16 bits in size). The second
     number is the "saturation" of the bits expressed as a percentage. The lower
-    the percentage, the more potential benefit to identify cache misses quickly. 
+    the percentage, the more potential benefit to identify cache misses quickly.
 fcn::
-    symbolic name of hash function 
+    symbolic name of hash function
 keys saved to::
     file to which keys were saved, if any
 
@@ -1355,19 +1355,19 @@ keys saved to::
 *****************************************************************************
 When hashscan runs, it attaches itself to the target process, which suspends
 the target process momentarily. During this brief suspension, it scans the
-target's virtual memory for the signature of a uthash hash table. It then 
+target's virtual memory for the signature of a uthash hash table. It then
 checks if a valid hash table structure accompanies the signature and reports
 what it finds. When it detaches, the target process resumes running normally.
 The hashscan is performed "read-only"-- the target process is not modified.
 Since hashscan is analyzing a momentary snapshot of a running process, it may
-return different results from one run to another. 
+return different results from one run to another.
 *****************************************************************************
 
 [[expansion]]
 Expansion internals
 ~~~~~~~~~~~~~~~~~~~
 Internally this hash manages the number of buckets, with the goal of having
-enough buckets so that each one contains only a small number of items.  
+enough buckets so that each one contains only a small number of items.
 
 .Why does the number of buckets matter?
 ********************************************************************************
@@ -1385,14 +1385,14 @@ the hash is doubled and the items are redistributed into the new buckets. In an
 ideal world, each bucket will then contain half as many items as it did before.
 
 Bucket expansion occurs automatically and invisibly as needed. There is
-no need for the application to know when it occurs. 
+no need for the application to know when it occurs.
 
 Per-bucket expansion threshold
 ++++++++++++++++++++++++++++++
 Normally all buckets share the same threshold (10 items) at which point bucket
 expansion is triggered. During the process of bucket expansion, uthash can
 adjust this expansion-trigger threshold on a per-bucket basis if it sees that
-certain buckets are over-utilized. 
+certain buckets are over-utilized.
 
 When this threshold is adjusted, it goes from 10 to a multiple of 10 (for that
 particular bucket).  The multiple is based on how many times greater the actual
@@ -1410,25 +1410,25 @@ A hash function may yield an uneven distribution of items across the buckets.
 In moderation this is not a problem. Normal bucket expansion takes place as
 the chain lengths grow. But when significant imbalance occurs (because the hash
 function is not well suited to the key domain), bucket expansion may be
-ineffective at reducing the chain lengths. 
+ineffective at reducing the chain lengths.
 
 Imagine a very bad hash function which always puts every item in bucket 0. No
 matter how many times the number of buckets is doubled, the chain length of
-bucket 0 stays the same. In a situation like this, the best behavior is to 
+bucket 0 stays the same. In a situation like this, the best behavior is to
 stop expanding, and accept O(n) lookup performance. This is what uthash
 does. It degrades gracefully if the hash function is ill-suited to the keys.
 
 If two consecutive bucket expansions yield `ideal%` values below 50%, uthash
 inhibits expansion for that hash table.  Once set, the 'bucket expansion
-inhibited' flag remains in effect as long as the hash has items in it.  
+inhibited' flag remains in effect as long as the hash has items in it.
 Inhibited expansion may cause `HASH_FIND` to exhibit worse than constant-time
-performance. 
+performance.
 
 Hooks
 ~~~~~
 You don't need to use these hooks- they are only here if you want to modify
-the behavior of uthash.  Hooks can be used to change how uthash allocates 
-memory, and to run code in response to certain internal events. 
+the behavior of uthash.  Hooks can be used to change how uthash allocates
+memory, and to run code in response to certain internal events.
 
 malloc/free
 ^^^^^^^^^^^
@@ -1444,8 +1444,8 @@ If your application uses its own custom allocator, this hash can use them too.
 #undef uthash_free
 
 /* re-define, specifying alternate functions */
-#define uthash_malloc(sz) my_malloc(sz) 
-#define uthash_free(ptr,sz) my_free(ptr)    
+#define uthash_malloc(sz) my_malloc(sz)
+#define uthash_free(ptr,sz) my_free(ptr)
 
 ...
 ----------------------------------------------------------------------------
@@ -1458,7 +1458,7 @@ Out of memory
 If memory allocation fails (i.e., the malloc function returned `NULL`), the
 default behavior is to terminate the process by calling `exit(-1)`. This can
 be modified by re-defining the `uthash_fatal` macro.
- 
+
     #undef uthash_fatal
     #define uthash_fatal(msg) my_fatal_function(msg);
 
@@ -1473,17 +1473,17 @@ response to these events. They are mainly for diagnostic purposes.
 
 These two hooks are "notification" hooks which get executed if uthash is
 expanding buckets, or setting the 'bucket expansion inhibited' flag. Normally
-both of these hooks are undefined and thus compile away to nothing. 
+both of these hooks are undefined and thus compile away to nothing.
 
 Expansion
 +++++++++
-There is a hook for the bucket expansion event.  
+There is a hook for the bucket expansion event.
 
 .Bucket expansion hook
 ----------------------------------------------------------------------------
 #include "uthash.h"
 
-#undef uthash_expand_fyi 
+#undef uthash_expand_fyi
 #define uthash_expand_fyi(tbl) printf("expanded to %d buckets\n", tbl->num_buckets)
 
 ...
@@ -1492,7 +1492,7 @@ There is a hook for the bucket expansion event.
 Expansion-inhibition
 ++++++++++++++++++++
 This hook can be defined to code to execute in the event that uthash decides to
-set the 'bucket expansion inhibited' flag. 
+set the 'bucket expansion inhibited' flag.
 
 .Bucket expansion inhibited hook
 ----------------------------------------------------------------------------
@@ -1510,7 +1510,7 @@ Debug mode
 If a program that uses this hash is compiled with `-DHASH_DEBUG=1`, a special
 internal consistency-checking mode is activated.  In this mode, the integrity
 of the whole hash is checked following every add or delete operation.  This is
-for debugging the uthash software only, not for use in production code. 
+for debugging the uthash software only, not for use in production code.
 
 In the `tests/` directory, running `make debug` will run all the tests in
 this mode.
@@ -1558,7 +1558,7 @@ Thread safety
 ~~~~~~~~~~~~~
 You can use uthash in a threaded program. But you must do the locking. Use a
 read-write lock to protect against concurrent writes. It is ok to have
-concurrent readers (since uthash 1.5). 
+concurrent readers (since uthash 1.5).
 
 For example using pthreads you can create an rwlock like this:
 
@@ -1571,7 +1571,7 @@ before iterating over the hash elements:
   if (pthread_rwlock_rdlock(&lock) != 0) fatal("can't get rdlock");
   HASH_FIND_INT(elts, &i, e);
   pthread_rwlock_unlock(&lock);
-  
+
 Writers must acquire the exclusive write lock before doing any update. Add,
 delete, and sort are all updates that must be locked.
 
@@ -1580,7 +1580,7 @@ delete, and sort are all updates that must be locked.
   pthread_rwlock_unlock(&lock);
 
 If you prefer, you can use a mutex instead of a read-write lock, but this will
-reduce reader concurrency to a single thread at a time. 
+reduce reader concurrency to a single thread at a time.
 
 An example program using uthash with a read-write lock is included in
 `tests/threads/test1.c`.
@@ -1592,9 +1592,9 @@ Macro reference
 Convenience macros
 ~~~~~~~~~~~~~~~~~~
 The convenience macros do the same thing as the generalized macros, but
-require fewer arguments.  
+require fewer arguments.
 
-In order to use the convenience macros, 
+In order to use the convenience macros,
 
 1. the structure's `UT_hash_handle` field must be named `hh`, and
 2. for add or find, the key field must be of type `int` or `char[]` or pointer
@@ -1617,7 +1617,7 @@ In order to use the convenience macros,
 General macros
 ~~~~~~~~~~~~~~
 
-These macros add, find, delete and sort the items in a hash.  You need to 
+These macros add, find, delete and sort the items in a hash.  You need to
 use the general macros if your `UT_hash_handle` is named something other
 than `hh`, or if your key's data type isn't `int` or `char[]`.
 
@@ -1638,7 +1638,7 @@ than `hh`, or if your key's data type isn't `int` or `char[]`.
 
 [NOTE]
 `HASH_ADD_KEYPTR` is used when the structure contains a pointer to the
-key, rather than the key itself. 
+key, rather than the key itself.
 
 
 Argument descriptions
@@ -1678,5 +1678,5 @@ condition::
     function or macro should return (or evaluate to) a non-zero value if the
     structure should be "selected" for addition to the destination hash.
 
-// vim: set tw=80 wm=2 syntax=asciidoc: 
+// vim: set tw=80 wm=2 syntax=asciidoc:
 

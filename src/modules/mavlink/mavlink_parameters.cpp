@@ -178,16 +178,16 @@ MavlinkParametersManager::send(const hrt_abstime t)
 			_send_all_index = -1;
 		}
 	}
-     
+
     bool updated;
     orb_check(_mavlink->get_drone_parameter_sub, &updated);
 
-    if (updated) { 
+    if (updated) {
         get_drone_param_s get_drone_param;
 
         memset(&get_drone_param, 0, sizeof(get_drone_param));
 
-        orb_copy(ORB_ID(get_drone_parameter), _mavlink->get_drone_parameter_sub , &get_drone_param); 
+        orb_copy(ORB_ID(get_drone_parameter), _mavlink->get_drone_parameter_sub , &get_drone_param);
 
         mavlink_param_request_read_t msg;
 
@@ -206,7 +206,7 @@ MavlinkParametersManager::send(const hrt_abstime t)
 
         memset(&set_drone_param, 0, sizeof(set_drone_param));
 
-        orb_copy(ORB_ID(set_drone_parameter), _mavlink->set_drone_parameter_sub, &set_drone_param);    
+        orb_copy(ORB_ID(set_drone_parameter), _mavlink->set_drone_parameter_sub, &set_drone_param);
 
         mavlink_param_set_t msg;
 

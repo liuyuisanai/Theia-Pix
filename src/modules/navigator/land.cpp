@@ -38,7 +38,7 @@ Land::on_inactive(){
 
 void
 Land::on_activation(){
-    
+
 
     mavlink_log_info(_navigator->get_mavlink_fd(), "Activating land !");
     set_camera_mode(HORIZONTAL, true);

@@ -105,7 +105,7 @@ protected:
 	 * Set the SPI bus frequency
 	 * This is used to change frequency on the fly. Some sensors
 	 * (such as the MPU6000) need a lower frequency for setup
-	 * registers and can handle higher frequency for sensor 
+	 * registers and can handle higher frequency for sensor
 	 * value registers
 	 *
 	 * @param frequency	Frequency to set (Hz)

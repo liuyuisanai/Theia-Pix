@@ -161,7 +161,7 @@ Airspeed::probe()
 {
 	/* on initial power up the device needs more than one retry
 	   for detection. Once it is running then retries aren't
-	   needed 
+	   needed
 	*/
 	_retries = 4;
 	int ret = measure();

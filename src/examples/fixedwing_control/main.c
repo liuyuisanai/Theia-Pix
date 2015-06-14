@@ -110,7 +110,7 @@ static void usage(const char *reason);
  * @param rates_sp The angular rate setpoint. This is the output of the controller.
  */
 void control_attitude(const struct vehicle_attitude_setpoint_s *att_sp, const struct vehicle_attitude_s *att,
-	float speed_body[], struct vehicle_rates_setpoint_s *rates_sp, 
+	float speed_body[], struct vehicle_rates_setpoint_s *rates_sp,
 	struct actuator_controls_s *actuators);
 
 /**
@@ -136,18 +136,18 @@ static struct params p;
 static struct param_handles ph;
 
 void control_attitude(const struct vehicle_attitude_setpoint_s *att_sp, const struct vehicle_attitude_s *att,
-	float speed_body[], struct vehicle_rates_setpoint_s *rates_sp, 
+	float speed_body[], struct vehicle_rates_setpoint_s *rates_sp,
 	struct actuator_controls_s *actuators)
 {
 
-	/* 
+	/*
 	 * The PX4 architecture provides a mixer outside of the controller.
 	 * The mixer is fed with a default vector of actuator controls, representing
 	 * moments applied to the vehicle frame. This vector
 	 * is structured as:
 	 *
 	 * Control Group 0 (attitude):
-	 * 
+	 *
 	 *    0  -  roll   (-1..+1)
 	 *    1  -  pitch  (-1..+1)
 	 *    2  -  yaw    (-1..+1)
@@ -229,7 +229,7 @@ int fixedwing_control_thread_main(int argc, char *argv[])
 	 *
 	 * Wikipedia description:
 	 * http://en.wikipedia.org/wiki/Publish–subscribe_pattern
-	 * 
+	 *
 	 */
 
 
@@ -237,7 +237,7 @@ int fixedwing_control_thread_main(int argc, char *argv[])
 
 	/*
 	 * Declare and safely initialize all structs to zero.
-	 * 
+	 *
 	 * These structs contain the system state and things
 	 * like attitude, position, the current waypoint, etc.
 	 */
@@ -306,7 +306,7 @@ int fixedwing_control_thread_main(int argc, char *argv[])
 		if (ret < 0) {
 			/*
 			 * Poll error, this will not really happen in practice,
-			 * but its good design practice to make output an error message. 
+			 * but its good design practice to make output an error message.
 			 */
 			warnx("poll error");
 
@@ -361,7 +361,7 @@ int fixedwing_control_thread_main(int argc, char *argv[])
 				}
 
 				if (manual_sp_updated)
-					/* get the RC (or otherwise user based) input */ 
+					/* get the RC (or otherwise user based) input */
 					orb_copy(ORB_ID(manual_control_setpoint), manual_sp_sub, &manual_sp);
 
 				/* check if the throttle was ever more than 50% - go later only to failsafe if yes */
@@ -387,7 +387,7 @@ int fixedwing_control_thread_main(int argc, char *argv[])
 				    	/* nail pitch and yaw (rudder) to zero. This example only controls roll (index 0) */
 				    	actuators.control[1] = 0.0f;
 				    	actuators.control[2] = 0.0f;
-					
+
 					/* simple attitude control */
 					control_attitude(&att_sp, &att, speed_body, &rates_sp, &actuators);
 

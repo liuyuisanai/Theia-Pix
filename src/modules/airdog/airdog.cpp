@@ -349,7 +349,7 @@ bool cAirdog::button_clicked_i2c(uint8_t button, bool long_press)
 	switch(button) {
 		case 0:
 			// ON/OFF button
-            
+
             if (current_button_state == BUTTON_STATE_CHOOSE_FUNCTION) {
                 send_command(REMOTE_CMD_CLEAR_POINTS);
                 set_current_button_state(BUTTON_STATE_DEFAULT);
@@ -386,20 +386,20 @@ bool cAirdog::button_clicked_i2c(uint8_t button, bool long_press)
                 }
 
             } else {
-            
+
                 if (current_button_state == BUTTON_STATE_DEFAULT) {
                     send_command(REMOTE_CMD_PLAY_PAUSE);
                 } else if (current_button_state == BUTTON_STATE_CONFIRM_TAKEOFF) {
                     set_current_button_state(BUTTON_STATE_DEFAULT);
                 }
-            
+
             }
 
 			break;
 		case 3:
 			// UP button
             if (current_button_state == BUTTON_STATE_CHOOSE_FUNCTION){
-                send_command(REMOTE_CMD_GOTO_DEFUALT_DST); 
+                send_command(REMOTE_CMD_GOTO_DEFUALT_DST);
                 set_current_button_state(BUTTON_STATE_DEFAULT);
             }else if (current_button_state == BUTTON_STATE_DEFAULT) {
                 send_command(REMOTE_CMD_UP);
@@ -423,8 +423,8 @@ bool cAirdog::button_clicked_i2c(uint8_t button, bool long_press)
                 	set_current_button_state(BUTTON_STATE_DEFAULT);
                 	ioctl(buzzer, TONE_SET_ALARM, TONE_NOTIFY_NEGATIVE_TUNE);
                 }
-                
-            
+
+
             } else if (current_button_state == BUTTON_STATE_DEFAULT) {
                 set_current_button_state(BUTTON_STATE_CHOOSE_FUNCTION);
 
@@ -457,14 +457,14 @@ bool cAirdog::button_clicked_i2c(uint8_t button, bool long_press)
 			// CENTER UP
             if (current_button_state == BUTTON_STATE_DEFAULT) {
                 send_command(REMOTE_CMD_FURTHER);
-            }		
+            }
             break;
 		case 8:
 			// CENTER LEFT
             if (current_button_state == BUTTON_STATE_DEFAULT) {
                 send_command(REMOTE_CMD_LEFT);
             } else if (current_button_state == BUTTON_STATE_CHOOSE_FUNCTION){
-            
+
                 if (!log_running) {
                     send_record_path_cmd(true);
                     log_running = true;

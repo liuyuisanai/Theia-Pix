@@ -59,7 +59,7 @@ public:
 	 * Get the address
 	 */
 	int16_t		get_address() { return _address; }
-	
+
 protected:
 	/**
 	 * The number of times a read or write operation will be retried on

@@ -34,7 +34,7 @@
  ****************************************************************************/
 
 /// @file	LowPassFilter.h
-/// @brief	A class to implement a second order low pass filter 
+/// @brief	A class to implement a second order low pass filter
 /// Author: Leonard Hall <LeonardTHall@gmail.com>
 /// Adapted for PX4 by Andrew Tridgell
 
@@ -46,7 +46,7 @@ class __EXPORT LowPassFilter2p
 {
 public:
     // constructor
-    LowPassFilter2p(float sample_freq, float cutoff_freq) : 
+    LowPassFilter2p(float sample_freq, float cutoff_freq) :
         _cutoff_freq(cutoff_freq),
         _a1(0.0f),
         _a2(0.0f),
@@ -85,7 +85,7 @@ public:
     float reset(float sample);
 
 private:
-    float           _cutoff_freq; 
+    float           _cutoff_freq;
     float           _a1;
     float           _a2;
     float           _b0;

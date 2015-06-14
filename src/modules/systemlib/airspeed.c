@@ -66,7 +66,7 @@ float calc_indicated_airspeed(float differential_pressure)
 	}
 
 }
- 
+
 /**
  * Calculate true airspeed from indicated airspeed.
  *
@@ -81,7 +81,7 @@ float calc_true_airspeed_from_indicated(float speed_indicated, float pressure_am
 {
 	return speed_indicated * sqrtf(CONSTANTS_AIR_DENSITY_SEA_LEVEL_15C / get_air_density(pressure_ambient, temperature_celsius));
 }
- 
+
 /**
  * Directly calculate true airspeed
  *

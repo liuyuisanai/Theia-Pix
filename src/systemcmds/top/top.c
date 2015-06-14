@@ -36,7 +36,7 @@
  * @file top.c
  * Tool similar to UNIX top command
  * @see http://en.wikipedia.org/wiki/Top_unix
- * 
+ *
  * @author Lorenz Meier <lm@inf.ethz.ch>
  */
 

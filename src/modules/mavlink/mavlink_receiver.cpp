@@ -834,7 +834,7 @@ void
 MavlinkReceiver::handle_message_radio_status(mavlink_message_t *msg)
 {
 	/* telemetry status supported only on first TELEMETRY_STATUS_ORB_ID_NUM mavlink channels */
-    
+
 	if (_mavlink->get_channel() < TELEMETRY_STATUS_ORB_ID_NUM) {
 		mavlink_radio_status_t rstatus;
 		mavlink_msg_radio_status_decode(msg, &rstatus);
@@ -980,7 +980,7 @@ MavlinkReceiver::handle_message_heartbeat(mavlink_message_t *msg)
                             orb_publish(telemetry_status_orb_id[_mavlink->get_channel()], _telemetry_status_pub, &tstatus);
                         }
                     }
-                
+
 
                 break;
 

@@ -444,7 +444,7 @@ mixer_handle_text(const void *buffer, size_t length)
 static void
 mixer_set_failsafe()
 {
-	/* 
+	/*
 	 * Check if a custom failsafe value has been written,
 	 * or if the mixer is not ok and bail out.
 	 */

@@ -71,7 +71,7 @@ public:
 	 * trivial ctor
 	 * Initializes the elements to zero.
 	 */
-	MatrixBase() : 
+	MatrixBase() :
 		data{},
 		arm_mat{M, N, &data[0][0]}
 	{
@@ -94,7 +94,7 @@ public:
 		memcpy(data, d, sizeof(data));
 	}
 
-	MatrixBase(const float d[M][N]) : 
+	MatrixBase(const float d[M][N]) :
 		arm_mat{M, N, &data[0][0]}
 	{
 		memcpy(data, d, sizeof(data));

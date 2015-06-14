@@ -463,19 +463,19 @@ bool handle_command(struct vehicle_status_s *status_local
 			//TODO: [INE] check if AIRDOG can arm and takeoff
 			if (
 				// if system is not in AUTO_STANDBY (e.g. is in manual or assisted modes or active auto)
-				status_local->main_state != MAIN_STATE_AUTO_STANDBY 
+				status_local->main_state != MAIN_STATE_AUTO_STANDBY
 				// and is disarmed
 				&& status_local->arming_state != ARMING_STATE_ARMED
 				// and requested mode is not MANUAL
-				&& (base_mode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED && custom_main_mode != PX4_CUSTOM_MAIN_MODE_MANUAL) 
-				) 
+				&& (base_mode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED && custom_main_mode != PX4_CUSTOM_MAIN_MODE_MANUAL)
+				)
 			{
 				//Reject arming and main state transition
 				mavlink_log_info(mavlink_fd,"Arming command rejected.");
 				cmd_result = VEHICLE_CMD_RESULT_TEMPORARILY_REJECTED;
 				break;
 			}
-			else 
+			else
 			{
 
 				if (base_mode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED) {
@@ -517,7 +517,7 @@ bool handle_command(struct vehicle_status_s *status_local
 
 					} else if (custom_main_mode == PX4_CUSTOM_MAIN_MODE_FOLLOW) {
 						/* FOLLOW */
-						main_ret = main_state_transition(status_local, MAIN_STATE_FOLLOW, mavlink_fd);					
+						main_ret = main_state_transition(status_local, MAIN_STATE_FOLLOW, mavlink_fd);
 					} else if (custom_main_mode == PX4_CUSTOM_MAIN_MODE_RTL) {
 						/* AUTO RTL */
 						//This mode should be processed in LOITER submodes
@@ -711,7 +711,7 @@ bool handle_command(struct vehicle_status_s *status_local
                 }
             }
 
-            
+
 			if (main_ret != TRANSITION_DENIED){
 				cmd_result = VEHICLE_CMD_RESULT_ACCEPTED;
 			} else {
@@ -956,7 +956,7 @@ int commander_thread_main(int argc, char *argv[])
 	/* vehicle status topic */
 	memset(&status, 0, sizeof(status));
 	status.require_gps = require_gps;
-	
+
 	status.condition_landed = true;	// initialize to safe value
 	// We want to accept RC inputs as default
 	status.rc_input_blocked = false;
@@ -1197,7 +1197,7 @@ int commander_thread_main(int argc, char *argv[])
 	memset(&commander_request, 0, sizeof(commander_request));
 
 	/* Subscribe to restricted possition topic */
-	int _pos_restrict_sub = orb_subscribe(ORB_ID(position_restriction)); 
+	int _pos_restrict_sub = orb_subscribe(ORB_ID(position_restriction));
     struct position_restriction_s pos_restrict;	/**< position restriction*/
 	memset(&pos_restrict, 0, sizeof(pos_restrict));
 
@@ -1616,11 +1616,11 @@ int commander_thread_main(int argc, char *argv[])
 				status_changed = true;
 			}
 		}
-		else { 
+		else {
 
             if (armed.armed && (control_mode.flag_control_auto_enabled || control_mode.flag_control_follow_target)) {
                 play_tune_target_signal_invalid = true;
-            }            
+            }
 
             if (status.airdog_state == AIRD_STATE_IN_AIR) {
 
@@ -1639,7 +1639,7 @@ int commander_thread_main(int argc, char *argv[])
                 }
             }
         }
-        
+
 		/* update battery status */
 		orb_check(battery_sub, &updated);
 
@@ -1750,7 +1750,7 @@ int commander_thread_main(int argc, char *argv[])
 			flat_battery_voltage_actions_done = true;
 			mavlink_log_emergency(mavlink_fd, "FLAT BATTERY, EMERGENCY LAND");
 			status.battery_warning = VEHICLE_BATTERY_WARNING_FLAT;
-            
+
             if (battery_flat_use){
                 mavlink_log_emergency(mavlink_fd, "BATTERY FLAT ACTIONS");
                 if (control_mode.flag_control_auto_enabled && status.airdog_state == AIRD_STATE_IN_AIR) {
@@ -2074,7 +2074,7 @@ int commander_thread_main(int argc, char *argv[])
 			case AIRD_STATE_CHANGE:
             {
                 airdog_state_transition(&status, commander_request.airdog_state, mavlink_fd);
-                //TODO: [INE] 
+                //TODO: [INE]
                 //if airdog_state_transition != DENIED
                 {
                 	status.auto_takeoff_cmd = false;
@@ -2082,7 +2082,7 @@ int commander_thread_main(int argc, char *argv[])
 				}
 				break;
             }
-            
+
 			default:
 				break;
 			}
@@ -2107,7 +2107,7 @@ int commander_thread_main(int argc, char *argv[])
             			control_mode.flag_control_point_to_target = false;
             			break;
             		}
-            	}            	
+            	}
             	status_changed = true;
             }
 
@@ -2332,7 +2332,7 @@ int commander_thread_main(int argc, char *argv[])
 
         } else if (play_tune_target_signal_invalid) {
 
-            set_tune(TONE_TARGET_POS_INVALID); 
+            set_tune(TONE_TARGET_POS_INVALID);
 
         } else if (status.battery_warning == VEHICLE_BATTERY_WARNING_CRITICAL) {
 			/* play tune on battery critical */
@@ -2586,7 +2586,7 @@ set_main_state_rc(struct vehicle_status_s *status_local, struct manual_control_s
         if (mode_switch_state != SWITCH_POS_ON) {
 
             mode_switch_state = SWITCH_POS_ON;
-            if (status_local->arming_state == ARMING_STATE_STANDBY) 
+            if (status_local->arming_state == ARMING_STATE_STANDBY)
             {
             	res = main_state_transition(status_local, MAIN_STATE_AUTO_STANDBY, mavlink_fd);
             }
@@ -3055,13 +3055,13 @@ void *commander_low_prio_loop(void *arg)
             orb_copy(ORB_ID(vehicle_status), status_sub, &status);
 
             if (status.arming_state == ARMING_STATE_STANDBY && do_storage_write_when_disarm > 0 ){
-                if (execute_preflight_storage_write(cmd)) 
+                if (execute_preflight_storage_write(cmd))
                     do_storage_write_when_disarm = 0;
                 else
                     do_storage_write_when_disarm--;
             }
         }
-        
+
 
 		/* wait for up to 200ms for data */
 		int pret = poll(&fds[0], (sizeof(fds) / sizeof(fds[0])), 200);
@@ -3227,7 +3227,7 @@ void *commander_low_prio_loop(void *arg)
 		case VEHICLE_CMD_PREFLIGHT_STORAGE: {
 
 				if (((int)(cmd.param1)) == 0) {
-                    
+
                     if (status.arming_state == ARMING_STATE_STANDBY) {
 
                         execute_preflight_storage_read(cmd);
@@ -3239,12 +3239,12 @@ void *commander_low_prio_loop(void *arg)
                     }
 
 				} else if (((int)(cmd.param1)) == 1) {
-                    
+
                     if (status.arming_state == ARMING_STATE_STANDBY) {
                         execute_preflight_storage_write(cmd);
                     } else {
 
-                        do_storage_write_when_disarm = 3;    
+                        do_storage_write_when_disarm = 3;
 
                     }
 				}

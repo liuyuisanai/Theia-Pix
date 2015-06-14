@@ -165,7 +165,7 @@ int AccelCalibrator::detect_orientation() {
 			curr_time = report.timestamp;
 			// Doesn't seem right. With deltas >= 0.5 second, weight will become 1 or even bigger.
 			// To the process it will basically mean discarding previous observations
-			// But with low deltas we'll have weight almost 0, which means previous measurements 
+			// But with low deltas we'll have weight almost 0, which means previous measurements
 			weight = (float(curr_time - prev_time) / 1000000.0f) / ema_len;
 			for (int i = 0; i < 3; ++i) {
 				// Shortened version of EMA(i) = EMA(i-1) * (1-w) + w * accelerometer_m_s2[i]

@@ -1,4 +1,4 @@
-utstring: dynamic string macros for C 
+utstring: dynamic string macros for C
 =====================================
 Troy D. Hanson <thanson@users.sourceforge.net>
 v1.9.5, November 2011
@@ -24,22 +24,22 @@ concatenation, getting the length and content, and clearing it.  The string
 Download
 ~~~~~~~~
 To download the `utstring.h` header file, follow the link on the
-http://uthash.sourceforge.net[uthash home page]. 
+http://uthash.sourceforge.net[uthash home page].
 
 BSD licensed
 ~~~~~~~~~~~~
-This software is made available under the 
-link:license.html[revised BSD license]. 
-It is free and open source. 
+This software is made available under the
+link:license.html[revised BSD license].
+It is free and open source.
 
 Platforms
 ~~~~~~~~~
 The 'utstring' macros have been tested on:
 
- * Linux, 
+ * Linux,
  * Windows, using Visual Studio 2008 and Visual Studio 2010
 
-Usage 
+Usage
 -----
 
 Declaration
@@ -52,14 +52,14 @@ The dynamic string itself has the data type `UT_string`.  It is declared like,
 New and free
 ~~~~~~~~~~~~
 The next step is to create the string using `utstring_new`. Later when you're
-done with it, `utstring_free` will free it and all its content. 
+done with it, `utstring_free` will free it and all its content.
 
 Manipulation
 ~~~~~~~~~~~~
 The `utstring_printf` or `utstring_bincpy` operations insert (copy) data into
 the string. To concatenate one utstring to another, use `utstring_concat`.  To
 clear the content of the string, use `utstring_clear`. The length of the string
-is available from `utstring_len`, and its content from `utstring_body`. This 
+is available from `utstring_len`, and its content from `utstring_body`. This
 evaluates to a `char*`.  The buffer it points to is always null-terminated.
 So, it can be used directly with external functions that expect a string.
 This automatic null terminator is not counted in the length of the string.
@@ -144,7 +144,7 @@ int main() {
 [[operations]]
 Reference
 ---------
-These are the utstring operations. 
+These are the utstring operations.
 
 Operations
 ~~~~~~~~~~
@@ -174,5 +174,5 @@ Notes
 2. `utstring_printf` is actually a function defined statically in `utstring.h`
    rather than a macro.
 
-// vim: set nowrap syntax=asciidoc: 
+// vim: set nowrap syntax=asciidoc:
 

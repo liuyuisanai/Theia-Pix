@@ -254,7 +254,7 @@ i2c_rx_setup(void)
 		DMA_CCR_MSIZE_8BITS |
 		DMA_CCR_PRIMED);
 
-	stm32_dmastart(rx_dma, NULL, NULL, false);			
+	stm32_dmastart(rx_dma, NULL, NULL, false);
 }
 
 static void
@@ -306,7 +306,7 @@ i2c_tx_setup(void)
 	/*
 	 * Note that we configure DMA in circular mode; this means that a too-long
 	 * transfer will copy the buffer more than once, but that avoids us having
-	 * to deal with bailing out of a transaction while the master is still 
+	 * to deal with bailing out of a transaction while the master is still
 	 * babbling at us.
 	 */
 	stm32_dmasetup(tx_dma, (uintptr_t)&rDR, (uintptr_t)&tx_buf[0], tx_len,

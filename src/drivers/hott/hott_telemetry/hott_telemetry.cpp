@@ -90,7 +90,7 @@ recv_req_id(int uart, uint8_t *id)
 	static const int timeout_ms = 1000;  // TODO make it a define
 
 	uint8_t mode;
-	
+
 	struct pollfd fds;
 	fds.fd = uart;
 	fds.events = POLLIN;

@@ -250,7 +250,7 @@ HIL::task_main_trampoline(int argc, char *argv[])
 int
 HIL::set_mode(Mode mode)
 {
-	/* 
+	/*
 	 * Configure for PWM output.
 	 *
 	 * Note that regardless of the configured mode, the task is always
@@ -269,19 +269,19 @@ HIL::set_mode(Mode mode)
 		/* multi-port as 4 PWM outs */
 		_update_rate = 50;	/* default output rate */
 		break;
-            
+
     	case MODE_8PWM:
             debug("MODE_8PWM");
             /* multi-port as 8 PWM outs */
             _update_rate = 50;	/* default output rate */
             break;
-            
+
         case MODE_12PWM:
             debug("MODE_12PWM");
             /* multi-port as 12 PWM outs */
             _update_rate = 50;	/* default output rate */
             break;
-            
+
         case MODE_16PWM:
             debug("MODE_16PWM");
             /* multi-port as 16 PWM outs */
@@ -515,12 +515,12 @@ HIL::pwm_ioctl(file *filp, int cmd, unsigned long arg)
 		break;
 
 	case PWM_SERVO_SET_UPDATE_RATE:
-		// HIL always outputs at the alternate (usually faster) rate 
+		// HIL always outputs at the alternate (usually faster) rate
 		g_hil->set_pwm_rate(arg);
 		break;
 
 	case PWM_SERVO_SET_SELECT_UPDATE_RATE:
-		// HIL always outputs at the alternate (usually faster) rate 
+		// HIL always outputs at the alternate (usually faster) rate
 		break;
 
 	case PWM_SERVO_SET(2):
@@ -661,7 +661,7 @@ int
 hil_new_mode(PortMode new_mode)
 {
 	// uint32_t gpio_bits;
-	
+
 
 //	/* reset to all-inputs */
 //	g_hil->ioctl(0, GPIO_RESET, 0);
@@ -693,17 +693,17 @@ hil_new_mode(PortMode new_mode)
 		/* select 2-pin PWM mode */
 		servo_mode = HIL::MODE_2PWM;
 		break;
-            
+
         case PORT2_8PWM:
             /* select 8-pin PWM mode */
             servo_mode = HIL::MODE_8PWM;
             break;
-            
+
         case PORT2_12PWM:
             /* select 12-pin PWM mode */
             servo_mode = HIL::MODE_12PWM;
             break;
-            
+
         case PORT2_16PWM:
             /* select 16-pin PWM mode */
             servo_mode = HIL::MODE_16PWM;

@@ -1439,7 +1439,7 @@ FixedwingEstimator::task_main()
 						/* crude land detector for fixedwing only,
 						* TODO: adapt so that it works for both, maybe move to another location
 						*/
-                                /* commented out by Max Shvetsov <maxim.shvetsov@airdog.com> 
+                                /* commented out by Max Shvetsov <maxim.shvetsov@airdog.com>
                                  * airdog is not a fixedwing, no need in this thing
                                  */
 						//if (_velocity_xy_filtered < 5

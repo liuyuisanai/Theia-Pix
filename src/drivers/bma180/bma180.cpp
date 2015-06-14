@@ -446,14 +446,14 @@ BMA180::ioctl(struct file *filp, int cmd, unsigned long arg)
 		/* lower bound is mandatory, upper bound is a sanity check */
 		if ((arg < 2) || (arg > 100))
 			return -EINVAL;
-		
+
 		irqstate_t flags = irqsave();
 		if (!_reports->resize(arg)) {
 			irqrestore(flags);
 			return -ENOMEM;
 		}
 		irqrestore(flags);
-		
+
 		return OK;
 	}
 

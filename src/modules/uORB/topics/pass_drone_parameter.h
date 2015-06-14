@@ -28,4 +28,4 @@ struct pass_drone_param_s {
 /* register this as object request broker structure */
 ORB_DECLARE(pass_drone_parameter);
 
-#endif 
+#endif

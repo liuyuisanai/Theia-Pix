@@ -162,7 +162,7 @@ test_file(int argc, char *argv[])
 					warnx("READ ERROR!");
 					return 1;
 				}
-				
+
 				/* compare value */
 				bool compare_ok = true;
 
@@ -224,7 +224,7 @@ test_file(int argc, char *argv[])
 					warnx("READ ERROR!");
 					return 1;
 				}
-				
+
 				for (int j = 0; j < chunk_sizes[c]; j++) {
 					if (read_buf[j] != write_buf[j]) {
 						warnx("COMPARISON ERROR: byte %d: %u != %u", j, (unsigned int)read_buf[j], (unsigned int)write_buf[j]);
@@ -270,7 +270,7 @@ test_file(int argc, char *argv[])
 						warnx("COMPARISON ERROR: byte %d, align shift: %d: %u != %u", j, a, (unsigned int)read_buf[j + a], (unsigned int)write_buf[j]);
 						unalign_read_ok = false;
 						unalign_read_err_count++;
-						
+
 						if (unalign_read_err_count > 10)
 							break;
 					}

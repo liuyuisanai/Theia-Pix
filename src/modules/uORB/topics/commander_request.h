@@ -39,7 +39,7 @@ typedef enum {
 	V_MAIN_STATE_CHANGE = 0,    // Request to main_state change
 	V_DISARM,                   // Request to disarm vehicle
     AIRD_STATE_CHANGE,           // Request to change airdog_state
-    V_RESET_MODE_ARGS,			// Request to reset mode argumens 
+    V_RESET_MODE_ARGS,			// Request to reset mode argumens
     OTHER,						// Other request
 } request_type_t;
 

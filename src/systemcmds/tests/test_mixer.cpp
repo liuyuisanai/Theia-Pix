@@ -170,7 +170,7 @@ int test_mixer(int argc, char *argv[])
 		return 1;
 
 	/* execute the mixer */
-	
+
 	float	outputs[output_max];
 	unsigned mixed;
 	const int jmax = 5;
@@ -193,7 +193,7 @@ int test_mixer(int argc, char *argv[])
 	unsigned sleepcount = 0;
 
 	while (hrt_elapsed_time(&starttime) < INIT_TIME_US + RAMP_TIME_US) {
-		
+
 		/* mix */
 		mixed = mixer_group.mix(&outputs[0], output_max);
 
@@ -262,7 +262,7 @@ int test_mixer(int argc, char *argv[])
 	should_arm = false;
 
 	while (hrt_elapsed_time(&starttime) < 600000) {
-		
+
 		/* mix */
 		mixed = mixer_group.mix(&outputs[0], output_max);
 
@@ -296,7 +296,7 @@ int test_mixer(int argc, char *argv[])
 	should_arm = true;
 
 	while (hrt_elapsed_time(&starttime) < 600000 + RAMP_TIME_US) {
-		
+
 		/* mix */
 		mixed = mixer_group.mix(&outputs[0], output_max);
 

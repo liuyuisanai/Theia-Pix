@@ -46,30 +46,30 @@ private:
     int iter = 0;
 
     // Timestamp of the last trajectory point
-	uint64_t _last_trajectory_time;             
+	uint64_t _last_trajectory_time;
     // Trajectory point Queue
-	Queue<buffer_point_s> _traj_point_queue;    
+	Queue<buffer_point_s> _traj_point_queue;
     // Distance by trajectory points only, excluding drone or target current position
-	float _trajectory_distance;                 
+	float _trajectory_distance;
     // Latest point in the trajectory queue
-	buffer_point_s _latest_point;               
+	buffer_point_s _latest_point;
     // Point currently in use as a setpoint
-	buffer_point_s _active_traj_point;          
+	buffer_point_s _active_traj_point;
     // Point currently in use as a setpoint
-	buffer_point_s tmp_point;                   
-    // Last reached point 
-    buffer_point_s _last_point;                 
+	buffer_point_s tmp_point;
+    // Last reached point
+    buffer_point_s _last_point;
     // Flag if drone is reaching for trajectory point.
-	bool _reaching_for_traj_point;              
+	bool _reaching_for_traj_point;
     // Point of trajectory after the actual
-	buffer_point_s _future_point;               
+	buffer_point_s _future_point;
     // Indicates if the mode was inited successfully
-	bool _inited;                               
+	bool _inited;
 
 
     bool _first_tp_flag = false;
     bool _second_tp_flag = false;
-    
+
     buffer_point_s _second_tp;
     buffer_point_s _first_tp;
     buffer_point_s _last_passed_point;
@@ -105,18 +105,18 @@ private:
     float _dst_to_gate;
 
     // Speed we want to move with until distance changes
-	float _desired_speed;                   
+	float _desired_speed;
     // Distances to use when following
-	float _optimal_distance;                     
+	float _optimal_distance;
     // Distances to use when following
-	float _break_distance;                     
+	float _break_distance;
 
     // desired speed PID controller integral component coefficient
-    float _fp_i;                           
+    float _fp_i;
     // desired speed PID controller proportional component coefficient
-    float _fp_p;                           
-    // desired speed PID controller dirivetive component coefficient 
-    float _fp_d;                           
+    float _fp_p;
+    // desired speed PID controller dirivetive component coefficient
+    float _fp_d;
 
     // Point where drone started to go backwards
     math::Vector<2> going_bckw_st;
@@ -134,11 +134,11 @@ private:
     // Altitude which must be reached till current trajectory point have been reached
     float _z_goal;
     // Altitude when drone started to reach for current trajectory point
-    float _z_start; 
+    float _z_start;
     float _x_start;
     float _y_start;
     // How big was distance to trajectory point, when drone started to reach for it
-    float _z_start_dst_to_gate; 
+    float _z_start_dst_to_gate;
 
     bool _tp_just_reached;
 

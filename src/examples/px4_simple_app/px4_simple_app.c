@@ -75,7 +75,7 @@ int px4_simple_app_main(int argc, char *argv[])
 	for (int i = 0; i < 5; i++) {
 		/* wait for sensor update of 1 file descriptor for 1000 ms (1 second) */
 		int poll_ret = poll(fds, 1, 1000);
-	 
+
 		/* handle the poll result */
 		if (poll_ret == 0) {
 			/* this means none of our providers is giving us data */
@@ -89,7 +89,7 @@ int px4_simple_app_main(int argc, char *argv[])
 			}
 			error_counter++;
 		} else {
-	 
+
 			if (fds[0].revents & POLLIN) {
 				/* obtained data for the first file descriptor */
 				struct sensor_combined_s raw;

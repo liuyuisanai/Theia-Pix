@@ -35,7 +35,7 @@
 
 /// @file mavlink_ftp.h
 ///     @author px4dev, Don Gagne <don@thegagnes.com>
- 
+
 #include <dirent.h>
 #include <queue.h>
 
@@ -54,15 +54,15 @@ class MavlinkFTP
 public:
 	/// @brief Returns the one Mavlink FTP server in the system.
 	static MavlinkFTP* get_server(void);
-    
+
 	/// @brief Contructor is only public so unit test code can new objects.
 	MavlinkFTP();
-	
+
 	/// @brief Adds the specified message to the work queue.
 	void handle_message(Mavlink* mavlink, mavlink_message_t *msg);
-    
+
 	typedef void (*ReceiveMessageFunc_t)(const mavlink_message_t *msg, MavlinkFtpTest* ftpTest);
-	
+
 	/// @brief Sets up the server to run in unit test mode.
 	///	@param rcvmsgFunc Function which will be called to handle outgoing mavlink messages.
 	///	@param ftp_test MavlinkFtpTest object which the function is associated with
@@ -81,7 +81,7 @@ public:
 		uint32_t	offset;		///< Offsets for List and Read commands
 		uint8_t		data[];		///< command data, varies by Opcode
         };
-	
+
 	/// @brief Command opcodes
 	enum Opcode : uint8_t
 	{
@@ -100,11 +100,11 @@ public:
 		kCmdTruncateFile,	///< Truncate file at <path> to <offset> length
 		kCmdRename,		///< Rename <path1> to <path2>
 		kCmdCalcFileCRC32,	///< Calculate CRC32 for file at <path>
-		
+
 		kRspAck = 128,		///< Ack response
 		kRspNak			///< Nak response
 	};
-	
+
 	/// @brief Error codes returned in Nak response PayloadHeader.data[0].
 	enum ErrorCode : uint8_t
         {
@@ -117,7 +117,7 @@ public:
 		kErrEOF,			///< Offset past end of file for List and Read commands
 		kErrUnknownCommand		///< Unknown command opcode
         };
-	
+
 private:
 	/// @brief Unit of work which is queued to work_queue
 	struct Request
@@ -131,14 +131,14 @@ private:
 
 		mavlink_file_transfer_protocol_t message;	///< Protocol message
 	};
-	
+
 	Request		*_get_request(void);
 	void		_return_request(Request *req);
 	void		_lock_request_queue(void);
 	void		_unlock_request_queue(void);
-	
+
 	char		*_data_as_cstring(PayloadHeader* payload);
-	
+
 	static void	_worker_trampoline(void *arg);
 	void		_process_request(Request *req);
 	void		_reply(Request *req);
@@ -161,20 +161,20 @@ private:
 	Request			_request_bufs[kRequestQueueSize];	///< Request buffers which hold work
 	dq_queue_t		_request_queue;				///< Queue of available Request buffers
 	sem_t			_request_queue_sem;			///< Semaphore for locking access to _request_queue
-	
+
 	int _find_unused_session(void);
 	bool _valid_session(unsigned index);
-	
+
 	static const char	kDirentFile = 'F';	///< Identifies File returned from List command
 	static const char	kDirentDir = 'D';	///< Identifies Directory returned from List command
 	static const char	kDirentSkip = 'S';	///< Identifies Skipped entry from List command
-	
+
 	/// @brief Maximum data size in RequestHeader::data
 	static const uint8_t	kMaxDataLength = MAVLINK_MSG_FILE_TRANSFER_PROTOCOL_FIELD_PAYLOAD_LEN - sizeof(PayloadHeader);
-	
+
 	static const unsigned kMaxSession = 2;	///< Max number of active sessions
 	int	_session_fds[kMaxSession];	///< Session file descriptors, 0 for empty slot
-	
+
 	ReceiveMessageFunc_t _utRcvMsgFunc;	///< Unit test override for mavlink message sending
 	MavlinkFtpTest *_ftp_test;		///< Additional parameter to _utRcvMsgFunc;
 };

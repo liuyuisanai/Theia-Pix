@@ -114,7 +114,7 @@ int RoboClaw::readEncoder(e_motor motor)
 	uint8_t rbuf[50];
 	usleep(5000);
 	int nread = read(_uart, rbuf, 50);
-	if (nread < 6) { 
+	if (nread < 6) {
 		printf("failed to read\n");
 		return -1;
 	}
@@ -131,7 +131,7 @@ int RoboClaw::readEncoder(e_motor motor)
 	countBytes[0] = rbuf[3];
 	uint8_t status = rbuf[4];
 	uint8_t checksum = rbuf[5];
-	uint8_t checksum_computed = (sum + _sumBytes(rbuf, 5)) & 
+	uint8_t checksum_computed = (sum + _sumBytes(rbuf, 5)) &
 		checksum_mask;
 	// check if checksum is valid
 	if (checksum != checksum_computed) {
@@ -156,11 +156,11 @@ int RoboClaw::readEncoder(e_motor motor)
 	static int64_t overflowAmount = 0x100000000LL;
 	if (motor == MOTOR_1) {
 		_motor1Overflow += overFlow;
-		_motor1Position = float(int64_t(count) + 
+		_motor1Position = float(int64_t(count) +
 			_motor1Overflow*overflowAmount)/_pulsesPerRev;
 	} else if (motor == MOTOR_2) {
 		_motor2Overflow += overFlow;
-		_motor2Position = float(int64_t(count) + 
+		_motor2Position = float(int64_t(count) +
 			_motor2Overflow*overflowAmount)/_pulsesPerRev;
 	}
 	return 0;
@@ -242,7 +242,7 @@ int RoboClaw::setMotorDutyCycle(e_motor motor, float value)
 	return -1;
 }
 
-int RoboClaw::resetEncoders() 
+int RoboClaw::resetEncoders()
 {
 	uint16_t sum = 0;
 	return _sendCommand(CMD_RESET_ENCODERS,
@@ -278,7 +278,7 @@ uint16_t RoboClaw::_sumBytes(uint8_t * buf, size_t n)
 	return sum;
 }
 
-int RoboClaw::_sendCommand(e_command cmd, uint8_t * data, 
+int RoboClaw::_sendCommand(e_command cmd, uint8_t * data,
 		size_t n_data, uint16_t & prev_sum)
 {
 	tcflush(_uart, TCIOFLUSH); // flush  buffers
@@ -299,7 +299,7 @@ int RoboClaw::_sendCommand(e_command cmd, uint8_t * data,
 	return write(_uart, buf, n_data + 3);
 }
 
-int roboclawTest(const char *deviceName, uint8_t address, 
+int roboclawTest(const char *deviceName, uint8_t address,
 		uint16_t pulsesPerRev)
 {
 	printf("roboclaw test: starting\n");

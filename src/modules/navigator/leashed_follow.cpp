@@ -55,23 +55,23 @@
 Leashed::Leashed(Navigator *navigator, const char *name)
 	: MissionBlock(navigator, name)
     , _v_module()
-    , _target_lat()	
-    , _target_lon()	
-    , _target_alt()	
+    , _target_lat()
+    , _target_lon()
+    , _target_alt()
     , _target_v_n()
     , _target_v_e()
     , _vehicle_v_n()
     , _vehicle_v_e()
-    , _vehicle_lat()	
-    , _vehicle_lon()	
+    , _vehicle_lat()
+    , _vehicle_lon()
     , _vehicle_alt()
-    , _init_alt() 		
+    , _init_alt()
     , _ready_to_follow(false)
     , _first_leash_point{0.0,0.0}
     , _last_leash_point{0.0,0.0}
     , _t_prev()
 {
-    updateParameters();	
+    updateParameters();
 }
 
 Leashed::~Leashed()

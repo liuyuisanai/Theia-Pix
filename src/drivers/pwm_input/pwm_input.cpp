@@ -32,7 +32,7 @@
  ****************************************************************************/
 
 /**
- * @file pwm_input.cpp 
+ * @file pwm_input.cpp
  *
  * PWM input driver based on earlier driver from Evan Slatyer,
  * which in turn was based on drv_hrt.c
@@ -329,7 +329,7 @@ PWMIN::init()
 /*
  * Initialise the timer we are going to use.
  */
-void PWMIN::timer_init(void) 
+void PWMIN::timer_init(void)
 {
 	// run with interrupts disabled in case the timer is already
 	// setup. We don't want it firing while we are doing the setup
@@ -340,7 +340,7 @@ void PWMIN::timer_init(void)
 	irq_attach(PWMIN_TIMER_VECTOR, pwmin_tim_isr);
 
 	/* Clear no bits, set timer enable bit.*/
-	modifyreg32(PWMIN_TIMER_POWER_REG, 0, PWMIN_TIMER_POWER_BIT); 
+	modifyreg32(PWMIN_TIMER_POWER_REG, 0, PWMIN_TIMER_POWER_BIT);
 
 	/* disable and configure the timer */
 	rCR1 = 0;
@@ -360,8 +360,8 @@ void PWMIN::timer_init(void)
 	// for a PWM input driver
 	uint32_t prescaler = PWMIN_TIMER_CLOCK/1000000UL;
 
-	/* 
-	 * define the clock speed. We want the highest possible clock 
+	/*
+	 * define the clock speed. We want the highest possible clock
 	 * speed that avoids overflows.
 	 */
 	rPSC = prescaler - 1;
@@ -419,7 +419,7 @@ PWMIN::open(struct file *filp)
 	if (g_dev == nullptr) {
 		return -EIO;
 	}
-	int ret = CDev::open(filp);	
+	int ret = CDev::open(filp);
 	if (ret == OK && !timer_started) {
 		g_dev->timer_init();
 	}
@@ -554,7 +554,7 @@ float pwm_lpf_filtering(float current_value, float low_filtering_coeff, float hi
     float delta = fabsf(lpf_value - current_value);
     if ( delta > epsilon) {
         lpf_value += hight_filtering_coeff*(current_value - lpf_value);
-    } else { 
+    } else {
         lpf_value += low_filtering_coeff*(current_value - lpf_value);
     }
     return lpf_value;
@@ -595,7 +595,7 @@ static int pwmin_tim_isr(int irq, void *context)
 
 	if (g_dev != nullptr) {
 		g_dev->_publish(status, period, pulse_width);
-	} 
+	}
 	return OK;
 }
 
@@ -686,7 +686,7 @@ static void pwmin_info(void)
 /*
   driver entry point
  */
-int pwm_input_main(int argc, char * argv[]) 
+int pwm_input_main(int argc, char * argv[])
 {
 	const char *verb = argv[1];
     /*

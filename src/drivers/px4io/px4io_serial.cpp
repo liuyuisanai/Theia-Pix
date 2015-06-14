@@ -314,7 +314,7 @@ PX4IO_serial::ioctl(unsigned operation, unsigned &arg)
 
 					if (write((PX4IO_PAGE_TEST << 8) | PX4IO_P_TEST_LED, &value, 1) != 0)
 						fails++;
-						
+
 					if (count >= 5000) {
 						lowsyslog("==== test 1 : %u failures ====\n", fails);
 						perf_print_counter(_pc_txns);
@@ -432,7 +432,7 @@ PX4IO_serial::read(unsigned address, void *data, unsigned count)
 				result = -EIO;
 				perf_count(_pc_protoerrs);
 
-			/* successful read */				
+			/* successful read */
 			} else {
 
 				/* copy back the result */
@@ -618,8 +618,8 @@ PX4IO_serial::_do_interrupt()
 	if (sr & (USART_SR_ORE |	/* overrun error - packet was too big for DMA or DMA was too slow */
 		USART_SR_NE |		/* noise error - we have lost a byte due to noise */
 		USART_SR_FE)) {		/* framing error - start/stop bit lost or line break */
-		
-		/* 
+
+		/*
 		 * If we are in the process of listening for something, these are all fatal;
 		 * abort the DMA with an error.
 		 */

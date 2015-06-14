@@ -1128,7 +1128,7 @@ void AttPosEKF::FuseVelposNED()
 
                 if (current_ekf_state.posTimeout) {
                     ResetPosition();
-                    
+
                     // XXX cross-check the state reset
                     ResetStoredStates();
 
@@ -3103,7 +3103,7 @@ void AttPosEKF::InitializeDynamic(float (&initvelNED)[3], float declination)
     current_ekf_state.velHealth = true;
     current_ekf_state.posHealth = true;
     current_ekf_state.hgtHealth = true;
-    
+
     current_ekf_state.velTimeout = false;
     current_ekf_state.posTimeout = false;
     current_ekf_state.hgtTimeout = false;

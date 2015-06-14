@@ -168,7 +168,7 @@ RTL::set_rtl_setpoint()
     pos_sp_triplet->previous.valid = false;
     pos_sp_triplet->current.valid = true;
     pos_sp_triplet->next.valid = false;
-    
+
     float climb_alt = _navigator->get_home_position()->alt + _parameters.rtl_ret_alt;
 
 	switch (rtl_state) {
@@ -189,7 +189,7 @@ RTL::set_rtl_setpoint()
             // Calculate offset values for later use.
             float offset_x;
             float offset_y;
-            
+
             get_vector_to_next_waypoint(
                     global_pos->lat,
                     global_pos->lon,

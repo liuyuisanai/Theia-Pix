@@ -140,7 +140,7 @@ public:
 
 	/**
 	 * Get the switch distance
-	 * 
+	 *
 	 * This is the distance at which the system will
 	 * switch to the next waypoint. This depends on the
 	 * period and damping

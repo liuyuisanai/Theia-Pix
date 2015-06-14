@@ -61,7 +61,7 @@ public:
 		CH_VOLTAGE_LEFT = 0,
 		CH_VOLTAGE_RIGHT
 	};
-	
+
 	/**  motors */
 	enum e_motor {
 		MOTOR_1 = 0,
@@ -70,14 +70,14 @@ public:
 
 	/**
 	 * constructor
-	 * @param deviceName the name of the 
+	 * @param deviceName the name of the
 	 * 	serial port e.g. "/dev/ttyS2"
 	 * @param address the adddress  of the motor
 	 * 	(selectable on roboclaw)
 	 * @param pulsesPerRev # of encoder
 	 *  pulses per revolution of wheel
 	 */
-	RoboClaw(const char *deviceName, uint16_t address, 
+	RoboClaw(const char *deviceName, uint16_t address,
 			uint16_t pulsesPerRev);
 
 	/**
@@ -153,7 +153,7 @@ private:
 
 		// advanced motor control
 		CMD_READ_SPEED_HIRES_1 = 30,
-		CMD_READ_SPEED_HIRES_2 = 31, 
+		CMD_READ_SPEED_HIRES_2 = 31,
 		CMD_SIGNED_DUTYCYCLE_1 = 32,
 		CMD_SIGNED_DUTYCYCLE_2 = 33,
 	};

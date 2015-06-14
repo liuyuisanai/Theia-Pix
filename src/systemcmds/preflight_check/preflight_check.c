@@ -97,7 +97,7 @@ int preflight_check_main(int argc, char *argv[])
 		goto system_eval;
 	}
 	ret = ioctl(fd, MAGIOCSELFTEST, 0);
-	
+
 	if (ret != OK) {
 		warnx("magnetometer calibration missing or bad - calibrate magnetometer first");
 		mavlink_log_critical(mavlink_fd, "SENSOR FAIL: MAG CHECK/CAL");
@@ -110,7 +110,7 @@ int preflight_check_main(int argc, char *argv[])
 	close(fd);
 	fd = open(ACCEL_DEVICE_PATH, O_RDONLY);
 	ret = ioctl(fd, ACCELIOCSELFTEST, 0);
-	
+
 	if (ret != OK) {
 		warnx("accel self test failed");
 		mavlink_log_critical(mavlink_fd, "SENSOR FAIL: ACCEL CHECK/CAL");
@@ -146,7 +146,7 @@ int preflight_check_main(int argc, char *argv[])
 	close(fd);
 	fd = open(GYRO_DEVICE_PATH, 0);
 	ret = ioctl(fd, GYROIOCSELFTEST, 0);
-	
+
 	if (ret != OK) {
 		warnx("gyro self test failed");
 		mavlink_log_critical(mavlink_fd, "SENSOR FAIL: GYRO CHECK/CAL");
@@ -172,10 +172,10 @@ int preflight_check_main(int argc, char *argv[])
 	system_ok &= rc_ok;
 
 
-		
+
 
 system_eval:
-	
+
 	if (system_ok) {
 		/* all good, exit silently */
 		exit(0);

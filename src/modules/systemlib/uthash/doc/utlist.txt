@@ -22,20 +22,20 @@ elements, sorting them and iterating over them.
 Download
 ~~~~~~~~
 To download the `utlist.h` header file, follow the link on the
-http://uthash.sourceforge.net[uthash home page]. 
+http://uthash.sourceforge.net[uthash home page].
 
 BSD licensed
 ~~~~~~~~~~~~
-This software is made available under the 
-link:license.html[revised BSD license]. 
-It is free and open source. 
+This software is made available under the
+link:license.html[revised BSD license].
+It is free and open source.
 
 Platforms
 ~~~~~~~~~
 The 'utlist' macros have been tested on:
 
- * Linux, 
- * Mac OS X, and 
+ * Linux,
+ * Mac OS X, and
  * Windows, using Visual Studio 2008, Visual Studio 2010, or Cygwin/MinGW.
 
 Using utlist
@@ -61,8 +61,8 @@ and searching are `O(n)` for all list types.
 
 List elements
 ~~~~~~~~~~~~~
-You can use any structure with these macros, as long as the structure 
-contains a `next` pointer. If you want to make a doubly-linked list, 
+You can use any structure with these macros, as long as the structure
+contains a `next` pointer. If you want to make a doubly-linked list,
 the element also needs to have a `prev` pointer.
 
   typedef struct element {
@@ -72,7 +72,7 @@ the element also needs to have a `prev` pointer.
   } element;
 
 You can name your structure anything. In the example above it is called `element`.
-Within a particular list, all elements must be of the same type. 
+Within a particular list, all elements must be of the same type.
 
 List head
 ~~~~~~~~~
@@ -83,15 +83,15 @@ anything. *It must be initialized to `NULL`*.
 
 List operations
 ~~~~~~~~~~~~~~~
-The lists support inserting or deleting elements, sorting the elements and 
+The lists support inserting or deleting elements, sorting the elements and
 iterating over them.
 
 [width="100%",cols="10<m,10<m,10<m",grid="cols",options="header"]
 |===============================================================================
 |Singly-linked             | Doubly-linked              | Circular, doubly-linked
 |LL_PREPEND(head,add);     | DL_PREPEND(head,add);      | CDL_PREPEND(head,add;
-|LL_APPEND(head,add);      | DL_APPEND(head,add);       | 
-|LL_CONCAT(head1,head2);   | DL_CONCAT(head1,head2);    | 
+|LL_APPEND(head,add);      | DL_APPEND(head,add);       |
+|LL_CONCAT(head1,head2);   | DL_CONCAT(head1,head2);    |
 |LL_DELETE(head,del);      | DL_DELETE(head,del);       | CDL_DELETE(head,del);
 |LL_SORT(head,cmp);        | DL_SORT(head,cmp);         | CDL_SORT(head,cmp);
 |LL_FOREACH(head,elt) {...}| DL_FOREACH(head,elt) {...} | CDL_FOREACH(head,elt) {...}
@@ -114,7 +114,7 @@ The 'foreach' operation is for easy iteration over the list from the head to the
 tail. A usage example is shown below. You can of course just use the `prev` and
 `next` pointers directly instead of using the 'foreach' macros.
 The 'foreach_safe' operation should be used if you plan to delete any of the list
-elements while iterating. 
+elements while iterating.
 
 The 'search' operation is a shortcut for iteration in search of a particular
 element. It is not any faster than manually iterating and testing each element.
@@ -136,7 +136,7 @@ elt::
   example) in the case of iteration macros; also, the output pointer from
   the search macros.
 like::
-  An element pointer, having the same type as `elt`, for which the search macro 
+  An element pointer, having the same type as `elt`, for which the search macro
   seeks a match (if found, the match is stored in `elt`). A match is determined
   by the given `cmp` function.
 cmp::
@@ -188,7 +188,7 @@ int main(int argc, char *argv[]) {
     FILE *file;
 
     if ( (file = fopen( "test11.dat", "r" )) == NULL ) {
-        perror("can't open: "); 
+        perror("can't open: ");
         exit(-1);
     }
 
@@ -215,5 +215,5 @@ int main(int argc, char *argv[]) {
 }
 --------------------------------------------------------------------------------
 
-// vim: set nowrap syntax=asciidoc: 
+// vim: set nowrap syntax=asciidoc:
 

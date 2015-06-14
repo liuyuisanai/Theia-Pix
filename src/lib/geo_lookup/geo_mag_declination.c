@@ -35,7 +35,7 @@
 * @file geo_mag_declination.c
 *
 * Calculation / lookup table for earth magnetic field declination.
-* 
+*
 * Lookup table from Scott Ferguson <scottfromscott@gmail.com>
 *
 * XXX Lookup table currently too coarse in resolution (only full degrees)

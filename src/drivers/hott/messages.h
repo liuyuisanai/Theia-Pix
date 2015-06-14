@@ -130,7 +130,7 @@ struct gam_module_msg {
         uint8_t warning_beeps;
         uint8_t sensor_text_id;
         uint8_t alarm_invers1;
-        uint8_t alarm_invers2;                                                              
+        uint8_t alarm_invers2;
         uint8_t cell1;			/**< Lipo cell voltages. Not supported.	*/
         uint8_t cell2;
         uint8_t cell3;
@@ -177,11 +177,11 @@ struct gam_module_msg {
 #define GPS_SENSOR_ID		0x8a
 #define GPS_SENSOR_TEXT_ID	0xa0
 
-/** 
+/**
  * The GPS sensor message
- * Struct based on: https://code.google.com/p/diy-hott-gps/downloads 
+ * Struct based on: https://code.google.com/p/diy-hott-gps/downloads
  */
-struct gps_module_msg { 
+struct gps_module_msg {
 	uint8_t start;			/**< Start byte */
 	uint8_t sensor_id;		/**< GPS sensor ID*/
 	uint8_t warning;		/**< 0…= warning beeps */
@@ -191,19 +191,19 @@ struct gps_module_msg {
 	uint8_t flight_direction;	/**< 119 = Flightdir./dir. 1 = 2°; 0° (North), 9 0° (East), 180° (South), 270° (West) */
 	uint8_t gps_speed_L;		/**< 8 = /GPS speed low byte 8km/h */
 	uint8_t gps_speed_H;		/**< 0 = /GPS speed high byte */
-	  
+
 	uint8_t latitude_ns;		/**< 000 = N = 48°39’988 */
 	uint8_t latitude_min_L;		/**< 231 0xE7 = 0x12E7 = 4839 */
 	uint8_t latitude_min_H;		/**< 018 18 = 0x12 */
 	uint8_t latitude_sec_L;		/**< 171 220 = 0xDC = 0x03DC =0988 */
 	uint8_t latitude_sec_H;		/**< 016 3 = 0x03 */
-	 
+
 	uint8_t longitude_ew;		/**< 000  = E= 9° 25’9360 */
 	uint8_t longitude_min_L;	/**< 150 157 = 0x9D = 0x039D = 0925 */
 	uint8_t longitude_min_H;	/**< 003 3 = 0x03 */
 	uint8_t longitude_sec_L;	/**< 056 144 = 0x90 0x2490 = 9360 */
 	uint8_t longitude_sec_H;	/**< 004 36 = 0x24 */
-	  
+
 	uint8_t distance_L;		/**< 027 123 = /distance low byte 6 = 6 m */
 	uint8_t distance_H;		/**< 036 35 = /distance high byte */
 	uint8_t altitude_L;		/**< 243 244 = /Altitude low byte 500 = 0m */

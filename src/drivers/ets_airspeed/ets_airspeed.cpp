@@ -161,7 +161,7 @@ ETSAirspeed::collect()
 		// caller could end up using this value as part of an
 		// average
 		perf_count(_comms_errors);
-		log("zero value from sensor"); 
+		log("zero value from sensor");
 		return -1;
         }
 

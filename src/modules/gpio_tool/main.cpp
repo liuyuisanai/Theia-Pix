@@ -69,7 +69,7 @@ usage(const char * name)
 
 bool
 show(const char *argv) {
-    
+
     uint32_t port, pin;
     const char * tail;
     if (not parse_port_pin(argv, port, pin, tail) or *tail != 0)
