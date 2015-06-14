@@ -273,6 +273,11 @@ then
 		set TELEM_TTY /dev/ttyS2
 		set MAVLINK_TTY /dev/ttyS2
 	fi
+	if param compare A_TELEMETRY_MODE 4
+	then
+		echo Turning OFF BL600
+		gpio_tool set pb12=0
+	fi
 
 	if [ x$TELEM_TTY = x ]
 	then
