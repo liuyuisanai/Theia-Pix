@@ -57,6 +57,7 @@
 #include <unistd.h>
 #include <drivers/drv_hrt.h>
 #include <math.h>
+#include <dirent.h>
 
 #include <drivers/drv_range_finder.h>
 
@@ -147,6 +148,15 @@ PARAM_DEFINE_INT32(SDLOG_EXT, -1);
  * @group SD Logging
  */
 PARAM_DEFINE_INT32(SDLOG_ON_BOOT, 0);
+
+/**
+ * Define maximum log size in MB.
+ *
+ * @min 0
+ * @max Max int value
+ * @group SD Logging
+ */
+PARAM_DEFINE_INT32(SDLOG_MAX_SIZE, 512);
 
 /**
  * Following params provide support for custom update rates for each sdlog topic
@@ -338,6 +348,175 @@ sdlog2_usage(const char *reason)
 		 "\t-x\tExtended logging");
 }
 
+static int64_t get_dir_size(const char *path)
+{
+    DIR *dir;
+    struct dirent *entry;
+    uint64_t totalSize = 0;
+    int path_len = strlen(path);
+
+    dir = opendir(path);
+
+    if (NULL == dir) {
+        return -1;
+    }
+
+    // read all dir entries
+    while ((entry = readdir(dir)) != NULL)
+    {
+        int r = 0;
+        struct stat st;
+        char buf[PATH_MAX];
+        int bufSize = 0;
+
+        if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."))
+        {
+           continue;
+        }
+
+        bufSize = path_len + 1 + strlen(entry->d_name) + 1;
+        buf[bufSize - 1] = 0;
+
+        strncpy(buf, path, bufSize);
+        strncat(buf, "/", bufSize - strlen(buf));
+        strncat(buf, entry->d_name, bufSize - strlen(buf));
+
+        r = stat(buf, &st);
+
+        if (r == -1)
+        {
+            // failed to get stat, try with next file
+            continue;
+        }
+
+        totalSize += st.st_blksize * st.st_blocks;
+
+        // if directory then we should check sub directories
+        if (S_ISDIR(st.st_mode))
+        {
+            totalSize += get_dir_size(buf);
+        }
+    }
+
+    closedir(dir);
+
+    return totalSize;
+}
+
+static void remove_dir(const char *path)
+{
+    DIR *dir;
+    struct dirent *entry;
+    int path_len = strlen(path);
+
+    dir = opendir(path);
+
+    if (NULL == dir) {
+        return;
+    }
+
+    // read all dir entries
+    while ((entry = readdir(dir)) != NULL)
+    {
+        int r = 0;
+        struct stat st;
+        char buf[PATH_MAX];
+        int bufSize = 0;
+
+        if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."))
+        {
+           continue;
+        }
+
+        bufSize = path_len + 1 + strlen(entry->d_name) + 1;
+        buf[bufSize - 1] = 0;
+
+        strncpy(buf, path, bufSize);
+        strncat(buf, "/", bufSize - strlen(buf));
+        strncat(buf, entry->d_name, bufSize - strlen(buf));
+
+        r = stat(buf, &st);
+
+        if (r == -1)
+        {
+            // failed to get stat, try with next file
+            continue;
+        }
+
+        // if directory then we should check sub directories
+        if (S_ISDIR(st.st_mode))
+        {
+            remove_dir(buf);
+        }
+        else
+        {
+            unlink(buf);
+        }
+    }
+
+    closedir(dir);
+
+    rmdir(path);
+}
+
+
+static int remove_oldest_dir()
+{
+    DIR *dir;
+    struct dirent *entry;
+    char oldest_dir[PATH_MAX];
+    int oldest_number = 0;
+    int log_root_len = strlen(log_root);
+
+    if (oldest_dir == NULL)
+    {
+        warnx("Unable to allocate buffer");
+        return -1;
+    }
+
+    dir = opendir(log_root);
+
+    if (NULL == dir)
+    {
+        warnx("opendir failed");
+        return -1;
+    }
+
+    strcpy(oldest_dir, log_root);
+    strcat(oldest_dir, "/");
+
+    // read all dir entries
+    while ((entry = readdir(dir)) != NULL)
+    {
+        int n = 0;
+        char *end;
+
+        n = strtol(entry->d_name, &end, 10);
+
+        if (end != NULL && *end != 0 && *end != '-')
+        {
+            // conversion failed
+            continue;
+        }
+
+        if (oldest_number == 0 || n < oldest_number)
+        {
+            oldest_number = n;
+            strcpy(oldest_dir + log_root_len + 1, entry->d_name);
+        }
+    }
+
+    closedir(dir);
+
+    if (oldest_number > 0)
+    {
+        warnx("remove %s\n", oldest_dir);
+        remove_dir(oldest_dir);
+    }
+
+    return 0;
+}
+
 /**
  * The logger deamon app only briefly exists to start
  * the background job. The stack size assigned in the
@@ -348,11 +527,38 @@ sdlog2_usage(const char *reason)
  */
 int sdlog2_main(int argc, char *argv[])
 {
-	if (argc < 2) {
-		sdlog2_usage("missing command");
+        if (argc < 2) {
+                sdlog2_usage("missing command");
 	}
 
 	if (!strcmp(argv[1], "start")) {
+                // get max size in MB
+                param_t log_max_size = param_find("SDLOG_MAX_SIZE");
+
+                if (log_max_size != PARAM_INVALID)
+                {
+                        int32_t max_size = 0;
+
+                        param_get(log_max_size, &max_size);
+
+                        while (1)
+                        {
+                            int32_t log_size = (int32_t)(get_dir_size(log_root) / 1024 / 1024);
+
+                            if (log_size >= max_size)
+                            {
+                                warnx("Log size is too big. %d MB max allowed %d MB\n", log_size, max_size);
+                                remove_oldest_dir();
+                                continue;
+                            }
+                            break;
+                        }
+
+                }
+                else
+                {
+                    warnx("Invalid param: SDLOG_MAX_SIZE\n");
+                }
 
 		if (thread_running) {
 			warnx("already running");
@@ -397,53 +603,76 @@ int sdlog2_main(int argc, char *argv[])
 int create_log_dir()
 {
 	/* create dir on sdcard if needed */
-	uint16_t dir_number = 1; // start with dir sess001
+        uint16_t dir_number = 1; // start with dir 0001
 	int mkdir_ret;
+        DIR *dir;
+        struct dirent *entry;
 
-	if (log_name_timestamp && gps_time != 0) {
-		/* use GPS date for log dir naming: e.g. /fs/microsd/2014-01-19 */
-		time_t gps_time_sec = gps_time / 1000000;
-		struct tm t;
-		gmtime_r(&gps_time_sec, &t);
-		int n = snprintf(log_dir, sizeof(log_dir), "%s/", log_root);
-		strftime(log_dir + n, sizeof(log_dir) - n, "%Y-%m-%d", &t);
-		mkdir_ret = mkdir(log_dir, S_IRWXU | S_IRWXG | S_IRWXO);
+        // find biggest session dir
+        dir = opendir(log_root);
 
-		if (mkdir_ret == OK) {
-			warnx("log dir created: %s", log_dir);
+        if (NULL == dir) {
+            return -1;
+        }
 
-		} else if (errno != EEXIST) {
-			warn("failed creating new dir: %s", log_dir);
-			return -1;
-		}
+        // read all dir entries
+        while ((entry = readdir(dir)) != NULL)
+        {
+            int n = 0;
+            char *end;
 
-	} else {
-		/* look for the next dir that does not exist */
-		while (dir_number <= MAX_NO_LOGFOLDER) {
-			/* format log dir: e.g. /fs/microsd/sess001 */
-			sprintf(log_dir, "%s/sess%03u", log_root, dir_number);
-			mkdir_ret = mkdir(log_dir, S_IRWXU | S_IRWXG | S_IRWXO);
+            n = strtol(entry->d_name, &end, 10);
 
-			if (mkdir_ret == 0) {
-				warnx("log dir created: %s", log_dir);
-				break;
+            if (end != NULL && *end != 0 && *end != '-')
+            {
+                // conversion failed
+                continue;
+            }
 
-			} else if (errno != EEXIST) {
-				warn("failed creating new dir: %s", log_dir);
-				return -1;
-			}
+            if (n > dir_number)
+            {
+                dir_number = n;
+            }
+        }
 
-			/* dir exists already */
-			dir_number++;
-			continue;
-		}
+        dir_number++;
 
-		if (dir_number >= MAX_NO_LOGFOLDER) {
-			/* we should not end up here, either we have more than MAX_NO_LOGFOLDER on the SD card, or another problem */
-			warnx("all %d possible dirs exist already", MAX_NO_LOGFOLDER);
-			return -1;
-		}
-	}
+        closedir(dir);
+
+        /* look for the next dir that does not exist */
+        while (dir_number <= MAX_NO_LOGFOLDER) {
+                /* format log dir: e.g. /fs/microsd/001-140101 */
+
+                int n = sprintf(log_dir, "%s/%04u", log_root, dir_number);
+                if (gps_time != 0)
+                {
+                    struct tm t;
+                    time_t gps_time_sec = gps_time / 1000000;
+                    gmtime_r(&gps_time_sec, &t);
+                    strftime(log_dir + n, sizeof(log_dir) - n, "-%y%m%d", &t);
+                }
+
+                mkdir_ret = mkdir(log_dir, S_IRWXU | S_IRWXG | S_IRWXO);
+
+                if (mkdir_ret == 0) {
+                        warnx("log dir created: %s", log_dir);
+                        break;
+
+                } else if (errno != EEXIST) {
+                        warn("failed creating new dir: %s", log_dir);
+                        return -1;
+                }
+
+                /* dir exists already */
+                dir_number++;
+                continue;
+        }
+
+        if (dir_number >= MAX_NO_LOGFOLDER) {
+                /* we should not end up here, either we have more than MAX_NO_LOGFOLDER on the SD card, or another problem */
+                warnx("all %d possible dirs exist already", MAX_NO_LOGFOLDER);
+                return -1;
+        }
 
 	/* print logging path, important to find log file later */
 	warnx("log dir: %s", log_dir);
@@ -457,36 +686,28 @@ int open_log_file()
 	char log_file_name[32] = "";
 	char log_file_path[64] = "";
 
-	if (log_name_timestamp && gps_time != 0) {
-		/* use GPS time for log file naming, e.g. /fs/microsd/2014-01-19/19_37_52.bin */
-		time_t gps_time_sec = gps_time / 1000000;
-		struct tm t;
-		gmtime_r(&gps_time_sec, &t);
-		strftime(log_file_name, sizeof(log_file_name), "%H_%M_%S.bin", &t);
-		snprintf(log_file_path, sizeof(log_file_path), "%s/%s", log_dir, log_file_name);
 
-	} else {
-		uint16_t file_number = 1; // start with file log001
+        uint16_t file_number = 1; // start with file log001
 
-		/* look for the next file that does not exist */
-		while (file_number <= MAX_NO_LOGFILE) {
-			/* format log file path: e.g. /fs/microsd/sess001/log001.bin */
-			snprintf(log_file_name, sizeof(log_file_name), "log%03u.bin", file_number);
-			snprintf(log_file_path, sizeof(log_file_path), "%s/%s", log_dir, log_file_name);
+        /* look for the next file that does not exist */
+        while (file_number <= MAX_NO_LOGFILE) {
+                /* format log file path: e.g. /fs/microsd/001/log001.bin */
+                snprintf(log_file_name, sizeof(log_file_name), "log%03u.bin", file_number);
+                snprintf(log_file_path, sizeof(log_file_path), "%s/%s", log_dir, log_file_name);
 
-			if (!file_exist(log_file_path)) {
-				break;
-			}
+                if (!file_exist(log_file_path)) {
+                        break;
+                }
 
-			file_number++;
-		}
+                file_number++;
+        }
 
-		if (file_number > MAX_NO_LOGFILE) {
-			/* we should not end up here, either we have more than MAX_NO_LOGFILE on the SD card, or another problem */
-			mavlink_log_critical(mavlink_fd, "[sdlog2] ERR: max files %d", MAX_NO_LOGFILE);
-			return -1;
-		}
-	}
+        if (file_number > MAX_NO_LOGFILE) {
+                /* we should not end up here, either we have more than MAX_NO_LOGFILE on the SD card, or another problem */
+                mavlink_log_critical(mavlink_fd, "[sdlog2] ERR: max files %d", MAX_NO_LOGFILE);
+                return -1;
+        }
+
 
 	int fd = open(log_file_path, O_CREAT | O_WRONLY | O_DSYNC);
 
@@ -508,36 +729,28 @@ int open_perf_file(const char* str)
 	char log_file_name[32] = "";
 	char log_file_path[64] = "";
 
-	if (log_name_timestamp && gps_time != 0) {
-		/* use GPS time for log file naming, e.g. /fs/microsd/2014-01-19/19_37_52.bin */
-		time_t gps_time_sec = gps_time / 1000000;
-		struct tm t;
-		gmtime_r(&gps_time_sec, &t);
-		strftime(log_file_name, sizeof(log_file_name), "perf%H_%M_%S.txt", &t);
-		snprintf(log_file_path, sizeof(log_file_path), "%s/%s_%s", log_dir, str, log_file_name);
+        unsigned file_number = 1; // start with file log001
 
-	} else {
-		unsigned file_number = 1; // start with file log001
+        /* look for the next file that does not exist */
+        while (file_number <= MAX_NO_LOGFILE) {
+                /* format log file path: e.g. /fs/microsd/0001/log001.bin */
+                snprintf(log_file_name, sizeof(log_file_name), "perf%03u.txt", file_number);
+                snprintf(log_file_path, sizeof(log_file_path), "%s/%s_%s", log_dir, str, log_file_name);
 
-		/* look for the next file that does not exist */
-		while (file_number <= MAX_NO_LOGFILE) {
-			/* format log file path: e.g. /fs/microsd/sess001/log001.bin */
-			snprintf(log_file_name, sizeof(log_file_name), "perf%03u.txt", file_number);
-			snprintf(log_file_path, sizeof(log_file_path), "%s/%s_%s", log_dir, str, log_file_name);
+                printf("open_perf_file: %s\n", log_file_path);
 
-			if (!file_exist(log_file_path)) {
-				break;
-			}
+                if (!file_exist(log_file_path)) {
+                        break;
+                }
 
-			file_number++;
-		}
+                file_number++;
+        }
 
-		if (file_number > MAX_NO_LOGFILE) {
-			/* we should not end up here, either we have more than MAX_NO_LOGFILE on the SD card, or another problem */
-			mavlink_log_critical(mavlink_fd, "[sdlog2] ERR: max files %d", MAX_NO_LOGFILE);
-			return -1;
-		}
-	}
+        if (file_number > MAX_NO_LOGFILE) {
+                /* we should not end up here, either we have more than MAX_NO_LOGFILE on the SD card, or another problem */
+                mavlink_log_critical(mavlink_fd, "[sdlog2] ERR: max files %d", MAX_NO_LOGFILE);
+                return -1;
+        }
 
 	int fd = open(log_file_path, O_CREAT | O_WRONLY | O_DSYNC);
 

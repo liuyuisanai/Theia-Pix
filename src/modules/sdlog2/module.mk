@@ -43,4 +43,4 @@ SRCS = sdlog2.c \
        logbuffer.c \
 	   debug_data_log.cpp
 
-MODULE_STACKSIZE = 1200
+MODULE_STACKSIZE = 1500
