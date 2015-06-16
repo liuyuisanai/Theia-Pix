@@ -1665,34 +1665,34 @@ MavlinkReceiver::receive_thread(void *arg)
 	fds[0].fd = uart_fd;
 	fds[0].events = POLLIN;
 
-	size_t nread = 0;
 	ssize_t r = 0;
 
 	fprintf(stderr, "mavlink receiver %i started.\n",
 			_mavlink->get_instance_id());
 
-	while (!_mavlink->_task_should_exit)
+	while (not _mavlink->_task_should_exit)
 	{
-		r = poll(fds, 1, timeout);
-		if (r != 1) { continue; }
-
-		r = read(uart_fd, buf + nread, sizeof(buf) - nread);
+		r = read(uart_fd, buf, sizeof(buf));
 		if (r < 0)
 		{
 			if (errno != EAGAIN)
 			{
-				perror("receive_thread / read");
+				perror("receive_thread/read");
 				sleep(1);
 			}
+
+			r = poll(fds, 1, timeout);
+			if (r < 0)
+			{
+				perror("receive_thread/poll");
+				sleep(1);
+			}
+
 			continue;
 		}
 
-		nread += r;
-		if (nread < sizeof(buf))
-			continue;
-
 		/* if read failed, this loop won't execute */
-		for (ssize_t i = 0; i < nread; i++) {
+		for (ssize_t i = 0; i < r; i++) {
 			if (mavlink_parse_char(_mavlink->get_channel(), buf[i], &msg, &status)) {
 				/* handle generic messages and commands */
 				handle_message(&msg);
@@ -1722,12 +1722,10 @@ MavlinkReceiver::receive_thread(void *arg)
 		}
 
 		/* Report to stats. */
-		stats.total_bytes += nread;
+		stats.total_bytes += r;
 		orb_publish(ORB_ID(mavlink_receive_stats), mavlink_stat_topic, &stats);
 
-		_mavlink->count_rxbytes(nread);
-
-		nread = 0;
+		_mavlink->count_rxbytes(r);
 	}
 
 	fprintf(stderr, "mavlink receiver %i stopped and QUIT.\n",
