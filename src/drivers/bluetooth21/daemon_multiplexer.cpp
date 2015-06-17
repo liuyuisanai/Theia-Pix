@@ -14,6 +14,7 @@
 #include "module_params.hpp"
 #include "unique_file.hpp"
 
+#include "hack_nuttx_uart.hpp"
 #include "trace.hpp"
 
 namespace BT
@@ -76,10 +77,18 @@ daemon()
 			, PROCESS_NAME
 		);
 
+	/*
+	 * NuttX UART write() always succeeds by replacing buffered data,
+	 * hence, there is a hack to preserve previously written data.
+	 */
+	//auto & dev = trace.dev;
+	using namespace NuttxUART;
+	auto dev = make_hack<WriteVariant::AS_MUCH_AS_POSSIBLE>(trace.dev);
+
 	if (should_run)
 	{
 		auto & mp = Globals::Multiplexer::get();
-		should_run = setup_serial(mp.protocol_tag, trace.dev);
+		should_run = setup_serial(mp.protocol_tag, dev);
 	}
 
 	if (should_run) { fprintf(stderr, "%s started.\n", PROCESS_NAME); }
@@ -95,9 +104,9 @@ daemon()
 	while (should_run)
 	{
 		auto & mp = Globals::Multiplexer::get();
-		perform_poll_io(trace.dev, mp, POLL_ms);
+		perform_poll_io(dev, mp, POLL_ms);
 		if (not is_healthy(mp)) { break; }
-		fsync(trace.dev);
+		fsync(dev);
 	}
 
 	while (should_run)
