@@ -27,19 +27,19 @@ struct PeriodicAction
 	exec(hrt_abstime) = 0;
 };
 
-struct PeriodicSayAlive : PeriodicAction
-{
-	unsigned n;
-	PeriodicSayAlive()
-	: PeriodicAction(3600000/*us*/), n(0)
-	{}
-
-	void
-	exec(hrt_abstime) override {
-		fprintf(stderr, "me is alive (%i)\n", n);
-		++n;
-	}
-};
+//struct PeriodicSayAlive : PeriodicAction
+//{
+//	unsigned n;
+//	PeriodicSayAlive()
+//	: PeriodicAction(3600000/*us*/), n(0)
+//	{}
+//
+//	void
+//	exec(hrt_abstime) override {
+//		fprintf(stderr, "me is alive (%i)\n", n);
+//		++n;
+//	}
+//};
 
 struct Timeout
 {
@@ -107,7 +107,7 @@ struct App
 	kbd_handler::DroneStatus  drone_status;
 	kbd_handler::LeashStatus  leash_status;
 
-	PeriodicSayAlive debug_heart_beat;
+	// PeriodicSayAlive debug_heart_beat;
 	Timeout		 timeout_keypress;
 
 	void check_drone_status();
@@ -179,7 +179,7 @@ struct App
 	{
 		using kbd_handler::handle_event;
 
-		debug_heart_beat.check_time(now);
+		// debug_heart_beat.check_time(now);
 		if (timeout_keypress.expired(now)) {
 			timeout_keypress.disable();
 			handle_event<EventKind::KEY_TIMEOUT>(*this, mode, BTN_NONE);
