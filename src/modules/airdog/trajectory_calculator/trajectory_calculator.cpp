@@ -66,7 +66,6 @@ public:
 
 // Thread entry point. Calculates trajectory points and publishes them
 int calculate(int argc, char *argv[]) {
-	// TODO! Parameters instead of constants
 	float cutoff, radius;
 	if (param_get(param_find("AIRD_TRAJ_CUT"), &cutoff) != 0 ||
 			param_get(param_find("AIRD_TRAJ_RAD"), &radius) != 0) {
@@ -85,7 +84,6 @@ int calculate(int argc, char *argv[]) {
 	orb_advert_t trajectory_pub = -1;
 	trajectory_s trajectory_data;
 
-	// TODO! We might be to the party too early - consider waiting for the first publication
 	vehicle_local_position_s local_position = {};
 	home_position_s home;
 
@@ -103,9 +101,10 @@ int calculate(int argc, char *argv[]) {
 	PointAnalyzer analyzer(cutoff, radius);
 
 	g_thread_running = true;
+
 	while (g_thread_continue) {
-		// pace the daemon by global position topic, 100 HZ with a bit of overhead
-		res = poll(&poll_data, 1, 15);
+		// TODO! [AK] Consider smarter error processing in case lpos topic is slow
+		res = poll(&poll_data, 1, 1000);
 		if (res == 1) {
 			orb_copy(ORB_ID(vehicle_local_position), pos_topic, &local_position);
 			orb_check(home_topic, &updated);
