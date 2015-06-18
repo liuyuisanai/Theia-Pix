@@ -162,8 +162,8 @@ else
 
 	if param compare AIRD_LEASH_MODE 4
 	then
-		#Combo message leash. Make sure MAVLINK_MINIMALISTIC is 2.
-		param set MAVLINK_MINIMALISTIC 2
+		#Combo message leash. Make sure MAV_MINIMALISTIC is 2.
+		param set MAV_MINIMALISTIC 2
 		trajectory_calculator start
 		mavlink start -d $MAVLINK_TTY -r 3000 -m custom
 		usleep 1000
@@ -180,7 +180,7 @@ then
 	if [ $GPS_FAKE == yes ]
 	then
 		echo "[init] Faking GPS"
-		gps start -f
+		gps start -d /dev/ttyS1 -f
 	else
 		gps start -d /dev/ttyS1
 	fi
