@@ -97,7 +97,7 @@
 #include <uORB/topics/debug_data.h>
 #include <uORB/topics/mavlink_receive_stats.h>
 #include <uORB/topics/target_gps_raw.h>
-#include <uORB/topics/bt21_debug.h>
+#include <uORB/topics/bt21_laird.h>
 
 #include <systemlib/systemlib.h>
 #include <systemlib/param/param.h>
