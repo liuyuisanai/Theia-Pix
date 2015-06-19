@@ -1,34 +1,37 @@
-#ifndef BT_DEBUG_H_
-#define BT_DEBUG_H_
+#pragma once
 
 #include "../uORB.h"
 
-struct bt_command_s {
+struct bt_svc_in_s {
+	uint8_t length;
+	uint8_t channel;
+	uint8_t cmd_evt_id;
+	uint8_t flow;
+	uint8_t cmd_status;
+	uint8_t processed;
+};
+
+ORB_DECLARE(bt_svc_in);
+
+struct bt_svc_out_s {
 	uint8_t cmd;
-	uint8_t result;
+	uint8_t ok;
 };
 
-ORB_DECLARE(bt_command);
+ORB_DECLARE(bt_svc_out);
 
-struct bt_event_s {
-	uint8_t event;
+struct bt_evt_status_s {
+	uint8_t status;
+	uint8_t discoverable_mode;
+	uint8_t connectable_mode;
+	uint8_t security_mode;
 };
 
-ORB_DECLARE(bt_event);
+ORB_DECLARE(bt_evt_status);
 
-struct bt_status_s {
-	uint8_t connectable;
-	uint8_t discoverable;
-	uint8_t service_status;
-};
-
-ORB_DECLARE(bt_status);
-
-struct bt_channels_s {
-	uint32_t bytes_sent[7];
-	uint32_t bytes_received[7];
-};
-
-ORB_DECLARE(bt_channels);
-
-#endif // BT_DEBUG_H_
+//struct bt_channels_s {
+//	uint32_t bytes_sent[7];
+//	uint32_t bytes_received[7];
+//};
+//
+//ORB_DECLARE(bt_channels);

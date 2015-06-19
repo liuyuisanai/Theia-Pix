@@ -516,29 +516,22 @@ struct log_TGPS_s {
 	uint8_t sats;
 };
 
-#define LOG_BTCM_MSG 73
-struct log_BTCM_s {
-	uint8_t cmd;
-	uint8_t result;
-};
+#include <uORB/topics/bt21_laird.h>
 
-#define LOG_BTEV_MSG 74
-struct log_BTEV_s {
-	uint8_t event;
-};
+#define LOG_BTSI_MSG 73
+#define log_BTSI_s bt_svc_in_s
 
-#define LOG_BTST_MSG 75
-struct log_BTST_s {
-	uint8_t connectable;
-	uint8_t discoverable;
-	uint8_t service_status;
-};
+#define LOG_BTSO_MSG 74
+#define log_BTSO_s bt_svc_out_s
 
-#define LOG_BTCH_MSG 76
-struct log_BTCH_s {
-	uint32_t bytes_sent[7];
-	uint32_t bytes_received[7];
-};
+#define LOG_BTEV_MSG 75
+#define log_BTEV_s bt_evt_status_s
+
+//#define LOG_BTCH_MSG 76
+//struct log_BTCH_s {
+//	uint32_t bytes_sent[7];
+//	uint32_t bytes_received[7];
+//};
 
 /********** SYSTEM MESSAGES, ID > 0x80 **********/
 
@@ -613,10 +606,10 @@ static const struct log_format_s log_formats[] = {
 	LOG_FORMAT(MVST, "IIIII", "TotalBytes,HrtCount,GposCount,TrajCount,ComboCount"),
 	LOG_FORMAT(CMD, "HBBfff", "Cmd,SrcSys,SrcComp,Par1,Par2,Par3"),
 	LOG_FORMAT(TGPS, "QBffLLfffB", "Time,Fix,EPH,EPV,Lat,Lon,Alt,Vel,COG,nSat"),
-	LOG_FORMAT(BTCM, "BB", "Command,Result"),
-	LOG_FORMAT(BTEV, "B", "Event"),
-	LOG_FORMAT(BTST, "BBB", "Connect,Discover,Status"),
-	LOG_FORMAT(BTCH, "IIIIIIIIIIIIII", "xT1,xT2,xT3,xT4,xT5,xT6,xT7,Rx1,Rx2,Rx3,Rx4,Rx5,Rx6,Rx7"),
+	LOG_FORMAT(BTSI, "BBBBBB", "length,channel,cmd_evt_id,flow,cmd_status,processed"),
+	LOG_FORMAT(BTSO, "BB", "cmd,ok"),
+	LOG_FORMAT(BTEV, "BBBBB", "status,discoverable,connectable,security,channels"),
+	//LOG_FORMAT(BTCH, "IIIIIIIIIIIIII", "xT1,xT2,xT3,xT4,xT5,xT6,xT7,Rx1,Rx2,Rx3,Rx4,Rx5,Rx6,Rx7"),
 
 	/* system-level messages, ID >= 0x80 */
 	/* FMT: don't write format of format message, it's useless */

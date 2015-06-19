@@ -249,8 +249,10 @@ make_service_io(Device & d, State & s)
 
 template <typename Device, typename State, typename PacketPOD>
 bool
-send(ServiceBlockingIO< Device, State > & self , const PacketPOD & p) {
+send(ServiceBlockingIO< Device, State > & self , const PacketPOD & p)
+{
 	bool ok = write_command(self.dev, &p, sizeof p);
+	on_write_command(self.state, p, ok);
 	if (not ok) { dbg_perror("send / write_command"); }
 	return ok;
 }
