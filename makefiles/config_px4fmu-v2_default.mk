@@ -83,11 +83,12 @@ MODULES		+= modules/cl_helper
 #
 # General system control
 #
+MODULES		+= modules/airdog
 MODULES		+= modules/commander
-MODULES		+= modules/navigator
-MODULES		+= modules/mavlink
 MODULES		+= modules/gpio_led
-MODULES 	+= modules/airdog
+MODULES		+= modules/mavlink
+MODULES		+= modules/mobile
+MODULES		+= modules/navigator
 #MODULES		+= modules/uavcan
 
 #

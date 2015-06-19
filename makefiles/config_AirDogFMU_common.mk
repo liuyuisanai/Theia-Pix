@@ -72,9 +72,9 @@ MODULES 	+= drivers/pwm_input
 # System commands
 #
 MODULES		+= modules/airdog/calibrator
+MODULES		+= modules/bt_cfg
 MODULES		+= systemcmds/bl_update
 MODULES		+= systemcmds/boardinfo
-MODULES		+= modules/bt_cfg
 MODULES		+= systemcmds/config
 MODULES		+= systemcmds/dumpfile
 MODULES		+= systemcmds/esc_calib
@@ -97,6 +97,7 @@ MODULES		+= systemcmds/writefile
 MODULES		+= modules/commander
 MODULES		+= modules/gpio_led
 MODULES		+= modules/mavlink
+MODULES		+= modules/mobile
 MODULES		+= modules/navigator
 #MODULES		+= modules/uavcan
 
