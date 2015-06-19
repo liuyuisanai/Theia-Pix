@@ -175,6 +175,16 @@ fat_dma_free(FAR void *memory, size_t size)
 
 #endif
 
+/*
+ * Initializes pins that are configured, should be enabled by default, but not used by any drivers
+ */
+static void driverless_pins_initialize()
+{
+#ifdef GPIO_VDD_PERIPHERY_EN
+	stm32_configgpio(GPIO_VDD_PERIPHERY_EN);
+#endif
+}
+
 /************************************************************************************
  * Name: stm32_boardinitialize
  *
@@ -188,6 +198,9 @@ fat_dma_free(FAR void *memory, size_t size)
 __EXPORT void
 stm32_boardinitialize(void)
 {
+	/* configure orphan pins not used by any drivers */
+	driverless_pins_initialize();
+
 	/* configure SPI interfaces */
 	stm32_spiinitialize();
 
