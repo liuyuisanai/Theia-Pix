@@ -167,7 +167,7 @@ else
 		trajectory_calculator start
 		mavlink start -d $MAVLINK_TTY -r 3000 -m custom
 		usleep 1000
-		mavlink stream -r 20 -d $MAVLINK_TTY -s HRT_GPOS_TRAJ_COMMAND
+		mavlink stream -r 15 -d $MAVLINK_TTY -s HRT_GPOS_TRAJ_COMMAND
 	fi
 
 	if param compare AIRD_LEASH_MODE 5
