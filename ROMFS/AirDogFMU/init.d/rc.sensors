@@ -9,12 +9,17 @@ if hmc5883spi start
 # Prever SPI over I2C.
 then
 	set MAG_started yes
+	echo "Mag OK" >> $LOG_FILE
+else
+	echo "Mag FAILED" >> $LOG_FILE
 fi
 
 if [ $MAG_started = yes ]
 then
 	ms5611 start
+	echo "Baro OK" >> $LOG_FILE
 	adc start
+	echo "ADC OK" >> $LOG_FILE
 
 	if param compare SENS_DISABLE_MPU 1
 	then
@@ -30,6 +35,7 @@ then
 		then
 		fi
 	fi
+	echo "Gyro, Acc OK" >> $LOG_FILE
 
 	if param compare SENS_SON_ON 1
 	then
@@ -40,6 +46,7 @@ then
             echo "Error starting range finders"
         fi
 	fi
+	echo "Sonar OK" >> $LOG_FILE
 
 	#
 	# Start the sensor collection task.
@@ -49,12 +56,16 @@ then
 	#
 	if sensors start
 	then
+		echo "sensors app OK" >> $LOG_FILE
 	    if preflight_check --fail-on-error
 	    then
+	    	echo "Preflight OK" >> $LOG_FILE
 	    else
+	    	echo "Preflight FAILED" >> $LOG_FILE
 	        tone_alarm error #Follows default preflight check tune
 	    fi
 	else
+		echo "sensors app FAILED" >> $LOG_FILE
 	    #In case sensors app returned an error, although it usually doesn't
 	    tone_alarm error
 	fi

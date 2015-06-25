@@ -10,6 +10,8 @@ set MODE autostart
 set RC_FILE /fs/microsd/etc/rc.txt
 set CONFIG_FILE /fs/microsd/etc/config.txt
 set EXTRAS_FILE /fs/microsd/etc/extras.txt
+set LOG_FILE /dev/null
+#set ENABLE_LOG_FILE yes
 
 set TUNE_OUT_ERROR ML<<CP4CP4CP4CP4CP4
 
@@ -45,6 +47,27 @@ then
 	fi
 else
 	set DEBUG_MODE yes
+fi
+
+#
+# Try to mount the microSD card.
+#
+echo "[init] Looking for microSD..."
+if mount -t vfat /dev/mmcsd0 /fs/microsd
+then
+	if [ $ENABLE_LOG_FILE = yes ]
+	then
+		set LOG_FILE /fs/microsd/bootlog.txt		
+		echo "-----------------------------------" >> $LOG_FILE		
+	fi
+	echo "[init] microSD mounted: /fs/microsd"
+	# Start playing the startup tune
+	tone_alarm start
+else
+	set LOG_FILE /dev/null
+	echo "[init] No microSD card found"
+	# Play SOS
+	tone_alarm error
 fi
 
 # Do IO checks as early as possible while IO chip is in bootloader mode
@@ -103,23 +126,6 @@ else
 fi
 
 #
-# Try to mount the microSD card.
-#
-echo "[init] Looking for microSD..."
-if mount -t vfat /dev/mmcsd0 /fs/microsd
-then
-	set LOG_FILE /fs/microsd/bootlog.txt
-	echo "[init] microSD mounted: /fs/microsd"
-	# Start playing the startup tune
-	tone_alarm start
-else
-	set LOG_FILE /dev/null
-	echo "[init] No microSD card found"
-	# Play SOS
-	tone_alarm error
-fi
-
-#
 # Look for an init script on the microSD card.
 # Disable autostart if the script found.
 #
@@ -135,6 +141,7 @@ fi
 if [ $MODE == autostart ]
 then
 	echo "[init] AUTOSTART mode"
+	echo "Autostart mode" >> $LOG_FILE
 
 	#
 	# Start CDC/ACM serial driver
@@ -142,17 +149,25 @@ then
 	if sercon
 	then
 		echo "[init] USB interface connected"
+		echo "sercon OK" >> $LOG_FILE
 
 		# Try to get an USB console
 		nshterm /dev/ttyACM0 &
 	else
 		echo "Failed to start usb sercon."
+		echo "sercon FAILED" >> $LOG_FILE
 	fi
 
 	#
 	# Start the ORB (first app to start)
 	#
-	uorb start
+	if uorb start
+	then
+		echo "uorb OK" >> $LOG_FILE
+	else
+		echo "uorb FAILED. ABORTING."
+		exit
+	fi
 
 	#
 	# Load parameters
@@ -161,14 +176,19 @@ then
 	if mtd start
 	then
 		set PARAM_FILE /fs/mtd_params
+		echo "mtd OK" >> $LOG_FILE
+	else
+		echo "mtd FAILED" >> $LOG_FILE
 	fi
 
 	param select $PARAM_FILE
 	if param load
 	then
 		echo "[param] Loaded: $PARAM_FILE"
+		echo "param OK" >> $LOG_FILE
 	else
 		echo "[param] FAILED loading $PARAM_FILE"
+		echo "param FAILED" >> $LOG_FILE
 		if param reset
 		then
 		fi
@@ -195,7 +215,9 @@ then
 	then
 		echo "[init] No autostart"
 	else
+		echo "Entering autostart" >> $LOG_FILE
 		sh /etc/init.d/rc.autostart
+		echo "Autostart OK" >> $LOG_FILE
 	fi
 
 	#
@@ -223,21 +245,31 @@ then
 	#
 	if dataman start
 	then
+		echo "dataman OK" >> $LOG_FILE
+	else
+		echo "dataman FAILED" >> $LOG_FILE
 	fi
 
 	#
 	# Start the Commander (needs to be this early for in-air-restarts)
 	#
-	commander start
+	if commander start
+	then
+		echo "commander OK" >> $LOG_FILE
+	else
+		echo "commander FAILED" >> $LOG_FILE
+	fi
 
 	if [ $IO_PRESENT == yes ]
 	then
 		if px4io start
 		then
 			echo "[init] PX4IO started"
+			echo "PX4IO started" >> $LOG_FILE
 			sh /etc/init.d/rc.io
 		else
 			echo "[init] ERROR: PX4IO start failed"
+			echo "PX4IO start failed" >> $LOG_FILE
 			tone_alarm $TUNE_OUT_ERROR
 		fi
 	fi
@@ -249,6 +281,7 @@ then
 	unset MAVLINK_TTY
 	unset TELEM_TTY
 
+	echo "Telemetry select" >> $LOG_FILE
 	if param compare A_TELEMETRY_MODE 0
 	then
 		set TELEM_TTY /dev/ttyS1
@@ -278,6 +311,7 @@ then
 		echo Turning OFF BL600
 		gpio_tool set pb12=0
 	fi
+	echo "Telemetry select OK" >> $LOG_FILE
 
 	if [ x$TELEM_TTY = x ]
 	then
@@ -294,6 +328,7 @@ then
 			fi
 		fi
 	fi
+	echo "Telemetry start OK" >> $LOG_FILE
 
 	#
 	# MAVLink
@@ -313,16 +348,19 @@ then
 		echo mavlink start $MAVLINK_MODE -r 1000 -d $MAVLINK_TTY
 		mavlink start $MAVLINK_MODE -r 1000 -d $MAVLINK_TTY
 	fi
+	echo "Mavlink start OK" >> $LOG_FILE
 
 	#
 	# Sensors, Logging, GPS
 	#
 	sh /etc/init.d/rc.sensors
+	echo "Sensors OK" >> $LOG_FILE
 
 	#
 	# Start logging in all modes, including HIL
 	#
 	sh /etc/init.d/rc.logging
+	echo "Logging OK" >> $LOG_FILE
 
 	if [ $GPS == yes ]
 	then
@@ -340,6 +378,7 @@ then
 			fi
 		fi
 	fi
+	echo "GPS OK" >> $LOG_FILE
 
 	echo "[init] Vehicle type: MULTICOPTER"
 
@@ -353,13 +392,21 @@ then
 
 	# Load mixer and configure outputs
 	sh /etc/init.d/rc.interface
+	echo "Interface OK" >> $LOG_FILE
 
 	sh /etc/init.d/rc.mc_apps
+	echo "MC_apps OK" >> $LOG_FILE
 
 	#
 	# Start the navigator
 	#
-	navigator start
+	if navigator start
+	then
+		echo "Navigator OK" >> $LOG_FILE
+	else
+		echo "Navigator FAILED. Aborting!" >> $LOG_FILE
+		exit
+	fi
 
 	# Start any custom addons
 	if [ -f $EXTRAS_FILE ]
