@@ -207,6 +207,9 @@ __EXPORT int nsh_archinitialize(void)
 	/* configure power supply control/sense pins */
 	stm32_configgpio(GPIO_VDD_3V3_SENSORS_EN);
 	stm32_configgpio(GPIO_VDD_SYSPOWER_OFF);
+#ifdef GPIO_BT_WAKEUP
+	stm32_configgpio(GPIO_BT_WAKEUP); // enable wakeup before powering on BT
+#endif
 	stm32_configgpio(GPIO_VDD_BT_PWR_EN);
 	stm32_gpiowrite(GPIO_VDD_BT_PWR_EN, 1);
 
