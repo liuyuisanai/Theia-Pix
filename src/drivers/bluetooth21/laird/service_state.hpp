@@ -37,11 +37,11 @@ struct ServiceState
     PairingState pairing;
 };
 
-template <typename Device>
+template <typename Device, typename State>
 bool
-handle_service_packet(Device & dev, ServiceState & svc, const RESPONSE_EVENT_UNION & packet)
+handle_service_packet(ServiceBlockingIO< Device, State > & service_io, const RESPONSE_EVENT_UNION & packet)
 {
-	handle(svc.flow, packet);
+	handle(service_io.state.flow, packet);
 	bool processed = false;
 	/*
 	 * Try all handlers, but caller needs to know if the packet
@@ -49,10 +49,10 @@ handle_service_packet(Device & dev, ServiceState & svc, const RESPONSE_EVENT_UNI
 	 *
 	 * FIXME Shouldn't we try only one of handlers?
 	 */
-	processed =   handle(svc.sync, packet)   or processed;
-	processed =   handle(svc.conn, packet)   or processed;
-	processed =   handle(svc.inq, packet)    or processed;
-    processed =   handle(dev, svc.pairing, packet) or processed;
+	processed =   handle(service_io.state.sync, packet)   or processed;
+	processed =   handle(service_io.state.conn, packet)   or processed;
+	processed =   handle(service_io.state.inq, packet)    or processed;
+    processed =   handle(service_io, service_io.state.pairing, packet) or processed;
 	return processed;
 }
 

@@ -17,13 +17,6 @@ namespace Service
 namespace Laird
 {
 
-template <typename ServiceIO> bool
-initiate_pairing(ServiceIO & io, const Address6 & addr);
-
-template <typename ServiceIO> bool
-send_passcode(ServiceIO & io, const Address6 & addr);
-
-
 template <typename Device, typename State>
 static bool
 pair(ServiceBlockingIO< Device, State> & io){
@@ -33,7 +26,10 @@ pair(ServiceBlockingIO< Device, State> & io){
     RESPONSE_PAIR_INITIATE rsp; 
 
     auto cmd = prefill_packet<COMMAND_PAIR_INITIATE, CMD_PAIR_INITIATE>();
-    const auto wait_for = Time::duration_sec(5);
+    const auto wait_for = Time::duration_sec(30);
+    memset(cmd.pinCode, 65, sizeof(cmd.pinCode));
+    cmd.timeoutSec = 100;
+    cmd.pinCode[16]='\0';
 
     if (io.state.pairing.pairing_initiator) {
 
@@ -45,6 +41,9 @@ pair(ServiceBlockingIO< Device, State> & io){
         dbg("<- initiate PAIRING %s\n"
             , ok ? "ok": "failed"
         );
+
+        return ok;
+
     }
 
     else {
@@ -113,12 +112,32 @@ confirm_deny_pairing(Device & dev, const RESPONSE_EVENT_UNION & p) {
 template <typename Device>
 bool
 send_passcode(Device & dev, const RESPONSE_EVENT_UNION & p) {
-    return false;
+
+    auto cmd = prefill_packet<CONFIRM_SIMPLE_PAIRING, CNF_SIMPLE_PAIRING>();
+    cmd.action = SSP_ACTION_ENTER_PASSCODE;
+    copy(begin(p.evtSimplePairing.bdAddr), end(p.evtSimplePairing.bdAddr), cmd.bdAddr);
+
+
+    // The actionValue should be in form 00 0n nn nn - first 3 parts of actionValue must be zeros.
+    memset(cmd.actionValue, 63, sizeof(cmd.actionValue));
+    cmd.actionValue[0] = 0;
+    cmd.actionValue[1] = 0;
+    cmd.actionValue[2] = 114;
+    cmd.actionValue[3] = 255; 
+
+    if (not write_command(dev, &cmd, sizeof cmd))
+    {
+        dbg_perror("confirm_deny_pairing / write_command failed\n");
+        return false;
+    }
+
+    return true;
+
 }
 
-template <typename Device>
+template <typename Device, typename State>
 bool 
-handle(Device & dev, PairingState & self, const RESPONSE_EVENT_UNION & p)
+handle(ServiceBlockingIO< Device, State > & service_io, PairingState & self, const RESPONSE_EVENT_UNION & p)
 {
 
     switch (get_event_id(p))
@@ -127,7 +146,7 @@ handle(Device & dev, PairingState & self, const RESPONSE_EVENT_UNION & p)
 
             dbg("->EVT_SIMPLE_PAIRING\n");
 
-            handle_evt_simple_pairing(dev, self, p);
+            handle_evt_simple_pairing(service_io, p);
 
             break;
 
@@ -151,6 +170,11 @@ handle(Device & dev, PairingState & self, const RESPONSE_EVENT_UNION & p)
 
             dbg("->EVT_LINK_KEY\n");
 
+            // If EVT_LINK_KEY is received then this device is added to ROLLING trust db
+            // Let's move it to PERSISTANT trust db
+            
+            move_rolling_to_persistant(service_io, p.evtLinkKey.bdAddr); 
+
             break;
 
     }
@@ -158,9 +182,9 @@ handle(Device & dev, PairingState & self, const RESPONSE_EVENT_UNION & p)
     return false;
 }
 
-template <typename Device>
+template <typename Device, typename State>
 bool 
-handle_evt_simple_pairing(Device & dev, PairingState & self, const RESPONSE_EVENT_UNION & p) {
+handle_evt_simple_pairing(ServiceBlockingIO< Device, State > & service_io,const RESPONSE_EVENT_UNION & p) {
 
 
     switch (p.evtSimplePairing.action) {
@@ -184,15 +208,18 @@ handle_evt_simple_pairing(Device & dev, PairingState & self, const RESPONSE_EVEN
 
             dbg("Pairing yes/no action.\n");
 
-            confirm_deny_pairing(dev, p);
+            confirm_deny_pairing(service_io.dev, p);
 
             return true;
 
             break;
 
         case SSP_ACTION_ENTER_PASSCODE:
-            send_passcode(dev, p);
+
+            send_passcode(service_io.dev, p);
+
             dbg("Enter passcode.\n");
+
             return true;
 
             break;

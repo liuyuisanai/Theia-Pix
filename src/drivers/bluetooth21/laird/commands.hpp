@@ -258,6 +258,48 @@ add_trusted_key(ServiceIO & io, const Address6 & addr, const LinkKey16 & key)
 	return ok;
 }
 
+
+template <typename ServiceIO>
+int8_t
+trusted_db_record_count_get(ServiceIO & io, uint8_t dbType)
+{
+    RESPONSE_TRUSTED_DB_COUNT rsp;
+
+	auto cmd =
+		prefill_packet<COMMAND_TRUSTED_DB_COUNT, CMD_TRUSTED_DB_COUNT>();
+
+    cmd.dbType = dbType;
+
+	bool ok = send_receive_verbose(io, cmd, rsp)
+		and get_response_status(rsp) == MPSTATUS_OK;
+	dbg("-> command trusted_db_record_count_get %s.\n" , ok ? "ok": "failed");
+    if (ok) {
+        dbg("-> command trusted_db_record_count_get() resulting count: %d.\n" , rsp.count);
+    }
+
+	return ok;
+}
+
+template <typename ServiceIO>
+bool
+move_rolling_to_persistant(ServiceIO & io, const Address6 & addr)
+{
+
+    RESPONSE_TRUSTED_DB_CHANGETYPE rsp;
+
+	auto cmd =
+		prefill_packet<COMMAND_TRUSTED_DB_CHANGETYPE, CMD_TRUSTED_DB_CHANGETYPE>();
+
+	copy(cbegin(addr), cend(addr), cmd.bdAddr);
+    cmd.dbType = 1;
+
+	bool ok = send_receive_verbose(io, cmd, rsp)
+		and get_response_status(rsp) == MPSTATUS_OK;
+	dbg("-> command move_rolling_to_persistant %s.\n" , ok ? "ok": "failed");
+
+	return ok;
+}
+
 template <typename ServiceIO>
 bool
 drop_trusted_db(ServiceIO & io)

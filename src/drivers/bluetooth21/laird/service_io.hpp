@@ -43,15 +43,16 @@ as_packet(const ResponceEventBuffer & buf)
 
 template <typename Device, typename State>
 void
-process_service_packet(Device & dev, State & s, const ResponceEventBuffer & buf)
+process_service_packet(ServiceBlockingIO< Device, State > & service_io, const ResponceEventBuffer & buf)
 {
+
 	uint8_t ch = get_channel_id(buf);
 	bool processed;
 
 	if (ch == 0)
 	{
 		const auto & packet = as_packet(buf);
-		processed = handle_service_packet(dev, s, packet);
+		processed = handle_service_packet(service_io, packet);
 		if (not processed)
 		{
 			auto evt = get_event_id(packet);
@@ -72,14 +73,14 @@ process_service_packet(Device & dev, State & s, const ResponceEventBuffer & buf)
 	else if (ch == CHANNELID_MISC_EIR_INQ_RESP)
 	{
 		processed = handle_inquiry_enhanced_data(
-			s, cbegin(buf), size(buf)
+			service_io.state, cbegin(buf), size(buf)
 		);
 		if (not processed)
 			dbg("Enhanced Inquiry responce dropped.\n");
 	}
 	else
 	{
-		processed = handle_unknown_packet(s, cbegin(buf), size(buf));
+		processed = handle_unknown_packet(service_io.state, cbegin(buf), size(buf));
 		dbg("Unknown packet at channel 0x%02x %s.\n"
 			, ch
 			, processed ? "processed" : "dropped."
@@ -172,7 +173,7 @@ wait_service_packet(Device & dev, ResponceEventBuffer & buf)
 template <typename Device, typename State>
 bool
 wait_command_response(
-	Device & dev, State & state,
+	ServiceBlockingIO< Device, State > & service_io,
 	event_id_t cmd,
 	void * buf, size_t bufsize,
 	Time::duration_t wait_for
@@ -183,7 +184,7 @@ wait_command_response(
 
 	while (true)
 	{
-		ssize_t r = wait_service_packet(dev, packet);
+		ssize_t r = wait_service_packet(service_io.dev, packet);
 		if (r < 0)
 		{
 			if (errno != EAGAIN)
@@ -195,7 +196,7 @@ wait_command_response(
 		else
 		{
 			size_t read_size = r;
-			process_service_packet(dev, state, packet);
+			process_service_packet(service_io, packet);
 			if (read_size == bufsize and cmd == get_event_id(packet))
 			{
 				copy_n(cbegin(packet), bufsize, (uint8_t*)buf);
@@ -240,14 +241,6 @@ wait_process_event(Device & dev, State & state)
 
 
 
-template <typename Device, typename State>
-struct ServiceBlockingIO
-{
-	Device & dev;
-	State & state;
-
-	ServiceBlockingIO(Device & d, State & s) : dev(d), state(s) {}
-};
 
 template <typename Device, typename State>
 inline ServiceBlockingIO< Device, State >
@@ -277,7 +270,7 @@ send_receive(
 	}
 
 	event_id_t cmd = get_event_id(p);
-	return wait_command_response(self.dev, self.state, cmd, &r, sizeof r, wait_for);
+	return wait_command_response(self, cmd, &r, sizeof r, wait_for);
 }
 
 template <typename Device, typename State, typename PacketPOD, typename ResponcePOD>
@@ -305,8 +298,25 @@ send_receive_verbose(
 
 template <typename Device, typename State>
 void
-wait_process_event(ServiceBlockingIO< Device, State > & self)
-{ wait_process_event(self.dev, self.state); }
+wait_process_event(ServiceBlockingIO< Device, State > & service_io)
+{ 
+    
+	ResponceEventBuffer packet;
+
+	ssize_t r = wait_service_packet(service_io.dev, packet);
+	if (r < 0)
+	{
+		if (errno != EAGAIN) { dbg_perror("wait_process_event"); }
+	}
+	else
+	{
+		process_service_packet(service_io , packet);
+		event_id_t event = get_event_id(packet);
+		if (is_command(event))
+			dbg("Unexpected command response 0x%02x.\n", event);
+	}
+    
+}
 
 
 enum ANSWER_PACKET_TYPE {
@@ -345,7 +355,7 @@ wait_any_answer(
         else
         {
 
-            process_service_packet(self.dev, self.state, packet);
+            process_service_packet(self, packet);
 
             size_t read_size = r;
 

@@ -73,6 +73,15 @@ prefill_packet()
 	return r;
 }
 
+template <typename Device, typename State>
+struct ServiceBlockingIO
+{
+	Device & dev;
+	State & state;
+
+	ServiceBlockingIO(Device & d, State & s) : dev(d), state(s) {}
+};
+
 }
 // end of namespace Laird
 }

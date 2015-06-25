@@ -216,27 +216,30 @@ daemon()
 	if (should_run and pairing_required)
 	{
 
-		fsync(service_io.dev);
-		inquiry_loop(service_io, svc.inq);
-		should_run = should_run and closest_is_obvious(svc.inq);
-		if (should_run)
-			connect_address = closest_address(svc.inq);
+        //
+		// fsync(service_io.dev);
+		// inquiry_loop(service_io, svc.inq);
+		// should_run = should_run and closest_is_obvious(svc.inq);
+		// if (should_run)
+		// 	connect_address = closest_address(svc.inq);
         
-        pairing_address = connect_address;
+		uint32_t i = Params::get("A_BT_CONNECT_TO");
+        
+        svc.pairing.addr = factory_addresses[i];
 
-        svc.pairing.addr = pairing_address;
+        trusted_db_record_count_get(service_io,0);
+        trusted_db_record_count_get(service_io,1);
 
         paired = pair(service_io);
 
-        if (paired) {
+        trusted_db_record_count_get(service_io,0);
+        trusted_db_record_count_get(service_io,1);
 
+        if (paired) {
             dbg("Pairing done successfuly. ");
             // TODO: MOVE ROLLING TRUSTED BD to PERSISTANT DB
-
         } else {
-
             should_run = false;
-
         }
 	} 
     
