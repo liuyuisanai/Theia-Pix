@@ -25,6 +25,7 @@ struct bt_evt_status_s {
 	uint8_t discoverable_mode;
 	uint8_t connectable_mode;
 	uint8_t security_mode;
+	uint8_t channels_connected;
 };
 
 ORB_DECLARE(bt_evt_status);

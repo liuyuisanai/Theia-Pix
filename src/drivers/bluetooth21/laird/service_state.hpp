@@ -11,9 +11,9 @@
 #include "connections.hpp"
 #include "inquiry.hpp"
 #include "pairing.hpp"
+#include "sdlog.hpp"
 #include "service_defs.hpp"
 #include "sync.hpp"
-#include "sdlog.hpp"
 
 
 namespace BT
@@ -42,6 +42,8 @@ struct ServiceState
 	SyncState sync;
 
     GLOBAL_BT_STATE global_state;
+
+	ServiceState() : sdlog(*this) {}
 };
 
 template <typename Device, typename State>
@@ -118,3 +120,5 @@ handle_inquiry_enhanced_data(ServiceState & svc, It first, Size n)
 // end of namespace Service
 }
 // end of namespace BT
+
+#include "sdlog.hpp"

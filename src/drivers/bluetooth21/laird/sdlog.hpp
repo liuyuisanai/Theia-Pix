@@ -12,6 +12,8 @@ namespace Service
 namespace Laird
 {
 
+struct ServiceState;
+
 struct SDLog
 {
 	bt_svc_in_s svc_in;
@@ -23,7 +25,10 @@ struct SDLog
 	orb_advert_t adv_svc_out;
 	orb_advert_t adv_evt_status;
 
-	SDLog()
+	ServiceState & svc;
+
+	SDLog(ServiceState & s)
+	: svc(s)
 	//: sync_level(SyncState::Level::UNKNOWN)
 	{
 		memset(&svc_in, 0, sizeof svc_in);
@@ -48,9 +53,17 @@ inline void
 publish(const SDLog & self, const bt_evt_status_s & s)
 { orb_publish(ORB_ID(bt_evt_status), self.adv_evt_status, &s); }
 
+template <typename SvcState>
+// Template is a hack to make it compile.
 void
-log_service_status(SDLog & self)
-{}
+log_service_status(SDLog & self, SvcState & svc)
+{
+	if (svc.conn.changed)
+	{
+		self.evt_status.channels_connected = svc.conn.channels_connected.value;
+		publish(self, self.evt_status);
+	}
+}
 
 inline void
 handle(SDLog & self, const RESPONSE_EVENT_UNION & p, bool processed)
@@ -74,7 +87,7 @@ handle(SDLog & self, const RESPONSE_EVENT_UNION & p, bool processed)
 		publish(self, self.evt_status);
 	}
 
-	log_service_status(self);
+	log_service_status(self, self.svc);
 }
 
 inline void
@@ -94,13 +107,13 @@ handle_unknown_packet(SDLog & self, It first, Size n, bool processed)
 	self.svc_in.processed = processed;
 	publish(self, self.svc_in);
 
-	log_service_status(self);
+	log_service_status(self, self.svc);
 }
 
 template <typename It, typename Size>
 void
 handle_inquiry_enhanced_data(SDLog & self, It first, Size n, bool processed)
-{ log_service_status(self); }
+{ log_service_status(self, self.svc); }
 
 }
 // end of namespace Laird
