@@ -42,7 +42,6 @@ MODULES		+= drivers/stm32/adc
 MODULES		+= drivers/stm32/tone_alarm
 MODULES		+= modules/airdog
 MODULES		+= modules/debug_button
-MODULES		+= modules/frame_button
 MODULES		+= modules/gpio_tool
 MODULES		+= modules/kbd_test
 MODULES		+= modules/sensors

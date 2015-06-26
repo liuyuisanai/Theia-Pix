@@ -1,2 +1,5 @@
+MODULE_COMMAND = $(notdir $(shell pwd))
+
 CXXFLAGS	+= -std=gnu++11
-SRCS		= driver.cpp
+EXTRACXXFLAGS = -Dmain=$(MODULE_COMMAND)_main
+SRCS		= driver.cpp main.cpp
