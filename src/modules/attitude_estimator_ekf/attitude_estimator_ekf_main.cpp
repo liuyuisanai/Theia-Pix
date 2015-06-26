@@ -315,8 +315,7 @@ const unsigned int loop_interval_alarm = 6500;	// loop interval in microseconds
 			orb_copy(ORB_ID(vehicle_control_mode), sub_control_mode, &control_mode);
 
 			if (!control_mode.flag_system_hil_enabled) {
-				fprintf(stderr,
-					"[att ekf] WARNING: Not getting sensors - sensor app running?\n");
+					DOG_PRINT("[att ekf] WARNING: Not getting sensors - sensor app running?\n");
 			}
 
 		} else {

@@ -72,6 +72,8 @@
 #include <systemlib/cpuload.h>
 #include <systemlib/perf_counter.h>
 
+#include <../frame_button/driver.h>
+
 /****************************************************************************
  * Pre-Processor Definitions
  ****************************************************************************/
@@ -314,6 +316,8 @@ __EXPORT int nsh_archinitialize(void)
 
 	message("[boot] Initialized SDIO\n");
 #endif
+	message("[boot] Starting frame button driver\n");
+    frame_button_start();
 
 	return OK;
 }
