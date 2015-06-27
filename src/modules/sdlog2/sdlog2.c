@@ -2115,11 +2115,13 @@ int sdlog2_thread_main(int argc, char *argv[])
 
 		if (copy_if_updated(ORB_ID(mavlink_receive_stats), subs.mav_stats_sub, &buf.mav_stats)) {
 			log_msg.msg_type = LOG_MVST_MSG;
-			log_msg.body.log_MVST.total_bytes = buf.mav_stats.total_bytes;
-			log_msg.body.log_MVST.gpos_count = buf.mav_stats.gpos_count;
-			log_msg.body.log_MVST.heartbeat_count = buf.mav_stats.heartbeat_count;
-			log_msg.body.log_MVST.trajectory_count = buf.mav_stats.trajectory_count;
-			log_msg.body.log_MVST.combo_count = buf.mav_stats.combo_count;
+//			log_msg.body.log_MVST.total_bytes = buf.mav_stats.total_bytes;
+//			log_msg.body.log_MVST.gpos_count = buf.mav_stats.gpos_count;
+//			log_msg.body.log_MVST.heartbeat_count = buf.mav_stats.heartbeat_count;
+//			log_msg.body.log_MVST.trajectory_count = buf.mav_stats.trajectory_count;
+//			log_msg.body.log_MVST.combo_count = buf.mav_stats.combo_count;
+			// TODO! [AK] Consider replacing buf.mav_stats with log_MVST in copy_if_updated
+			log_msg.body.log_MVST = buf.mav_stats;
 
 			LOGBUFFER_WRITE_AND_COUNT(MVST);
 		}

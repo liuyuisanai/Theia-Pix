@@ -88,6 +88,7 @@ __BEGIN_DECLS
 __END_DECLS
 
 static const float mg2ms2 = CONSTANTS_ONE_G / 1000.0f;
+static const uint8_t mavlink_message_lengths[256] = MAVLINK_MESSAGE_LENGTHS;
 
 MavlinkReceiver::MavlinkReceiver(Mavlink *parent) :
 	_mavlink(parent),
@@ -1645,6 +1646,7 @@ MavlinkReceiver::receive_thread(void *arg)
 {
 	mavlink_receive_stats_s stats;
 	memset(&stats, 0, sizeof(stats));
+	unsigned good_byte_count = 0;
 
 	orb_advert_t mavlink_stat_topic =
 		orb_advertise(ORB_ID(mavlink_receive_stats), &stats);
@@ -1718,6 +1720,13 @@ MavlinkReceiver::receive_thread(void *arg)
 				default:
 					break;
 				}
+
+				good_byte_count += MAVLINK_NUM_NON_PAYLOAD_BYTES + mavlink_message_lengths[msg.msgid];
+				/* Update error bytes only when we're sure we've finished reading a message
+				 * So that we're sure that all the bytes we've read are either "good" or "error"
+				 * Otherwise error count might appear to grow and then decrease
+				 */
+				stats.error_bytes = stats.total_bytes + i - good_byte_count;
 			}
 		}
 
