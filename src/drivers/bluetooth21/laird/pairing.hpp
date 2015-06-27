@@ -26,7 +26,10 @@ pair(ServiceBlockingIO< Device, State> & io){
     RESPONSE_PAIR_INITIATE rsp; 
 
     auto cmd = prefill_packet<COMMAND_PAIR_INITIATE, CMD_PAIR_INITIATE>();
-    const auto wait_for = Time::duration_sec(30);
+    const auto wait_for = Time::duration_sec(10);
+
+	auto time_limit = Time::now() + wait_for;
+
     memset(cmd.pinCode, 65, sizeof(cmd.pinCode));
     cmd.timeoutSec = 100;
     cmd.pinCode[16]='\0';
@@ -50,8 +53,8 @@ pair(ServiceBlockingIO< Device, State> & io){
 
         dbg("<- listening for PAIRING packets\n");
 
-        // Just listening and processing packets 
-        while (io.state.pairing.pairing_active){
+        // Listening and processing packets for wait_for
+        while ( time_limit > Time::now() ){
             wait_any_answer(io, get_event_id(cmd), &rsp, sizeof(rsp), wait_for);
         }
     }

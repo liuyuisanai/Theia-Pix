@@ -124,7 +124,7 @@ bool
 configure_after_reboot(ServiceIO & io)
 {
 	bool ok = ( configure_name(io)
-		and switch_discoverable(io, true)
+		// and switch_discoverable(io, true)
 		and switch_connectable(io, true)
 	);
 	dbg("configure_after_reboot %i.\n", ok);

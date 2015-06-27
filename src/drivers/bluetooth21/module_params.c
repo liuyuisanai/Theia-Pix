@@ -19,7 +19,15 @@ PARAM_DEFINE_INT32(A_TELEMETRY_FLOW, CONFIG_TELEMETRY_HAS_CTSRTS);
  * Warning: Default and invalid values keep telemetry disabled!
  *
  */
+
 PARAM_DEFINE_INT32(A_TELEMETRY_MODE, BT_PARAM_DEFAULT);
+
+
+/*
+ * If this parameter is set to 1 the connection process will require pairing before the devices
+ * can be connected.
+ */
+PARAM_DEFINE_INT32(A_BT_PAIR_REQ, 1);
 
 /*
  * Device ID visible to user as a bluetooth name as one of

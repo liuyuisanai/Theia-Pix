@@ -277,7 +277,11 @@ trusted_db_record_count_get(ServiceIO & io, uint8_t dbType)
         dbg("-> command trusted_db_record_count_get() resulting count: %d.\n" , rsp.count);
     }
 
-	return ok;
+    if (ok) 
+        return rsp.count;
+     else 
+        return -1;
+
 }
 
 template <typename ServiceIO>
@@ -298,6 +302,30 @@ move_rolling_to_persistant(ServiceIO & io, const Address6 & addr)
 	dbg("-> command move_rolling_to_persistant %s.\n" , ok ? "ok": "failed");
 
 	return ok;
+}
+
+template <typename ServiceIO>
+Address6
+get_trusted_address(ServiceIO & io, uint8_t dbType, uint8_t itemNo)
+{
+    Address6 ret;
+
+    RESPONSE_TRUSTED_DB_READ rsp;
+
+	auto cmd =
+		prefill_packet<COMMAND_TRUSTED_DB_READ, CMD_TRUSTED_DB_READ>();
+
+    cmd.dbType = dbType;
+    cmd.itemNo = itemNo;
+
+	bool ok = send_receive_verbose(io, cmd, rsp)
+		and get_response_status(rsp) == MPSTATUS_OK;
+	dbg("-> command get_trusted_address %s.\n" , ok ? "ok": "failed");
+
+    ret = rsp.bdAddr;
+
+    return ret;
+
 }
 
 template <typename ServiceIO>
