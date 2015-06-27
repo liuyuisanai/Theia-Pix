@@ -60,7 +60,8 @@ namespace scan_gpios {
 static struct hrt_call               hrt_scan_entry;
 static ScanState                     state;
 static BounceFilter<pressed_mask_t>  bounce_filter;
-static KbdButtonState                btn;
+static KbdButtonState                btn, last_btn;
+static press_type                    event;
 
 static bool
 read_input_pin(uint32_t pin)
@@ -80,8 +81,36 @@ update_buttons(KbdButtonState & s, hrt_abstime now)
     read(masks, sizeof(masks));
 	s.update(now, masks);
 }
-static void
 
+static void event_printer( press_type press) {
+//#define FULL_PRINT
+    switch (press) {
+        case SHORT_KEYPRESS:
+            DOG_PRINT("(driver) event SHORT_KEYPRESS\n");
+            break;
+        case LONG_KEYPRESS:
+            DOG_PRINT("(driver) event LONG_KEYPRESS\n");
+            break;
+#ifdef FULL_PRINT
+        case SUSPECT_FOR_DOUBLE:
+            DOG_PRINT("(driver) event SUSPECT_FOR_DOUBLE\n");
+            break;
+        case SUSPECT_FOR_TRIPPLE:
+            DOG_PRINT("(driver) event SUSPECT_FOR_TRIPPLE\n");
+            break;
+#endif
+        case DOUBLE_CLICK:
+            DOG_PRINT("(driver) event DOUBLE_CLICK\n");
+            break;
+        case TRIPLE_CLICK:
+            DOG_PRINT("(driver) event TRIPLE_CLICK\n");
+            break;
+    }
+    fflush(stderr);
+}
+
+
+static void
 tick(void *)
 {
     add_bool(state, read_input_pin(FC_BUTT_BGC));
@@ -90,13 +119,8 @@ tick(void *)
 
     hrt_abstime now = hrt_absolute_time();
     update_buttons(btn, now);
-    press_type event = NOT_PRESSED;
-    event = handle_kbd_state(btn, now);
-    if (event != NOT_PRESSED){ 
-        DOG_PRINT("Frame button event: %d ", event);
-        //fprintf(stderr, "Frame button event: %d\n");
-        DOG_PRINT(event == SHORT_KEYPRESS ? "SHORT_KEYPRESS\n" : "LONG_KEYPRESS\n");
-    }
+    event = handle_kbd_state(btn, last_btn, now, event);
+    event_printer(event);
 }
 
 static inline void
