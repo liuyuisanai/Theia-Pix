@@ -7,8 +7,8 @@
  * @{
  */
 
-/** global 'actuator output is live' control. */
-struct mavlink_receive_stats_s {
+/** Common structure for mavlink rx or tx stats */
+struct mavlink_stats_s {
 
 	unsigned total_bytes;
 	unsigned heartbeat_count;
@@ -18,9 +18,6 @@ struct mavlink_receive_stats_s {
 	unsigned error_bytes;
 };
 
-/**
- * @}
- */
-
 /* register this as object request broker structure */
 ORB_DECLARE(mavlink_receive_stats);
+ORB_DECLARE(mavlink_transmit_stats);

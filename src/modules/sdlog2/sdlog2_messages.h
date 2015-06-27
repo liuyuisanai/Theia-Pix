@@ -481,12 +481,16 @@ struct log_DEBUGD_s {
 };
 
 #include <uORB/topics/mavlink_stats.h>
-/* --- Mavlink stats --- */
-#define LOG_MVST_MSG 70
-#define log_MVST_s mavlink_receive_stats_s
+/* --- Mavlink receive stats --- */
+#define LOG_MVRX_MSG 70
+#define log_MVRX_s mavlink_stats_s
+/* --- Mavlink transmit stats --- */
+#define LOG_MVTX_MSG 71
+#define log_MVTX_s mavlink_stats_s
+
 
 /* --- Vehicle command --- */
-#define LOG_CMD_MSG 71
+#define LOG_CMD_MSG 72
 struct log_CMD_s {
 	uint16_t command;
 	uint8_t source_sys;
@@ -497,7 +501,7 @@ struct log_CMD_s {
 };
 
 /* --- Target raw GPS data --- */
-#define LOG_TGPS_MSG 72
+#define LOG_TGPS_MSG 73
 struct log_TGPS_s {
 	uint64_t gps_time;
 	uint8_t fix_type;
@@ -513,16 +517,16 @@ struct log_TGPS_s {
 
 #include <uORB/topics/bt21_laird.h>
 
-#define LOG_BTSI_MSG 73
+#define LOG_BTSI_MSG 74
 #define log_BTSI_s bt_svc_in_s
 
-#define LOG_BTSO_MSG 74
+#define LOG_BTSO_MSG 75
 #define log_BTSO_s bt_svc_out_s
 
-#define LOG_BTEV_MSG 75
+#define LOG_BTEV_MSG 76
 #define log_BTEV_s bt_evt_status_s
 
-//#define LOG_BTCH_MSG 76
+//#define LOG_BTCH_MSG 77
 //struct log_BTCH_s {
 //	uint32_t bytes_sent[7];
 //	uint32_t bytes_received[7];
@@ -598,7 +602,8 @@ static const struct log_format_s log_formats[] = {
 	LOG_FORMAT(LOTJ, "BQLLffffff", "Type,Time,Lat,Lon,Alt,RAlt,VelN,VelE,VelD,Head"),
 	LOG_FORMAT(GPRE, "BLLfB",		"NavState,Lat,Lon,Alt,Type"),
 	LOG_FORMAT(GNEX, "BLLfB",		"NavState,Lat,Lon,Alt,Type"),
-	LOG_FORMAT(MVST, "IIIIII", "TotalBytes,HrtCount,GposCount,TrajCount,ComboCount,ErrorCount"),
+	LOG_FORMAT(MVRX, "IIIIII", "TotalBytes,HrtCount,GposCount,TrajCount,ComboCount,ErrorBytes"),
+	LOG_FORMAT(MVTX, "IIIIII", "TotalBytes,HrtCount,GposCount,TrajCount,ComboCount,ErrorBytes"),
 	LOG_FORMAT(CMD, "HBBfff", "Cmd,SrcSys,SrcComp,Par1,Par2,Par3"),
 	LOG_FORMAT(TGPS, "QBffLLfffB", "Time,Fix,EPH,EPV,Lat,Lon,Alt,Vel,COG,nSat"),
 	LOG_FORMAT(BTSI, "BBBBBB", "length,channel,cmd_evt_id,flow,cmd_status,processed"),

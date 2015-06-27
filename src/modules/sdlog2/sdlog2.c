@@ -185,7 +185,8 @@ PARAM_DEFINE_INT32(SDLOG_M_GVELSP, 0);
 PARAM_DEFINE_INT32(SDLOG_M_LOTRAJ, 0);
 PARAM_DEFINE_INT32(SDLOG_M_LPOS, 0);
 PARAM_DEFINE_INT32(SDLOG_M_LPSP, 0);
-PARAM_DEFINE_INT32(SDLOG_M_MAVST, 0);
+PARAM_DEFINE_INT32(SDLOG_M_MAVRX, 0);
+PARAM_DEFINE_INT32(SDLOG_M_MAVTX, 0);
 PARAM_DEFINE_INT32(SDLOG_M_RANGE, 0);
 PARAM_DEFINE_INT32(SDLOG_M_RCCH, 0);
 PARAM_DEFINE_INT32(SDLOG_M_RSPRATE, 0);
@@ -1251,7 +1252,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 		struct external_trajectory_s ext_traj;
 		struct trajectory_s local_traj;
         struct debug_data_s debug_data;
-        struct mavlink_receive_stats_s mav_stats;
+        struct mavlink_stats_s mav_stats;
         struct target_gps_raw_s target_gps_raw;
         struct bt_svc_in_s bt_svc_in;
         struct bt_svc_out_s bt_svc_out;
@@ -1306,7 +1307,8 @@ int sdlog2_thread_main(int argc, char *argv[])
             struct log_DEBUGD_s log_DEBUGD;
 			struct log_GPRE_s log_GPRE;
 			struct log_GNEX_s log_GNEX;
-			struct log_MVST_s log_MVST;
+			struct log_MVRX_s log_MVRX;
+			struct log_MVTX_s log_MVTX;
 			struct log_CMD_s log_CMD;
 			struct log_TGPS_s log_TGPS;
 			//struct log_BTCM_s log_BTCM;
@@ -1355,7 +1357,8 @@ int sdlog2_thread_main(int argc, char *argv[])
 		int external_trajectory_sub;
 
         int debug_data_sub;
-        int mav_stats_sub;
+        int mav_rx_sub;
+        int mav_tx_sub;
         int local_trajectory_sub;
         int target_gps_raw_sub;
         int bt_svc_in_sub;
@@ -1406,7 +1409,8 @@ int sdlog2_thread_main(int argc, char *argv[])
 	LOG_ORB_PARAM_SUBSCRIBE(subs.external_trajectory_sub, ORB_ID(external_trajectory), "SDLOG_M_EXTRAJ", sub_freq)
 
 	LOG_ORB_PARAM_SUBSCRIBE(subs.debug_data_sub, ORB_ID(debug_data), "SDLOG_M_DEBUGD", sub_freq)
-	LOG_ORB_PARAM_SUBSCRIBE(subs.mav_stats_sub, ORB_ID(mavlink_receive_stats), "SDLOG_M_MAVST", sub_freq)
+	LOG_ORB_PARAM_SUBSCRIBE(subs.mav_rx_sub, ORB_ID(mavlink_receive_stats), "SDLOG_M_MAVRX", sub_freq)
+	LOG_ORB_PARAM_SUBSCRIBE(subs.mav_tx_sub, ORB_ID(mavlink_transmit_stats), "SDLOG_M_MAVTX", sub_freq)
 
 	// Local reported trajectory for leashes
 	LOG_ORB_PARAM_SUBSCRIBE(subs.local_trajectory_sub, ORB_ID(trajectory), "SDLOG_M_LOTRAJ", sub_freq)
@@ -2113,17 +2117,20 @@ int sdlog2_thread_main(int argc, char *argv[])
             LOGBUFFER_WRITE_AND_COUNT(DEBUGD);
 		}
 
-		if (copy_if_updated(ORB_ID(mavlink_receive_stats), subs.mav_stats_sub, &buf.mav_stats)) {
-			log_msg.msg_type = LOG_MVST_MSG;
-//			log_msg.body.log_MVST.total_bytes = buf.mav_stats.total_bytes;
-//			log_msg.body.log_MVST.gpos_count = buf.mav_stats.gpos_count;
-//			log_msg.body.log_MVST.heartbeat_count = buf.mav_stats.heartbeat_count;
-//			log_msg.body.log_MVST.trajectory_count = buf.mav_stats.trajectory_count;
-//			log_msg.body.log_MVST.combo_count = buf.mav_stats.combo_count;
-			// TODO! [AK] Consider replacing buf.mav_stats with log_MVST in copy_if_updated
-			log_msg.body.log_MVST = buf.mav_stats;
+		if (copy_if_updated(ORB_ID(mavlink_receive_stats), subs.mav_rx_sub, &buf.mav_stats)) {
+			log_msg.msg_type = LOG_MVRX_MSG;
+			// TODO! [AK] Consider replacing buf.mav_stats with log_MVRX in copy_if_updated
+			log_msg.body.log_MVRX = buf.mav_stats;
 
-			LOGBUFFER_WRITE_AND_COUNT(MVST);
+			LOGBUFFER_WRITE_AND_COUNT(MVRX);
+		}
+
+		if (copy_if_updated(ORB_ID(mavlink_transmit_stats), subs.mav_tx_sub, &buf.mav_stats)) {
+			log_msg.msg_type = LOG_MVTX_MSG;
+			// TODO! [AK] Consider replacing buf.mav_stats with log_MVTX in copy_if_updated
+			log_msg.body.log_MVTX = buf.mav_stats;
+
+			LOGBUFFER_WRITE_AND_COUNT(MVTX);
 		}
 
 		if (copy_if_updated(ORB_ID(bt_svc_in), subs.bt_svc_in_sub, &buf.bt_svc_in)) {

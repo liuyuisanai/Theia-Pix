@@ -50,6 +50,7 @@
 #include <termios.h>
 
 #include <uORB/uORB.h>
+#include <uORB/topics/mavlink_stats.h>
 #include <uORB/topics/mission.h>
 #include <uORB/topics/mission_result.h>
 #include <uORB/topics/telemetry_status.h>
@@ -371,6 +372,9 @@ private:
 
 	perf_counter_t		_loop_perf;			/**< loop performance counter */
 	perf_counter_t		_txerr_perf;			/**< TX error counter */
+
+	int 				_tx_stats_sub;
+	mavlink_stats_s 	_tx_stats;
 
 	void			mavlink_update_system();
 

@@ -178,10 +178,13 @@ Mavlink::Mavlink() :
 
 	/* performance counters */
 	_loop_perf(perf_alloc(PC_ELAPSED, "mavlink_el")),
-	_txerr_perf(perf_alloc(PC_COUNT, "mavlink_txe"))
+	_txerr_perf(perf_alloc(PC_COUNT, "mavlink_txe")),
+	_tx_stats_sub(-1),
+	_tx_stats()
 {
 	fops.ioctl = (int (*)(file *, int, long unsigned int))&mavlink_dev_ioctl;
 
+	memset(&_tx_stats, 0, sizeof(_tx_stats));
 	_instance_id = Mavlink::instance_count();
 
 	if (_instance_id < MAVLINK_COMM_NUM_BUFFERS)
@@ -781,6 +784,28 @@ Mavlink::send_message(const uint8_t msgid, const void *msg)
 	} else {
 		_last_write_success_time = _last_write_try_time;
 		count_txbytes(packet_len);
+		switch (msgid) {
+		case MAVLINK_MSG_ID_HEARTBEAT:
+			++_tx_stats.heartbeat_count;
+			break;
+		case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
+			++_tx_stats.gpos_count;
+			break;
+		case MAVLINK_MSG_ID_TRAJECTORY:
+			++_tx_stats.trajectory_count;
+			break;
+		case MAVLINK_MSG_ID_HRT_GPOS_TRAJ_COMMAND:
+			++_tx_stats.combo_count;
+			break;
+		default:
+			break;
+		}
+		_tx_stats.error_bytes += _bytes_txerr;
+		_tx_stats.total_bytes += _bytes_tx;
+		orb_publish(ORB_ID(mavlink_transmit_stats), _tx_stats_sub, &_tx_stats);
+		//TODO! [AK] Ugly hack to keep the old rate recalculation every 1 second and reuse the same variables in stats
+		_tx_stats.error_bytes -= _bytes_txerr;
+		_tx_stats.total_bytes -= _bytes_tx;
 	}
 
 	pthread_mutex_unlock(&_send_mutex);
@@ -1318,6 +1343,8 @@ Mavlink::task_main(int argc, char *argv[])
 		return ERROR;
 	}
 
+	_tx_stats_sub = orb_advertise(ORB_ID(mavlink_transmit_stats), &_tx_stats);
+
 	/* initialize send mutex */
 	pthread_mutex_init(&_send_mutex, NULL);
 
@@ -1541,6 +1568,8 @@ Mavlink::task_main(int argc, char *argv[])
 				_rate_tx = _bytes_tx / dt;
 				_rate_txerr = _bytes_txerr / dt;
 				_rate_rx = _bytes_rx / dt;
+				_tx_stats.total_bytes += _bytes_tx;
+				_tx_stats.error_bytes += _bytes_txerr;
 				_bytes_tx = 0;
 				_bytes_txerr = 0;
 				_bytes_rx = 0;
@@ -1551,6 +1580,8 @@ Mavlink::task_main(int argc, char *argv[])
 
 		perf_end(_loop_perf);
 	}
+
+	close(_tx_stats_sub);
 
 	delete _subscribe_to_stream;
 	_subscribe_to_stream = nullptr;

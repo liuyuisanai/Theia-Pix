@@ -1644,12 +1644,12 @@ MavlinkReceiver::handle_message_hil_state_quaternion(mavlink_message_t *msg)
 void *
 MavlinkReceiver::receive_thread(void *arg)
 {
-	mavlink_receive_stats_s stats;
-	memset(&stats, 0, sizeof(stats));
+	mavlink_stats_s rx_stats;
+	memset(&rx_stats, 0, sizeof(rx_stats));
 	unsigned good_byte_count = 0;
 
-	orb_advert_t mavlink_stat_topic =
-		orb_advertise(ORB_ID(mavlink_receive_stats), &stats);
+	orb_advert_t rx_stat_topic =
+		orb_advertise(ORB_ID(mavlink_receive_stats), &rx_stats);
 
 	int uart_fd = _mavlink->get_uart_fd();
 
@@ -1702,20 +1702,18 @@ MavlinkReceiver::receive_thread(void *arg)
 				/* handle packet with parent object */
 				_mavlink->handle_message(&msg);
 
-				//fprintf(stderr, "%d: ", hrt_absolute_time());
 				switch (msg.msgid) {
 				case MAVLINK_MSG_ID_HEARTBEAT:
-					++stats.heartbeat_count;
+					++rx_stats.heartbeat_count;
 					break;
 				case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
-					++stats.gpos_count;
+					++rx_stats.gpos_count;
 					break;
 				case MAVLINK_MSG_ID_TRAJECTORY:
-					++stats.trajectory_count;
+					++rx_stats.trajectory_count;
 					break;
 				case MAVLINK_MSG_ID_HRT_GPOS_TRAJ_COMMAND:
-					++stats.combo_count;
-					//fprintf(stderr, "Mavlink got combo message!\n");
+					++rx_stats.combo_count;
 					break;
 				default:
 					break;
@@ -1726,16 +1724,18 @@ MavlinkReceiver::receive_thread(void *arg)
 				 * So that we're sure that all the bytes we've read are either "good" or "error"
 				 * Otherwise error count might appear to grow and then decrease
 				 */
-				stats.error_bytes = stats.total_bytes + i - good_byte_count;
+				rx_stats.error_bytes = rx_stats.total_bytes + i + 1 - good_byte_count;
 			}
 		}
 
 		/* Report to stats. */
-		stats.total_bytes += r;
-		orb_publish(ORB_ID(mavlink_receive_stats), mavlink_stat_topic, &stats);
+		rx_stats.total_bytes += r;
+		orb_publish(ORB_ID(mavlink_receive_stats), rx_stat_topic, &rx_stats);
 
 		_mavlink->count_rxbytes(r);
 	}
+
+	close(rx_stat_topic);
 
 	fprintf(stderr, "mavlink receiver %i stopped and QUIT.\n",
 			_mavlink->get_instance_id());

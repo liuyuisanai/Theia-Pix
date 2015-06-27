@@ -274,7 +274,8 @@ ORB_DEFINE(position_restriction, struct position_restriction_s);
 ORB_DEFINE(camera_user_offsets, struct camera_user_offsets_s);
 
 #include "topics/mavlink_stats.h"
-ORB_DEFINE(mavlink_receive_stats, struct mavlink_receive_stats_s);
+ORB_DEFINE(mavlink_receive_stats, struct mavlink_stats_s);
+ORB_DEFINE(mavlink_transmit_stats, struct mavlink_stats_s);
 
 #include "topics/target_gps_raw.h"
 ORB_DEFINE(target_gps_raw, struct target_gps_raw_s);
