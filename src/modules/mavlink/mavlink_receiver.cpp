@@ -76,7 +76,7 @@
 #include <commander/px4_custom_mode.h>
 #include <geo/geo.h>
 
-#include <uORB/topics/mavlink_receive_stats.h>
+#include <uORB/topics/mavlink_stats.h>
 #include <uORB/uORB.h>
 
 __BEGIN_DECLS

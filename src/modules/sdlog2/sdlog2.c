@@ -95,7 +95,7 @@
 #include <uORB/topics/system_power.h>
 #include <uORB/topics/servorail_status.h>
 #include <uORB/topics/debug_data.h>
-#include <uORB/topics/mavlink_receive_stats.h>
+#include <uORB/topics/mavlink_stats.h>
 #include <uORB/topics/target_gps_raw.h>
 #include <uORB/topics/bt21_laird.h>
 

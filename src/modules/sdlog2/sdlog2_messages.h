@@ -480,6 +480,7 @@ struct log_DEBUGD_s {
     float val[8];
 };
 
+#include <uORB/topics/mavlink_stats.h>
 /* --- Mavlink stats --- */
 #define LOG_MVST_MSG 70
 #define log_MVST_s mavlink_receive_stats_s
