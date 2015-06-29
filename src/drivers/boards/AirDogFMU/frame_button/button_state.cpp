@@ -13,7 +13,7 @@
 
 #include "button_state.hpp"
 
-
+namespace frame_kbd{
 press_type
 handle_kbd_state(KbdButtonState & btn,KbdButtonState & last_btn, hrt_abstime now, press_type last_press)
 {
@@ -32,7 +32,7 @@ handle_kbd_state(KbdButtonState & btn,KbdButtonState & last_btn, hrt_abstime now
                 btn.time_pressed = 0;
                 return SHORT_KEYPRESS;
             }
-            else if (last_press == SUSPECT_FOR_TRIPPLE) {
+            else if (last_press == SUSPECT_FOR_TRIPLE) {
                 btn.time_released = 0;
                 btn.time_pressed = 0;
                 return DOUBLE_CLICK;
@@ -50,11 +50,11 @@ handle_kbd_state(KbdButtonState & btn,KbdButtonState & last_btn, hrt_abstime now
                     return SUSPECT_FOR_DOUBLE;
                 }
                 last_btn.time_released = btn.time_released;
-                return SUSPECT_FOR_TRIPPLE;
+                return SUSPECT_FOR_TRIPLE;
             }
-            else if (last_press == SUSPECT_FOR_TRIPPLE) {
+            else if (last_press == SUSPECT_FOR_TRIPLE) {
                 if (btn.time_released == last_btn.time_released) {
-                    return SUSPECT_FOR_TRIPPLE;
+                    return SUSPECT_FOR_TRIPLE;
                 }
                 return TRIPLE_CLICK;
             }
@@ -85,4 +85,5 @@ handle_kbd_state(KbdButtonState & btn,KbdButtonState & last_btn, hrt_abstime now
 		}
 	}
     return last_press;
+}
 }

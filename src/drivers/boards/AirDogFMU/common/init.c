@@ -316,8 +316,6 @@ __EXPORT int nsh_archinitialize(void)
 
 	message("[boot] Initialized SDIO\n");
 #endif
-	message("[boot] Starting frame button driver\n");
-    frame_button_start();
 
 	return OK;
 }
