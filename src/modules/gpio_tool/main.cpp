@@ -9,7 +9,7 @@ extern "C" __EXPORT int main(int argc, const char * const * const argv);
 #include <fcntl.h>
 #include <unistd.h>
 
-#include <cctype>
+#include <ctype.h>
 #include <cstdlib>
 #include <cstring>
 #include <cstdio>
