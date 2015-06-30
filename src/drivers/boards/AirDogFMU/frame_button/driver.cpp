@@ -177,6 +177,21 @@ hrt_start()
 			tick, nullptr);
 }
 
+inline void
+hrt_stop()
+{
+    hrt_cancel(&hrt_scan_entry);
+}
+
+inline void
+hrt_info()
+{
+    int not_active;
+    not_active = hrt_called(&hrt_scan_entry);
+    printf("[frame button] ");
+    printf(not_active ? "not active\n" : "active\n");
+}
+
 } // end of namespace scan_gpios
 
 
@@ -203,6 +218,12 @@ int main(int argc, const char *argv[])
 	if (!strcmp(verb, "start")) {
             frame_button_start();
 	}
+    else if (!strcmp(verb, "stop")) {
+        frame_kbd::scan_gpios::hrt_stop();
+    }
+    else if (!strcmp(verb, "info")) {
+        frame_kbd::scan_gpios::hrt_info();
+    }
 
 	return 0;
 }
