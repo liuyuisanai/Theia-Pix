@@ -1,13 +1,16 @@
+#pragma once
+
 #include <cstdint>
 
 #include "buffers.hpp"
+#include "file_fragments.hpp"
 
 namespace base64 {
 
 constexpr size_t
 encoded_size(size_t n) { return (n + 2) / 3 * 4; }
 
-uint8_t
+inline uint8_t
 encode_6_bits(uint8_t x)
 {
     if (x < 26) { return 'A' + x; }
@@ -20,7 +23,7 @@ encode_6_bits(uint8_t x)
     return '/';
 }
 
-uint32_t
+inline uint32_t
 encode_8_bits(uint8_t x0)
 {
     // char [0]
@@ -33,7 +36,7 @@ encode_8_bits(uint8_t x0)
     return r;
 }
 
-uint32_t
+inline uint32_t
 encode_16_bits(uint8_t x0, uint8_t x1)
 {
     // char [0]      [1]
@@ -46,7 +49,7 @@ encode_16_bits(uint8_t x0, uint8_t x1)
     return r;
 }
 
-uint32_t
+inline uint32_t
 encode_24_bits(uint8_t x0, uint8_t x1, uint8_t x2)
 {
     // char [0]      [1]      [2]
@@ -59,7 +62,7 @@ encode_24_bits(uint8_t x0, uint8_t x1, uint8_t x2)
     return r;
 }
 
-uint32_t *
+inline uint32_t *
 encode(const uint8_t * data, size_t n, uint32_t * encoded)
 {
     while (n > 2) {
@@ -81,42 +84,12 @@ encode(const uint8_t * data, size_t n, uint32_t * encoded)
     return encoded;
 }
 
-struct FragmentReader
-{
-	size_t bytes_left;
-	FragmentReader(size_t size) : bytes_left{ size } {}
-
-	template <typename Device>
-	friend inline ssize_t
-	read(FragmentReader & self, Device & d, void * buf, size_t buf_size)
-	{
-		if (self.bytes_left < buf_size) { buf_size = self.bytes_left; }
-		ssize_t s = read(d, buf, buf_size);
-		if (s > 0) { self.bytes_left -= s; }
-		return s;
-	}
-};
-
-template <typename Device>
-struct DeviceFragment
-{
-	Device * dev;
-	FragmentReader fr;
-
-	DeviceFragment(Device * d, size_t fragment_size)
-	: dev{ d }, fr{ fragment_size } {}
-
-	friend inline ssize_t
-	read(DeviceFragment & self, void * buf, size_t buf_size)
-	{ return read(self.fr, *self.dev, buf, buf_size); }
-};
-
 template <size_t ENCODED_BUFFER_BYTES>
 struct ReadEncodeWrite {
     static_assert( ENCODED_BUFFER_BYTES % 4 == 0,
                    "ReadEncodeWrite ENCODED_BUFFER_BYTES"
 		   " template argument has to be multiple of 4." );
-    static_assert( ENCODED_BUFFER_BYTES > 4,
+    static_assert( ENCODED_BUFFER_BYTES >= 4,
                    "ReadEncodeWrite ENCODED_BUFFER_BYTES"
 		   " template argument has to be at least 4 bytes." );
 
@@ -130,6 +103,11 @@ struct ReadEncodeWrite {
     copy(ReadEncodeWrite & self, SourceDevice & sd, TargetDevice & td)
     {
 	ssize_t s;
+	while (not self.write_buffer.empty())
+	{
+		s = self.flush_write_buffer(td);
+		if (s < 0) { return false; }
+	}
 	do {
 		s = self.refill_read_buffer(sd);
 		if (s < 0) { return false; }
@@ -137,7 +115,11 @@ struct ReadEncodeWrite {
 		self.encode_in_buffer();
 		s = self.flush_write_buffer(td);
 		if (s < 0) { return false; }
-		if (not self.read_buffer.full()) { break; }
+		if (not self.read_buffer.full())
+		{
+			// It was last chunk then.
+			break;
+		}
 	} while (true);
 	return true;
     }
@@ -149,9 +131,10 @@ struct ReadEncodeWrite {
 	read_buffer.reset();
 	do {
 		ssize_t s = read(sd, read_buffer);
-		if (s < 0)
+		if (s < 0 and errno != EAGAIN)
 		{
-			if (errno != EAGAIN) { return s; }
+			perror("refill_read_buffer");
+			return s;
 		}
 		if (s == 0) { break; }
 	} while (not read_buffer.full());
@@ -165,9 +148,10 @@ struct ReadEncodeWrite {
 	ssize_t r = write_buffer.size();
 	do {
 		ssize_t s = write(td, write_buffer);
-		if (s < 0)
+		if (s < 0 and errno != EAGAIN)
 		{
-			if (errno != EAGAIN) { return s; }
+			perror("flush_write_buffer");
+			return s;
 		}
 	} while (not write_buffer.empty());
 	return r;

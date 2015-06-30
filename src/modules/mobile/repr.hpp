@@ -37,7 +37,7 @@ write_repr_char(Device &dev, char ch, bool put_space_before)
 
 template <typename Device>
 void
-write_repr(Device &dev,const void *buf, std::size_t buf_size)
+write_repr(const Device &dev, const void *buf, std::size_t buf_size)
 {
 	auto p = static_cast<const char *>(buf);
 	if (buf_size > 0) {

@@ -7,6 +7,8 @@
 #include "debug.hpp"
 #include "std_util.hpp"
 
+namespace {
+
 inline int
 fileno(int fd) { return fd; }
 
@@ -135,3 +137,5 @@ public:
 	fsync(unique_FILE & uf) { return ::fsync(fileno(uf.fp)); }
 };
 
+}
+// end of anonymous namespace

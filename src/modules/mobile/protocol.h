@@ -12,12 +12,13 @@
 #define EOT			0x04
 #define ENQ			0x05
 #define ACK			0x06
+#define FF 			0x0B
 #define NAK			0x15
 #define CAN			0x18
 #define RecordSeparator		0x1e
 
 // command definition helper
-#define CMD_AB(c1, c2)          ( ((c1 & 0xff) << 8) | (c2 & 0xff) ) 
+#define CMD_AB(c1, c2)          ( ((c2 & 0xff) << 8) | (c1 & 0xff) )
 
 typedef uint16_t command_id_t;
 enum {
@@ -27,6 +28,9 @@ enum {
 	COMMAND_RECEIVE_PRESET = CMD_AB('R', 'P'),
 	COMMAND_FILE_INFO = CMD_AB('F', 'I'),
 	COMMAND_FILE_BLOCK = CMD_AB('F', 'B'),
+	COMMAND_RECEIVE_FILE = CMD_AB('v', 'f'),
+	COMMAND_RECEIVE_BLOCK = CMD_AB('v', 'b'),
+	COMMAND_RECEIVE_APPLY = CMD_AB('v', 'a'),
 };
 
 #undef CMD_AB
@@ -87,6 +91,16 @@ struct PACKED_STRUCT FileInfoReply {
 };
 
 struct PACKED_STRUCT FileBlockRequest {
+	file_index_t file_index;
+	file_block_index_t block_index;
+};
+
+struct PACKED_STRUCT ReceiveFileRequest {
+	file_index_t index;
+	file_size_t size;
+};
+
+struct PACKED_STRUCT ReceiveBlockRequest {
 	file_index_t file_index;
 	file_block_index_t block_index;
 };

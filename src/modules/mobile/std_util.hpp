@@ -24,11 +24,10 @@ inline TiePair<T1,T2>
 tie(T1 & x, T2 & y) { return TiePair<T1, T2>(x, y); }
 
 template <typename T>
-void
+inline void
 swap(T & a, T & b)
 {
 	T x = a;
 	a = b;
 	b = x;
 }
-
