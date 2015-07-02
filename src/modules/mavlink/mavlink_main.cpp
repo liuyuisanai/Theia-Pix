@@ -1394,7 +1394,7 @@ Mavlink::task_main(int argc, char *argv[])
 
 	/* add default streams depending on mode */
 
-	if (!_silent_mode) {
+	if (strstr(_device_name, "/dev/ttyACM") || !_silent_mode) {
 		/* HEARTBEAT is constant rate stream, rate never adjusted */
 		configure_stream("HEARTBEAT", 1.0f);
 
