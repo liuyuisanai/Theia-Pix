@@ -131,7 +131,8 @@ public:
 		MAVLINK_MODE_CUSTOM,
 		MAVLINK_MODE_ONBOARD,
 		MAVLINK_MODE_TARGET, // Special mode for airleash
-		MAVLINK_MODE_AIRDOG // Special mode for airdog
+		MAVLINK_MODE_AIRDOG, // Special mode for airdog
+		MAVLINK_MODE_PARAMETER // Special mode that uses parameters
 	};
 
 	void			set_mode(enum MAVLINK_MODE);
@@ -388,6 +389,8 @@ private:
 	unsigned			get_free_tx_buf();
 
 	static unsigned int interval_from_rate(float rate);
+
+	int param_configure_stream(const char *stream_name, const float rate, const char *param_name);
 
 	int configure_stream(const char *stream_name, const float rate);
 

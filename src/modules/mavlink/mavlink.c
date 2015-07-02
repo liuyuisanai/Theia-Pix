@@ -78,10 +78,12 @@ PARAM_DEFINE_INT32(MAV_FWDEXTSP, 1);
 
 /**
  * Indicates whether to use minimalistic stream configuration
- * If set to rcS will start mavlink with very few streams allowing
+ * If set to 1 rcS will start mavlink with very few streams allowing
  * more bandwidth for target messages
  * If set to 2, then default streams (like heartbeat and command)
  * will be disabled too allowing usage of combo-message
+ * If set to 3, then default streams will be disabled and rcS will
+ * start streams with parameter frequency
  * @group MAVLink
  */
 PARAM_DEFINE_INT32(MAV_MINIMALISTIC, 0);
@@ -92,6 +94,24 @@ PARAM_DEFINE_INT32(MAV_MINIMALISTIC, 0);
  * @group MAVLink
  */
 PARAM_DEFINE_INT32(MAV_ENABLE_LOG, 1);
+
+/**
+ * Stream frequency parameters used in MAV_MINIMALISTIC = 3
+ * If set to -1 default frequency is used
+ * If set to 0 the stream will be off
+ * If set to positive value it will be used as frequency
+ * @group MAVLink
+ */
+PARAM_DEFINE_FLOAT(MAV_FQ_HRT, -1.0f);
+PARAM_DEFINE_FLOAT(MAV_FQ_PARAMS, -1.0f);
+PARAM_DEFINE_FLOAT(MAV_FQ_COMMAND, -1.0f);
+PARAM_DEFINE_FLOAT(MAV_FQ_STATUS, 0.0f);
+PARAM_DEFINE_FLOAT(MAV_FQ_GPS_RAW, 0.0f);
+PARAM_DEFINE_FLOAT(MAV_FQ_GPOS, -1.0f);
+PARAM_DEFINE_FLOAT(MAV_FQ_COMBO, 0.0f);
+PARAM_DEFINE_FLOAT(MAV_FQ_TEXT, -1.0f);
+PARAM_DEFINE_FLOAT(MAV_FQ_ATTITUDE, 0.0f);
+PARAM_DEFINE_FLOAT(MAV_FQ_TRAJ, -1.0f);
 
 mavlink_system_t mavlink_system = {
 	100,

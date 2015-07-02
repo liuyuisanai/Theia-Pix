@@ -169,6 +169,14 @@ else
 		usleep 1000
 		mavlink stream -r 20 -d $MAVLINK_TTY -s HRT_GPOS_TRAJ_COMMAND
 	fi
+
+	if param compare AIRD_LEASH_MODE 5
+	then
+		#Parameter-controlled mavlink
+		param set MAV_MINIMALISTIC 3
+		trajectory_calculator start
+		mavlink start -d $MAVLINK_TTY -r 3000 -m parameter
+	fi
 fi
 
 #

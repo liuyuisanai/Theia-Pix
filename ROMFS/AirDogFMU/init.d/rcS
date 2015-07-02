@@ -346,8 +346,13 @@ then
 			then
 				set MAVLINK_MODE "-m custom"
 			else
-				# set MAVLINK_MODE "" produces new line on substitution.
-				unset MAVLINK_MODE
+				if param compare MAV_MINIMALISTIC 3
+				then
+					set MAVLINK_MODE "-m parameter"
+				else
+					# set MAVLINK_MODE "" produces new line on substitution.
+					unset MAVLINK_MODE
+				fi
 			fi
 		fi
 		echo mavlink start $MAVLINK_MODE -r 3000 -d $MAVLINK_TTY

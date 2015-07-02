@@ -863,10 +863,14 @@ void
 Mavlink::handle_message(const mavlink_message_t *msg)
 {
 	/* handle packet with mission manager */
-	_mission_manager->handle_message(msg);
+	if (_mission_manager != nullptr) {
+		_mission_manager->handle_message(msg);
+	}
 
 	/* handle packet with parameter component */
-	_parameters_manager->handle_message(msg);
+	if (_parameters_manager != nullptr) {
+		_parameters_manager->handle_message(msg);
+	}
 
 	if (get_forwarding_on()) {
 		/* forward any messages to other mavlink instances */
@@ -931,6 +935,23 @@ Mavlink::interval_from_rate(float rate)
 }
 
 int
+Mavlink::param_configure_stream(const char *stream_name, const float rate, const char *param_name)
+{
+	float param_value = -2.0f;
+	param_get(param_find(param_name), &param_value);
+	if (param_value < -1.0f) {
+		warnx("Error configuring stream %s with parameter %s\n", stream_name, param_name);
+		return ERROR;
+	}
+	if (param_value == -1.0f) {
+		return configure_stream(stream_name, rate);
+	}
+	else if (param_value > 0.0f){
+		return configure_stream(stream_name, param_value);
+	}
+}
+
+int
 Mavlink::configure_stream(const char *stream_name, const float rate)
 {
 	/* calculate interval in us, 0 means disabled stream */
@@ -947,8 +968,8 @@ Mavlink::configure_stream(const char *stream_name, const float rate)
 			} else {
 				/* delete stream */
 				LL_DELETE(_streams, stream);
-				delete stream;
 				warnx("deleted stream %s", stream->get_name());
+				delete stream;
 			}
 
 			return OK;
@@ -1249,6 +1270,9 @@ Mavlink::task_main(int argc, char *argv[])
 			else if (strcmp(optarg, "airdog") == 0) {
 				_mode = MAVLINK_MODE_AIRDOG;
 			}
+			else if (strcmp(optarg, "parameter") == 0) {
+				_mode = MAVLINK_MODE_PARAMETER;
+			}
 
 			break;
 
@@ -1316,6 +1340,10 @@ Mavlink::task_main(int argc, char *argv[])
 
 	case MAVLINK_MODE_AIRDOG:
 		warnx("mode: AIRDOG");
+		break;
+
+	case MAVLINK_MODE_PARAMETER:
+		warnx("mode: PARAMETER");
 		break;
 
 	default:
@@ -1394,7 +1422,7 @@ Mavlink::task_main(int argc, char *argv[])
 
 	/* add default streams depending on mode */
 
-	if (strstr(_device_name, "/dev/ttyACM") || !_silent_mode) {
+	if (strstr(_device_name, "/dev/ttyACM") || (!_silent_mode && _mode != MAVLINK_MODE_PARAMETER)) {
 		/* HEARTBEAT is constant rate stream, rate never adjusted */
 		configure_stream("HEARTBEAT", 1.0f);
 
@@ -1419,6 +1447,7 @@ Mavlink::task_main(int argc, char *argv[])
 		LL_APPEND(_streams, _mission_manager);
 	}
 
+	float param_value = -2.0f;
 	switch (_mode) {
 	// TODO! Consider limiting copter's topics
 	case MAVLINK_MODE_NORMAL:
@@ -1456,6 +1485,34 @@ Mavlink::task_main(int argc, char *argv[])
 
 	case MAVLINK_MODE_AIRDOG:
 		configure_stream("SYS_STATUS", 1.0f);
+		break;
+
+	// Special mode that uses parameters for stream frequency
+	case MAVLINK_MODE_PARAMETER:
+		param_configure_stream("HEARTBEAT", 1.0f, "MAV_FQ_HRT");
+		param_configure_stream("ATTITUDE", 1.0f, "MAV_FQ_ATTITUDE");
+		param_configure_stream("STATUSTEXT", 20.0f, "MAV_FQ_TEXT");
+		param_configure_stream("COMMAND_LONG", 100.0f, "MAV_FQ_COMMAND");
+		param_configure_stream("SYS_STATUS", 1.0f, "MAV_FQ_STATUS");
+		param_configure_stream("GLOBAL_POSITION_INT", 10.0f, "MAV_FQ_GPOS");
+		param_configure_stream("TRAJECTORY", 10.0f, "MAV_FQ_TRAJ");
+		param_configure_stream("GPS_RAW_INT", 1.0f, "MAV_FQ_GPS_RAW");
+		param_configure_stream("HRT_GPOS_TRAJ_COMMAND", 15.0f, "MAV_FQ_COMBO");
+
+		param_get(param_find("MAV_FQ_PARAMS"), &param_value);
+		if (param_value < -1.0f) {
+			warnx("Error configuring parameter stream! Got frequency: %9.6f\n", (double) param_value);
+		}
+		else if (param_value > 0.0f) {
+			_parameters_manager = (MavlinkParametersManager *) MavlinkParametersManager::new_instance(this);
+			_parameters_manager->set_interval(interval_from_rate(param_value));
+			LL_APPEND(_streams, _parameters_manager);
+		}
+		else if (param_value < 0.0f) {
+			_parameters_manager = (MavlinkParametersManager *) MavlinkParametersManager::new_instance(this);
+			_parameters_manager->set_interval(interval_from_rate(30.0f));
+			LL_APPEND(_streams, _parameters_manager);
+		}
 		break;
 
 	default:
