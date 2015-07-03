@@ -247,14 +247,14 @@ struct handle< MODE, EventKind::KEY_RELEASE, BUTTON, When<
 
 template <ModeId MODE>
 struct handle<MODE, EventKind::SHORT_KEYPRESS, BTN_MASK_TO_ME, When<
-    MODE == ModeId::FLIGHT_ALT or MODE == ModeId::FLIGHT_CAM or MODE == ModeId::FLIGHT_CAM
+    MODE == ModeId::FLIGHT or MODE == ModeId::FLIGHT_ALT or MODE == ModeId::FLIGHT_CAM
 > >
 {
 	static void
 	exec(App & app)
 	{
 		say("Send come to me");
-		app.drone_cmd.send_command(REMOTE_CMD_COME_TO_ME);
+		app.drone_cmd.send_come_to_me_command();
 	}
 };
 
