@@ -312,21 +312,22 @@ ADC::update_system_power(void)
 {
 #ifdef CONFIG_ARCH_BOARD_PX4FMU_V2
 # define ADC_SYSPOWER_VOLTAGE_CHANNEL	4
-# define ADC_SYSPOWER_VOLTAGE_SCALE	(6.6 / 4096)
+# define ADC_SYSPOWER_VOLTAGE_SCALE	(6.6 / 4096.0)
 #endif
 #if defined(ADC_SYSPOWER_VOLTAGE_CHANNEL)
+# define ADC_SYSPOWER_VOLTAGE_CONVERT(X) ((float)X * (float)6.0 / (float)4096.0)
 	system_power_s system_power;
 	system_power.timestamp = hrt_absolute_time();
 
 	system_power.voltage5V_v = 0;
-	for (unsigned i = 0; i < _channel_count; i++) {
-		if (_samples[i].am_channel == ADC_SYSPOWER_VOLTAGE_CHANNEL) {
-			system_power.voltage5V_v =
-				_samples[i].am_data * (float)ADC_SYSPOWER_VOLTAGE_SCALE;
-		}
-	}
+        for (unsigned i = 0; i < _channel_count; i++) {
+                if (_samples[i].am_channel == ADC_SYSPOWER_VOLTAGE_CHANNEL) {
+                        system_power.voltage5V_v =
+                                ADC_SYSPOWER_VOLTAGE_CONVERT(_samples[i].am_data);
+                }
+        }
 
-	// these are not ADC related, but it is convenient to
+        // these are not ADC related, but it is convenient to
 	// publish these to the same topic
 	system_power.usb_connected = stm32_gpioread(GPIO_OTGFS_VBUS);
 

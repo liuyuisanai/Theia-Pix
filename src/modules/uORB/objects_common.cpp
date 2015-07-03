@@ -88,6 +88,12 @@ ORB_DEFINE(satellite_info, struct satellite_info_s);
 #include "topics/home_position.h"
 ORB_DEFINE(home_position, struct home_position_s);
 
+#include "topics/kbd_handler.h"
+ORB_DEFINE(kbd_handler, struct kbd_handler_s);
+
+#include "topics/leash_display.h"
+ORB_DEFINE(leash_display, struct leash_display_s);
+
 #include "topics/leash_status.h"
 ORB_DEFINE(leash_status, struct leash_status_s);
 

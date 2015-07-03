@@ -1040,7 +1040,7 @@ CONFIG_NSH_ARCHINIT=y
 #
 # NxWidgets/NxWM
 #
-CONFIG_NXWIDGETS=y
+CONFIG_NXWIDGETS=n
 
 #
 # NX Server/Device Configuration

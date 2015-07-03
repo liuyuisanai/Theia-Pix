@@ -24,12 +24,12 @@ on_mode_timeout(App & app, ModeId mode_if_inactive)
 
 template <ModeId MODE>
 struct handle< MODE, EventKind::COPTER_CHANGED_STATE, BTN_NONE, When<
-	MODE == ModeId::INIT or MODE == ModeId::PREFLIGHT
+        MODE == ModeId::INIT or MODE == ModeId::PREFLIGHT
 > > {
 	static void
 	exec(App & app)
-	{
-		say("INIT or PREFLIGHT on_mode_timeout");
+        {
+                say("INIT or PREFLIGHT on_mode_timeout");
 		on_mode_timeout(app, ModeId::INIT);
 	}
 };

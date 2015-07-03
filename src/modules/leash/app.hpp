@@ -4,6 +4,9 @@
 #include "tones.hpp"
 #include "uorb_functions.hpp"
 
+#include <uORB/uORB.h>
+#include <uORB/topics/kbd_handler.h>
+
 struct PeriodicAction
 {
 	unsigned period;
@@ -56,7 +59,7 @@ struct Timeout
 		enabled = false;
 	}
 
-	bool
+        bool
 	expired(hrt_abstime now) const
 	{
 		return enabled and future <= now;
@@ -117,7 +120,8 @@ struct App
 		, transition_next_mode(ModeId::NONE)
 		, transition_requested(false)
 		, last_button(BTN_NONE)
-	{}
+        {
+        }
 
 	void
 	set_mode_transition(ModeId m)
@@ -169,7 +173,23 @@ struct App
 			handle_release();
 		}
 
-		last_button = btn;
+                static orb_advert_t to_kh = 0;
+                struct kbd_handler_s kh;
+
+                kh.currentMode = (int)mode;
+                kh.buttons = (int)btn;
+                kh.nextMode = 0;
+                kh.event = (int) EVENT;
+                if (to_kh > 0)
+                {
+                    orb_publish(ORB_ID(kbd_handler), to_kh, &kh);
+                }
+                else
+                {
+                    to_kh = orb_advertise(ORB_ID(kbd_handler), &kh);
+                }
+
+                last_button = btn;
 		kbd_handler::handle_event<EVENT>(*this, mode, btn);
 		tone.key_press();
 	}
