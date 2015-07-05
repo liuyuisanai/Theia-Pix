@@ -19,12 +19,14 @@ ssize_t
 write(FILE* f, const void * buf, ssize_t buf_size);
 
 #include "protocol.h"
+
 #include "base64decode.hpp"
 #include "base64encode.hpp"
 #include "file_fragments.hpp"
 #include "io.hpp"
 #include "io_tty.hpp"
 #include "read_write_log.hpp"
+#include "status.hpp"
 #include "unique_file.hpp"
 
 #ifdef FORCE_SERIAL_TERMIOS_RAW
@@ -202,7 +204,9 @@ void
 reply_status_overall(Device & d) {
 	set_blocking_mode(fileno(d));
 
-	StatusOverallReply buf {5, 10, 255};
+	static StatusOverall overall;
+
+	StatusOverallReply buf = reply(overall);
 	write(d, &buf, sizeof buf);
 }
 
