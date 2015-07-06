@@ -14,8 +14,6 @@
 #define ACK			0x06
 #define FF 			0x0B
 #define NAK			0x15
-#define CAN			0x18
-#define RecordSeparator		0x1e
 
 // command definition helper
 #define CMD_AB(c1, c2)          ( ((c2 & 0xff) << 8) | (c1 & 0xff) )
@@ -25,7 +23,6 @@ enum {
 	COMMAND_HANDSHAKE = CMD_AB('H', 'S'),
 	COMMAND_BYE = CMD_AB('Y', 'E'),
 	COMMAND_STATUS_OVERALL = CMD_AB('S', 'O'),
-	COMMAND_RECEIVE_PRESET = CMD_AB('R', 'P'),
 	COMMAND_FILE_INFO = CMD_AB('F', 'I'),
 	COMMAND_FILE_BLOCK = CMD_AB('F', 'B'),
 	COMMAND_RECEIVE_FILE = CMD_AB('v', 'f'),
@@ -65,15 +62,6 @@ struct PACKED_STRUCT StatusOverallReply {
 	uint8_t gps_error_vertical;
 	uint8_t battery_level;
 };
-
-typedef uint8_t preset_id_t;
-typedef uint8_t parameter_id_t;
-struct PACKED_STRUCT PresetParameter {
-	preset_id_t preset_id;
-	parameter_id_t parameter_id;
-	char value[12];
-};
-
 
 typedef uint8_t file_index_t;
 typedef uint32_t file_size_t;

@@ -206,47 +206,6 @@ reply_status_overall(Device & d) {
 	write(d, &buf, sizeof buf);
 }
 
-template <typename Device>
-void
-receive_presets(Device & d) {
-	set_blocking_mode(fileno(d));
-
-	fprintf(stderr, "Starting receiving presets' parameters.\n"); fflush(stderr);
-	do {
-		char ch = 0;
-		read(d, &ch, 1);
-		if (ch == RecordSeparator) {
-			PresetParameter p;
-			memset(&p, 0, sizeof p);
-			ssize_t s = read_guaranteed(d, &p, sizeof p);
-			fprintf(stderr, "read -> %d\n", (int)s); fflush(stderr);
-			printf("Preset %u parameter %u: ",
-					(unsigned)p.preset_id,
-					(unsigned)p.parameter_id);
-			write_repr(stdout, p.value, sizeof p.value);
-			printf("\n");
-			write_char(d, ACK);
-		}
-		else if (ch == EOT) {
-			fprintf(stderr, "Presets' parameters should be applied.\n"); fflush(stderr);
-			write_char(d, ACK);
-			break;
-		}
-		else if (ch == CAN) {
-			fprintf(stderr, "Presets' parameters setting cancelled.\n"); fflush(stderr);
-			write_char(d, ACK);
-			break;
-		}
-		else {
-			fprintf(stderr, "Presets' parameters protocol error.\n"); fflush(stderr);
-			write_char(d, ACK);
-			break;
-		}
-	} while (true);
-
-	fprintf(stderr, "Stopped receiving presets' parameters.\n"); fflush(stderr);
-}
-
 struct FileRequestHandler
 {
 	static unique_file
@@ -360,7 +319,7 @@ struct ReceiveFileHandle
 	ReceiveFileRequest request;
 	bool request_active;
 
-	ReceiveFileHandle() {}
+	ReceiveFileHandle() : request_active(false) {}
 
 	template <typename Device>
 	bool
@@ -506,10 +465,6 @@ process_one_command(
 	case COMMAND_STATUS_OVERALL:
 		reply_ack_command(f, cmd);
 		reply_status_overall(f);
-		break;
-	case COMMAND_RECEIVE_PRESET:
-		reply_ack_command(f, cmd);
-		receive_presets(f);
 		break;
 	case COMMAND_FILE_BLOCK:
 	case COMMAND_FILE_INFO:
