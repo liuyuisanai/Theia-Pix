@@ -165,7 +165,6 @@ struct ReadDecodeWrite {
     {
 	read_buffer.reset();
 	do {
-		poll_read(sd);
 		ssize_t s = read(sd, read_buffer);
 		if (s < 0 and errno != EAGAIN)
 		{
@@ -247,7 +246,6 @@ struct ReadVerifyDecodeWrite {
     {
         read_buffer.reset();
         do {
-            poll_read(sd);
             ssize_t s = read(sd, read_buffer);
             if (s < 0 and errno != EAGAIN)
             {

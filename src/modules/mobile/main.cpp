@@ -22,8 +22,8 @@ write(FILE* f, const void * buf, ssize_t buf_size);
 
 #include "base64decode.hpp"
 #include "base64encode.hpp"
+#include "blocking_io.hpp"
 #include "file_fragments.hpp"
-#include "io.hpp"
 #include "io_tty.hpp"
 #include "read_write_log.hpp"
 #include "status.hpp"
@@ -78,59 +78,29 @@ write(FILE* f, const void * buf, ssize_t buf_size) {
 	return r;
 }
 
-template <typename Device>
-void
-poll_read(Device & dev) {
-	struct pollfd p;
-	p.fd = fileno(dev);
-	p.events = POLLIN;
-	p.revents = 0;
-	while (poll(&p, 1, 10000) != 1) {}
-}
-
-template <typename Device>
+template <typename Device, int TIMEOUT_MS>
 ssize_t
-read_guaranteed(Device & d, void * buf, size_t buf_size) {
-	char * b = static_cast<char *>(buf);
-	size_t n = 0;
-	do {
-		fprintf(stderr, "read() %d of %d.\n", n, buf_size); fflush(stderr);
-		ssize_t s = read(d, b + n, buf_size - n);
-		if (s >= 0) { n += s; }
-		else
-		{
-			if (errno != EAGAIN) { return s; }
-			poll_read(d);
-		}
-	} while (n < buf_size);
-	fprintf(stderr, "read() %d of %d.\n", n, buf_size); fflush(stderr);
+read_guaranteed(BlockingDevice<Device, TIMEOUT_MS> & d, void * buf, size_t buf_size)
+{
+	ssize_t r = read(d, buf, buf_size);
+	fprintf(stderr, "read(%u) -> %i.\n", (unsigned)buf_size, (int)r); fflush(stderr);
 	return buf_size;
 }
 
 template <typename Device>
 bool
-read_char_guaranteed(Device & d, char & ch) {
-	set_nonblocking_mode(fileno(d));
-	ssize_t s;
-	do {
-		poll_read(d);
-		s = read(d, &ch, 1);
-	} while (s == -1 and errno == EAGAIN);
-	return s == 1;
-}
+read_char_guaranteed(Device & d, char & ch)
+{ return read_guaranteed(d, &ch, 1); }
 
 template <typename Device>
 void
 wait_enq(Device & d) {
 	fprintf(stderr, "Waiting ENQ.\n"); fflush(stderr);
-	set_nonblocking_mode(fileno(d));
-	poll_read(d);
 	char ch = 0;
 	ssize_t s = read(d, &ch, 1);
 	while (ch != ENQ)
 	{
 		if (s > 0) { fprintf(stderr, "Discarded char %02x\n", (int)ch); fflush(stderr); }
-		else { poll_read(d); }
 		ch = 0;
 		s = read(d, &ch, 1);
 	}
@@ -152,15 +122,12 @@ read_command(Device & f) {
 template <typename Device>
 void
 write_char(Device & d, char ch) {
-	set_blocking_mode(fileno(d));
 	write(d, &ch, 1);
 }
 
 template <typename Device>
 void
 reply_command_result(Device & d, const command_id_t cmd, bool r) {
-	set_blocking_mode(fileno(d));
-
 	const char ch = r ? ACK : NAK;
 	write(d, &ch, 1);
 	write(d, &cmd, sizeof cmd);
@@ -169,8 +136,6 @@ reply_command_result(Device & d, const command_id_t cmd, bool r) {
 template <typename Device>
 void
 reply_ack_command(Device & d, const command_id_t cmd) {
-	set_blocking_mode(fileno(d));
-
 	const char ch = ACK;
 	write(d, &ch, 1);
 	write(d, &cmd, sizeof cmd);
@@ -179,8 +144,6 @@ reply_ack_command(Device & d, const command_id_t cmd) {
 template <typename Device>
 void
 reply_nak_command(Device & d, const command_id_t cmd) {
-	set_blocking_mode(fileno(d));
-
 	const char ch = NAK;
 	write(d, &ch, 1);
 	write(d, &cmd, sizeof cmd);
@@ -189,8 +152,6 @@ reply_nak_command(Device & d, const command_id_t cmd) {
 template <typename Device>
 void
 reply_handshake(Device & d) {
-	set_blocking_mode(fileno(d));
-
 	HandshakeReply buf {
 		PROTOCOL_VERSION_0,
 		DEVICE_KIND_COPTER,
@@ -202,8 +163,6 @@ reply_handshake(Device & d) {
 template <typename Device>
 void
 reply_status_overall(Device & d) {
-	set_blocking_mode(fileno(d));
-
 	static StatusOverall overall;
 
 	StatusOverallReply buf = reply(overall);
@@ -499,7 +458,8 @@ daemon(int argc, char *argv[])
 
 	//unique_file d = open_serial_default(argv[1]);
 	unique_file d = open_serial_default(MOBILE_BT_TTY);
-	DevLog f (d.get(), 2, "read  ", "write ");
+	DevLog log (d.get(), 2, "read  ", "write ");
+	auto f = make_it_blocking< 1000 >(log);
 
 	daemon_running = true;
 	fprintf(stderr, "%s has started.\n", argv[0]);
