@@ -174,6 +174,7 @@ PARAM_DEFINE_INT32(SDLOG_M_BAT, 0);
 PARAM_DEFINE_INT32(SDLOG_M_BT_S_IN, 0);
 PARAM_DEFINE_INT32(SDLOG_M_BT_S_OUT, 0);
 PARAM_DEFINE_INT32(SDLOG_M_BT_EVTS, 0);
+PARAM_DEFINE_INT32(SDLOG_M_BT_LINK, 0);
 //PARAM_DEFINE_INT32(SDLOG_M_BT_ST, 5);
 PARAM_DEFINE_INT32(SDLOG_M_DEBUGD, 0);
 PARAM_DEFINE_INT32(SDLOG_M_ESC, 0);
@@ -1257,6 +1258,7 @@ int sdlog2_thread_main(int argc, char *argv[])
         struct bt_svc_in_s bt_svc_in;
         struct bt_svc_out_s bt_svc_out;
         struct bt_evt_status_s bt_evt_status;
+        struct bt_link_status_s bt_link_status;
         //struct bt_channels_s bt_channels;
 	} buf;
 
@@ -1315,6 +1317,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 			struct log_BTEV_s log_BTEV;
 			struct log_BTSI_s log_BTSI;
 			struct log_BTSO_s log_BTSO;
+			struct log_BTLK_s log_BTLK;
 		} body;
 	} log_msg = {
 		LOG_PACKET_HEADER_INIT(0)
@@ -1364,6 +1367,7 @@ int sdlog2_thread_main(int argc, char *argv[])
         int bt_svc_in_sub;
         int bt_svc_out_sub;
         int bt_evt_status_sub;
+        int bt_link_status_sub;
         //int bt_channels_sub;
 	} subs;
 
@@ -1418,6 +1422,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 	LOG_ORB_PARAM_SUBSCRIBE(subs.bt_svc_in_sub, ORB_ID(bt_svc_in), "SDLOG_M_BT_S_IN", sub_freq)
 	LOG_ORB_PARAM_SUBSCRIBE(subs.bt_svc_out_sub, ORB_ID(bt_svc_out), "SDLOG_M_BT_S_OUT", sub_freq)
 	LOG_ORB_PARAM_SUBSCRIBE(subs.bt_evt_status_sub, ORB_ID(bt_evt_status), "SDLOG_M_BT_EVTS", sub_freq)
+	LOG_ORB_PARAM_SUBSCRIBE(subs.bt_link_status_sub, ORB_ID(bt_link_status), "SDLOG_M_BT_LINK", sub_freq)
 	//LOG_ORB_PARAM_SUBSCRIBE(subs.bt_channels_sub, ORB_ID(bt_channels), "SDLOG_M_BT_CH", sub_freq)
 
 	thread_running = true;
@@ -2149,6 +2154,12 @@ int sdlog2_thread_main(int argc, char *argv[])
 			log_msg.msg_type = LOG_BTEV_MSG;
 			log_msg.body.log_BTEV = buf.bt_evt_status;
 			LOGBUFFER_WRITE_AND_COUNT(BTEV);
+		}
+
+		if (copy_if_updated(ORB_ID(bt_link_status), subs.bt_link_status_sub, &buf.bt_link_status)) {
+			log_msg.msg_type = LOG_BTLK_MSG;
+			log_msg.body.log_BTLK = buf.bt_link_status;
+			LOGBUFFER_WRITE_AND_COUNT(BTLK);
 		}
 
 		/* signal the other thread new data, but not yet unlock */

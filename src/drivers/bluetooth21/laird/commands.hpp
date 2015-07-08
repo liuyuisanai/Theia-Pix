@@ -337,6 +337,25 @@ drop_trusted_db(ServiceIO & io)
 	return ok;
 }
 
+template <typename ServiceIO>
+bool
+request_rssi_linkquality(ServiceIO & io, const Address6 & addr, int8_t & rssi, uint8_t & link_quality)
+{
+	RESPONSE_RSSI_LINKQUAL rsp;
+	auto cmd = prefill_packet<COMMAND_RSSI_LINKQUAL, CMD_RSSI_LINKQUAL>();
+	copy(cbegin(addr), cend(addr), cmd.bdAddr);
+	bool ok = send_receive_verbose(io, cmd, rsp)
+		and get_response_status(rsp) == MPSTATUS_OK;
+	dbg("-> command RSSI_linkqual(" Address6_FMT ") %s.\n"
+		, Address6_FMT_ITEMS(addr)
+		, ok ? "ok" : "failed");
+	if (ok) {
+		rssi = reinterpret_cast<int8_t&> (rsp.rssi);
+		link_quality = rsp.link_quality;
+	}
+	return ok;
+}
+
 }
 // end of namespace Laird
 }

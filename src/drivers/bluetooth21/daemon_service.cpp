@@ -18,6 +18,7 @@
 #include "svc_globals.hpp"
 #include "io_tty.hpp"
 #include "laird/configure.hpp"
+#include "laird/commands.hpp"
 #include "laird/service_io.hpp"
 #include "laird/service_state.hpp"
 #include "unique_file.hpp"
@@ -244,6 +245,9 @@ synced_loop(MultiPlexer & mp, ServiceIO & service_io, ServiceState & svc)
 	using namespace Laird;
 
 	auto & dev = service_io.dev;
+	int8_t rssi = -128;
+	uint8_t link_quality = 0;
+
 	while (should_run and not module_rebooted(svc.sync))
 	{
 
@@ -317,6 +321,17 @@ synced_loop(MultiPlexer & mp, ServiceIO & service_io, ServiceState & svc)
 			) {
 				request_connect(dev, svc.conn, connect_address);
 				dbg("Request connect.\n");
+			}
+		}
+		else
+		{
+			if (connect_mode == ConnectMode::ONE_CONNECT)
+			{
+				dbg("Requesting RSSI and link quality.\n");
+				if (request_rssi_linkquality(service_io, connect_address, rssi, link_quality)) {
+					dbg("Link RSSI is %i, quality is %u.\n", rssi, link_quality);
+					log_link_quality(svc.sdlog, link_quality, rssi);
+				}
 			}
 		}
 

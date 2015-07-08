@@ -19,11 +19,13 @@ struct SDLog
 	bt_svc_in_s svc_in;
 	bt_svc_out_s svc_out;
 	bt_evt_status_s evt_status;
+	bt_link_status_s link_status;
 	//SyncState::Level sync_level;
 
 	orb_advert_t adv_svc_in;
 	orb_advert_t adv_svc_out;
 	orb_advert_t adv_evt_status;
+	orb_advert_t adv_link_status;
 
 	ServiceState & svc;
 
@@ -34,10 +36,13 @@ struct SDLog
 		memset(&svc_in, 0, sizeof svc_in);
 		memset(&svc_out, 0, sizeof svc_out);
 		memset(&evt_status, 0, sizeof evt_status);
+		link_status.link_quality = 0;
+		link_status.rssi = -128;
 
 		adv_svc_in = orb_advertise(ORB_ID(bt_svc_in), &svc_in);
 		adv_svc_out = orb_advertise(ORB_ID(bt_svc_out), &svc_out);
 		adv_evt_status = orb_advertise(ORB_ID(bt_evt_status), &evt_status);
+		adv_link_status = orb_advertise(ORB_ID(bt_link_status), &link_status);
 	}
 };
 
@@ -53,6 +58,10 @@ inline void
 publish(const SDLog & self, const bt_evt_status_s & s)
 { orb_publish(ORB_ID(bt_evt_status), self.adv_evt_status, &s); }
 
+inline void
+publish(const SDLog & self, const bt_link_status_s & s)
+{ orb_publish(ORB_ID(bt_link_status), self.adv_link_status, &s); }
+
 template <typename SvcState>
 // Template is a hack to make it compile.
 void
@@ -63,6 +72,15 @@ log_service_status(SDLog & self, SvcState & svc)
 		self.evt_status.channels_connected = svc.conn.channels_connected.value;
 		publish(self, self.evt_status);
 	}
+}
+
+inline void
+log_link_quality(SDLog & self, uint8_t link_quality, int8_t rssi)
+{
+	bt_link_status_s s;
+	s.link_quality = link_quality;
+	s.rssi = rssi;
+	publish(self, s);
 }
 
 inline void

@@ -30,6 +30,13 @@ struct bt_evt_status_s {
 
 ORB_DECLARE(bt_evt_status);
 
+struct bt_link_status_s {
+	uint8_t link_quality;
+	int8_t rssi;
+};
+
+ORB_DECLARE(bt_link_status);
+
 //struct bt_channels_s {
 //	uint32_t bytes_sent[7];
 //	uint32_t bytes_received[7];

@@ -526,7 +526,10 @@ struct log_TGPS_s {
 #define LOG_BTEV_MSG 76
 #define log_BTEV_s bt_evt_status_s
 
-//#define LOG_BTCH_MSG 77
+#define LOG_BTLK_MSG 77
+#define log_BTLK_s bt_link_status_s
+
+//#define LOG_BTCH_MSG 78
 //struct log_BTCH_s {
 //	uint32_t bytes_sent[7];
 //	uint32_t bytes_received[7];
@@ -609,6 +612,7 @@ static const struct log_format_s log_formats[] = {
 	LOG_FORMAT(BTSI, "BBBBBB", "length,channel,cmd_evt_id,flow,cmd_status,processed"),
 	LOG_FORMAT(BTSO, "BB", "cmd,ok"),
 	LOG_FORMAT(BTEV, "BBBBB", "status,discoverable,connectable,security,channels"),
+	LOG_FORMAT(BTLK, "Bb", "LinkQuality,RSSI"),
 	//LOG_FORMAT(BTCH, "IIIIIIIIIIIIII", "xT1,xT2,xT3,xT4,xT5,xT6,xT7,Rx1,Rx2,Rx3,Rx4,Rx5,Rx6,Rx7"),
 
 	/* system-level messages, ID >= 0x80 */
