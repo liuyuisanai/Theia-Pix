@@ -1,6 +1,7 @@
 #pragma once
 
 #include <uORB/topics/vehicle_command.h>
+#include <sys/ioctl.h>
 
 #include "../../debug.hpp"
 #include "../../kbd_defines.hpp"
@@ -8,6 +9,30 @@
 
 namespace kbd_handler
 {
+
+#define _BLUETOOTH21_BASE		0x2d00
+
+#define PAIRING_ON			_IOC(_BLUETOOTH21_BASE, 0)
+#define PAIRING_OFF			_IOC(_BLUETOOTH21_BASE, 1)
+#define PAIRING_TOGGLE		_IOC(_BLUETOOTH21_BASE, 2)
+
+template <ModeId MODE>
+struct handle<MODE, EventKind::LONG_KEYPRESS, BTN_MASK_FUTURE, When<
+	MODE == ModeId::PREFLIGHT> > 
+{
+	static void
+	exec(App & app)
+	{
+		say("FUTURE BUTTON: PAIRING ON");
+
+        int fd = open("/dev/btctl", 0);
+        if (fd > 0) {
+            ioctl(fd, PAIRING_ON, 0);
+        }
+        
+		app.drone_cmd.send_rtl_command(app.drone_status);
+	}
+};
 
 /*
  * PLAY button.

@@ -457,15 +457,16 @@ then
 		fi
 	fi
 
-	# if MAVLINK_TTY not set and TELEM_TTY is set.
-	# if [ x$MAVLINK_TTY = x -a x$TELEM_TTY != x ]
-	# then
-	# 	echo bluetooth21 start $TELEM_TTY factory-param
-	# 	if bluetooth21 start $TELEM_TTY factory-param
-	# 	then
-	# 		set MAVLINK_TTY /dev/bt1
-	# 	fi
-	# fi
+
+	if MAVLINK_TTY not set and TELEM_TTY is set.
+	if [ x$MAVLINK_TTY = x -a x$TELEM_TTY != x ]
+	then
+		# echo bluetooth21 start $TELEM_TTY listen
+		if bluetooth21 start $TELEM_TTY listen
+		then
+			set $MAVLINK_TTY /dev/bt1
+		fi
+	fi
 
 	#
 	# MAVLink
@@ -485,6 +486,7 @@ then
 		echo mavlink start $MAVLINK_MODE -r 1000 -d $MAVLINK_TTY
 		mavlink start $MAVLINK_MODE -r 1000 -d $MAVLINK_TTY
 	fi
+
 
 	#
 	# UAVCAN
@@ -644,6 +646,8 @@ then
 		echo "[init] Exit from nsh"
 		exit
 	fi
+
+
 
 # End of autostart
 fi

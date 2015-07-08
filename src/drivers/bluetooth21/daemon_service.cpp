@@ -1,5 +1,6 @@
 #include <nuttx/config.h>
 #include <pthread.h>
+#include <sys/ioctl.h>
 
 #include <cstdio>
 #include <unistd.h>
@@ -12,6 +13,7 @@
 #include "factory_addresses.hpp"
 #include "io_multiplexer_flags.hpp"
 #include "io_multiplexer_global.hpp"
+#include "svc_globals.hpp"
 #include "io_tty.hpp"
 #include "laird/configure.hpp"
 #include "laird/service_io.hpp"
@@ -70,7 +72,7 @@ static bool
 pairing_req = false;
 
 bool
-pairing_done = false;
+pairing_done_this_cycle = false;
 
 static bool
 paired = false;
@@ -81,13 +83,15 @@ thread;
 static pthread_attr_t
 thread_attr;
 
+#define _BLUETOOTH21_BASE		0x2d00
+
+#define PAIRING_ON			_IOC(_BLUETOOTH21_BASE, 0)
+#define PAIRING_OFF			_IOC(_BLUETOOTH21_BASE, 1)
+#define PAIRING_TOGGLE		_IOC(_BLUETOOTH21_BASE, 2)
+
 bool
 check_pairing_enabled(){
-
-    if (hrt_absolute_time() > button_on_t && hrt_absolute_time() < button_off_t)
-        return true;
-
-    return false;
+    return Globals::Service::get_pairing_status();
 }
 
 
@@ -141,7 +145,8 @@ pairing_loop(ServiceIO & service_io, ServiceState & svc){
         while (svc.pairing.pairing_active){
 
             paired = pair(service_io);
-            svc.pairing.pairing_active = check_pairing_enabled();
+            // svc.pairing.pairing_active = check_pairing_enabled();
+            svc.pairing.pairing_active = Globals::Service::get_pairing_status();
         }
 
         switch_discoverable(service_io, false);
@@ -190,10 +195,10 @@ pairing_loop(ServiceIO & service_io, ServiceState & svc){
             // TODO: Fail sounds and actions
         
         }
-    }
 
-    trusted_db_record_count_get(service_io,0);
-    trusted_db_record_count_get(service_io,1);
+        Globals::Service::turn_pairing_off();
+
+    }
 
 }
 
@@ -206,32 +211,32 @@ synced_loop(MultiPlexer & mp, ServiceIO & service_io, ServiceState & svc)
 	auto & dev = service_io.dev;
 	while (should_run and not module_rebooted(svc.sync))
 	{
-        
+
 		wait_process_event(service_io);
 		set_xt_ready_mask(mp, svc.flow.xt_mask);
 
         if (pairing_req) {
+        // Check every 1 scond if pairing is enabled
 
-            // Check if pairing is enabled every 1 second
             if (hrt_elapsed_time(&last_pairing_check) > 1000000){
 
                 last_pairing_check = hrt_absolute_time();
 
                 if (check_pairing_enabled()) {
-                    if (!pairing_done) {
+                    if (!pairing_done_this_cycle) {
 
                         dbg("Pairing activated\n");
 
                         pairing_loop(service_io, svc);
 
-                        pairing_done = true;
+                        pairing_done_this_cycle = true;
 
                         dbg("Pairing done\n");
 
                     }
                 } else {
 
-                    pairing_done = false;
+                    pairing_done_this_cycle = false;
 
                 }
             }
@@ -303,10 +308,12 @@ daemon()
 
 	fprintf(stderr, "%s starting ...\n", PROCESS_NAME);
 
-	unique_file raw_dev = tty_open("/dev/btcmd");// TODO name #define/constexpr
+	unique_file raw_dev = tty_open("/dev/btservice");// TODO name #define/constexpr
 	auto trace = make_trace_handle<SERVICE_TRACE>(
 		SERVICE_TRACE_FILE, raw_dev, "bt21_io  ", "bt21_svc "
 	);
+
+    Globals::Service::turn_pairing_off();
 
 	auto & mp = Globals::Multiplexer::get();
 	ServiceState svc;
@@ -314,7 +321,6 @@ daemon()
 	should_run = (daemon_mode != Mode::UNDEFINED
 		and fileno(raw_dev) > -1
 		and sync_soft_reset(service_io, svc.sync)
-		//and configure_factory(service_io)
 		and configure_before_reboot(service_io)
 		and sync_soft_reset(service_io, svc.sync)
 		and configure_after_reboot(service_io)
@@ -322,7 +328,6 @@ daemon()
 	);
 
     if (should_run && !pairing_req) {
-
 		should_run = configure_factory(service_io)
             and switch_discoverable(service_io, true);
     }
@@ -343,10 +348,8 @@ daemon()
     
         // Get connect address form trust_db if we paired before.
         if (trusted_db_record_count_get(service_io, 1) > 0) {
-
             connect_address = get_trusted_address(service_io, 1, 1);
             valid_connect_address = true;
-
         }
     
     } else {

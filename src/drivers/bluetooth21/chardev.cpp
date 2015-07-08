@@ -1,6 +1,8 @@
 #include <nuttx/config.h>
 #include <nuttx/fs/fs.h>
 
+#include <sys/ioctl.h>
+
 #ifdef CONFIG_DISABLE_POLL
 # error Poll operation required.
 #endif
@@ -14,9 +16,17 @@
 #include "debug.hpp"
 #include "device_connection_map.hpp"
 #include "io_multiplexer.hpp"
+#include "svc_globals.hpp"
 #include "io_multiplexer_flags.hpp"
 #include "io_multiplexer_global.hpp"
 #include "io_multiplexer_rw.hpp"
+
+
+#define _BLUETOOTH21_BASE		0x2d00
+
+#define PAIRING_ON			_IOC(_BLUETOOTH21_BASE, 0)
+#define PAIRING_OFF			_IOC(_BLUETOOTH21_BASE, 1)
+#define PAIRING_TOGGLE		_IOC(_BLUETOOTH21_BASE, 2)
 
 /*
  * Bluetooth character devices implementation uses struct file .priv
@@ -29,6 +39,7 @@ namespace CharacterDevices
 {
 namespace ForeignAddressSpace
 {
+
 
 constexpr void *
 dev_index_to_priv(device_index_t di) { return (void *)(uintptr_t)di; }
@@ -48,6 +59,7 @@ get_multiplexer(FAR struct file * filp) { return Globals::Multiplexer::get(); }
 static int
 open(FAR struct file * filp)
 {
+
 	const channel_index_t di = priv_to_dev_index(filp);
 	if (di == INVALID_DEV_INDEX) { return -ENXIO; }
 
@@ -189,6 +201,39 @@ poll(FAR struct file * filp, FAR struct pollfd * p_fd, bool setup_phase)
 	return r;
 }
 
+static int     
+ioctl(FAR struct file *filp, int cmd, unsigned long arg){
+
+    dbg("IOCTL");
+
+    int r = 0;
+
+	switch (cmd) {
+	case PAIRING_ON:
+
+        dbg("PAIRING TURNED ON");
+        Globals::Service::turn_pairing_on();
+
+		break;
+
+	case PAIRING_OFF:
+
+        dbg("PAIRING TURNED OFF");
+        Globals::Service::turn_pairing_off();
+
+		break;
+
+	case PAIRING_TOGGLE:
+
+        dbg("PAIRING TOGGLED");
+        Globals::Service::toggle_pairing();
+		break;
+    
+    }
+
+    return r;
+}
+
 }
 // end of namespace ForeignAddressSpace
 
@@ -203,10 +248,26 @@ static const struct file_operations g_fileops =
 	.poll  = ForeignAddressSpace::poll,
 };
 
+
+static const struct file_operations g_fileops_ctl =
+{
+	.open  = 0,
+	.close = 0,
+	.read  = 0,
+	.write = 0,
+	.seek  = 0,
+	.ioctl = ForeignAddressSpace::ioctl,
+	.poll  = 0,
+};
+
+
+
 static const char * const devname[8] = {
-	"/dev/btcmd", "/dev/bt1", "/dev/bt2", "/dev/bt3",
+	"/dev/btservice", "/dev/bt1", "/dev/bt2", "/dev/bt3",
 	"/dev/bt4", "/dev/bt5", "/dev/bt6", "/dev/bt7"
 };
+
+static const char * const devname_ctl = "/dev/btctl";
 
 bool
 register_all_devices()
@@ -232,6 +293,15 @@ register_all_devices()
 		errno = -err;
 		perror("register_all_devices");
 	}
+
+    if (err == 0)
+        err = register_driver(
+            devname_ctl,
+            &g_fileops_ctl,
+            0666,
+            dev_index_to_priv(di)
+        );
+
 	return err == 0;;
 }
 
@@ -241,6 +311,7 @@ unregister_all_devices()
 	for (device_index_t di = 0; di <= 7; ++di)
 		unregister_driver(devname[di]);
 }
+
 
 }
 // end of namespace CharacterDevices

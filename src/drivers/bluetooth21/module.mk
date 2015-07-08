@@ -49,6 +49,7 @@ SRCS = main.cpp \
 	device_connection_map.cpp \
 	factory_addresses.cpp \
 	io_multiplexer_global.cpp \
+	svc_globals.cpp \
 	laird/module_params.c \
 	module_params.c \
 	mutex.cpp \
