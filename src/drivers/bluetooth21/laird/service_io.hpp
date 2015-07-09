@@ -24,7 +24,7 @@ namespace Laird
  * FIXME should we set MAX_COMMAND_DURATION low and reset the module
  * 	 on timeout?
  */
-constexpr auto MAX_COMMAND_DURATION = Time::duration_sec(3);
+constexpr auto MAX_COMMAND_DURATION = Time::duration_sec(6);
 
 constexpr int READ_WAIT_POLL_ms = 1000;
 constexpr int WRITE_SINGLE_POLL_ms = 1000;

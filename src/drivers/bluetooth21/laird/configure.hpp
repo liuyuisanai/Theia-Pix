@@ -98,7 +98,7 @@ configure_before_reboot(ServiceIO & io)
 		 */
 		{ 11, reg11 }, // RFCOMM frame size, bytes
 		{ 14, 1 },     // Auto-accept connections
-		{ 34, 1 },     // Number of incoming connections
+		{ 34, 2 },     // Number of incoming connections
 		{ 35, 1 },     // Number of outgoing connections
         //{ 47, 0 },      // Link key is sent during pairing(EVT_LINK_KEY_EX is sent insteady of EVT_LINK_KEY): Yes 
 		{ 80, reg80 }, // UART latency time in microseconds.
@@ -124,7 +124,6 @@ bool
 configure_after_reboot(ServiceIO & io)
 {
 	bool ok = ( configure_name(io)
-		// and switch_discoverable(io, true)
 		and switch_connectable(io, true)
 	);
 	dbg("configure_after_reboot %i.\n", ok);

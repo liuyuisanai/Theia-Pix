@@ -49,15 +49,25 @@ running = false;
 static volatile bool
 started = false;
 
-enum class Mode : uint8_t
+enum class ConnectMode : uint8_t
 {
 	UNDEFINED,
 	LISTEN,
 	ONE_CONNECT,
 };
 
-static volatile Mode
-daemon_mode = Mode::UNDEFINED;
+enum class ServiceMode : uint8_t
+{
+	UNDEFINED,
+	FACTORY,
+	USER,
+};
+
+static volatile ConnectMode
+connect_mode = ConnectMode::UNDEFINED;
+
+static volatile ServiceMode
+service_mode = ServiceMode::UNDEFINED;
 
 bool 
 valid_connect_address = false;
@@ -67,9 +77,6 @@ connect_address;
 
 static Address6
 pairing_address;
-
-static bool
-pairing_req = false;
 
 bool
 pairing_done_this_cycle = false;
@@ -136,7 +143,7 @@ pairing_loop(ServiceIO & service_io, ServiceState & svc){
 
     svc.pairing.pairing_active = true;
 
-    if (daemon_mode == Mode::LISTEN) {
+    if (connect_mode == ConnectMode::LISTEN) {
 
         switch_discoverable(service_io, true);
 
@@ -145,13 +152,12 @@ pairing_loop(ServiceIO & service_io, ServiceState & svc){
         while (svc.pairing.pairing_active){
 
             paired = pair(service_io);
-            // svc.pairing.pairing_active = check_pairing_enabled();
-            svc.pairing.pairing_active = Globals::Service::get_pairing_status();
+            svc.pairing.pairing_active = check_pairing_enabled();
         }
 
         switch_discoverable(service_io, false);
 
-    } else if  (daemon_mode == Mode::ONE_CONNECT) {
+    } else if  (connect_mode == ConnectMode::ONE_CONNECT) {
 
         bool pairing_device_found = false;
 
@@ -196,7 +202,7 @@ pairing_loop(ServiceIO & service_io, ServiceState & svc){
         
         }
 
-        Globals::Service::turn_pairing_off();
+//        Globals::Service::turn_pairing_off();
 
     }
 
@@ -215,7 +221,8 @@ synced_loop(MultiPlexer & mp, ServiceIO & service_io, ServiceState & svc)
 		wait_process_event(service_io);
 		set_xt_ready_mask(mp, svc.flow.xt_mask);
 
-        if (pairing_req) {
+        if (service_mode == ServiceMode::USER) {
+        // In user mode we can do pairing
         // Check every 1 scond if pairing is enabled
 
             if (hrt_elapsed_time(&last_pairing_check) > 1000000){
@@ -253,9 +260,10 @@ synced_loop(MultiPlexer & mp, ServiceIO & service_io, ServiceState & svc)
 			, no_single_connection(svc.conn)
 			, count_connections(svc.conn)
 		);
+
 		if (no_single_connection(svc.conn))
 		{
-			if (daemon_mode == Mode::ONE_CONNECT
+			if (connect_mode == ConnectMode::ONE_CONNECT
 			and allowed_connection_request(svc.conn)
             and valid_connect_address
 			) {
@@ -263,14 +271,10 @@ synced_loop(MultiPlexer & mp, ServiceIO & service_io, ServiceState & svc)
 				dbg("Request connect.\n");
 			}
 		}
-		else { /* TODO request rssi */ }
 
 		fsync(service_io.dev);
 	}
 }
-
-
-
 
 template <typename ServiceIO, typename ServiceState>
 static void
@@ -318,7 +322,8 @@ daemon()
 	auto & mp = Globals::Multiplexer::get();
 	ServiceState svc;
 	auto service_io = make_service_io(trace.dev, svc);
-	should_run = (daemon_mode != Mode::UNDEFINED
+	should_run = (service_mode != ServiceMode::UNDEFINED 
+        and connect_mode != ConnectMode::UNDEFINED
 		and fileno(raw_dev) > -1
 		and sync_soft_reset(service_io, svc.sync)
 		and configure_before_reboot(service_io)
@@ -327,7 +332,7 @@ daemon()
 		and dump_s_registers(service_io)
 	);
 
-    if (should_run && !pairing_req) {
+    if (should_run && service_mode == ServiceMode::FACTORY) {
 		should_run = configure_factory(service_io)
             and switch_discoverable(service_io, true);
     }
@@ -344,27 +349,40 @@ daemon()
 
 	started = true;
 
-    if (pairing_req) {
-    
-        // Get connect address form trust_db if we paired before.
-        if (trusted_db_record_count_get(service_io, 1) > 0) {
-            connect_address = get_trusted_address(service_io, 1, 1);
-            valid_connect_address = true;
+    if (connect_mode == ConnectMode::ONE_CONNECT) {
+
+        if (service_mode == ServiceMode::FACTORY) {
+        
+            int32_t connect_to_param = Params::get("A_BT_CONNECT_TO");
+
+            if (connect_to_param >= 0 && connect_to_param < (int32_t)n_factory_addresses)
+            {
+                connect_address = factory_addresses[connect_to_param];
+                valid_connect_address = true;
+
+            } else {
+
+                fsync(service_io.dev);
+                inquiry_loop(service_io, svc.inq);
+                should_run = should_run and closest_is_obvious(svc.inq);
+                if (should_run) {
+                    connect_address = closest_address(svc.inq);
+                    valid_connect_address = true;
+                }
+            }
+
         }
-    
-    } else {
 
-        if (should_run)
-        {
+        if (service_mode == ServiceMode::USER) {
 
-            fsync(service_io.dev);
-            inquiry_loop(service_io, svc.inq);
-            should_run = should_run and closest_is_obvious(svc.inq);
-            if (should_run) {
-                connect_address = closest_address(svc.inq);
+            // Get connect address form trust_db if we paired before.
+            if (trusted_db_record_count_get(service_io, 1) > 0) {
+                connect_address = get_trusted_address(service_io, 1, 1);
                 valid_connect_address = true;
             }
-        } 
+        
+        }
+    
     }
     
 	if (should_run)
@@ -395,112 +413,33 @@ report_status(FILE * fp)
 }
 
 bool
-start(const char mode[], const char addr_no[])
+start(const char smode[], const char cmode[])
 {
-	dbg("%s Service::start(%s, %s).\n", PROCESS_NAME, mode, addr_no);
+	dbg("%s Service::start(%s, %s).\n", PROCESS_NAME, smode, cmode);
 
-    pairing_req = Params::get("A_BT_PAIR_REQ");
+	connect_mode = ConnectMode::UNDEFINED;
+	service_mode = ServiceMode::UNDEFINED;
 
-	daemon_mode = Mode::UNDEFINED;
-
-    if (pairing_req){
-
-        // Discoverable off 
-
-        dbg("%s Pairing is required. .\n", PROCESS_NAME);
-        
-        if (streq(mode, "one-connect")) {
-
-            daemon_mode = Mode::ONE_CONNECT;
-
-            // Hardcoded times when pairing is enabled and then disabled for testing purposes
-            button_on_t = hrt_absolute_time() + 1e6 * 20.0;
-            button_off_t = hrt_absolute_time() + 1e6 * 150.0;
-
-        } else if (streq(mode, "listen")) {
-
-            daemon_mode = Mode::LISTEN;
-
-            button_on_t = hrt_absolute_time() + 1e6 * 50.0;
-            button_off_t = hrt_absolute_time() + 1e6 * 150.0;
-            
-        
-        } else {
-
-            fprintf(stderr, "%s: Invaid mode: %s.\n"
-                , PROCESS_NAME
-                , mode
-            );
-        
-        }
-    
-    } else {
-    
-        if (streq(mode, "factory-param"))
-        {
-            uint32_t i = Params::get("A_BT_CONNECT_TO");
-            if (i < n_factory_addresses)
-            {
-                daemon_mode = Mode::ONE_CONNECT;
-                connect_address = factory_addresses[i];
-                valid_connect_address = true;
-            }
-            else
-            {
-                daemon_mode = Mode::LISTEN;
-            }
-        }
-        else if (streq(mode, "one-connect"))
-        {
-            uint32_t i;
-            if (not addr_no)
-                fprintf(stderr, "%s: factory_address_no required.\n",
-                    PROCESS_NAME);
-
-            else if (not parse_uint32(addr_no, i))
-                fprintf(stderr, "%s: invalid factory_address_no %s.\n",
-                    PROCESS_NAME, addr_no);
-
-            else if (i < n_factory_addresses)
-            {
-                daemon_mode = Mode::ONE_CONNECT;
-                connect_address = factory_addresses[i];
-                valid_connect_address = true;
-            }
-            else
-                fprintf(stderr
-                    , "%s: invalid factory_address_no %i max %i.\n"
-                    , PROCESS_NAME
-                    , i
-                    , n_factory_addresses - 1
-                );
-
-        }
-        else if (streq(mode, "listen"))
-        {
-            daemon_mode = Mode::LISTEN;
-        }
-        else if (streq(mode, "loopback-test"))
-        {
-            fprintf(stderr, "The '%s' mode doesn't use %s.\n"
-                , mode
-                , PROCESS_NAME
-            );
-        }
-        else
-        {
-            fprintf(stderr, "%s: Invaid mode: %s.\n"
-                , PROCESS_NAME
-                , mode
-            );
-        }
+    if (streq(smode, "factory")) {
+        service_mode = ServiceMode::FACTORY;
+    } else if (streq(smode, "user")) {
+        service_mode = ServiceMode::USER;
     }
 
-	dbg("%s daemon mode %u.\n", PROCESS_NAME, daemon_mode);
+    if (streq(cmode, "listen")) {
+        connect_mode = ConnectMode::LISTEN;
+    } else if (streq(cmode, "one-connect")) {
+        connect_mode = ConnectMode::ONE_CONNECT;
+    }
 
-	if (daemon_mode == Mode::UNDEFINED)
+	dbg("%s service mode %u.\n", PROCESS_NAME, service_mode);
+	dbg("%s connect mode %u.\n", PROCESS_NAME, connect_mode);
+
+	if (service_mode == ServiceMode::UNDEFINED)
 		return false;
 
+	if (connect_mode == ConnectMode::UNDEFINED)
+		return false;
 
 	errno = pthread_attr_init(&thread_attr);
 	if (errno != 0)

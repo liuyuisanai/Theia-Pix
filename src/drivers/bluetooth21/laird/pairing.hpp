@@ -189,7 +189,6 @@ template <typename Device, typename State>
 bool 
 handle_evt_simple_pairing(ServiceBlockingIO< Device, State > & service_io,const RESPONSE_EVENT_UNION & p) {
 
-
     switch (p.evtSimplePairing.action) {
         case SSP_ACTION_COMPLETE:
             
@@ -218,6 +217,7 @@ handle_evt_simple_pairing(ServiceBlockingIO< Device, State > & service_io,const 
             break;
 
         case SSP_ACTION_ENTER_PASSCODE:
+
 
             send_passcode(service_io.dev, p);
 
