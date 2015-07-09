@@ -1,6 +1,7 @@
 MODULE_COMMAND		= leash_display
 
 SRCS			= \
+    font.cpp \
     main.cpp \
     block.cpp \
     screen.cpp \

@@ -54,17 +54,22 @@ void display_goto_page(int page, int column)
 void display_clear()
 {
     memset(screen.page, 0, sizeof(screen.page));
-    display_redraw_all();
 }
 
 void display_put_pixel(int x, int y)
 {
-    screen.page[y / 8][x] |= 1 << (y % 8);
+    if (x >= 0 && x < 128 && y >= 0 && y < 64)
+    {
+        screen.page[y / 8][x] |= 1 << (y % 8);
+    }
 }
 
 void display_clear_pixel(int x, int y)
 {
-    screen.page[y / 8][x] &= ~(1 << (y % 8));
+    if (x >= 0 && x < 128 && y >= 0 && y < 64)
+    {
+        screen.page[y / 8][x] &= ~(1 << (y % 8));
+    }
 }
 
 void display_draw_line(int x1, int y1, int x2, int y2)
@@ -168,7 +173,6 @@ void display_bitmap(int x, int y, int width, int height, const unsigned char *da
 
         }
     }
-
 }
 
 void

@@ -1,5 +1,4 @@
-#ifndef _STATUS_HPP_
-#define _STATUS_HPP_
+#pragma once
 
 #include <time.h>
 
@@ -38,4 +37,3 @@ protected:
     void updateLeashBattery();
 };
 
-#endif

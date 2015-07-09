@@ -15,19 +15,86 @@
  * @{
  */
 
-
-enum {
+enum
+{
     LEASHDISPLAY_NONE,
     LEASHDISPLAY_LOGO,
-    LEASHDISPLAY_MAIN
+    LEASHDISPLAY_MAIN,
+    LEASHDISPLAY_MENU,
+    LEASHDISPLAY_INFO,
 };
 
+enum
+{
+    FOLLOW_PATH,
+    FOLLOW_ABS,
+};
+
+enum
+{
+    LAND_HOME,
+    LAND_SPOT,
+};
+
+enum
+{
+    AIRDOGMODE_NONE,
+    AIRDOGMODE_PLAY,
+    AIRDOGMODE_PAUSE,
+};
+
+enum
+{
+    MENUTYPE_SETTINGS,
+    MENUTYPE_ACTIVITIES,
+    MENUTYPE_SNOWBOARD,
+    MENUTYPE_PAIRING,
+    MENUTYPE_CALIBRATION,
+    MENUTYPE_COMPASS,
+    MENUTYPE_ACCELS,
+    MENUTYPE_GYRO,
+    MENUTYPE_MAX
+};
+
+enum
+{
+    INFO_CONNECTING_TO_AIRDOG,
+    INFO_CALIBRATING_SENSORS,
+    INFO_CALIBRATING_AIRDOG,
+    INFO_PAIRING,
+    INFO_ACQUIRING_GPS_LEASH,
+    INFO_ACQUIRING_GPS_AIRDOG,
+    INFO_CALIBRATING_HOLD_STILL,
+    INFO_SUCCESS,
+    INFO_FAILED,
+    INFO_CALIBRATING_DANCE,
+    INFO_NEXT_SIDE_UP,
+    INFO_MAX,
+};
+
+enum
+{
+    MENUVALUE_,
+    MENUVALUE_MAX
+};
+
+enum {
+    MENUBUTTON_LEFT = 1,
+    MENUBUTTON_RIGHT = 2
+};
 
 /**
  * leash display status
  */
 struct leash_display_s {
     int screenId;
+    char presetName[20];
+    int followMode;
+    int landMode;
+    int airdogMode;
+    int menuType;
+    int menuValue;
+    int menuButtons;
 };
 
 /**

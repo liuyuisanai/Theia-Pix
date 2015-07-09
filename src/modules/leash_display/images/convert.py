@@ -1,11 +1,56 @@
 import png
 import numpy
 import textwrap
+import glob
+
 from PIL import Image
 
+filelist = [
+	'screens/left.png',
+	'screens/right.png',
+	'screens/play.png',
+	'screens/pause.png',
+	'screens/spot.png',
+	'screens/home.png',
+	'screens/abs.png',
+	'screens/path.png',
+	'screens/logo.png',
+	'screens/lnd_fol.png',
+	'screens/battery.png',
+	'screens/battery_segment.png',	
+	];
 
-filelist = ['screens/logo.png'];
+def addPath(path):
+	for f in glob.glob(path):
+		filelist.append(f)
 
+def addFont(path):
+	outpath = path + "/small_"
+	for i in range(ord('a'), ord('z')+1):
+		l = str(chr(i))
+		filename = outpath + l + ".png"
+		filelist.append(filename)
+	
+	outpath = path + "/big_"
+	for i in range(ord('A'), ord('Z')+1):
+		l = str(chr(i))
+		filename = outpath + l + ".png"
+		filelist.append(filename)
+	
+	outpath = path + "/"
+	for i in range(ord('0'), ord('9')+1):
+		l = str(chr(i))
+		filename = outpath + l + ".png"
+		filelist.append(filename)
+
+	filelist.append(outpath + "percent" + ".png")
+	filelist.append(outpath + "space" + ".png")
+
+addFont("screens/fonts/LucidaGrande_30")
+addFont("screens/fonts/LucidaGrande_15")
+addFont("screens/fonts/LucidaGrande_22")
+addFont("screens/fonts/LucidaGrande_12")
+addPath("screens/icons/*.png")
 
 def getPngData(filename):
 
@@ -40,6 +85,8 @@ for filename in filelist:
 	i += 1
 
 
+imageInfo = "\n".join(textwrap.wrap(imageInfo, 80))
+
 imageInfo = 'const struct ImageInfo imageInfo[] = {' + imageInfo + '};'
 
 imageData = "\n".join(textwrap.wrap(imageData, 80))
@@ -56,7 +103,7 @@ f.write('#ifndef _IMAGES_H_\n');
 f.write('#define _IMAGES_H_\n');
 f.write('#ifdef __cplusplus\nextern "C" {\n#endif\n');
 f.write(defines);
-f.write('struct ImageInfo {\n\tint w;\n\tint h;\n\tint offset;\n};\n');
+f.write('struct ImageInfo {\n\tunsigned int w;\n\tunsigned int h;\n\tunsigned int offset;\n};\n');
 f.write('extern const struct ImageInfo imageInfo[];\n');
 f.write('extern const unsigned char imageData[];\n');
 

@@ -28,8 +28,10 @@ __EXPORT   void display_clear_pixel(int x, int y);
 __EXPORT   void display_draw_line(int x1, int y1, int x2, int y2) ;
 __EXPORT   void display_draw_rectangle(int x1, int y1, int x2, int y2);
 __EXPORT   void display_fill_rectangle(int x1, int y1, int x2, int y2);
-__EXPORT   void display_bitmap(int x, int y, int width, int height, const unsigned char *data);
+__EXPORT   void display_bitmap(int x, int y, int width, int height,
+                               const unsigned char *data);
 __EXPORT   void display_redraw_all(void);
+
 
 __END_DECLS
 

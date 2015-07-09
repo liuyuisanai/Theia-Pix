@@ -1,6 +1,9 @@
 #include "block.hpp"
 
+#include <stdio.h>
+
 #include <display.h>
+#include <string.h>
 
 #include "images/images.h"
 
@@ -34,28 +37,6 @@ int Block::getAbsoluteY()
     return a;
 }
 
-MultiBlock::~MultiBlock()
-{
-    for (BlockVector::iterator it = blocks.begin(); it < blocks.end(); it++)
-    {
-        delete *it;
-    }
-}
-
-void MultiBlock::add(Block *block)
-{
-    block->parent = this;
-    blocks.push_back(block);
-}
-
-void MultiBlock::draw()
-{
-    for (BlockVector::iterator it = blocks.begin(); it < blocks.end(); it++)
-    {
-        (*it)->draw();
-    }
-}
-
 BitmapBlock::BitmapBlock(int pX, int pY, int pWidth, int pHeight, const unsigned char *pBitmap) :
     Block(pX, pY, pWidth, pHeight), bitmap(pBitmap)
 {
@@ -72,38 +53,32 @@ void BitmapBlock::draw()
     display_bitmap(getAbsoluteX(), getAbsoluteY(), width, height, bitmap);
 }
 
-TextBlock::TextBlock(const std::string &pText, int pX, int pY, int pDigitImageId, int pLetterImageId) :
-    Block(pX, pY, 0, 0), text(pText), digitImageId(pDigitImageId), letterImageId(pLetterImageId)
+TextBlock::TextBlock(const char *pText, int pX, int pY, const Font *pFont) :
+    Block(pX, pY, 0, 0), text(pText), font(pFont)
 {
 }
 
 void TextBlock::draw()
 {
-    const int letterCount = ('z' - 'a') + 1;
     int px = getAbsoluteX();
     int py = getAbsoluteY();
-    for (size_t i = 0; i < text.size(); i++)
+
+    for (size_t i = 0; i < strlen(text); i++)
     {
-        int c = text[i];
-        if (c >= 'a' && c <= 'z')
+        char c = text[i];
+
+        int imageId = font->getSymbolImageId(c);
+
+        if (imageId == -1)
         {
-            c -= 'a';
-            c = letterImageId + c;
-        }
-        else if (c >= 'A' && c <= 'Z')
-        {
-            c -= 'A';
-            c = letterImageId + c + letterCount;
-        }
-        else if (c >= '0' && c <= '9')
-        {
-            c -= '0';
-            c = digitImageId + c;
+            printf("Symbol '%c' (0x%x) was not found\n", c, c);
+            continue;
         }
 
-        const ImageInfo &info = imageInfo[c];
+        ImageInfo info = imageInfo[imageId];
+
         display_bitmap(px, py, info.w, info.h, imageData + info.offset);
+
         px += info.w;
     }
 }
-

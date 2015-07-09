@@ -1,7 +1,6 @@
-#ifndef _BLOCK_HPP_
+#pragma once
 
-#include <vector>
-#include <string>
+#include "font.hpp"
 
 class Block {
 public:
@@ -20,19 +19,6 @@ public:
     int getAbsoluteY();
 };
 
-
-class MultiBlock : public Block {
-public:
-    ~MultiBlock();
-
-    void add(Block *block);
-    void draw();
-
-protected:
-    typedef std::vector<Block*> BlockVector;
-    BlockVector blocks;
-};
-
 class BitmapBlock : public Block {
 public:
     BitmapBlock(int pX, int pY, int pImageId);
@@ -44,12 +30,9 @@ protected:
 
 class TextBlock : public Block {
 public:
-    TextBlock(const std::string &pText, int pX, int pY, int pDigitImageId, int pLetterImageId);
+    TextBlock(const char *pText, int pX, int pY, const Font *pFont);
     void draw();
 protected:
-    std::string text;
-    int digitImageId;
-    int letterImageId;
+    const char *text;
+    const Font *font;
 };
-
-#endif
