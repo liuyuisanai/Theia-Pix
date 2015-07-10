@@ -10,6 +10,7 @@ filelist = [
 	'screens/right.png',
 	'screens/play.png',
 	'screens/pause.png',
+	'screens/play_pause.png',
 	'screens/spot.png',
 	'screens/home.png',
 	'screens/abs.png',
@@ -45,6 +46,7 @@ def addFont(path):
 
 	filelist.append(outpath + "percent" + ".png")
 	filelist.append(outpath + "space" + ".png")
+	filelist.append(outpath + "dot" + ".png")
 
 addFont("screens/fonts/LucidaGrande_30")
 addFont("screens/fonts/LucidaGrande_15")

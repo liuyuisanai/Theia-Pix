@@ -45,6 +45,7 @@ def generateFont(fontPath, fontSize, imagePath):
 
 	drawText("%", fnt, outpath + "percent" + ".png")
 	drawText(" ", fnt, outpath + "space" + ".png")
+	drawText(".", fnt, outpath + "dot" + ".png")
 
 	print fontPath + " " + str(fontSize) + " is done"
 

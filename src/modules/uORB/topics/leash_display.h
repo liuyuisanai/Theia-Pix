@@ -38,6 +38,17 @@ enum
 
 enum
 {
+    MAINSCREEN_INFO,
+    MAINSCREEN_LANDING,
+    MAINSCREEN_TAKING_OFF,
+    MAINSCREEN_READY_TO_TAKEOFF,
+    MAINSCREEN_CONFIRM_TAKEOFF,
+    MAINSCREEN_GOING_HOME,
+    MAINSCREEN_MAX
+};
+
+enum
+{
     AIRDOGMODE_NONE,
     AIRDOGMODE_PLAY,
     AIRDOGMODE_PAUSE,
@@ -53,12 +64,21 @@ enum
     MENUTYPE_COMPASS,
     MENUTYPE_ACCELS,
     MENUTYPE_GYRO,
+    MENUTYPE_SELECT,
+    MENUTYPE_CUSTOMIZE,
+    MENUTYPE_ALTITUDE,
+    MENUTYPE_FOLLOW,
+    MENUTYPE_LANDING,
+    MENUTYPE_SAVE,
+    MENUTYPE_CANCEL,
     MENUTYPE_MAX
 };
 
 enum
 {
     INFO_CONNECTING_TO_AIRDOG,
+    INFO_CONNECTION_LOST,
+    INFO_TAKEOFF_FAILED,
     INFO_CALIBRATING_SENSORS,
     INFO_CALIBRATING_AIRDOG,
     INFO_PAIRING,
@@ -74,11 +94,6 @@ enum
 
 enum
 {
-    MENUVALUE_,
-    MENUVALUE_MAX
-};
-
-enum {
     MENUBUTTON_LEFT = 1,
     MENUBUTTON_RIGHT = 2
 };
@@ -89,6 +104,7 @@ enum {
 struct leash_display_s {
     int screenId;
     char presetName[20];
+    int menuMode;
     int followMode;
     int landMode;
     int airdogMode;

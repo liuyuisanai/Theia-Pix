@@ -31,7 +31,9 @@ static int leash_display_thread_main(int argc, char *argv[])
     int menuButtons = 3;
     int menuType = 0;
     int menuValue = 0;
+    int mainMode = 0;
     int info = 0;
+    const char *presetName = "Snowboard";
 
     printf("leash_display started\n");
 
@@ -57,17 +59,18 @@ static int leash_display_thread_main(int argc, char *argv[])
 
                 case LEASHDISPLAY_MAIN:
                     lb = 100;
-                    Screen::showMain("Snowboard", 90, lb, aMode, fMode, lMode);
+                    mainMode = 0;
+                    Screen::showMain(mainMode, presetName, 90, lb, aMode, fMode, lMode);
                     break;
 
                 case LEASHDISPLAY_MENU:
                     menuButtons = 3;
-                    Screen::showMenu(menuButtons, menuType, menuValue);
+                    Screen::showMenu(menuButtons, menuType, menuValue, presetName);
                     break;
 
                 case LEASHDISPLAY_INFO:
                     info = 0;
-                    Screen::showInfo(info);
+                    Screen::showInfo(info, 0);
                     break;
             }
 
@@ -87,15 +90,15 @@ static int leash_display_thread_main(int argc, char *argv[])
                     break;
 
                 case LEASHDISPLAY_MAIN:
-                    Screen::showMain("Snowboard", 90, lb, aMode, fMode, lMode);
+                    Screen::showMain(mainMode, presetName, 90, lb, aMode, fMode, lMode);
                     break;
 
                 case LEASHDISPLAY_MENU:
-                    Screen::showMenu(menuButtons, menuType, menuValue);
+                    Screen::showMenu(menuButtons, menuType, menuValue, presetName);
                     break;
 
                 case LEASHDISPLAY_INFO:
-                    Screen::showInfo(info);
+                    Screen::showInfo(info, 0);
                     break;
             }
             display_redraw_all();
@@ -107,14 +110,19 @@ static int leash_display_thread_main(int argc, char *argv[])
             fMode = fMode == FOLLOW_PATH ? FOLLOW_ABS : FOLLOW_PATH;
             lMode = lMode == LAND_HOME ? LAND_SPOT : LAND_HOME;
             lb--;
-            if (lb < 0) {
+            if (lb < 0)
+            {
                 lb = 100;
             }
 
             menuButtons = menuButtons >= 3 ? 0 : menuButtons + 1;
             menuType = ++menuType == MENUTYPE_MAX ? 0 : menuType;
-            menuValue = ++menuValue == MENUVALUE_MAX ? 0 : menuValue;
+            menuValue = ++menuValue == 1 ? 0 : menuValue;
             info = ++info == INFO_MAX ? 0 : info;
+
+            mainMode = ++mainMode == MAINSCREEN_MAX ? 0 : mainMode;
+
+            menuType = menuType < MENUTYPE_SELECT ? MENUTYPE_SELECT: menuType;
 
             printf("mode %d buttons %x\n", status.mode, status.buttons);
             printf("screenId %d\n", status.screenId);
