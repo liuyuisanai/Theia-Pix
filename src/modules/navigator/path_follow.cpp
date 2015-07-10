@@ -63,6 +63,8 @@ void PathFollow::on_inactive() {
 
 void PathFollow::on_activation() {
 
+    _start_time = hrt_absolute_time();
+
     _vstatus = _navigator->get_vstatus();
 
 	_home_position_sub = orb_subscribe(ORB_ID(home_position));
@@ -74,6 +76,7 @@ void PathFollow::on_activation() {
     update_drone_pos();
     update_target_pos();
 
+    _has_been_in_range = false;
 
 	_mavlink_fd = _navigator->get_mavlink_fd();
     _optimal_distance = _parameters.pafol_optimal_dist;
@@ -139,6 +142,7 @@ void PathFollow::on_active() {
 		return; // Wait for the Loiter mode to take over, but avoid pausing main navigator thread
 	}
 
+    _time_passed = (hrt_absolute_time() - _start_time) * 1e-6f;
     _vstatus = _navigator->get_vstatus();
 
     update_drone_pos();
@@ -333,7 +337,15 @@ void PathFollow::put_tpos_into_setpoint(target_global_position_s *&tpos, positio
 float PathFollow::calculate_desired_velocity() {
 
     float current_distance = calculate_current_distance();
+
+
     float dst_to_optimal = current_distance - _optimal_distance;
+
+    if (!_has_been_in_range && (dst_to_optimal <= 2.0f || _time_passed > 10.0f)) {
+        _has_been_in_range = true; 
+    }
+
+    //mavlink_log_info(_mavlink_fd, "_has_been_in_range:%f tp:%.3f", (double)_has_been_in_range, (double)_time_passed);
 
     float fp_i_coif = _parameters.pafol_vel_i;
     float fp_p_coif = _parameters.pafol_vel_p;
@@ -376,6 +388,10 @@ float PathFollow::calculate_desired_velocity() {
 
     if (_fp_i>_parameters.pafol_vel_i_upper_limit) _fp_i = _parameters.pafol_vel_i_upper_limit;
     if (_fp_i<_parameters.pafol_vel_i_lower_limit) _fp_i = _parameters.pafol_vel_i_lower_limit;
+
+    // Preventing aggresive startup maneuvers
+    if (!_has_been_in_range)
+        _fp_i = 0.0;
 
     float vel_new =_fp_i * fp_i_coif + _fp_p * fp_p_coif + _fp_d * fp_d_coif;
 

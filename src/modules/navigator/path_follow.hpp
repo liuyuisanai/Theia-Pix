@@ -70,6 +70,8 @@ private:
     bool _first_tp_flag = false;
     bool _second_tp_flag = false;
 
+    bool _has_been_in_range = false;
+
     buffer_point_s _second_tp;
     buffer_point_s _first_tp;
     buffer_point_s _last_passed_point;
@@ -130,6 +132,9 @@ private:
 
     hrt_abstime _last_dpos_t;
     hrt_abstime _last_tpos_t;
+
+    hrt_abstime _start_time;
+    hrt_abstime _time_passed;
 
     // Altitude which must be reached till current trajectory point have been reached
     float _z_goal;
