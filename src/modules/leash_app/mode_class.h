@@ -1,20 +1,28 @@
-#include <string>
-#include <vector>
+#include <cstring>
+#include <poll.h>
 
 class Mode
 {
     public:
-        Mode(std::string descr) {description = descr;};
+        Mode(char* descr, struct pollfd btn) : btnfd(btn){
+            if (strlen(descr) > 100) {
+                DOG_PRINT("[error] description too long, truncating\n");
+                strncpy(description, descr, 100);
+            } else {
+                strncpy(description, descr, strlen(descr));
+            }
+        };
         virtual ~Mode() {};
         virtual Mode* execute() = 0;
     protected:
-        std::string name;
-        std::string description;
+        char name[50];
+        char description[100];
+        struct pollfd btnfd;
 };
 
 class ModeLandScreen : public Mode {
     public:
-        ModeLandScreen(std::string descr) : Mode(descr) {};
+        ModeLandScreen(char* descr, struct pollfd btn) : Mode(descr, btn) {};
         virtual ~ModeLandScreen() {};
         virtual Mode* execute();
 };
@@ -30,7 +38,7 @@ class ModeFlyScreen : public Mode {
 
 class Startup : public Mode {
     public:
-        Startup(std::string descr) : Mode(descr) {name = "[startup] {logo screen}";};
+        Startup(char* descr, struct pollfd btn) : Mode(descr, btn) {strcpy(name, "[startup] {logo screen}");};
         virtual ~Startup() {};
         virtual Mode* execute();
     private:
@@ -40,30 +48,30 @@ class Startup : public Mode {
 
 class Pairing : public Mode {
     public:
-        Pairing(std::string descr) : Mode(descr) {name = "[startup] {pairing}";};
+        Pairing(char* descr, struct pollfd btn) : Mode(descr, btn) {strcpy(name, "[startup] {pairing}");};
         virtual ~Pairing() {};
         virtual Mode* execute();
 };
 
 class GMainScreen : public ModeLandScreen {
     public:
-        GMainScreen(std::string descr) : ModeLandScreen(descr) {name = "[landed] {main menu}";};
+        GMainScreen(char* descr, struct pollfd btn) : ModeLandScreen(descr, btn) {strcpy(name,"[landed] {main menu}");};
         virtual ~GMainScreen() {};
         virtual Mode* execute();
 };
 
 class NoConnect : public Mode {
     public:
-        NoConnect(std::string descr, bool l_was_lost) : Mode(descr){
+        NoConnect(char* descr,struct pollfd btn, bool l_was_lost) : Mode(descr, btn){
             was_lost = l_was_lost;
             if (was_lost) {
-                name = "[error] {connection lost}";
+                strcpy(name,"[error] {connection lost}");
             } else {
-                name = "[error] {never connected}";
+                strcpy(name,"[error] {never connected}");
             }
         };
         virtual ~NoConnect() {};
         virtual Mode* execute();
     private:
-        bool was_lost
+        bool was_lost;
 };
