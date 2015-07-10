@@ -312,7 +312,7 @@ PWMIN::init()
     data.maximum_distance = 7.0f;
 
     range_finder_pub = orb_advertise(ORB_ID(sensor_range_finder), &data);
-    fprintf(stderr, "[pwm_input] advertising %d\n"
+    DOG_PRINT("[pwm_input] advertising %d\n"
             ,range_finder_pub);
 
 	reports = new RingBuffer(2, sizeof(struct pwm_input_s));
@@ -391,7 +391,7 @@ PWMIN::freeze_test()
     bool timeout = false;
     timeout = (hrt_absolute_time() - last_poll_time > TIMEOUT) ? true : false;
     if (timeout) {
-        fprintf(stderr, "[pwm_input] Lidar is down, reseting\n");
+        DOG_PRINT("[pwm_input] Lidar is down, reseting\n");
         hard_reset();
     }
 }

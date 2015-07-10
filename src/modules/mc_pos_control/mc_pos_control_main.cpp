@@ -2664,12 +2664,6 @@ bool MulticopterPositionControl::ground_dist_correction(){
 
 	bool alt_corrected = false;
 
-    //fprintf(stderr, "first_ground_correction %.3f %.3f %.3f %.3f\n"
-    //        ,(double) first_ground_correction(0)
-    //        ,(double) first_ground_correction(1)
-    //        ,(double) first_ground_correction(2)
-    //        ,(double) first_ground_correction(3)
-    //       );
 	if (available_drop < 0){
         //must go up
         if (first_ground_correction(3) == 0.0f) {
@@ -2680,22 +2674,19 @@ bool MulticopterPositionControl::ground_dist_correction(){
             first_ground_correction(0) = _pos(0);
             first_ground_correction(1) = _pos(1);
             first_ground_correction(2) = _pos(2);
-            first_ground_correction(3) = available_drop;
-            fprintf(stderr, "[pos] First time range correction, drop %.3f\n"
+            first_ground_correction(3) = available_drop - 2;
+            DOG_PRINT("[pos,dist_bottom] First time range correction, drop %.3f\n"
                     ,(double) -available_drop);
         } else {
             // This is not a first time we are correcting altitude
-            //if (_pos(2) - available_drop < first_ground_correction(2)) {
             if (first_ground_correction(2) + first_ground_correction(3) > _pos(2)) {
                 // According to position_estimator we already corrected vertical drop
                 // If we are still in the acceptance radius - disable ground distance correction
                 //math::Vector<2> cur_xy(_pos(0), _pos(1));
                 //math::Vector<2> first_xy(first_ground_correction(0), first_ground_correction(1));
-                fprintf(stderr, "[pos] %.3f > %.3f\n"
+                DOG_PRINT("[pos,dist_bottom] %.3f > %.3f\n"
                         ,(double) (first_ground_correction(2) + first_ground_correction(3))
                         ,(double) _pos(2));
-                //fprintf(stderr, "[nav] radius: %.3f, accept_radius: %.3f\n"
-                //        ,(double) (cur_xy - first_xy).length(), (double) (_params.accept_radius * 3.0f));
                 //if ( (cur_xy - first_xy).length() < _params.accept_radius * 0.3f ) {
                     return false;
                 //}
@@ -2713,7 +2704,7 @@ bool MulticopterPositionControl::ground_dist_correction(){
 	}
 	else {
         if (first_ground_correction(3) != 0.0f) {
-            fprintf(stderr, "[pos] reseting first_ground_correction\n");
+            DOG_PRINT("[pos,dist_bottom] reseting first_ground_correction\n");
             first_ground_correction.zero();
         }
 	//can go down
@@ -2722,6 +2713,7 @@ bool MulticopterPositionControl::ground_dist_correction(){
 			if (desired_drop > available_drop) {
 			//want to go down too much
 				//limit going down too much
+                DOG_PRINT("[pos,dist_bottom] correcting drop from %.3f to %.3f\n", (double)desired_drop, (double)available_drop);
 				_pos_sp(2) = _pos(2) + available_drop;
 				_ground_setpoint_corrected = true;
 				_ground_position_invalid = false;
