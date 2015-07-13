@@ -389,7 +389,10 @@ static int64_t get_dir_size(const char *path)
             continue;
         }
 
-        totalSize += st.st_blksize * st.st_blocks;
+        if (st.st_size > 0)
+        {
+            totalSize += st.st_size;
+        }
 
         // if directory then we should check sub directories
         if (S_ISDIR(st.st_mode))
