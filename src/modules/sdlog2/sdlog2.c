@@ -236,7 +236,7 @@ struct logbuffer_s lb;
 static pthread_mutex_t logbuffer_mutex;
 static pthread_cond_t logbuffer_cond;
 
-static char log_dir[32];
+static char log_dir[64];
 
 /* statistics counters */
 static uint64_t start_time = 0;
@@ -652,7 +652,7 @@ int create_log_dir()
                     struct tm t;
                     time_t gps_time_sec = gps_time / 1000000;
                     gmtime_r(&gps_time_sec, &t);
-                    strftime(log_dir + n, sizeof(log_dir) - n, "-%y%m%d", &t);
+                    strftime(log_dir + n, sizeof(log_dir) - n, "-%y%m%d-%H%M", &t);
                 }
 
                 mkdir_ret = mkdir(log_dir, S_IRWXU | S_IRWXG | S_IRWXO);
