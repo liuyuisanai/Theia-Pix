@@ -21,6 +21,7 @@ public:
     DataManager();
     ~DataManager();
 
+    static DataManager* instance();
     bool awaitMask[FD_Size];
     bool awaitResult[FD_Size];
 
@@ -31,6 +32,7 @@ public:
     bool wait(int timeout);
     void clearAwait();
 protected:
+    static DataManager* _instance;
     const struct orb_metadata *orbId[FD_Size];
     int fds[FD_Size];
     void *orbData[FD_Size];

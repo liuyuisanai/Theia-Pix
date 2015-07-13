@@ -4,6 +4,8 @@
 #include <string.h>
 #include <stdio.h>
 
+DataManager* DataManager::_instance = nullptr;
+
 DataManager::DataManager()
 {
     // get orbs id
@@ -38,6 +40,16 @@ DataManager::~DataManager()
     {
         orb_unsubscribe(fds[i]);
     }
+}
+
+
+DataManager* DataManager::instance()
+{
+    if (_instance != nullptr) 
+    {
+        _instance = new DataManager();
+    }
+    return _instance;
 }
 
 bool DataManager::wait(int timeout)

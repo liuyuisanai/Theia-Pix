@@ -16,7 +16,7 @@ static bool thread_running = false;
 static int deamon_task;
 
 static int app_main_thread(int argc, char *argv[]) {
-    DataManager dm;
+    DataManager *dm = DataManager::instance();
     modes::Base *currentMode = new modes::Logo();
 
     thread_running = true;
@@ -26,16 +26,16 @@ static int app_main_thread(int argc, char *argv[]) {
         modes::Base *nextMode = nullptr;
         int timeout = currentMode->getTimeout();
 
-        dm.clearAwait();
-        currentMode->listenForEvents(dm.awaitMask);
+        dm->clearAwait();
+        currentMode->listenForEvents(dm->awaitMask);
 
-        bool hasChange = dm.wait(timeout);
+        bool hasChange = dm->wait(timeout);
 
         if (hasChange)
         {
             for (int i = 0; i < FD_Size; i++)
             {
-                if (dm.awaitResult[i])
+                if (dm->awaitResult[i])
                 {
                     nextMode = currentMode->doEvent(i);
                     if (nextMode != nullptr)
