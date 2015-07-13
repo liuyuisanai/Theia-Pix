@@ -255,6 +255,9 @@ ORB_DEFINE(pass_drone_parameter, struct pass_drone_param_s);
 #include "topics/commander_request.h"
 ORB_DEFINE(commander_request, struct commander_request_s);
 
+#include "topics/bt_state.h"
+ORB_DEFINE(bt_state, struct bt_state_s);
+
 #include "topics/trajectory.h"
 ORB_DEFINE(trajectory, struct trajectory_s);
 

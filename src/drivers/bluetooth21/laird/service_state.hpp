@@ -38,6 +38,9 @@ struct ServiceState
 	InquiryState inq;
 	SyncState sync;
     PairingState pairing;
+
+    GLOBAL_STATE global_state;
+
 };
 
 template <typename Device, typename State>

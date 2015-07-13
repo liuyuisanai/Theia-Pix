@@ -8,6 +8,8 @@
 #include <drivers/drv_tone_alarm.h>
 #include <drivers/drv_hrt.h>
 
+#include <uORB/topics/bt_state.h>
+
 #include "daemon.hpp"
 #include "device_connection_map.hpp"
 #include "factory_addresses.hpp"
@@ -37,8 +39,7 @@ PROCESS_NAME[] = "bt21_service";
 
 hrt_abstime last_pairing_check = 0;
 
-hrt_abstime button_on_t;
-hrt_abstime button_off_t;
+int _bt_state_pub = -1;
 
 static volatile bool
 should_run = false;
@@ -101,6 +102,24 @@ check_pairing_enabled(){
     return Globals::Service::get_pairing_status();
 }
 
+template <typename ServiceState>
+static void
+publish_bt_state(ServiceState & svc) {
+
+    bt_state_s bt_state;
+    bt_state.global_state = svc.global_state;
+
+    dbg("Publishing bt_state: %d\n", bt_state);
+
+
+	if (_bt_state_pub > 0) {
+		orb_publish(ORB_ID(bt_state), _bt_state_pub, &bt_state);
+
+	} else {
+		_bt_state_pub = orb_advertise(ORB_ID(bt_state), &bt_state);
+	}
+
+}
 
 template <typename ServiceIO>
 static void
@@ -141,6 +160,7 @@ pairing_loop(ServiceIO & service_io, ServiceState & svc){
 
     drop_trusted_db(service_io);
 
+    svc.pairing.paired_devices = 0;
     svc.pairing.pairing_active = true;
 
     if (connect_mode == ConnectMode::LISTEN) {
@@ -185,24 +205,33 @@ pairing_loop(ServiceIO & service_io, ServiceState & svc){
 
             paired = pair(service_io);
 
-            if (paired) {
-                
-                connect_address = pairing_address;
-                valid_connect_address = true;
+            const auto wait_for = Time::duration_sec(10);
+            auto time_limit = Time::now() + wait_for;
 
-            } else {
-
-                // TODO: Fail actions
-            
+            while (svc.pairing.paired_devices == 0) {
+                sleep(100); 
+                if (time_limit < Time::now())
+                    break;
             }
 
+            paired = svc.pairing.paired_devices > 0;
+
+            Globals::Service::turn_pairing_off();
+
+            if (paired) {
+                connect_address = pairing_address;
+                valid_connect_address = true;
+            } 
+        } 
+
+        if (!paired) {
+            dbg("Paired failed.\n");
+            // fail actions
         } else {
 
-            // TODO: Fail sounds and actions
+            dbg("Paired with %d devices ! \n", svc.pairing.paired_devices );
         
         }
-
-//        Globals::Service::turn_pairing_off();
 
     }
 
@@ -234,8 +263,11 @@ synced_loop(MultiPlexer & mp, ServiceIO & service_io, ServiceState & svc)
 
                         dbg("Pairing activated\n");
 
-                        pairing_loop(service_io, svc);
+                        svc.global_state = GLOBAL_STATE::PAIRING;
 
+                        publish_bt_state(svc);
+
+                        pairing_loop(service_io, svc);
                         pairing_done_this_cycle = true;
 
                         dbg("Pairing done\n");
@@ -255,6 +287,22 @@ synced_loop(MultiPlexer & mp, ServiceIO & service_io, ServiceState & svc)
 			update_connections(mp, svc.conn.channels_connected);
 			svc.conn.changed = false;
 		}
+
+        if (count_connections(svc.conn) > 0) {
+
+            svc.global_state = GLOBAL_STATE::CONNECTED;
+
+        } else if (svc.pairing.paired_devices == 0) {
+
+            svc.global_state = GLOBAL_STATE::PAIRING;
+            Globals::Service::turn_pairing_on();
+
+        } else {
+
+            svc.global_state = GLOBAL_STATE::CONNECTING;
+        }
+
+        publish_bt_state(svc);
 
 		dbg("Connections waiting %i, total count %u.\n"
 			, no_single_connection(svc.conn)
@@ -349,6 +397,8 @@ daemon()
 
 	started = true;
 
+    service_io.state.pairing.paired_devices = trusted_db_record_count_get(service_io, 1);
+
     if (connect_mode == ConnectMode::ONE_CONNECT) {
 
         if (service_mode == ServiceMode::FACTORY) {
@@ -376,7 +426,7 @@ daemon()
         if (service_mode == ServiceMode::USER) {
 
             // Get connect address form trust_db if we paired before.
-            if (trusted_db_record_count_get(service_io, 1) > 0) {
+            if (service_io.state.pairing.paired_devices > 0) {
                 connect_address = get_trusted_address(service_io, 1, 1);
                 valid_connect_address = true;
             }
@@ -482,6 +532,8 @@ request_stop()
 	should_run = false;
 	fprintf(stderr, "%s stop requested.\n", PROCESS_NAME);
 }
+
+
 
 }
 // end of namespace Service

@@ -176,7 +176,8 @@ handle(ServiceBlockingIO< Device, State > & service_io, PairingState & self, con
             // If EVT_LINK_KEY is received then this device is added to ROLLING trust db
             // Let's move it to PERSISTANT trust db
             
-            move_rolling_to_persistant(service_io, p.evtLinkKey.bdAddr); 
+            move_rolling_to_persistant(service_io, p.evtLinkKey.bdAddr);
+            service_io.state.pairing.paired_devices++;
 
             break;
 

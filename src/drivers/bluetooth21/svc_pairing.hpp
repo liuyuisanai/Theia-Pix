@@ -20,6 +20,8 @@ struct PairingState
     bool pairing_active;
     bool pairing_initiator;
 
+    int paired_devices;
+
     // If pairing_initiator is true then addr contains target device address 
 	Address6 addr;
 
