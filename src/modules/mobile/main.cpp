@@ -120,9 +120,11 @@ read_command(Device & f) {
 
 
 template <typename Device>
-void
+bool
 write_char(Device & d, char ch) {
-	write(d, &ch, 1);
+	bool ok = write(d, &ch, 1) == 1;
+	if (not ok) { perror("write_char"); fflush(stderr); }
+	return ok;
 }
 
 template <typename Device>
@@ -171,6 +173,22 @@ reply_status_overall(Device & d) {
 
 struct FileRequestHandler
 {
+	template <typename Device>
+	bool
+	handle(Device & d, command_id_t cmd)
+	{
+		switch (cmd)
+		{
+		case COMMAND_FILE_INFO:
+			return handle_file_info(d);
+		case COMMAND_FILE_BLOCK:
+			return handle_file_block(d);
+		default:
+			// TODO log;
+			return false;
+		}
+	}
+
 	static unique_file
 	open_for_read(file_index_t file_index)
 	{
@@ -195,80 +213,76 @@ struct FileRequestHandler
 	}
 
 	template <typename Device>
-	void
+	bool
 	reply_file_info(Device & d, file_index_t file_index)
 	{
 		FileInfoReply buf = get_fileinfo(file_index);
-		write(d, &buf, sizeof buf);
+		ssize_t r = write(d, &buf, sizeof buf);
+		bool ok = r != -1;
+		if (not ok) { perror("reply_file_info / write"); fflush(stderr); }
+		return ok;
 	}
 
 	template <typename Device>
-	void
+	bool
 	handle_file_info(Device & d)
 	{
 		file_index_t buf;
 		read_guaranteed(d, &buf, sizeof buf);
-		reply_file_info(d, buf);
+		return reply_file_info(d, buf);
 	}
 
 	template <typename Device>
-	void
+	bool
 	reply_file_block(Device & d, FileBlockRequest & req)
 	{
-		char c;
-		c = STX;
-		write(d, &c, 1);
-
 		unique_file f = open_for_read(req.file_index);
-		if (f.get() != -1)
+		bool ok = f.get() != -1;
+
+		if (ok)
 		{
-			off_t offset = req.block_index * FILE_BLOCK_SIZE;
-			offset = lseek(f.get(), offset, SEEK_SET);
-			if (offset < 0) { perror("lseek"); }
+			off_t target = req.block_index * FILE_BLOCK_SIZE;
+			off_t offset = lseek(f.get(), 0, SEEK_END);
+			ok = target < offset;
+			if (ok) {
+				offset = lseek(f.get(), target, SEEK_SET);
+				ok = offset == target;
+			}
+			if (ok) { fprintf(stderr, "read start offset %d\n", (int)offset); fflush(stderr); }
 			else
 			{
-				fprintf(stderr, "read start offset %d\n", (int)offset);
-				// char buf[ (FILE_BLOCK_SIZE + 2) / 3 * 4 ];
-				// ssize_t s = read(f, buf, sizeof(buf));
-				// if (s > 0) { write(d, buf, s); }
-				DevLog flog  (f.get(), 2 , "", "");
-				auto frag = base64::make_fragment<O_RDONLY>(flog, FILE_BLOCK_SIZE);
-				base64::ReadEncodeWrite<40 /*bytes buffer*/> b64;
-				bool ok = copy(b64, frag, d);
-				if (not ok) { perror("base64 encode"); }
-				offset = lseek(f.get(), 0, SEEK_CUR);
-				if (offset < 0) { perror("lseek"); }
-				else { fprintf(stderr, "read final offset %d\n", (int)offset); }
+				if (offset == -1) { perror("lseek"); fflush(stderr); }
+				else { fprintf(stderr, "Unable to reach offset %i. lseek() -> %i.\n", (int)target, (int)offset); fflush(stderr); }
 			}
 		}
 
-		c = ETX;
-		write(d, &c, 1);
+		ok = ok and write_char(d, STX);
+
+		if (ok)
+		{
+			DevLog flog { f.get(), 2, "f-read  ", "f-write " };
+			auto frag = base64::make_fragment< O_RDONLY >( flog, FILE_BLOCK_SIZE );
+			base64::ReadEncodeWrite<40 /*bytes buffer*/> b64;
+			ok = copy(b64, frag, d);
+			if (not ok) { perror("base64 encode"); fflush(stderr); }
+
+			off_t offset = lseek(f.get(), 0, SEEK_CUR);
+			if (offset < 0) { perror("lseek"); fflush(stderr); }
+			else { fprintf(stderr, "read final offset %d\n", (int)offset); fflush(stderr); }
+		}
+
+		ok = ok and write_char(d, ETX);
+
+		return ok;
 	}
 
 	template <typename Device>
-	void
+	bool
 	handle_file_block(Device & d)
 	{
 		FileBlockRequest buf;
 		read_guaranteed(d, &buf, sizeof buf);
-		reply_file_block(d, buf);
-	}
-
-	template <typename Device>
-	void
-	handle(Device & d, command_id_t cmd)
-	{
-		switch (cmd)
-		{
-		case COMMAND_FILE_INFO:
-			handle_file_info(d);
-			break;
-		case COMMAND_FILE_BLOCK:
-			handle_file_block(d);
-			break;
-		// default: TODO log;
-		}
+		return reply_file_block(d, buf);
 	}
 };
 
@@ -431,8 +445,7 @@ process_one_command(
 		break;
 	case COMMAND_FILE_BLOCK:
 	case COMMAND_FILE_INFO:
-		reply_ack_command(f, cmd);
-		file_requests.handle(f, cmd);
+		reply_command_result(f, cmd, file_requests.handle(f, cmd));
 		break;
 	case COMMAND_RECEIVE_APPLY:
 	case COMMAND_RECEIVE_BLOCK:
