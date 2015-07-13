@@ -285,7 +285,9 @@ void Screen::showMenu(int buttons, int type, int value, const char *presetName)
 
         case MENUTYPE_SNOWBOARD:
             imageId = IMAGE_SCREENS_ICONS_SNOWBOARD;
-            text = "Snowboard";
+            //text = "Snowboard";
+            // TODO: use snowboard
+            text = presetName;
             break;
 
         case MENUTYPE_PAIRING:

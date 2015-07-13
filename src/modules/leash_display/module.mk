@@ -5,7 +5,7 @@ SRCS			= \
     main.cpp \
     block.cpp \
     screen.cpp \
-    status.cpp \
+    datamanager.cpp \
     images/images.c
 
 CXXFLAGS		+= -std=c++11 -Dmain=${MODULE_COMMAND}_main \

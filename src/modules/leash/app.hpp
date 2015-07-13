@@ -178,7 +178,6 @@ struct App
 
                 kh.currentMode = (int)mode;
                 kh.buttons = (int)btn;
-                kh.nextMode = 0;
                 kh.event = (int) EVENT;
                 if (to_kh > 0)
                 {

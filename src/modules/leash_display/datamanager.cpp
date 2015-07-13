@@ -1,11 +1,8 @@
-#include "datamanager.h"
+#include "datamanager.hpp"
 
 #include <poll.h>
 #include <string.h>
 #include <stdio.h>
-#include <errno.h>
-
-DataManager* DataManager::_instance = nullptr;
 
 DataManager::DataManager()
 {
@@ -13,6 +10,7 @@ DataManager::DataManager()
     orbId[FD_AirdogStatus] = ORB_ID(airdog_status);
     orbId[FD_SystemPower] = ORB_ID(system_power);
     orbId[FD_KbdHandler] = ORB_ID(kbd_handler);
+    orbId[FD_LeashDisplay] = ORB_ID(leash_display);
 
     // listen orbs
     for (int i = 0; i < FD_Size; i++)
@@ -30,9 +28,7 @@ DataManager::DataManager()
     orbData[FD_AirdogStatus] = &airdog_status;
     orbData[FD_SystemPower] = &system_power;
     orbData[FD_KbdHandler] = &kbd_handler;
-
-    // clear
-    memset(awaitMask, 0, sizeof(awaitMask));
+    orbData[FD_LeashDisplay] = &leash_display;
 }
 
 DataManager::~DataManager()
@@ -41,16 +37,6 @@ DataManager::~DataManager()
     {
         orb_unsubscribe(fds[i]);
     }
-}
-
-
-DataManager* DataManager::instance()
-{
-    if (_instance == nullptr)
-    {
-        _instance = new DataManager();
-    }
-    return _instance;
 }
 
 bool DataManager::wait(int timeout)
@@ -67,18 +53,14 @@ bool DataManager::wait(int timeout)
     for (int i = 0; i < FD_Size; i++)
     {
         pollfds[i].fd = fds[i];
-
-        if (awaitMask[i])
-        {
-            pollfds[i].events = POLLIN;
-        }
+        pollfds[i].events = POLLIN;
     }
 
     r = poll(pollfds, FD_Size, timeout);
 
     if (r == -1)
     {
-        printf("poll failed. errno %d\n", errno);
+        printf("poll failed\n");
     }
 
     for (int i = 0; i < FD_Size; i++)
@@ -92,9 +74,4 @@ bool DataManager::wait(int timeout)
     }
 
     return hasChanges;
-}
-
-void DataManager::clearAwait()
-{
-    memset(awaitMask, 0, sizeof(awaitMask));
 }

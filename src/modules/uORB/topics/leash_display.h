@@ -104,7 +104,7 @@ enum
 struct leash_display_s {
     int screenId;
     char presetName[20];
-    int menuMode;
+    int mainMode;
     int followMode;
     int landMode;
     int airdogMode;

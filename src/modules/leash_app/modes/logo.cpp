@@ -4,6 +4,8 @@
 
 #include "../displayhelper.h"
 
+#include "menu.h"
+
 namespace modes
 {
 
@@ -23,8 +25,7 @@ void Logo::listenForEvents(bool awaitMask[])
 
 Base* Logo::doEvent(int orbId)
 {
-    printf("Hu hu hu jeee ! \n");
-    return nullptr;
+    return new Menu();
 }
 
 }

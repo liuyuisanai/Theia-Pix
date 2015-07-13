@@ -5,7 +5,7 @@ extern "C" __EXPORT int main(int argc, const char * const * const argv);
 #include <stdlib.h>
 #include <string.h>
 #include "images/images.h"
-#include "status.hpp"
+#include "datamanager.hpp"
 #include "screen.hpp"
 
 #include <systemlib/systemlib.h>
@@ -21,16 +21,13 @@ static int deamon_task;
 
 static int leash_display_thread_main(int argc, char *argv[])
 {
-    Status status;
+    DataManager dm;
     thread_running = true;
     int currentScreenId = 0;
     int lb = 100;
     int fMode = FOLLOW_PATH;
     int aMode = AIRDOGMODE_NONE;
     int lMode = LAND_HOME;
-    int menuButtons = 3;
-    int menuType = 0;
-    int menuValue = 0;
     int mainMode = 0;
     int info = 0;
     const char *presetName = "Snowboard";
@@ -41,13 +38,13 @@ static int leash_display_thread_main(int argc, char *argv[])
 
     while (!main_thread_should_exit)
     {
-        bool hasChanges = status.update();
+        bool hasChanges = dm.wait(-1);
 
-        if (status.screenId != currentScreenId)
+        if (dm.leash_display.screenId != currentScreenId)
         {
             display_clear();
 
-            switch (status.screenId)
+            switch (dm.leash_display.screenId)
             {
                 case LEASHDISPLAY_NONE:
                     break;
@@ -63,8 +60,8 @@ static int leash_display_thread_main(int argc, char *argv[])
                     break;
 
                 case LEASHDISPLAY_MENU:
-                    menuButtons = 3;
-                    Screen::showMenu(menuButtons, menuType, menuValue, presetName);
+                    Screen::showMenu(dm.leash_display.menuButtons, dm.leash_display.menuType,
+                                     dm.leash_display.menuValue, dm.leash_display.presetName);
                     break;
 
                 case LEASHDISPLAY_INFO:
@@ -75,12 +72,12 @@ static int leash_display_thread_main(int argc, char *argv[])
 
             display_redraw_all();
 
-            currentScreenId = status.screenId;
+            currentScreenId = dm.leash_display.screenId;
         }
         else if (hasChanges)
         {
             display_clear();
-            switch (status.screenId)
+            switch (dm.leash_display.screenId)
             {
                 case LEASHDISPLAY_NONE:
                     break;
@@ -94,7 +91,8 @@ static int leash_display_thread_main(int argc, char *argv[])
                     break;
 
                 case LEASHDISPLAY_MENU:
-                    Screen::showMenu(menuButtons, menuType, menuValue, presetName);
+                    Screen::showMenu(dm.leash_display.menuButtons, dm.leash_display.menuType,
+                                     dm.leash_display.menuValue, dm.leash_display.presetName);
                     break;
 
                 case LEASHDISPLAY_INFO:
@@ -106,6 +104,7 @@ static int leash_display_thread_main(int argc, char *argv[])
 
         if (hasChanges)
         {
+            /*
             aMode = aMode == AIRDOGMODE_PAUSE ? AIRDOGMODE_NONE : aMode + 1;
             fMode = fMode == FOLLOW_PATH ? FOLLOW_ABS : FOLLOW_PATH;
             lMode = lMode == LAND_HOME ? LAND_SPOT : LAND_HOME;
@@ -123,11 +122,11 @@ static int leash_display_thread_main(int argc, char *argv[])
             mainMode = ++mainMode == MAINSCREEN_MAX ? 0 : mainMode;
 
             menuType = menuType < MENUTYPE_SELECT ? MENUTYPE_SELECT: menuType;
-
             printf("mode %d buttons %x\n", status.mode, status.buttons);
             printf("screenId %d\n", status.screenId);
             printf("airdog_battery %d\n", status.airdog_battery);
             printf("leash_battery %.5f\n", (double)status.leash_battery);
+            */
         }
     }
 

@@ -3,6 +3,7 @@ MODULE_COMMAND		= $(notdir $(shell pwd))
 SRCS			= \
     modes/base.cpp \
     modes/logo.cpp \
+    modes/menu.cpp \
     main.cpp  \
     datamanager.cpp \
     displayhelper.cpp

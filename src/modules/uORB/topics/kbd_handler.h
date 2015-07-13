@@ -22,7 +22,6 @@ struct kbd_handler_s {
     int currentMode;
     int buttons;
     int event;
-    int nextMode;
 };
 
 /**
