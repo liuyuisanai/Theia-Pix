@@ -37,8 +37,7 @@ static int leash_display_thread_main(int argc, char *argv[])
 
     printf("leash_display started\n");
 
-    up_display_mcu_setup();
-    display_init();
+    Screen::init();
 
     while (!main_thread_should_exit)
     {
@@ -87,6 +86,7 @@ static int leash_display_thread_main(int argc, char *argv[])
                     break;
 
                 case LEASHDISPLAY_LOGO:
+                    Screen::showLogo();
                     break;
 
                 case LEASHDISPLAY_MAIN:

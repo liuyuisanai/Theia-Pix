@@ -48,6 +48,13 @@ static void drawText(struct TextInfo *text, int rowCount, int yc, int *yStart = 
     }
 }
 
+void Screen::init()
+{
+    up_display_mcu_setup();
+    display_init();
+}
+
+
 void Screen::showLogo()
 {
     BitmapBlock blockLogo(0, 0, IMAGE_SCREENS_LOGO);
