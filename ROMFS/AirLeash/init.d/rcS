@@ -233,6 +233,9 @@ else
 	echo "Currently sdlog on leash supports only ON_BOOT mode"
 fi
 
+leash_display start
+leash_app start
+
 if [ $EXIT_ON_END == yes ]
 then
 	echo "[init] Exit from nsh"
