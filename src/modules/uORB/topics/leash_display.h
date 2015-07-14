@@ -28,12 +28,14 @@ enum
 {
     FOLLOW_PATH,
     FOLLOW_ABS,
+    FOLLOW_MAX,
 };
 
 enum
 {
     LAND_HOME,
     LAND_SPOT,
+    LAND_MAX,
 };
 
 enum

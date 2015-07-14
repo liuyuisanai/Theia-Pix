@@ -256,6 +256,14 @@ Base* Menu::doEvent(int orbId)
     {
         nextMode = switchEntry(entries[currentEntry].prev);
     }
+    else if (key_pressed(BTN_UP))
+    {
+        nextMode = makeAction();
+    }
+    else if (key_pressed(BTN_DOWN))
+    {
+        nextMode = makeAction();
+    }
 
     return nextMode;
 }
@@ -263,11 +271,93 @@ Base* Menu::doEvent(int orbId)
 Base* Menu::makeAction()
 {
     Base *nextMode = nullptr;
+    int value = 0;
 
     switch (currentEntry)
     {
         case MENUENTRY_SELECT:
             nextMode = new Main();
+            break;
+
+        case MENUENTRY_ALTITUDE:
+            value = entries[MENUENTRY_ALTITUDE].menuValue;
+            if (key_pressed(BTN_UP))
+            {
+                if (value < 100)
+                {
+                    value += 10;
+                }
+            }
+            else if (key_pressed(BTN_DOWN))
+            {
+                if (value > 0)
+                {
+                    value -= 10;
+                }
+            }
+
+            if (value != entries[MENUENTRY_ALTITUDE].menuValue)
+            {
+                // value was changed
+                entries[MENUENTRY_ALTITUDE].menuValue = value;
+                showEntry();
+            }
+            break;
+
+        case MENUENTRY_FOLLOW:
+            value = entries[MENUENTRY_FOLLOW].menuValue;
+            if (key_pressed(BTN_UP))
+            {
+                value++;
+                if (value == FOLLOW_MAX)
+                {
+                    value = 0;
+                }
+            }
+            else if (key_pressed(BTN_DOWN))
+            {
+                value--;
+                if (value < 0)
+                {
+                    value = FOLLOW_MAX - 1;
+                }
+            }
+
+            if (value != entries[MENUENTRY_FOLLOW].menuValue)
+            {
+                // value was changed
+                entries[MENUENTRY_FOLLOW].menuValue = value;
+                showEntry();
+            }
+
+            break;
+
+        case MENUENTRY_LAND:
+            value = entries[MENUENTRY_LAND].menuValue;
+            if (key_pressed(BTN_UP))
+            {
+                value++;
+                if (value == LAND_MAX)
+                {
+                    value = 0;
+                }
+            }
+            else if (key_pressed(BTN_DOWN))
+            {
+                value--;
+                if (value < 0)
+                {
+                    value = LAND_MAX - 1;
+                }
+            }
+
+            if (value != entries[MENUENTRY_LAND].menuValue)
+            {
+                // value was changed
+                entries[MENUENTRY_LAND].menuValue = value;
+                showEntry();
+            }
+
             break;
     }
 
