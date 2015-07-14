@@ -321,10 +321,8 @@ then
 		if [ x$MAVLINK_TTY = x ]
 		then
 			# if MAVLINK_TTY not set and TELEM_TTY is set.
-			# echo bluetooth21 start $TELEM_TTY factory-param
-			# if bluetooth21 start $TELEM_TTY factory-param
-			echo bluetooth21 start $TELEM_TTY factory listen
-			if bluetooth21 start $TELEM_TTY factory listen
+			echo bluetooth21 start $TELEM_TTY listen
+			if bluetooth21 start $TELEM_TTY listen
 			then
 				set MAVLINK_TTY /dev/bt1
 			fi

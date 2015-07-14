@@ -48,8 +48,6 @@
 MavlinkParametersManager::MavlinkParametersManager(Mavlink *mavlink) : MavlinkStream(mavlink),
 	_send_all_index(-1)
 {
-
-
 }
 
 unsigned
@@ -57,7 +55,6 @@ MavlinkParametersManager::get_size()
 {
 	if (_send_all_index >= 0) {
 		return MAVLINK_MSG_ID_PARAM_VALUE_LEN + MAVLINK_NUM_NON_PAYLOAD_BYTES;
-
 	} else {
 		return 0;
 	}

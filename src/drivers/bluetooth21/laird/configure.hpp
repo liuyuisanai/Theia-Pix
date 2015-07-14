@@ -62,21 +62,37 @@ configure_name(ServiceIO & io)
 #endif
 }
 
+enum class ServiceMode : uint8_t
+{
+	UNDEFINED,
+	FACTORY,
+	USER,
+};
+
 template <typename ServiceIO>
 bool
-configure_before_reboot(ServiceIO & io)
+configure_before_reboot(ServiceIO & io, uint8_t service_mode)
 {
+
 	const uint32_t reg12 = Params::get("A_BT_S12_LINK");
 	const uint32_t reg11 = Params::get("A_BT_S11_RFCOMM");
 	const uint32_t reg80 = Params::get("A_BT_S80_LATENCY");
 	const uint32_t reg84 = Params::get("A_BT_S84_POLL");
+
+	uint32_t reg6 = 14;
+
+    // Factory service mode - no input no output pairing (not secure)
+    if (service_mode == (uint8_t)ServiceMode::FACTORY) reg6 = 12;
+        
+    // User service mode - passcode pairing (more secure)
+    if (service_mode == (uint8_t)ServiceMode::USER) reg6 = 14;
 
 	struct SReg { uint32_t no, value; };
 	SReg regs[] =
 	{
 		/* These registers require module reset */
 		{  3, 1 },     // Profiles: SPP only
-		{  6, 14 },    // Securty mode
+		{  6, reg6 },    // Securty mode
 		{ 12, reg12 }, // Link Supervision Timeout, seconds
 
 		/*

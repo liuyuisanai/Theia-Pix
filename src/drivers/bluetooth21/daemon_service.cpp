@@ -67,7 +67,7 @@ enum class ServiceMode : uint8_t
 static volatile ConnectMode
 connect_mode = ConnectMode::UNDEFINED;
 
-static volatile ServiceMode
+ServiceMode
 service_mode = ServiceMode::UNDEFINED;
 
 bool 
@@ -374,7 +374,7 @@ daemon()
         and connect_mode != ConnectMode::UNDEFINED
 		and fileno(raw_dev) > -1
 		and sync_soft_reset(service_io, svc.sync)
-		and configure_before_reboot(service_io)
+		and configure_before_reboot(service_io, (uint8_t)service_mode)
 		and sync_soft_reset(service_io, svc.sync)
 		and configure_after_reboot(service_io)
 		and dump_s_registers(service_io)
@@ -402,10 +402,7 @@ daemon()
 
 	started = true;
 
-
     service_io.state.pairing.paired_devices = trusted_db_record_count_get(service_io, 1);
-
-
 
     if (connect_mode == ConnectMode::ONE_CONNECT) {
 
@@ -471,13 +468,20 @@ report_status(FILE * fp)
 }
 
 bool
-start(const char smode[], const char cmode[])
+start(const char cmode[], const char smode[])
 {
 	dbg("%s Service::start(%s, %s).\n", PROCESS_NAME, smode, cmode);
 
 	connect_mode = ConnectMode::UNDEFINED;
 	service_mode = ServiceMode::UNDEFINED;
 
+    uint32_t service_mode_param = Params::get("A_BT_SVC_MODE");
+
+    if (service_mode_param == 0) service_mode = ServiceMode::FACTORY;
+    if (service_mode_param == 1) service_mode = ServiceMode::USER;
+
+
+    // If smode argumet is used service_mode will be overwritten
     if (streq(smode, "factory")) {
         service_mode = ServiceMode::FACTORY;
     } else if (streq(smode, "user")) {
