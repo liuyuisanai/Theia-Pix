@@ -4,6 +4,7 @@ extern "C" __EXPORT int main(int argc, const char * const * const argv);
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "images/images.h"
 #include "datamanager.hpp"
 #include "screen.hpp"
@@ -21,6 +22,7 @@ static int deamon_task;
 
 static int leash_convert_voltage_to_percent(float v)
 {
+    static float lastV = 0;
     struct {
         float v;
         int t;
@@ -41,10 +43,20 @@ static int leash_convert_voltage_to_percent(float v)
     double t = 0;
     int p = 0;
 
+    // ignore small changes in voltage
+    // to avoid shaking of battery level
+    if (fabsf(lastV -v) < 0.1f) {
+        v = lastV;
+    }
+    else
+    {
+        lastV = v;
+    }
+
+
     for (int i = 0; data[i].t != -1; i++)
     {
         if (data[i].v > v) {
-            printf("data[i].v %f t %f\n", (double)data[i].v, (double)t);
             t = data[i].t;
         }
         else
@@ -52,8 +64,6 @@ static int leash_convert_voltage_to_percent(float v)
             break;
         }
     }
-
-    printf("t %f\n", (double)t);
 
     if (t > maxTime)
     {
@@ -64,14 +74,6 @@ static int leash_convert_voltage_to_percent(float v)
         p = (int) ((maxTime - t)/maxTime * 100.0);
     }
 
-    //static int lastP = 0;
-    // if (abs(lastP - p) < 5)
-    //{
-    //    p = lastP;
-    //}
-
-    printf("v = %.5f p = %d\n", (double)v, p);
-    //lastP = p;
     return p;
 }
 
