@@ -114,6 +114,8 @@ struct leash_display_s {
     int menuType;
     int menuValue;
     int menuButtons;
+    int infoId;
+    int infoError;
 };
 
 /**

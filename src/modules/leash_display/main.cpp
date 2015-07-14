@@ -19,6 +19,62 @@ static bool thread_running = false;
 static int deamon_task;
 
 
+static int leash_convert_voltage_to_percent(float v)
+{
+    struct {
+        float v;
+        int t;
+    } data[] = {
+    {4.2,  0},
+    {4.1,  20},
+    {4.0,  40},
+    {3.94, 60},
+    {3.87, 80},
+    {3.82, 100},
+    {3.79, 120},
+    {3.77, 140},
+    {3.60, 160},
+    {3.5, 180},
+    {0, -1},
+    };
+    const double maxTime = 180;
+    double t = 0;
+    int p = 0;
+
+    for (int i = 0; data[i].t != -1; i++)
+    {
+        if (data[i].v > v) {
+            printf("data[i].v %f t %f\n", (double)data[i].v, (double)t);
+            t = data[i].t;
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    printf("t %f\n", (double)t);
+
+    if (t > maxTime)
+    {
+        p = 0;
+    }
+    else
+    {
+        p = (int) ((maxTime - t)/maxTime * 100.0);
+    }
+
+    //static int lastP = 0;
+    // if (abs(lastP - p) < 5)
+    //{
+    //    p = lastP;
+    //}
+
+    printf("v = %.5f p = %d\n", (double)v, p);
+    //lastP = p;
+    return p;
+}
+
 static int leash_display_thread_main(int argc, char *argv[])
 {
     DataManager dm;
@@ -29,7 +85,6 @@ static int leash_display_thread_main(int argc, char *argv[])
     int aMode = AIRDOGMODE_NONE;
     int lMode = LAND_HOME;
     int mainMode = 0;
-    int info = 0;
     const char *presetName = "Snowboard";
 
     printf("leash_display started\n");
@@ -54,9 +109,9 @@ static int leash_display_thread_main(int argc, char *argv[])
                     break;
 
                 case LEASHDISPLAY_MAIN:
-                    lb = 100;
+                    lb = leash_convert_voltage_to_percent(dm.system_power.voltage5V_v);
                     mainMode = 0;
-                    Screen::showMain(mainMode, presetName, 90, lb, aMode, fMode, lMode);
+                    Screen::showMain(mainMode, presetName, lb, lb, aMode, fMode, lMode);
                     break;
 
                 case LEASHDISPLAY_MENU:
@@ -65,8 +120,7 @@ static int leash_display_thread_main(int argc, char *argv[])
                     break;
 
                 case LEASHDISPLAY_INFO:
-                    info = 0;
-                    Screen::showInfo(info, 0);
+                    Screen::showInfo(dm.leash_display.infoId, dm.leash_display.infoError);
                     break;
             }
 
@@ -87,7 +141,9 @@ static int leash_display_thread_main(int argc, char *argv[])
                     break;
 
                 case LEASHDISPLAY_MAIN:
-                    Screen::showMain(mainMode, presetName, 90, lb, aMode, fMode, lMode);
+                    lb = leash_convert_voltage_to_percent(dm.system_power.voltage5V_v);
+                    mainMode = 0;
+                    Screen::showMain(mainMode, presetName, lb, lb, aMode, fMode, lMode);
                     break;
 
                 case LEASHDISPLAY_MENU:
@@ -96,7 +152,7 @@ static int leash_display_thread_main(int argc, char *argv[])
                     break;
 
                 case LEASHDISPLAY_INFO:
-                    Screen::showInfo(info, 0);
+                    Screen::showInfo(dm.leash_display.infoId, dm.leash_display.infoError);
                     break;
             }
             display_redraw_all();
