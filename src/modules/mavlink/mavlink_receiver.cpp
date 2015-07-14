@@ -1587,8 +1587,6 @@ MavlinkReceiver::receive_thread(void *arg)
 			continue;
 		}
 
-		fprintf(stderr, "receive_thread read() %i.\n", r);
-
 		nread += r;
 		if (nread < sizeof(buf))
 			continue;
