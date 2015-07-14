@@ -10,6 +10,7 @@ extern "C" __EXPORT int main(int argc, const char * const * const argv);
 #include "datamanager.h"
 #include "modes/base.h"
 #include "modes/logo.h"
+#include "button_handler.h"
 
 static bool main_thread_should_exit = false;
 static bool thread_running = false;
@@ -30,6 +31,7 @@ static int app_main_thread(int argc, char *argv[]) {
         currentMode->listenForEvents(dm->awaitMask);
 
         bool hasChange = dm->wait(timeout);
+
 
         if (hasChange)
         {

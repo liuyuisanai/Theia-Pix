@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../datamanager.h"
+#include "../button_handler.h"
 
 namespace modes
 {

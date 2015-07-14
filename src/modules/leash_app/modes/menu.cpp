@@ -74,20 +74,20 @@ Base* Menu::doEvent(int orbId)
 {
     printf("buttons %x \n", DataManager::instance()->kbd_handler.buttons);
 
-    if (DataManager::instance()->kbd_handler.buttons == 0x1)
-    { // ok
+    if(key_pressed(BTN_OK))
+    {
         switchEntry(entries[currentEntry].ok);
     }
-    else if (DataManager::instance()->kbd_handler.buttons == 0x10)
-    { // back
+    else if (key_pressed(BTN_BACK))
+    {
         switchEntry(entries[currentEntry].back);
     }
-    else if (DataManager::instance()->kbd_handler.buttons == 0x20)
-    { // right
+    else if (key_pressed(BTN_RIGHT))
+    {
         switchEntry(entries[currentEntry].next);
     }
-    else if (DataManager::instance()->kbd_handler.buttons == 0x100)
-    { // left
+    else if (key_pressed(BTN_LEFT))
+    {
         switchEntry(entries[currentEntry].prev);
     }
 

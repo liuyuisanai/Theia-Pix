@@ -46,7 +46,7 @@ DataManager::~DataManager()
 
 DataManager* DataManager::instance()
 {
-    if (_instance == nullptr)
+    if (_instance == nullptr) 
     {
         _instance = new DataManager();
     }
@@ -78,7 +78,7 @@ bool DataManager::wait(int timeout)
 
     if (r == -1)
     {
-        printf("poll failed. errno %d\n", errno);
+        DOG_PRINT("[leash datamanager] poll failed. errno %d\n", errno);
     }
 
     for (int i = 0; i < FD_Size; i++)
