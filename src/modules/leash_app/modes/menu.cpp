@@ -9,6 +9,7 @@ namespace modes
 {
 struct Menu::Entry Menu::entries[Menu::MENUENTRY_SIZE] =
 {
+// -------- Top level menu
 {
     // Menu::MENUENTRY_ACTIVITIES,
     MENUTYPE_ACTIVITIES,
@@ -28,7 +29,7 @@ struct Menu::Entry Menu::entries[Menu::MENUENTRY_SIZE] =
     nullptr, // use previous preset name
     Menu::MENUENTRY_SETTINGS,
     Menu::MENUENTRY_ACTIVITIES,
-    -1,
+    Menu::MENUENTRY_ALTITUDE,
     Menu::MENUENTRY_EXIT,
 },
 {
@@ -42,6 +43,8 @@ struct Menu::Entry Menu::entries[Menu::MENUENTRY_SIZE] =
     Menu::MENUENTRY_PAIRING,
     Menu::MENUENTRY_EXIT,
 },
+
+// -------- Activities list
 {
     // Menu::MENUENTRY_SNOWBOARD,
     MENUTYPE_SNOWBOARD,
@@ -64,17 +67,21 @@ struct Menu::Entry Menu::entries[Menu::MENUENTRY_SIZE] =
     Menu::MENUENTRY_SELECT,
     Menu::MENUENTRY_ACTIVITIES,
 },
+
+// -------- Activity menu
 {
     // Menu::MENUENTRY_SELECT,
     MENUTYPE_SELECT,
     0,
     0,
     nullptr, // use previous preset name
-    -1,
-    -1,
-    -1,
+    Menu::MENUENTRY_IGNORE,
+    Menu::MENUENTRY_IGNORE,
+    Menu::MENUENTRY_ACTION,
     Menu::MENUENTRY_PREVIOUS,
 },
+
+// -------- Settings menu
 {
     // Menu::MENUENTRY_PAIRING,
     MENUTYPE_PAIRING,
@@ -84,7 +91,7 @@ struct Menu::Entry Menu::entries[Menu::MENUENTRY_SIZE] =
     Menu::MENUENTRY_CALIBRATION,
     Menu::MENUENTRY_AIRDOG_CALIBRATION,
     Menu::MENUENTRY_IGNORE,
-    Menu::MENUENTRY_PREVIOUS,
+    Menu::MENUENTRY_SETTINGS,
 },
 {
     // Menu::MENUENTRY_CALIBRATION,
@@ -94,8 +101,8 @@ struct Menu::Entry Menu::entries[Menu::MENUENTRY_SIZE] =
     nullptr, // use previous preset name
     Menu::MENUENTRY_AIRDOG_CALIBRATION,
     Menu::MENUENTRY_PAIRING,
-    -1,
-    Menu::MENUENTRY_PREVIOUS,
+    Menu::MENUENTRY_COMPASS,
+    Menu::MENUENTRY_SETTINGS,
 },
 {
     // Menu::MENUENTRY_AIRDOG_CALIBRATION,
@@ -105,8 +112,100 @@ struct Menu::Entry Menu::entries[Menu::MENUENTRY_SIZE] =
     nullptr, // use previous preset name
     Menu::MENUENTRY_PAIRING,
     Menu::MENUENTRY_CALIBRATION,
-    -1,
+    Menu::MENUENTRY_COMPASS,
+    Menu::MENUENTRY_SETTINGS,
+},
+
+// -------- Calibration menu
+{
+    // Menu::MENUENTRY_COMPASS,
+    MENUTYPE_COMPASS,
+    0,
+    MENUBUTTON_LEFT | MENUBUTTON_RIGHT,
+    nullptr, // use previous preset name
+    Menu::MENUENTRY_ACCELS,
+    Menu::MENUENTRY_GYRO,
+    Menu::MENUENTRY_IGNORE,
     Menu::MENUENTRY_PREVIOUS,
+},
+{
+    // Menu::MENUENTRY_ACCELS,
+    MENUTYPE_ACCELS,
+    0,
+    MENUBUTTON_LEFT | MENUBUTTON_RIGHT,
+    nullptr, // use previous preset name
+    Menu::MENUENTRY_GYRO,
+    Menu::MENUENTRY_COMPASS,
+    Menu::MENUENTRY_IGNORE,
+    Menu::MENUENTRY_PREVIOUS,
+},
+{
+    // Menu::MENUENTRY_GYRO,
+    MENUTYPE_GYRO,
+    0,
+    MENUBUTTON_LEFT | MENUBUTTON_RIGHT,
+    nullptr, // use previous preset name
+    Menu::MENUENTRY_COMPASS,
+    Menu::MENUENTRY_ACCELS,
+    Menu::MENUENTRY_IGNORE,
+    Menu::MENUENTRY_PREVIOUS,
+},
+
+// -------- Customize menu
+{
+    // Menu::MENUENTRY_ALTITUDE,
+    MENUTYPE_ALTITUDE,
+    0,
+    MENUBUTTON_LEFT | MENUBUTTON_RIGHT,
+    nullptr, // use previous preset name
+    Menu::MENUENTRY_FOLLOW,
+    Menu::MENUENTRY_CANCEL,
+    Menu::MENUENTRY_IGNORE,
+    Menu::MENUENTRY_CUSTOMIZE,
+},
+{
+    // Menu::MENUENTRY_FOLLOW,
+    MENUTYPE_FOLLOW,
+    0,
+    MENUBUTTON_LEFT | MENUBUTTON_RIGHT,
+    nullptr, // use previous preset name
+    Menu::MENUENTRY_LAND,
+    Menu::MENUENTRY_ALTITUDE,
+    Menu::MENUENTRY_IGNORE,
+    Menu::MENUENTRY_CUSTOMIZE,
+},
+{
+    // Menu::MENUENTRY_LAND,
+    MENUTYPE_LANDING,
+    0,
+    MENUBUTTON_LEFT | MENUBUTTON_RIGHT,
+    nullptr, // use previous preset name
+    Menu::MENUENTRY_SAVE,
+    Menu::MENUENTRY_FOLLOW,
+    Menu::MENUENTRY_IGNORE,
+    Menu::MENUENTRY_CUSTOMIZE,
+},
+{
+    // Menu::MENUENTRY_SAVE,
+    MENUTYPE_SAVE,
+    0,
+    MENUBUTTON_LEFT | MENUBUTTON_RIGHT,
+    nullptr, // use previous preset name
+    Menu::MENUENTRY_CANCEL,
+    Menu::MENUENTRY_LAND,
+    Menu::MENUENTRY_IGNORE,
+    Menu::MENUENTRY_CUSTOMIZE,
+},
+{
+    // Menu::MENUENTRY_CANCEL,
+    MENUTYPE_CANCEL,
+    0,
+    MENUBUTTON_LEFT | MENUBUTTON_RIGHT,
+    nullptr, // use previous preset name
+    Menu::MENUENTRY_ALTITUDE,
+    Menu::MENUENTRY_SAVE,
+    Menu::MENUENTRY_IGNORE,
+    Menu::MENUENTRY_CUSTOMIZE,
 },
 };
 
@@ -143,23 +242,33 @@ Base* Menu::doEvent(int orbId)
             previousEntry = currentEntry;
         }
 
-        switchEntry(entries[currentEntry].ok);
+        nextMode = switchEntry(entries[currentEntry].ok);
     }
     else if (key_pressed(BTN_BACK))
     {
-        switchEntry(entries[currentEntry].back);
-        if (currentEntry == MENUENTRY_EXIT)
-        {
-            nextMode = new Main();
-        }
+        nextMode = switchEntry(entries[currentEntry].back);
     }
     else if (key_pressed(BTN_RIGHT))
     {
-        switchEntry(entries[currentEntry].next);
+        nextMode = switchEntry(entries[currentEntry].next);
     }
     else if (key_pressed(BTN_LEFT))
     {
-        switchEntry(entries[currentEntry].prev);
+        nextMode = switchEntry(entries[currentEntry].prev);
+    }
+
+    return nextMode;
+}
+
+Base* Menu::makeAction()
+{
+    Base *nextMode = nullptr;
+
+    switch (currentEntry)
+    {
+        case MENUENTRY_SELECT:
+            nextMode = new Main();
+            break;
     }
 
     return nextMode;
@@ -179,19 +288,21 @@ void Menu::showEntry()
                             entries[currentEntry].menuValue, presetName);
 }
 
-void Menu::switchEntry(int newEntry)
+Base* Menu::switchEntry(int newEntry)
 {
+    Base *nextMode = nullptr;
+
     if (newEntry == MENUENTRY_PREVIOUS)
     {
         switchEntry(previousEntry);
     }
-    else if (newEntry == MENUENTRY_IGNORE)
+    else if (newEntry == MENUENTRY_ACTION)
     {
-
+        nextMode = makeAction();
     }
     else if (newEntry == MENUENTRY_EXIT)
     {
-        currentEntry = newEntry;
+        nextMode = new Main();
     }
     else if (newEntry < MENUENTRY_SIZE && newEntry >= 0)
     {
@@ -204,6 +315,8 @@ void Menu::switchEntry(int newEntry)
         }
         showEntry();
     }
+
+    return nextMode;
 }
 
 }

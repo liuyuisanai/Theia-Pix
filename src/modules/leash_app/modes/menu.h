@@ -19,19 +19,42 @@ public:
 protected:
     enum {
         // functional entries
+        MENUENTRY_ACTION = - 4,
         MENUENTRY_PREVIOUS = -3,
         MENUENTRY_IGNORE = -2,
         MENUENTRY_EXIT = -1,
-        // normal entries
+        // Menu entries
+
+        // Top level menu
         MENUENTRY_ACTIVITIES,
         MENUENTRY_CUSTOMIZE,
         MENUENTRY_SETTINGS,
+
+        // Activities list
         MENUENTRY_SNOWBOARD,
         MENUENTRY_SURF,
+
+        // Activity menu
         MENUENTRY_SELECT,
+
+        // Settings menu
         MENUENTRY_PAIRING,
         MENUENTRY_CALIBRATION,
         MENUENTRY_AIRDOG_CALIBRATION,
+
+        // Calibration menu
+        MENUENTRY_COMPASS,
+        MENUENTRY_ACCELS,
+        MENUENTRY_GYRO,
+
+        // Customize menu
+        MENUENTRY_ALTITUDE,
+        MENUENTRY_FOLLOW,
+        MENUENTRY_LAND,
+        MENUENTRY_SAVE,
+        MENUENTRY_CANCEL,
+
+        // Total menu entries count
         MENUENTRY_SIZE
     };
 
@@ -53,8 +76,9 @@ protected:
     const char *currentPresetName;
     static struct Entry entries[MENUENTRY_SIZE];
 
+    Base* makeAction();
     void showEntry();
-    void switchEntry(int newEntry);
+    Base* switchEntry(int newEntry);
 };
 
 }
