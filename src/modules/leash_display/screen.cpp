@@ -300,6 +300,11 @@ void Screen::showMenu(int buttons, int type, int value, const char *presetName)
             text = "Calibration";
             break;
 
+        case MENUTYPE_CALIBRATION_AIRDOG:
+            imageId = IMAGE_SCREENS_ICONS_CALIBRATION;
+            text = "Airdog calib";
+            break;
+
         case MENUTYPE_COMPASS:
             imageId = IMAGE_SCREENS_ICONS_COMPASS;
             text = "Compass";

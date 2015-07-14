@@ -18,10 +18,20 @@ public:
 
 protected:
     enum {
+        // functional entries
+        MENUENTRY_PREVIOUS = -3,
+        MENUENTRY_IGNORE = -2,
+        MENUENTRY_EXIT = -1,
+        // normal entries
         MENUENTRY_ACTIVITIES,
+        MENUENTRY_CUSTOMIZE,
         MENUENTRY_SETTINGS,
         MENUENTRY_SNOWBOARD,
         MENUENTRY_SURF,
+        MENUENTRY_SELECT,
+        MENUENTRY_PAIRING,
+        MENUENTRY_CALIBRATION,
+        MENUENTRY_AIRDOG_CALIBRATION,
         MENUENTRY_SIZE
     };
 
@@ -30,7 +40,7 @@ protected:
         int menuType;
         int menuValue;
         int menuButtons;
-        char *presetName;
+        const char *text;
         int next;
         int prev;
         int ok;
@@ -38,6 +48,9 @@ protected:
     };
 
     int currentEntry;
+    int previousEntry;
+    //TODO: get current preset from somewhere
+    const char *currentPresetName;
     static struct Entry entries[MENUENTRY_SIZE];
 
     void showEntry();
