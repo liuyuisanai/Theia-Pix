@@ -6,6 +6,7 @@
 #include "../bt_types.hpp"
 #include "../debug.hpp"
 #include "../svc_pairing.hpp"
+#include "../svc_globals.hpp"
 
 #include "service_defs.hpp"
 #include "service_io.hpp"
@@ -143,44 +144,47 @@ bool
 handle(ServiceBlockingIO< Device, State > & service_io, PairingState & self, const RESPONSE_EVENT_UNION & p)
 {
 
-    switch (get_event_id(p))
-    {
-        case EVT_SIMPLE_PAIRING: 
+    if (Globals::Service::get_pairing_status()) {
+    // Preventing auto pairing messages. In the case when device have device B in its trusted db it will try to pair auto.
 
-            dbg("->EVT_SIMPLE_PAIRING\n");
+        switch (get_event_id(p))
+        {
+            case EVT_SIMPLE_PAIRING: 
 
-            handle_evt_simple_pairing(service_io, p);
+                dbg("->EVT_SIMPLE_PAIRING\n");
 
-            break;
+                handle_evt_simple_pairing(service_io, p);
 
-        case EVT_LINK_KEY_EX:
+                break;
 
-            dbg("->EVT_LINK_KEY_EX\n");
+            case EVT_LINK_KEY_EX:
 
-
-            dbg("Link key received.\n");
-
-            // self.link_key = p.evtLinkKeyEx.linkKey;
-            // Link key received - add to trusted db?
-            
-            // dbg("Pairing done. Adding trusted key. ");
-            // bool ok = add_trusted_key(service_io, pairing_address, svc.pairing.link_key);
+                dbg("->EVT_LINK_KEY_EX\n");
 
 
-            break;
+                dbg("Link key received.\n");
 
-        case EVT_LINK_KEY:
+                // self.link_key = p.evtLinkKeyEx.linkKey;
+                // Link key received - add to trusted db?
+                
+                // dbg("Pairing done. Adding trusted key. ");
+                // bool ok = add_trusted_key(service_io, pairing_address, svc.pairing.link_key);
 
-            dbg("->EVT_LINK_KEY\n");
 
-            // If EVT_LINK_KEY is received then this device is added to ROLLING trust db
-            // Let's move it to PERSISTANT trust db
-            
-            move_rolling_to_persistant(service_io, p.evtLinkKey.bdAddr);
-            service_io.state.pairing.paired_devices++;
+                break;
 
-            break;
+            case EVT_LINK_KEY:
 
+                dbg("->EVT_LINK_KEY\n");
+
+                // If EVT_LINK_KEY is received then this device is added to ROLLING trust db
+                // Let's move it to PERSISTANT trust db
+                
+                move_rolling_to_persistant(service_io, p.evtLinkKey.bdAddr);
+                service_io.state.pairing.paired_devices++;
+
+                break;
+        }
     }
 
     return false;

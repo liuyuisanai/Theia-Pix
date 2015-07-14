@@ -58,11 +58,8 @@ handle_service_packet(ServiceBlockingIO< Device, State > & service_io, const RES
 	processed =   handle(service_io.state.sync, packet)   or processed;
 	processed =   handle(service_io.state.conn, packet)   or processed;
 	processed =   handle(service_io.state.inq, packet)    or processed;
+    processed =   handle(service_io, service_io.state.pairing, packet) or processed;
 
-    if (Globals::Service::get_pairing_status() == true) {
-        // Preventing auto pairing messages. In the case when device have device B in its trusted db it will try to pair auto.
-        processed =   handle(service_io, service_io.state.pairing, packet) or processed;
-    }
 	return processed;
 }
 
