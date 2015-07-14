@@ -263,7 +263,7 @@ synced_loop(MultiPlexer & mp, ServiceIO & service_io, ServiceState & svc)
 
                         dbg("Pairing activated\n");
 
-                        svc.global_state = GLOBAL_STATE::PAIRING;
+                        svc.global_state = GLOBAL_BT_STATE::PAIRING;
 
                         publish_bt_state(svc);
 
@@ -290,16 +290,16 @@ synced_loop(MultiPlexer & mp, ServiceIO & service_io, ServiceState & svc)
 
         if (count_connections(svc.conn) > 0) {
 
-            svc.global_state = GLOBAL_STATE::CONNECTED;
+            svc.global_state = GLOBAL_BT_STATE::CONNECTED;
 
         } else if (svc.pairing.paired_devices == 0) {
 
-            svc.global_state = GLOBAL_STATE::PAIRING;
-            Globals::Service::turn_pairing_on();
+            svc.global_state = GLOBAL_BT_STATE::NO_PAIRED_DEVICES;
 
         } else {
 
-            svc.global_state = GLOBAL_STATE::CONNECTING;
+            svc.global_state = GLOBAL_BT_STATE::CONNECTING;
+
         }
 
         publish_bt_state(svc);
@@ -381,8 +381,13 @@ daemon()
 	);
 
     if (should_run && service_mode == ServiceMode::FACTORY) {
-		should_run = configure_factory(service_io)
-            and switch_discoverable(service_io, true);
+
+        Globals::Service::turn_pairing_on();
+		should_run = configure_factory(service_io);
+
+        if (should_run && connect_mode == ConnectMode::LISTEN)
+            should_run = switch_discoverable(service_io, true);
+
     }
 
 	if (should_run) { fprintf(stderr, "%s started.\n", PROCESS_NAME); }
@@ -397,7 +402,10 @@ daemon()
 
 	started = true;
 
+
     service_io.state.pairing.paired_devices = trusted_db_record_count_get(service_io, 1);
+
+
 
     if (connect_mode == ConnectMode::ONE_CONNECT) {
 

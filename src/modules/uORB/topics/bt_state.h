@@ -14,16 +14,17 @@
  * @addtogroup topics @{
  */
 
-enum GLOBAL_STATE {
+enum GLOBAL_BT_STATE {
 
     PAIRING = 0,
-    CONNECTING = 1,
-    CONNECTED = 2
+    NO_PAIRED_DEVICES,
+    CONNECTING,
+    CONNECTED
 
 };
 
 struct bt_state_s {
-    GLOBAL_STATE global_state;
+    GLOBAL_BT_STATE global_state;
 };
 
 /**

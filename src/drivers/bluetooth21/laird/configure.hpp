@@ -146,6 +146,7 @@ trust_factory(ServiceIO & io)
 		if (factory_addresses[i] != local_addr)
 		{
 			ok = add_trusted_key(io, factory_addresses[i], key);
+            ok = ok && move_rolling_to_persistant(io, factory_addresses[i]);
 			if (not ok) { break; }
 		}
 

@@ -39,7 +39,7 @@ struct ServiceState
 	SyncState sync;
     PairingState pairing;
 
-    GLOBAL_STATE global_state;
+    GLOBAL_BT_STATE global_state;
 
 };
 
