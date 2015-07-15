@@ -310,6 +310,8 @@ unregister_all_devices()
 {
 	for (device_index_t di = 0; di <= 7; ++di)
 		unregister_driver(devname[di]);
+
+    unregister_driver(devname_ctl);
 }
 
 
