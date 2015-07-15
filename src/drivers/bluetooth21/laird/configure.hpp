@@ -172,7 +172,7 @@ trust_factory(ServiceIO & io)
 template <typename ServiceIO>
 bool
 configure_factory(ServiceIO & io)
-{ return drop_trusted_db(io) and trust_factory(io); }
+{ return drop_trusted_db(io); }
 
 template <typename ServiceIO>
 bool
