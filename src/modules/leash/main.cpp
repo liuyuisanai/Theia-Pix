@@ -182,6 +182,6 @@ main(int argc, const char *argv[])
 		return 1;
 	}
 
-	fprintf(stderr, "main() is returning 0");
+	fprintf(stderr, "main() is returning 0\n");
 	return 0;
 }

@@ -94,7 +94,7 @@ daemon()
 	if (should_run) { fprintf(stderr, "%s started.\n", PROCESS_NAME); }
 	else
 	{
-		fprintf(stderr, "%s start failed: %s."
+		fprintf(stderr, "%s start failed: %s.\n"
 				, PROCESS_NAME
 				, strerror(errno)
 		);
