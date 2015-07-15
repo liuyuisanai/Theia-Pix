@@ -27,6 +27,7 @@ class ModeConnect : public Base
 
         // == methods ==
         void getConState();
+        void BTPairing(bool start = 1);
 
 };
 

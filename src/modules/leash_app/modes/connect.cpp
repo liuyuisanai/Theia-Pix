@@ -2,10 +2,19 @@
 #include "menu.h"
 
 #include <stdio.h>
+#include <sys/ioctl.h>
+#include <fcntl.h>
 
 #include "../datamanager.h"
 #include "../button_handler.h"
 #include "../displayhelper.h"
+
+
+#define _BLUETOOTH21_BASE       0x2d00
+
+#define PAIRING_ON          _IOC(_BLUETOOTH21_BASE, 0)
+#define PAIRING_OFF         _IOC(_BLUETOOTH21_BASE, 1)
+
 
 namespace modes
 {
@@ -49,11 +58,15 @@ Base* ModeConnect::doEvent(int orbId)
         DisplayHelper::showInfo(INFO_PAIRING, 0);
         if (key_pressed(BTN_OK)) {
             DOG_PRINT("[modes]{connection} start pairing!\n");
-            //[TODO:Max] initialize pairing with ioctl command to bt module
+            BTPairing(true);
         }
     }
     else if (CurrentState == ModeState::PAIRING) {
         DisplayHelper::showInfo(INFO_PAIRING, 0);
+        if (key_LongPressed(BTN_MODE)) {
+            DOG_PRINT("[modes]{connection} stop pairing!\n");
+            BTPairing(false);
+        }
     }
     else {
         DisplayHelper::showInfo(INFO_FAILED, 0);
@@ -85,6 +98,20 @@ void ModeConnect::getConState()
             CurrentState = ModeState::UNKNOWN;
             break;
     }
+}
+
+void ModeConnect::BTPairing(bool start)
+{
+    int fd = open("/dev/btctl", 0);
+
+    if (fd > 0) {
+        if (start)
+            ioctl(fd, PAIRING_ON, 0);
+        else
+            ioctl(fd, PAIRING_OFF, 0);
+    }
+
+    close(fd);
 }
 
 } //end of namespace modes

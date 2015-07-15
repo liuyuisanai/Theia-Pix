@@ -22,7 +22,7 @@ streq(const char *a, const char *b) {
 static void
 usage()
 {
-    fprintf(stderr, "Usage:\n"
+    printf("Usage:\n"
         "\tclh pairing [on|off|toggle]\n"
         "\n"
     );
@@ -75,7 +75,7 @@ int
 main(int argc, char const * const * argv)
 {
 	if (argc < 3) {
-		fprintf(stderr,"Usage: %s tty commands\n", argv[0]);
+        usage();
 		return 1;
 	}
 
