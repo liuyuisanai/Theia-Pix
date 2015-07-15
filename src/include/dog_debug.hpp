@@ -12,12 +12,6 @@
 
 #else
 
-/* Prevent unused-variable errors and warnings while debug is disabled. */
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmissing-prototypes"
-inline void
-DOG_PRINT(const char fmt[], ...) {}
-#pragma GCC diagnostic pop
+#define DOG_PRINT(...) {}
 
 #endif
