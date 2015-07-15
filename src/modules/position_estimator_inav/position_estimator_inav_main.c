@@ -513,12 +513,9 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 
                                         current_range.timestamp = t;
 
-                                        //float angle_correction = 1;
-                                        //if (att.R[2][2] < 0.85f) {
-                                        //    angle_correction = 0.95; //cos(15) <- maximal correction if we are flying with pi/4 angle
-                                        //    range_finder.distance *= angle_correction;
-                                        //}
-                                        /* hack by max */
+                                        /* distance correction from angle */
+                                        float new_distance = range_finder.distance * att.R[2][2];
+                                        range_finder.distance = new_distance;
 
                                         if (t > prev_range.timestamp + sonar_timeout && prev_range.valid == false) {
                                             // If we were not working some time already - don't consider first measurment true
