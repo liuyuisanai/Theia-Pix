@@ -5,7 +5,7 @@ SRCS			= \
     modes/logo.cpp \
     modes/main.cpp \
     modes/menu.cpp \
-    modes/connections.cpp \
+    modes/connect.cpp \
     main.cpp  \
     datamanager.cpp \
     displayhelper.cpp \

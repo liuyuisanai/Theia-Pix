@@ -4,7 +4,7 @@
 
 #include "../displayhelper.h"
 
-#include "connections.h"
+#include "connect.h"
 
 namespace modes
 {

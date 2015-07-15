@@ -1,4 +1,4 @@
-#include "connections.h"
+#include "connect.h"
 #include "menu.h"
 
 #include <stdio.h>
