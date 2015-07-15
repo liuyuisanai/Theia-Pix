@@ -4,7 +4,7 @@
 
 #include "../displayhelper.h"
 
-#include "main.h"
+#include "connections.h"
 
 namespace modes
 {
@@ -25,7 +25,7 @@ void Logo::listenForEvents(bool awaitMask[])
 
 Base* Logo::doEvent(int orbId)
 {
-    return new Main();
+    return new ModeConnect();
 }
 
 }

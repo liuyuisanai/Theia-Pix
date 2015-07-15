@@ -4,10 +4,11 @@
 
 namespace modes {
 
-class Connections : public Base
+class ModeConnect : public Base
 {
     public:
-        Connections();
+        ModeConnect();
+        virtual ~ModeConnect();
 
         virtual int getTimeout();
         virtual void listenForEvents(bool awaitMask[]);
@@ -23,6 +24,9 @@ class Connections : public Base
         };
 
         ModeState CurrentState;
+
+        // == methods ==
+        void getConState();
 
 };
 

@@ -5,9 +5,11 @@ SRCS			= \
     modes/logo.cpp \
     modes/main.cpp \
     modes/menu.cpp \
+    modes/connections.cpp \
     main.cpp  \
     datamanager.cpp \
     displayhelper.cpp \
 	button_handler.cpp
 
+DEFAULT_VISIBILITY = protected
 CXXFLAGS		+= -std=c++11 -Dmain=${MODULE_COMMAND}_main

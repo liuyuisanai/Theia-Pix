@@ -30,20 +30,6 @@ struct PeriodicAction
 	exec(hrt_abstime) = 0;
 };
 
-//struct PeriodicSayAlive : PeriodicAction
-//{
-//	unsigned n;
-//	PeriodicSayAlive()
-//	: PeriodicAction(3600000/*us*/), n(0)
-//	{}
-//
-//	void
-//	exec(hrt_abstime) override {
-//		fprintf(stderr, "me is alive (%i)\n", n);
-//		++n;
-//	}
-//};
-
 struct Timeout
 {
 	using ModeId = kbd_handler::ModeId;

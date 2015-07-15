@@ -10,6 +10,7 @@ extern "C" __EXPORT int main(int argc, const char * const * const argv);
 #include "datamanager.h"
 #include "modes/base.h"
 #include "modes/logo.h"
+#include "modes/connections.h"
 #include "button_handler.h"
 
 static bool main_thread_should_exit = false;

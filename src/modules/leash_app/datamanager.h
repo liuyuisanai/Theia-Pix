@@ -5,12 +5,14 @@
 #include <uORB/topics/airdog_status.h>
 #include <uORB/topics/leash_display.h>
 #include <uORB/topics/system_power.h>
+#include <uORB/topics/bt_state.h>
 
 enum Orbs
 {
     FD_AirdogStatus = 0,
     FD_SystemPower,
     FD_KbdHandler,
+    FD_BLRHandler,
     FD_Size
 };
 
@@ -27,6 +29,7 @@ public:
     struct airdog_status_s airdog_status;
     struct system_power_s system_power;
     struct kbd_handler_s kbd_handler;
+    struct bt_state_s bt_handler;
 
     bool wait(int timeout);
     void clearAwait();
