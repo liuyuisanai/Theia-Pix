@@ -1,8 +1,10 @@
 #include "main.h"
 
 #include <uORB/topics/leash_display.h>
+#include <uORB/topics/bt_state.h>
 
 #include "menu.h"
+#include "connect.h"
 #include "../displayhelper.h"
 
 namespace modes
@@ -22,15 +24,27 @@ int Main::getTimeout()
 void Main::listenForEvents(bool awaitMask[])
 {
     awaitMask[FD_KbdHandler] = 1;
+    awaitMask[FD_BLRHandler] = 1;
 }
 
 Base* Main::doEvent(int orbId)
 {
     Base *nextMode = nullptr;
 
-    if (key_pressed(BTN_MODE))
+    if (orbId == FD_KbdHandler) 
     {
-        nextMode = new Menu();
+        if (key_pressed(BTN_MODE))
+        {
+            nextMode = new Menu();
+        }
+    }
+    else if (orbId == FD_BLRHandler)
+    {
+        DataManager *dm = DataManager::instance();
+        if (dm->bt_handler.global_state == CONNECTING)
+        {
+            nextMode = new ModeConnect(ModeState::DISCONNECTED);
+        }
     }
 
     return nextMode;

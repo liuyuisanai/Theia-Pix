@@ -1,5 +1,6 @@
 #include "connect.h"
 #include "menu.h"
+#include "main.h"
 
 #include <stdio.h>
 #include <sys/ioctl.h>
@@ -19,9 +20,10 @@
 namespace modes
 {
 
-ModeConnect::ModeConnect()
-    : CurrentState(ModeState::UNKNOWN)
+ModeConnect::ModeConnect(ModeState Current)
+    : currentState(Current)
 {
+    DOG_PRINT("[mode]{connection} currentState :%s\n", currentState == ModeState::DISCONNECTED ? "DISCONNECTED" : "not known");
     doEvent(0);
 }
 
@@ -42,27 +44,28 @@ Base* ModeConnect::doEvent(int orbId)
 {
     Base *nextMode = nullptr;
 
+    getConState();
+    DOG_PRINT("[modes]{connection} doEvent orbId: %d\n", orbId);
     if (orbId == FD_BLRHandler)
     {
-        getConState();
-        DOG_PRINT("[modes]{connection} doingEvent state: %d\n", CurrentState);
-        if (CurrentState == ModeState::CONNECTING) 
+        DOG_PRINT("[modes]{connection} doingEvent state: %d\n", currentState);
+        if (currentState == ModeState::CONNECTING) 
         {
             DisplayHelper::showInfo(INFO_CONNECTING_TO_AIRDOG, 0);
         }
-        else if (CurrentState == ModeState::CONNECTED) 
+        else if (currentState == ModeState::CONNECTED) 
         {
-            nextMode = new Menu();
+            nextMode = new Main();
         }
-        else if (CurrentState == ModeState::DISCONNECTED) 
+        else if (currentState == ModeState::DISCONNECTED) 
         {
             DisplayHelper::showInfo(INFO_CONNECTION_LOST, 0);
         }
-        else if (CurrentState == ModeState::NOT_PAIRED) 
+        else if (currentState == ModeState::NOT_PAIRED) 
         {
-            DisplayHelper::showInfo(INFO_PAIRING, 0);
+            DisplayHelper::showInfo(INFO_NOT_PAIRED, 0);
         }
-        else if (CurrentState == ModeState::PAIRING) 
+        else if (currentState == ModeState::PAIRING) 
         {
             DisplayHelper::showInfo(INFO_PAIRING, 0);
         }
@@ -74,24 +77,30 @@ Base* ModeConnect::doEvent(int orbId)
     {
         if (key_pressed(BTN_OK)) 
         {
-            if (CurrentState == ModeState::NOT_PAIRED)
+            if (currentState == ModeState::NOT_PAIRED)
             {
                 DOG_PRINT("[modes]{connection} start pairing!\n");
+                DisplayHelper::showInfo(INFO_NOT_PAIRED, 0);
                 BTPairing(true);
             }
         }
         else if (key_LongPressed(BTN_MODE)) 
         {
-            if (CurrentState == ModeState::PAIRING)
+            if (currentState == ModeState::PAIRING)
             {
                 DOG_PRINT("[modes]{connection} stop pairing!\n");
                 BTPairing(false);
             }
-        }
-        else if (key_LongPressed(BTN_MODE))
-        {
-            if (CurrentState == ModeState::UNKNOWN)
+            else if (currentState == ModeState::UNKNOWN)
+            {
+                DOG_PRINT("[modes]{connection} unknown connection state!\n");
                 nextMode = new Menu();
+            }
+            else if (currentState == ModeState::CONNECTING)
+            {
+                DOG_PRINT("[modes]{connection} connecting now, switching to main menu!\n");
+                nextMode = new Menu();
+            }
         }
     }
     return nextMode;
@@ -100,24 +109,45 @@ Base* ModeConnect::doEvent(int orbId)
 void ModeConnect::getConState()
 {
     DataManager *dm = DataManager::instance();
-    DOG_PRINT("[modes]{connetion}bt_report: %d\n", dm->bt_handler.global_state);
     switch(dm->bt_handler.global_state) {
+        case INITIALIZING :
+        case CONNECTING:
+            if (currentState == ModeState::DISCONNECTED)
+            {
+                break;
+            }
+            else if (currentState == ModeState::PAIRING)
+            {
+                currentState = ModeState::NOT_PAIRED;
+                break;
+            }
+            else 
+            {
+                currentState = ModeState::CONNECTING;
+                break;
+            }
         case NO_PAIRED_DEVICES:
-            CurrentState = ModeState::NOT_PAIRED;
+            currentState = ModeState::NOT_PAIRED;
             break;
         case PAIRING:
-            CurrentState = ModeState::PAIRING;
-            break;
-        case CONNECTING:
-            CurrentState = ModeState::CONNECTING;
+            currentState = ModeState::PAIRING;
             break;
         case CONNECTED:
-            CurrentState = ModeState::CONNECTED;
-            break;
+            if (currentState == ModeState::PAIRING)
+            {
+                currentState = ModeState::NOT_PAIRED;
+                break;
+            }
+            else
+            {
+                currentState = ModeState::CONNECTED;
+                break;
+            }
         default:
-            CurrentState = ModeState::UNKNOWN;
+            currentState = ModeState::UNKNOWN;
             break;
     }
+    DOG_PRINT("[modes]{connection}currentState: %d\n", currentState);
 }
 
 void ModeConnect::BTPairing(bool start)

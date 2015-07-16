@@ -512,6 +512,13 @@ void Screen::showInfo(int info, int error)
             text[2].font = &Font::LucideGrandeTiny;
             break;
 
+        case INFO_NOT_PAIRED:
+            text[0].text = "Not paired";
+            text[0].font = &Font::LucideGrandeMed;
+            text[1].text = "Press OK to pair";
+            text[1].font = &Font::LucideGrandeSmall;
+            break;
+
         case INFO_ACQUIRING_GPS_LEASH:
             text[0].text = "Acquiring GPS";
             text[0].font = &Font::LucideGrandeSmall;
