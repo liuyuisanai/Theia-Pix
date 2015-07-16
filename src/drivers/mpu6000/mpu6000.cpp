@@ -1268,6 +1268,22 @@ MPU6000::measure()
 		return;
 	}
 
+	/*
+	 * Report buffers.
+	 */
+	accel_report		arb;
+	gyro_report		grb;
+
+	/*
+	 * Report rawest of the raw data before any swaps or other bullshit
+	 */
+	arb.x_raw = report.accel_x;
+	arb.y_raw = report.accel_y;
+	arb.z_raw = report.accel_z;
+
+	grb.x_raw = report.gyro_x;
+	grb.y_raw = report.gyro_y;
+	grb.z_raw = report.gyro_z;
 
 	/*
 	 * Swap axes and negate y
@@ -1285,12 +1301,6 @@ MPU6000::measure()
 	report.accel_y = accel_yt;
 	report.gyro_x = gyro_xt;
 	report.gyro_y = gyro_yt;
-
-	/*
-	 * Report buffers.
-	 */
-	accel_report		arb;
-	gyro_report		grb;
 
 	/*
 	 * Adjust and scale results to m/s^2.
@@ -1316,10 +1326,6 @@ MPU6000::measure()
 
 	/* NOTE: Axes have been swapped to match the board a few lines above. */
 
-	arb.x_raw = report.accel_x;
-	arb.y_raw = report.accel_y;
-	arb.z_raw = report.accel_z;
-
 	float x_in_new = ((report.accel_x * _accel_range_scale) - _accel_calibration.offsets(0)) * _accel_calibration.scales(0);
 	float y_in_new = ((report.accel_y * _accel_range_scale) - _accel_calibration.offsets(1)) * _accel_calibration.scales(1);
 	float z_in_new = ((report.accel_z * _accel_range_scale) - _accel_calibration.offsets(2)) * _accel_calibration.scales(2);
@@ -1335,11 +1341,13 @@ MPU6000::measure()
 	arb.range_m_s2 = _accel_range_m_s2;
 
 	arb.temperature_raw = report.temp;
-	arb.temperature = (report.temp) / 361.0f + 35.0f;
-
-	grb.x_raw = report.gyro_x;
-	grb.y_raw = report.gyro_y;
-	grb.z_raw = report.gyro_z;
+	/*
+	 * Conversion formula taken from
+	 * MPU-6000 and MPU-6050
+	 * Register Map and Descriptions
+	 * Revision 4.2
+	 */
+	arb.temperature = float(report.temp) / 340.0f + 36.53f;
 
 	float x_gyro_in_new = ((report.gyro_x * _gyro_range_scale) - _gyro_calibration.offsets(0)) * _gyro_calibration.scales(0);
 	float y_gyro_in_new = ((report.gyro_y * _gyro_range_scale) - _gyro_calibration.offsets(1)) * _gyro_calibration.scales(1);
@@ -1356,7 +1364,13 @@ MPU6000::measure()
 	grb.range_rad_s = _gyro_range_rad_s;
 
 	grb.temperature_raw = report.temp;
-	grb.temperature = (report.temp) / 361.0f + 35.0f;
+	/*
+	 * Conversion formula taken from
+	 * MPU-6000 and MPU-6050
+	 * Register Map and Descriptions
+	 * Revision 4.2
+	 */
+	grb.temperature = float(report.temp) / 340.0f + 36.53f;
 
 	_accel_reports->force(&arb);
 	_gyro_reports->force(&grb);

@@ -1037,6 +1037,8 @@ Sensors::accel_poll(struct sensor_combined_s &raw)
 		raw.accelerometer_raw[1] = accel_report.y_raw;
 		raw.accelerometer_raw[2] = accel_report.z_raw;
 
+		raw.accelerometer_temperature = accel_report.temperature;
+
 		raw.accelerometer_timestamp = accel_report.timestamp;
 	}
 
@@ -1104,6 +1106,8 @@ Sensors::gyro_poll(struct sensor_combined_s &raw)
 		raw.gyro_raw[0] = gyro_report.x_raw;
 		raw.gyro_raw[1] = gyro_report.y_raw;
 		raw.gyro_raw[2] = gyro_report.z_raw;
+
+		raw.gyro_temperature = gyro_report.temperature;
 
 		raw.timestamp = gyro_report.timestamp;
 	}

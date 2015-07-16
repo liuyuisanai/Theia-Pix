@@ -81,12 +81,14 @@ struct sensor_combined_s {
 
 	int16_t	gyro_raw[3];			/**< Raw sensor values of angular velocity        */
 	float gyro_rad_s[3];			/**< Angular velocity in radian per seconds       */
+	float gyro_temperature;			/**< Gyro temperature in degrees Celsius */
 
 	int16_t accelerometer_raw[3];		/**< Raw acceleration in NED body frame           */
 	float accelerometer_m_s2[3];		/**< Acceleration in NED body frame, in m/s^2     */
 	int accelerometer_mode;			/**< Accelerometer measurement mode */
 	float accelerometer_range_m_s2;		/**< Accelerometer measurement range in m/s^2 */
 	uint64_t accelerometer_timestamp;	/**< Accelerometer timestamp        */
+	float accelerometer_temperature;	/**< Accelerometer temperature in degrees Celsius */
 
 	int16_t	magnetometer_raw[3];		/**< Raw magnetic field in NED body frame         */
 	float magnetometer_ga[3];		/**< Magnetic field in NED body frame, in Gauss   */

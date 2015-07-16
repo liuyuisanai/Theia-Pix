@@ -87,6 +87,20 @@ struct log_IMU_s {
 	float mag_z;
 };
 
+/* --- SRAW - RAW SENSORS --- */
+#define LOG_SRAW_MSG 79
+struct log_SRAW_s {
+	int16_t acc_x;
+	int16_t acc_y;
+	int16_t acc_z;
+	int16_t gyro_x;
+	int16_t gyro_y;
+	int16_t gyro_z;
+	int16_t mag_x;
+	int16_t mag_y;
+	int16_t mag_z;
+};
+
 /* --- SENS - OTHER SENSORS --- */
 #define LOG_SENS_MSG 5
 struct log_SENS_s {
@@ -95,6 +109,8 @@ struct log_SENS_s {
 	float baro_temp;
 	float diff_pres;
 	float diff_pres_filtered;
+	float accel_temp;
+	float gyro_temp;
 };
 
 /* --- LPOS - LOCAL POSITION --- */
@@ -535,6 +551,8 @@ struct log_TGPS_s {
 //	uint32_t bytes_received[7];
 //};
 
+/* !!! ID 79 used up by raw sensors
+
 /********** SYSTEM MESSAGES, ID > 0x80 **********/
 
 /* --- TIME - TIME STAMP --- */
@@ -567,7 +585,8 @@ static const struct log_format_s log_formats[] = {
 	LOG_FORMAT_S(IMU, IMU, "fffffffff",		"AccX,AccY,AccZ,GyroX,GyroY,GyroZ,MagX,MagY,MagZ"),
 	LOG_FORMAT_S(IMU1, IMU, "fffffffff",		"AccX,AccY,AccZ,GyroX,GyroY,GyroZ,MagX,MagY,MagZ"),
 	LOG_FORMAT_S(IMU2, IMU, "fffffffff",		"AccX,AccY,AccZ,GyroX,GyroY,GyroZ,MagX,MagY,MagZ"),
-	LOG_FORMAT(SENS, "fffff",		"BaroPres,BaroAlt,BaroTemp,DiffPres,DiffPresFilt"),
+	LOG_FORMAT(SRAW, "hhhhhhhhh", "AccX,AccY,AccZ,GyroX,GyroY,GyroZ,MagX,MagY,MagZ"),
+	LOG_FORMAT(SENS, "fffffff",		"BrPres,BrAlt,BrTemp,DiffPres,DiffPresFilt,AccTemp,GyroTemp"),
 	LOG_FORMAT(LPOS, "ffffffffLLfBBBff",	"X,Y,Z,Dist,DistR,VX,VY,VZ,RLat,RLon,RAlt,PFlg,LFlg,GFlg,EPH,EPV"),
 	LOG_FORMAT(LPSP, "ffff",		"X,Y,Z,Yaw"),
 	LOG_FORMAT(GPS, "QBffLLfffffBHHH",	"GPSTime,Fix,EPH,EPV,Lat,Lon,Alt,VelN,VelE,VelD,Cog,nSat,SNR,N,J"),

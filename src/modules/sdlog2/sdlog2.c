@@ -1274,6 +1274,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 			struct log_ATSP_s log_ATSP;
 			struct log_IMU_s log_IMU;
 			struct log_SENS_s log_SENS;
+			struct log_SRAW_s log_SRAW;
 			struct log_LPOS_s log_LPOS;
 			struct log_LPSP_s log_LPSP;
 			struct log_GPS_s log_GPS;
@@ -1641,15 +1642,29 @@ int sdlog2_thread_main(int argc, char *argv[])
 				log_msg.body.log_IMU.mag_y = buf.sensor.magnetometer_ga[1];
 				log_msg.body.log_IMU.mag_z = buf.sensor.magnetometer_ga[2];
 				LOGBUFFER_WRITE_AND_COUNT(IMU);
+
+				log_msg.msg_type = LOG_SRAW_MSG;
+				log_msg.body.log_SRAW.acc_x = buf.sensor.accelerometer_raw[0];
+				log_msg.body.log_SRAW.acc_y = buf.sensor.accelerometer_raw[1];
+				log_msg.body.log_SRAW.acc_z = buf.sensor.accelerometer_raw[2];
+				log_msg.body.log_SRAW.gyro_x = buf.sensor.gyro_raw[0];
+				log_msg.body.log_SRAW.gyro_y = buf.sensor.gyro_raw[1];
+				log_msg.body.log_SRAW.gyro_z = buf.sensor.gyro_raw[2];
+				log_msg.body.log_SRAW.mag_x = buf.sensor.magnetometer_raw[0];
+				log_msg.body.log_SRAW.mag_y = buf.sensor.magnetometer_raw[1];
+				log_msg.body.log_SRAW.mag_z = buf.sensor.magnetometer_raw[2];
+				LOGBUFFER_WRITE_AND_COUNT(SRAW);
 			}
 
-			if (write_SENS) {
+			if (write_SENS || write_IMU) {
 				log_msg.msg_type = LOG_SENS_MSG;
 				log_msg.body.log_SENS.baro_pres = buf.sensor.baro_pres_mbar;
 				log_msg.body.log_SENS.baro_alt = buf.sensor.baro_alt_meter;
 				log_msg.body.log_SENS.baro_temp = buf.sensor.baro_temp_celcius;
 				log_msg.body.log_SENS.diff_pres = buf.sensor.differential_pressure_pa;
 				log_msg.body.log_SENS.diff_pres_filtered = buf.sensor.differential_pressure_filtered_pa;
+				log_msg.body.log_SENS.accel_temp = buf.sensor.accelerometer_temperature;
+				log_msg.body.log_SENS.gyro_temp = buf.sensor.gyro_temperature;
 				LOGBUFFER_WRITE_AND_COUNT(SENS);
 			}
 
