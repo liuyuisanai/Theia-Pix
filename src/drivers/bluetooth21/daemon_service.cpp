@@ -384,6 +384,10 @@ daemon()
 
 	auto & mp = Globals::Multiplexer::get();
 	ServiceState svc;
+
+    svc.global_state = GLOBAL_BT_STATE::INITIALIZING;
+    publish_bt_state(svc);
+
 	auto service_io = make_service_io(trace.dev, svc);
 	should_run = (service_mode != ServiceMode::UNDEFINED 
         and connect_mode != ConnectMode::UNDEFINED
