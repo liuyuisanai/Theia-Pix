@@ -22,7 +22,6 @@ namespace modes
 ModeConnect::ModeConnect()
     : CurrentState(ModeState::UNKNOWN)
 {
-    DOG_PRINT("[modes]{connection} switched to connection mode\n");
     doEvent(0);
 }
 
@@ -43,35 +42,56 @@ Base* ModeConnect::doEvent(int orbId)
 {
     Base *nextMode = nullptr;
 
-    getConState();
-    DOG_PRINT("[modes]{connection} doingEvent state: %d\n", CurrentState);
-    if (CurrentState == ModeState::CONNECTING) {
-        DisplayHelper::showInfo(INFO_CONNECTING_TO_AIRDOG, 0);
-    }
-    else if (CurrentState == ModeState::CONNECTED) {
-        nextMode = new Menu();
-    }
-    else if (CurrentState == ModeState::DISCONNECTED) {
-        DisplayHelper::showInfo(INFO_CONNECTION_LOST, 0);
-    }
-    else if (CurrentState == ModeState::NOT_PAIRED) {
-        DisplayHelper::showInfo(INFO_PAIRING, 0);
-        if (key_pressed(BTN_OK)) {
-            DOG_PRINT("[modes]{connection} start pairing!\n");
-            BTPairing(true);
+    if (orbId == FD_BLRHandler)
+    {
+        getConState();
+        DOG_PRINT("[modes]{connection} doingEvent state: %d\n", CurrentState);
+        if (CurrentState == ModeState::CONNECTING) 
+        {
+            DisplayHelper::showInfo(INFO_CONNECTING_TO_AIRDOG, 0);
         }
-    }
-    else if (CurrentState == ModeState::PAIRING) {
-        DisplayHelper::showInfo(INFO_PAIRING, 0);
-        if (key_LongPressed(BTN_MODE)) {
-            DOG_PRINT("[modes]{connection} stop pairing!\n");
-            BTPairing(false);
-        }
-    }
-    else {
-        DisplayHelper::showInfo(INFO_FAILED, 0);
-        if (key_LongPressed(BTN_MODE)) {
+        else if (CurrentState == ModeState::CONNECTED) 
+        {
             nextMode = new Menu();
+        }
+        else if (CurrentState == ModeState::DISCONNECTED) 
+        {
+            DisplayHelper::showInfo(INFO_CONNECTION_LOST, 0);
+        }
+        else if (CurrentState == ModeState::NOT_PAIRED) 
+        {
+            DisplayHelper::showInfo(INFO_PAIRING, 0);
+        }
+        else if (CurrentState == ModeState::PAIRING) 
+        {
+            DisplayHelper::showInfo(INFO_PAIRING, 0);
+        }
+        else {
+            DisplayHelper::showInfo(INFO_FAILED, 0);
+        }
+    }
+    else if (orbId == FD_KbdHandler)
+    {
+        if (key_pressed(BTN_OK)) 
+        {
+            if (CurrentState == ModeState::NOT_PAIRED)
+            {
+                DOG_PRINT("[modes]{connection} start pairing!\n");
+                BTPairing(true);
+            }
+        }
+        else if (key_LongPressed(BTN_MODE)) 
+        {
+            if (CurrentState == ModeState::PAIRING)
+            {
+                DOG_PRINT("[modes]{connection} stop pairing!\n");
+                BTPairing(false);
+            }
+        }
+        else if (key_LongPressed(BTN_MODE))
+        {
+            if (CurrentState == ModeState::UNKNOWN)
+                nextMode = new Menu();
         }
     }
     return nextMode;
