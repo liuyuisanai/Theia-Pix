@@ -227,8 +227,8 @@ static bool main_thread_should_exit = false;		/**< Deamon exit flag */
 static bool thread_running = false;			/**< Deamon status flag */
 static int deamon_task;						/**< Handle of deamon task / thread */
 static bool logwriter_should_exit = false;	/**< Logwriter thread exit flag */
-static const unsigned MAX_NO_LOGFOLDER = 999;	/**< Maximum number of log dirs */
-static const unsigned MAX_NO_LOGFILE = 999;		/**< Maximum number of log files */
+static const unsigned MAX_NO_LOGFOLDER = 0xFFFF;	/**< Maximum number of log dirs */
+static const unsigned MAX_NO_LOGFILE = 0xFFFF;		/**< Maximum number of log files */
 static const int LOG_BUFFER_SIZE_DEFAULT = 8192;
 static const int MAX_WRITE_CHUNK = 512;
 static const int MIN_BYTES_TO_WRITE = 512;
@@ -613,7 +613,7 @@ int sdlog2_main(int argc, char *argv[])
 int create_log_dir()
 {
 	/* create dir on sdcard if needed */
-        uint16_t dir_number = 1; // start with dir 0001
+        uint16_t dir_number = 0; // start with dir 0001
 	int mkdir_ret;
         DIR *dir;
         struct dirent *entry;
@@ -2215,7 +2215,7 @@ int file_copy(const char *file_old, const char *file_new)
 	int ret = 0;
 
 	if (source == NULL) {
-		warnx("failed opening input file to copy");
+		warnx("failed opening input file to copy. %s", file_old);
 		return 1;
 	}
 
@@ -2223,7 +2223,7 @@ int file_copy(const char *file_old, const char *file_new)
 
 	if (target == NULL) {
 		fclose(source);
-		warnx("failed to open output file to copy");
+		warnx("failed to open output file to copy. %s", file_new);
 		return 1;
 	}
 
