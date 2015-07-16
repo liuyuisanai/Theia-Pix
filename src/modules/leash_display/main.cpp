@@ -45,14 +45,13 @@ static int leash_convert_voltage_to_percent(float v)
 
     // ignore small changes in voltage
     // to avoid shaking of battery level
-    if (fabsf(lastV -v) < 0.1f) {
+    if (fabsf(lastV -v) < 0.05f) {
         v = lastV;
     }
     else
     {
         lastV = v;
     }
-
 
     for (int i = 0; data[i].t != -1; i++)
     {
@@ -80,6 +79,10 @@ static int leash_convert_voltage_to_percent(float v)
 static int leash_display_thread_main(int argc, char *argv[])
 {
     DataManager dm;
+
+    dm.clearAwaitMask();
+    dm.awaitMask[FD_LeashDisplay] = true;
+
     thread_running = true;
     int currentScreenId = 0;
     int lb = 100;
@@ -104,24 +107,39 @@ static int leash_display_thread_main(int argc, char *argv[])
             switch (dm.leash_display.screenId)
             {
                 case LEASHDISPLAY_NONE:
+                    dm.clearAwaitMask();
+                    dm.awaitMask[FD_LeashDisplay] = true;
                     break;
 
                 case LEASHDISPLAY_LOGO:
+                    dm.clearAwaitMask();
+                    dm.awaitMask[FD_LeashDisplay] = true;
                     Screen::showLogo();
                     break;
 
                 case LEASHDISPLAY_MAIN:
+                    dm.clearAwaitMask();
+                    dm.awaitMask[FD_LeashDisplay] = true;
+                    dm.awaitMask[FD_SystemPower] = true;
+                    dm.awaitMask[FD_LeashDisplay] = true;
+
                     lb = leash_convert_voltage_to_percent(dm.system_power.voltage5V_v);
                     mainMode = 0;
                     Screen::showMain(mainMode, presetName, lb, lb, aMode, fMode, lMode);
                     break;
 
                 case LEASHDISPLAY_MENU:
+                    dm.clearAwaitMask();
+                    dm.awaitMask[FD_LeashDisplay] = true;
+
                     Screen::showMenu(dm.leash_display.menuButtons, dm.leash_display.menuType,
                                      dm.leash_display.menuValue, dm.leash_display.presetName);
                     break;
 
                 case LEASHDISPLAY_INFO:
+                    dm.clearAwaitMask();
+                    dm.awaitMask[FD_LeashDisplay] = true;
+
                     Screen::showInfo(dm.leash_display.infoId, dm.leash_display.infoError);
                     break;
             }
@@ -133,6 +151,7 @@ static int leash_display_thread_main(int argc, char *argv[])
         else if (hasChanges)
         {
             display_clear();
+
             switch (dm.leash_display.screenId)
             {
                 case LEASHDISPLAY_NONE:

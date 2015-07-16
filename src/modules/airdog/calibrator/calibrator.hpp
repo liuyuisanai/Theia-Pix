@@ -3,7 +3,12 @@
 
 #pragma once
 
+//#include "accel_calibration.hpp"
+
 namespace calibration {
+
+__EXPORT void calibrate_stop();
+
 /* Starts gyroscope calibration procedure.
  * mavlink_fd - if not zero, then messages will be sent via mavlink too
  * sample_count - number of samples to average when calibrating offsets. Default: 5000. Make it positive or I will shoot you.

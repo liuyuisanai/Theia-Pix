@@ -18,6 +18,8 @@ static bool thread_running = false;
 static int deamon_task;
 
 static int app_main_thread(int argc, char *argv[]) {
+    (void)argc;
+    (void)argv;
     DataManager *dm = DataManager::instance();
     modes::Base *currentMode = new modes::Logo();
 
@@ -32,7 +34,6 @@ static int app_main_thread(int argc, char *argv[]) {
         currentMode->listenForEvents(dm->awaitMask);
 
         bool hasChange = dm->wait(timeout);
-
 
         if (hasChange)
         {

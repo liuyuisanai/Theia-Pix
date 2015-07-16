@@ -25,6 +25,9 @@
 #include "gyro_calibration.hpp"
 #include "mag_calibration.hpp"
 
+#include <uORB/uORB.h>
+#include <uORB/topics/calibrator.h>
+
 namespace calibration {
 
 enum class TONES : uint8_t {
@@ -44,6 +47,12 @@ enum class SENSOR_TYPE : uint8_t {
 	MAG,
 	ACCEL
 };
+
+static bool stopCalibration = true;
+__EXPORT void calibrate_stop()
+{
+    stopCalibration = true;
+}
 
 // Common procedure for sensor calibration that waits for the user to get ready
 inline void prepare(const char* sensor_type, const int beeper_fd);
@@ -145,40 +154,84 @@ __EXPORT bool calibrate_accelerometer(int mavlink_fd) {
 	}
 	prepare("Accel", beeper_fd);
 
+        struct calibrator_s calibrator;
+        static orb_advert_t to_calibrator = 0;
+
+        stopCalibration = false;
+
+        calibrator.status = CALIBRATOR_DETECTING_SIDE;
+        calibrator.remainingAxesCount = 6;
+        calibrator.result = CALIBRATION_RESULT::SUCCESS;
+
+        to_calibrator = orb_advertise(ORB_ID(calibrator), &calibrator);
+
 	AccelCalibrator calib;
 	res = calib.init();
 	if (res == CALIBRATION_RESULT::SUCCESS) {
-		while (calib.sampling_needed) {
+                while (calib.sampling_needed && !stopCalibration) {
+                        int remainingAxesCount = 0;
 			printf("Rotate to one of the remaining axes: ");
 			for (int i = 0; i < 6; ++i) {
 				if (!calib.calibrated_axes[i]) {
 					fputs(axis_labels[i], stdout);
 					fputs(" ", stdout);
+                                        remainingAxesCount++;
 				}
 			}
 			fputs("\n", stdout);
 			fflush(stdout); // ensure puts finished before calibration pauses the screen
 			beep(beeper_fd, TONES::WAITING_FOR_USER);
+
+                        calibrator.status = CALIBRATOR_DETECTING_SIDE;
+                        calibrator.remainingAxesCount = remainingAxesCount;
+                        calibrator.result = CALIBRATION_RESULT::SUCCESS;
+
+                        orb_publish(ORB_ID(calibrator), to_calibrator, &calibrator);
+
 			res = calib.sample_axis();
-			beep(beeper_fd, TONES::STOP);
+                        beep(beeper_fd, TONES::STOP);
 			if (res == CALIBRATION_RESULT::SUCCESS) {
 				beep(beeper_fd, TONES::WORKING);
-				res = calib.read_samples();
-				beep(beeper_fd, TONES::STOP);
+
+                                calibrator.status = CALIBRATOR_CALIBRATING;
+                                calibrator.result = CALIBRATION_RESULT::SUCCESS;
+                                calibrator.remainingAxesCount = remainingAxesCount;
+
+                                orb_publish(ORB_ID(calibrator), to_calibrator, &calibrator);
+
+                                res = calib.read_samples();
+                                beep(beeper_fd, TONES::STOP);
 				if (res == CALIBRATION_RESULT::SUCCESS) {
 					printf("Successfully sampled the axis.\n");
 				}
 				else {
+                                        calibrator.status = CALIBRATOR_CALIBRATING;
+                                        calibrator.result = res;
+                                        calibrator.remainingAxesCount = remainingAxesCount;
+
+                                        orb_publish(ORB_ID(calibrator), to_calibrator, &calibrator);
 					break;
 				}
 			}
 			else if (res == CALIBRATION_RESULT::AXIS_DONE_FAIL) {
+                                calibrator.status = CALIBRATOR_DETECTING_SIDE;
+                                calibrator.remainingAxesCount = remainingAxesCount;
+                                calibrator.result = res;
+
+                                orb_publish(ORB_ID(calibrator), to_calibrator, &calibrator);
+
 				sleep(1); // ensures the tunes don't blend too much
 				beep(beeper_fd, TONES::NEGATIVE);
 				printf("Axis has been sampled already.\n");
 				sleep(2); // gives time for negative tune to finish
 			}
 			else {
+                            calibrator.status = CALIBRATOR_DETECTING_SIDE;
+                            calibrator.remainingAxesCount = remainingAxesCount;
+                            calibrator.result = res;
+
+                            orb_publish(ORB_ID(calibrator), to_calibrator, &calibrator);
+
 				break;
 			}
 		}
@@ -186,6 +239,9 @@ __EXPORT bool calibrate_accelerometer(int mavlink_fd) {
 			res = calib.calculate_and_save();
 		}
 	}
+
+        calibrator.status = CALIBRATOR_FINISH;
+        orb_publish(ORB_ID(calibrator), to_calibrator, &calibrator);
 
 	print_results(res, "accel", beeper_fd, mavlink_fd);
 	close(beeper_fd);

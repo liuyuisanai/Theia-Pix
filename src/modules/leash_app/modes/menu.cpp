@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 #include "main.h"
+#include "calibrate.h"
 #include "../displayhelper.h"
 
 namespace modes
@@ -136,7 +137,7 @@ struct Menu::Entry Menu::entries[Menu::MENUENTRY_SIZE] =
     nullptr, // use previous preset name
     Menu::MENUENTRY_GYRO,
     Menu::MENUENTRY_COMPASS,
-    Menu::MENUENTRY_IGNORE,
+    Menu::MENUENTRY_ACTION,
     Menu::MENUENTRY_PREVIOUS,
 },
 {
@@ -147,7 +148,7 @@ struct Menu::Entry Menu::entries[Menu::MENUENTRY_SIZE] =
     nullptr, // use previous preset name
     Menu::MENUENTRY_COMPASS,
     Menu::MENUENTRY_ACCELS,
-    Menu::MENUENTRY_IGNORE,
+    Menu::MENUENTRY_ACTION,
     Menu::MENUENTRY_PREVIOUS,
 },
 
@@ -212,7 +213,7 @@ struct Menu::Entry Menu::entries[Menu::MENUENTRY_SIZE] =
 Menu::Menu()
 {
     currentPresetName = nullptr;
-    currentEntry = 0;
+    currentEntry = MENUENTRY_CUSTOMIZE;
     previousEntry = -1;
     showEntry();
 }
@@ -329,7 +330,6 @@ Base* Menu::makeAction()
                 entries[MENUENTRY_FOLLOW].menuValue = value;
                 showEntry();
             }
-
             break;
 
         case MENUENTRY_LAND:
@@ -357,8 +357,23 @@ Base* Menu::makeAction()
                 entries[MENUENTRY_LAND].menuValue = value;
                 showEntry();
             }
-
             break;
+
+        case MENUENTRY_GYRO:
+        {
+            nextMode = new Calibrate(CalibrationDevice::LEASH_GYRO);
+            //bool result = calibration::calibrate_gyroscope();
+            //printf("calibration result: %d\n", (int)result);
+            //break;
+        }
+
+        case MENUENTRY_ACCELS:
+        {
+            nextMode = new Calibrate(CalibrationDevice::LEASH_ACCEL);
+            //bool result = calibration::calibrate_accelerometer();
+            //printf("calibrate_accelerometer calibration result: %d\n", (int)result);
+            //break;
+        }
     }
 
     return nextMode;

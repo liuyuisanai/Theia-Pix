@@ -9,7 +9,6 @@ DataManager::DataManager()
     // get orbs id
     orbId[FD_AirdogStatus] = ORB_ID(airdog_status);
     orbId[FD_SystemPower] = ORB_ID(system_power);
-    orbId[FD_KbdHandler] = ORB_ID(kbd_handler);
     orbId[FD_LeashDisplay] = ORB_ID(leash_display);
 
     // listen orbs
@@ -27,8 +26,9 @@ DataManager::DataManager()
 
     orbData[FD_AirdogStatus] = &airdog_status;
     orbData[FD_SystemPower] = &system_power;
-    orbData[FD_KbdHandler] = &kbd_handler;
     orbData[FD_LeashDisplay] = &leash_display;
+
+    clearAwaitMask();
 }
 
 DataManager::~DataManager()
@@ -53,7 +53,10 @@ bool DataManager::wait(int timeout)
     for (int i = 0; i < FD_Size; i++)
     {
         pollfds[i].fd = fds[i];
-        pollfds[i].events = POLLIN;
+        if (awaitMask[i])
+        {
+            pollfds[i].events = POLLIN;
+        }
     }
 
     r = poll(pollfds, FD_Size, timeout);
@@ -74,4 +77,12 @@ bool DataManager::wait(int timeout)
     }
 
     return hasChanges;
+}
+
+void DataManager::clearAwaitMask()
+{
+    for (int i = 0; i < FD_Size; i++)
+    {
+        awaitMask[i] = false;
+    }
 }

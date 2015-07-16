@@ -14,6 +14,7 @@ DataManager::DataManager()
     orbId[FD_SystemPower] = ORB_ID(system_power);
     orbId[FD_KbdHandler] = ORB_ID(kbd_handler);
     orbId[FD_BLRHandler] = ORB_ID(bt_state);
+    orbId[FD_Calibrator] = ORB_ID(calibrator);
 
     // listen orbs
     for (int i = 0; i < FD_Size; i++)
@@ -32,6 +33,7 @@ DataManager::DataManager()
     orbData[FD_SystemPower] = &system_power;
     orbData[FD_KbdHandler] = &kbd_handler;
     orbData[FD_BLRHandler] = &bt_handler;
+    orbData[FD_Calibrator] = &calibrator;
 
     // clear
     memset(awaitMask, 0, sizeof(awaitMask));
