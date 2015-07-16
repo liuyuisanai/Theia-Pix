@@ -24,7 +24,14 @@ ModeConnect::ModeConnect(ModeState Current)
     : currentState(Current)
 {
     DOG_PRINT("[mode]{connection} currentState :%s\n", currentState == ModeState::DISCONNECTED ? "DISCONNECTED" : "not known");
-    doEvent(0);
+    if (Current == ModeState::PAIRING)
+    {
+        BTPairing();
+    }
+    else
+    {
+        doEvent(-1);
+    }
 }
 
 ModeConnect::~ModeConnect() { }
@@ -43,9 +50,7 @@ int ModeConnect::getTimeout()
 Base* ModeConnect::doEvent(int orbId)
 {
     Base *nextMode = nullptr;
-
     getConState();
-    DOG_PRINT("[modes]{connection} doEvent orbId: %d\n", orbId);
     if (orbId == FD_BLRHandler)
     {
         DOG_PRINT("[modes]{connection} doingEvent state: %d\n", currentState);
@@ -84,6 +89,13 @@ Base* ModeConnect::doEvent(int orbId)
                 BTPairing(true);
             }
         }
+        else if (key_ShortPressed(BTN_MODE))
+        {
+            if (currentState == ModeState::NOT_PAIRED)
+            {
+                nextMode = new Menu();
+            }
+        }
         else if (key_LongPressed(BTN_MODE)) 
         {
             if (currentState == ModeState::PAIRING)
@@ -116,11 +128,6 @@ void ModeConnect::getConState()
             {
                 break;
             }
-            else if (currentState == ModeState::PAIRING)
-            {
-                currentState = ModeState::NOT_PAIRED;
-                break;
-            }
             else 
             {
                 currentState = ModeState::CONNECTING;
@@ -133,16 +140,8 @@ void ModeConnect::getConState()
             currentState = ModeState::PAIRING;
             break;
         case CONNECTED:
-            if (currentState == ModeState::PAIRING)
-            {
-                currentState = ModeState::NOT_PAIRED;
-                break;
-            }
-            else
-            {
-                currentState = ModeState::CONNECTED;
-                break;
-            }
+            currentState = ModeState::CONNECTED;
+            break;
         default:
             currentState = ModeState::UNKNOWN;
             break;

@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 #include "main.h"
+#include "connect.h"
 #include "calibrate.h"
 #include "../displayhelper.h"
 
@@ -91,7 +92,7 @@ struct Menu::Entry Menu::entries[Menu::MENUENTRY_SIZE] =
     nullptr, // use previous preset name
     Menu::MENUENTRY_CALIBRATION,
     Menu::MENUENTRY_AIRDOG_CALIBRATION,
-    Menu::MENUENTRY_IGNORE,
+    Menu::MENUENTRY_ACTION,
     Menu::MENUENTRY_SETTINGS,
 },
 {
@@ -396,6 +397,9 @@ Base* Menu::makeAction()
             calibrateMode = CALIBRATE_AIRDOG;
             currentEntry = MENUENTRY_COMPASS;
             break;
+        case MENUENTRY_PAIRING:
+            nextMode = new ModeConnect(ModeState::PAIRING);
+            break;
     }
 
     return nextMode;
@@ -429,7 +433,15 @@ Base* Menu::switchEntry(int newEntry)
     }
     else if (newEntry == MENUENTRY_EXIT)
     {
-        nextMode = new Main();
+        DataManager *dm = DataManager::instance();
+        if (dm->bt_handler.global_state == GLOBAL_BT_STATE::NO_PAIRED_DEVICES)
+        {
+            nextMode = new ModeConnect();
+        }
+        else
+        {
+            nextMode = new Main();
+        }
     }
     else if (newEntry < MENUENTRY_SIZE && newEntry >= 0)
     {
