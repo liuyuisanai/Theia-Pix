@@ -70,6 +70,13 @@ protected:
         int back;
     };
 
+    enum {
+        CALIBRATE_NONE,
+        CALIBRATE_LEASH,
+        CALIBRATE_AIRDOG,
+    };
+
+    int calibrateMode;
     int currentEntry;
     int previousEntry;
     //TODO: get current preset from somewhere

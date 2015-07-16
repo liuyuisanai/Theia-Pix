@@ -102,7 +102,7 @@ struct Menu::Entry Menu::entries[Menu::MENUENTRY_SIZE] =
     nullptr, // use previous preset name
     Menu::MENUENTRY_AIRDOG_CALIBRATION,
     Menu::MENUENTRY_PAIRING,
-    Menu::MENUENTRY_COMPASS,
+    Menu::MENUENTRY_ACTION,
     Menu::MENUENTRY_SETTINGS,
 },
 {
@@ -113,7 +113,7 @@ struct Menu::Entry Menu::entries[Menu::MENUENTRY_SIZE] =
     nullptr, // use previous preset name
     Menu::MENUENTRY_PAIRING,
     Menu::MENUENTRY_CALIBRATION,
-    Menu::MENUENTRY_COMPASS,
+    Menu::MENUENTRY_ACTION,
     Menu::MENUENTRY_SETTINGS,
 },
 
@@ -212,6 +212,7 @@ struct Menu::Entry Menu::entries[Menu::MENUENTRY_SIZE] =
 
 Menu::Menu()
 {
+    calibrateMode = CALIBRATE_NONE;
     currentPresetName = nullptr;
     currentEntry = MENUENTRY_CUSTOMIZE;
     previousEntry = -1;
@@ -361,21 +362,40 @@ Base* Menu::makeAction()
 
         case MENUENTRY_GYRO:
         {
-            nextMode = new Calibrate(CalibrationDevice::LEASH_GYRO);
+            if (calibrateMode == CALIBRATE_LEASH)
+            {
+                nextMode = new Calibrate(CalibrationDevice::LEASH_GYRO);
+            }
             break;
         }
 
         case MENUENTRY_ACCELS:
         {
-            nextMode = new Calibrate(CalibrationDevice::LEASH_ACCEL);
+            if (calibrateMode == CALIBRATE_LEASH)
+            {
+                nextMode = new Calibrate(CalibrationDevice::LEASH_ACCEL);
+            }
             break;
         }
 
         case MENUENTRY_COMPASS:
         {
-            nextMode = new Calibrate(CalibrationDevice::LEASH_MAGNETOMETER);
+            if (calibrateMode == CALIBRATE_LEASH)
+            {
+                nextMode = new Calibrate(CalibrationDevice::LEASH_MAGNETOMETER);
+            }
             break;
         }
+
+        case MENUENTRY_CALIBRATION:
+            calibrateMode = CALIBRATE_LEASH;
+            currentEntry = MENUENTRY_COMPASS;
+            break;
+
+        case MENUENTRY_AIRDOG_CALIBRATION:
+            calibrateMode = CALIBRATE_AIRDOG;
+            currentEntry = MENUENTRY_COMPASS;
+            break;
     }
 
     return nextMode;
