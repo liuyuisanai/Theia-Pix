@@ -126,7 +126,7 @@ struct Menu::Entry Menu::entries[Menu::MENUENTRY_SIZE] =
     nullptr, // use previous preset name
     Menu::MENUENTRY_ACCELS,
     Menu::MENUENTRY_GYRO,
-    Menu::MENUENTRY_IGNORE,
+    Menu::MENUENTRY_ACTION,
     Menu::MENUENTRY_PREVIOUS,
 },
 {
@@ -362,17 +362,19 @@ Base* Menu::makeAction()
         case MENUENTRY_GYRO:
         {
             nextMode = new Calibrate(CalibrationDevice::LEASH_GYRO);
-            //bool result = calibration::calibrate_gyroscope();
-            //printf("calibration result: %d\n", (int)result);
-            //break;
+            break;
         }
 
         case MENUENTRY_ACCELS:
         {
             nextMode = new Calibrate(CalibrationDevice::LEASH_ACCEL);
-            //bool result = calibration::calibrate_accelerometer();
-            //printf("calibrate_accelerometer calibration result: %d\n", (int)result);
-            //break;
+            break;
+        }
+
+        case MENUENTRY_COMPASS:
+        {
+            nextMode = new Calibrate(CalibrationDevice::LEASH_MAGNETOMETER);
+            break;
         }
     }
 

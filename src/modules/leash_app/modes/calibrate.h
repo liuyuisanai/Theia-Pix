@@ -8,7 +8,8 @@ namespace modes
 enum class CalibrationDevice
 {
     LEASH_ACCEL,
-    LEASH_GYRO
+    LEASH_GYRO,
+    LEASH_MAGNETOMETER,
 };
 
 class Calibrate : public Base

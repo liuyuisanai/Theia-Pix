@@ -8,6 +8,7 @@
 namespace calibration {
 
 __EXPORT void calibrate_stop();
+__EXPORT bool calibrate_finished();
 
 /* Starts gyroscope calibration procedure.
  * mavlink_fd - if not zero, then messages will be sent via mavlink too
