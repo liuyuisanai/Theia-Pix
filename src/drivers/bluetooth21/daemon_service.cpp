@@ -325,13 +325,16 @@ synced_loop(MultiPlexer & mp, ServiceIO & service_io, ServiceState & svc)
 		}
 		else
 		{
-			if (connect_mode == ConnectMode::ONE_CONNECT)
-			{
-				dbg("Requesting RSSI and link quality.\n");
-				if (request_rssi_linkquality(service_io, connect_address, rssi, link_quality)) {
-					dbg("Link RSSI is %i, quality is %u.\n", rssi, link_quality);
-					log_link_quality(svc.sdlog, link_quality, rssi);
-				}
+			/*
+			 * TODO! [AK] Create a seprate "RSSI state" or something to handle the link quality requests
+			 * Possibly poll all the channels and publish full stats
+			 */
+			Address6 address_to_check = get_address(svc.conn, channel_index(mp.connection_slots, 1));
+			dbg("Requesting RSSI and link quality for" Address6_FMT ".\n"
+					, Address6_FMT_ITEMS(address_to_check));
+			if (request_rssi_linkquality(service_io, address_to_check, rssi, link_quality)) {
+				dbg("Link RSSI is %i, quality is %u.\n", rssi, link_quality);
+				log_link_quality(svc.sdlog, link_quality, rssi);
 			}
 		}
 
