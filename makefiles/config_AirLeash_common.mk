@@ -102,6 +102,7 @@ MODULES		+= modules/mavlink
 #
 MODULES		+= modules/attitude_estimator_ekf
 MODULES		+= modules/position_estimator_inav
+MODULES		+= modules/attitude_estimator_q
 #MODULES		+= modules/attitude_estimator_so3
 #MODULES		+= modules/ekf_att_pos_estimator
 #MODULES		+= examples/flow_position_estimator
