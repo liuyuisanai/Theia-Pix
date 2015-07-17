@@ -184,7 +184,8 @@ private:
         param_t land_correction_on;
 		param_t takeoff_speed;
 		param_t tilt_max_land;
-		param_t follow_vel_ff;
+		param_t follow_vel_ff_z;
+		param_t follow_vel_ff_xy;
 		param_t follow_talt_offs;
 		param_t follow_yaw_off_max;
 		param_t follow_use_alt;
@@ -226,7 +227,8 @@ private:
         float regular_land_speed;
 		float takeoff_speed;
 		float tilt_max_land;
-		float follow_vel_ff;
+		float follow_vel_ff_z;
+		float follow_vel_ff_xy;
 		float follow_talt_offs;
 		float follow_yaw_off_max;
 
@@ -599,7 +601,8 @@ MulticopterPositionControl::MulticopterPositionControl() :
 	_params_handles.yaw_rate_max	= 	param_find("MC_YAWRATE_MAX");
 
 	_params_handles.tilt_max_land	= param_find("MPC_TILTMAX_LND");
-	_params_handles.follow_vel_ff	= param_find("FOL_VEL_FF");
+	_params_handles.follow_vel_ff_xy	= param_find("FOL_VEL_FF_XY");
+	_params_handles.follow_vel_ff_z	= param_find("FOL_VEL_FF_Z");
 	_params_handles.follow_talt_offs	= param_find("FOL_TALT_OFF");
 	_params_handles.follow_yaw_off_max	= param_find("FOL_YAW_OFF_MAX");
 	_params_handles.follow_use_alt	= param_find("FOL_USE_ALT");
@@ -682,7 +685,8 @@ MulticopterPositionControl::parameters_update(bool force)
 		param_get(_params_handles.takeoff_speed, &_params.takeoff_speed);
 		param_get(_params_handles.tilt_max_land, &_params.tilt_max_land);
 		_params.tilt_max_land = math::radians(_params.tilt_max_land);
-		param_get(_params_handles.follow_vel_ff, &_params.follow_vel_ff);
+		param_get(_params_handles.follow_vel_ff_xy, &_params.follow_vel_ff_xy);
+		param_get(_params_handles.follow_vel_ff_z, &_params.follow_vel_ff_z);
 
 		param_get(_params_handles.yaw_dead_zone_r, &_params.yaw_dead_zone_r);
 		param_get(_params_handles.yaw_gradient_zone_r, &_params.yaw_gradient_zone_r);
@@ -1398,7 +1402,7 @@ MulticopterPositionControl::control_cablepark()
         } else {
             // Calculating velocity
             math::Vector<2> target_velocity(_tvel(0), _tvel(1));
-            float required_velocity = target_velocity * _ref_vector * _params.follow_vel_ff;
+            float required_velocity = target_velocity * _ref_vector * _params.follow_vel_ff_xy;
 
             math::Vector<2> resulting_velocity = _ref_vector * required_velocity;
 
@@ -1736,7 +1740,9 @@ MulticopterPositionControl::control_follow(float dt)
 	_sp_move_rate += _tvel;
 
     /* feed forward target velocity with weight follow_vel_ff */
-    _vel_ff_t = _tvel * _params.follow_vel_ff;
+    _vel_ff_t(0) = _tvel(0) * _params.follow_vel_ff_xy;
+    _vel_ff_t(1) = _tvel(1) * _params.follow_vel_ff_xy;
+    _vel_ff_t(2) = _tvel(2) * _params.follow_vel_ff_z;
 
 	/* update position setpoint and feed-forward velocity if not repeating target altitude */
 	if (!_params.follow_rpt_alt) {

@@ -244,7 +244,7 @@ PARAM_DEFINE_FLOAT(MPC_LAND_SPD, 1.0f);
 PARAM_DEFINE_FLOAT(MPC_TAKEOFF_SPD, 1.0f);
 
 /**
- * Follow mode velocity feed-forward
+ * Follow mode velocity feed-forward for XY plane
  *
  * Target velocity feed-forward in follow mode.
  *
@@ -252,7 +252,19 @@ PARAM_DEFINE_FLOAT(MPC_TAKEOFF_SPD, 1.0f);
  * @max 1.0
  * @group Multicopter Position Control
  */
-PARAM_DEFINE_FLOAT(FOL_VEL_FF, 1.0f);
+PARAM_DEFINE_FLOAT(FOL_VEL_FF_XY, 1.0f);
+
+
+/**
+ * Follow mode velocity feed-forward for Z plane
+ *
+ * Target velocity feed-forward in follow mode.
+ *
+ * @min 0.0
+ * @max 1.0
+ * @group Multicopter Position Control
+ */
+PARAM_DEFINE_FLOAT(FOL_VEL_FF_Z, 0.0f);
 
 /**
  * Follow mode initial altitude offset
