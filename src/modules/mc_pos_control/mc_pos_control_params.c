@@ -312,7 +312,7 @@ PARAM_DEFINE_INT32(FOL_USE_ALT, 1);
 PARAM_DEFINE_INT32(FOL_RPT_ALT, 0);
 
 /**
- * Low pass filter for target velocity
+ * Low pass filter for target velocity in XY plane
  *
  * Time constant for low pass filter to smooth velocity jumps for aggressive targets.
  *
@@ -321,7 +321,19 @@ PARAM_DEFINE_INT32(FOL_RPT_ALT, 0);
  * @max 10.0
  * @group Multicopter Position Control
  */
-PARAM_DEFINE_FLOAT(FOL_LPF, 1.0f);
+PARAM_DEFINE_FLOAT(FOL_LPF_XY, 1.0f);
+
+/**
+ * Low pass filter for target velocity on Z axis
+ *
+ * Time constant for low pass filter to smooth velocity jumps for aggressive targets.
+ *
+ * @unit s
+ * @min 0.0
+ * @max 10.0
+ * @group Multicopter Position Control
+ */
+PARAM_DEFINE_FLOAT(FOL_LPF_Z, 1.0f);
 
 /**
  * Maximum camera pitch

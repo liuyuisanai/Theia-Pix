@@ -190,7 +190,8 @@ private:
 		param_t follow_yaw_off_max;
 		param_t follow_use_alt;
 		param_t follow_rpt_alt;
-		param_t follow_lpf;
+		param_t follow_lpf_xy;
+		param_t follow_lpf_z;
         param_t loi_step_len;
 		param_t cam_pitch_max;
         param_t sonar_correction_on;
@@ -239,7 +240,8 @@ private:
         bool land_correction_on;
 		bool follow_use_alt;
 		bool follow_rpt_alt;
-		float follow_lpf;
+		float follow_lpf_xy;
+		float follow_lpf_z;
         float loi_step_len;
 		float cam_pitch_max;
         bool sonar_correction_on;
@@ -302,9 +304,13 @@ private:
 	math::Vector<3> _tpos;
 	math::Vector<3> _tvel;
 
-	math::LowPassFilter<math::Vector<3>> _tvel_lpf;
+    math::LowPassFilter<float> _tvel_lpf_x;
+    math::LowPassFilter<float> _tvel_lpf_y;
+    math::LowPassFilter<float> _tvel_lpf_z;
+
 
 	math::Vector<3> _att_rates_ff;
+
 
 	math::Vector<3> _follow_offset;		/**< offset from target for FOLLOW mode, vector in NED frame */
 
@@ -612,7 +618,8 @@ MulticopterPositionControl::MulticopterPositionControl() :
     _params_handles.follow_grad_ff_end = param_find("FOL_FF_GRAD_END");
     _params_handles.follow_grad_ff = param_find("FOL_FF_GRAD_USE");
 
-	_params_handles.follow_lpf	= param_find("FOL_LPF");
+	_params_handles.follow_lpf_xy	= param_find("FOL_LPF_XY");
+	_params_handles.follow_lpf_z	= param_find("FOL_LPF_Z");
 	_params_handles.cam_pitch_max	= param_find("CAM_P_MAX");
 
     _params_handles.loi_step_len = param_find("LOI_STEP_LEN");
@@ -697,13 +704,17 @@ MulticopterPositionControl::parameters_update(bool force)
 		param_get(_params_handles.follow_talt_offs, &_params.follow_talt_offs);
 		param_get(_params_handles.follow_yaw_off_max, &_params.follow_yaw_off_max);
 		_params.follow_yaw_off_max = math::radians(_params.follow_yaw_off_max);
-		param_get(_params_handles.follow_lpf, &_params.follow_lpf);
+		param_get(_params_handles.follow_lpf_xy, &_params.follow_lpf_xy);
+		param_get(_params_handles.follow_lpf_z, &_params.follow_lpf_z);
 
 		param_get(_params_handles.follow_grad_ff, &_params.follow_grad_ff);
 		param_get(_params_handles.follow_grad_ff_start, &_params.follow_grad_ff_start);
 		param_get(_params_handles.follow_grad_ff_end, &_params.follow_grad_ff_end);
 
-		_tvel_lpf.set_cutoff_frequency(_params.follow_lpf);
+		_tvel_lpf_x.set_cutoff_frequency(_params.follow_lpf_xy);
+		_tvel_lpf_y.set_cutoff_frequency(_params.follow_lpf_xy);
+		_tvel_lpf_z.set_cutoff_frequency(_params.follow_lpf_z);
+
 		param_get(_params_handles.loi_step_len, &_params.loi_step_len);
 		param_get(_params_handles.cam_pitch_max, &_params.cam_pitch_max);
 		_params.cam_pitch_max = math::radians(_params.cam_pitch_max);
@@ -1637,7 +1648,9 @@ MulticopterPositionControl::update_target_pos()
 			}
 
 			/* low pass filter for target velocity */
-			tvel_current = _tvel_lpf.apply(_target_pos.timestamp, tvel_current);
+			tvel_current(0) = _tvel_lpf_x.apply(_target_pos.timestamp, tvel_current(0));
+			tvel_current(1) = _tvel_lpf_y.apply(_target_pos.timestamp, tvel_current(1));
+			tvel_current(2) = _tvel_lpf_z.apply(_target_pos.timestamp, tvel_current(2));
 
 			/* NaN protection */
 			if (isfinite(tvel_current(0)) && isfinite(tvel_current(1)) && isfinite(tvel_current(2))) {
@@ -1648,7 +1661,10 @@ MulticopterPositionControl::update_target_pos()
 				if (!(isfinite(_tvel(0)) && isfinite(_tvel(1)) && isfinite(_tvel(2)))) {
 					_tvel.zero();
 				}
-				_tvel_lpf.reset(_tvel);
+
+				_tvel_lpf_x.reset(_tvel(0));
+				_tvel_lpf_y.reset(_tvel(1));
+				_tvel_lpf_z.reset(_tvel(2));
 			}
 
 			/* update target position predictor */
