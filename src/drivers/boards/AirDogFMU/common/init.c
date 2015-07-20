@@ -182,6 +182,9 @@ fat_dma_free(FAR void *memory, size_t size)
  */
 static void driverless_pins_initialize()
 {
+#ifdef GPIO_UART7_TX
+    stm32_configgpio(GPIO_UART7_TX);
+#endif
 #ifdef GPIO_VDD_PERIPHERY_EN
 	stm32_configgpio(GPIO_VDD_PERIPHERY_EN);
 #endif
