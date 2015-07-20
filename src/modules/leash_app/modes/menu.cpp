@@ -367,6 +367,10 @@ Base* Menu::makeAction()
             {
                 nextMode = new Calibrate(CalibrationDevice::LEASH_GYRO);
             }
+            else if (calibrateMode == CALIBRATE_AIRDOG)
+            {
+                nextMode = new Calibrate(CalibrationDevice::AIRDOG_GYRO);
+            }
             break;
         }
 
@@ -375,6 +379,10 @@ Base* Menu::makeAction()
             if (calibrateMode == CALIBRATE_LEASH)
             {
                 nextMode = new Calibrate(CalibrationDevice::LEASH_ACCEL);
+            }
+            else if (calibrateMode == CALIBRATE_AIRDOG)
+            {
+                nextMode = new Calibrate(CalibrationDevice::AIRDOG_ACCEL);
             }
             break;
         }
@@ -385,18 +393,23 @@ Base* Menu::makeAction()
             {
                 nextMode = new Calibrate(CalibrationDevice::LEASH_MAGNETOMETER);
             }
+            else if (calibrateMode == CALIBRATE_AIRDOG)
+            {
+                nextMode = new Calibrate(CalibrationDevice::AIRDOG_MAGNETOMETER);
+            }
             break;
         }
 
         case MENUENTRY_CALIBRATION:
             calibrateMode = CALIBRATE_LEASH;
-            currentEntry = MENUENTRY_COMPASS;
+            switchEntry(MENUENTRY_COMPASS);
             break;
 
         case MENUENTRY_AIRDOG_CALIBRATION:
             calibrateMode = CALIBRATE_AIRDOG;
-            currentEntry = MENUENTRY_COMPASS;
+            switchEntry(MENUENTRY_COMPASS);
             break;
+
         case MENUENTRY_PAIRING:
             nextMode = new ModeConnect(ModeState::PAIRING);
             break;

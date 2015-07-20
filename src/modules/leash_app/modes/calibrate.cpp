@@ -5,22 +5,30 @@
 
 #include <systemlib/systemlib.h>
 
+#include <uORB/uORB.h>
+#include <uORB/topics/vehicle_command.h>
+
 #include "main.h"
 #include "../datamanager.h"
 #include "../displayhelper.h"
 #include "../../airdog/calibrator/calibrator.hpp"
 #include "../../airdog/calibrator/calibration_commons.hpp"
+#include "../uorb_functions.h"
 
 namespace modes
 {
 
 static int calibration_task;
+static bool finishedCalibration = false;
 
 static int start_calibrate_accelerometer(int argc, char *argv[]) {
     (void)argc;
     (void)argv;
     sleep(1);
+
+    finishedCalibration = false;
     bool result = calibration::calibrate_accelerometer();
+    finishedCalibration = true;
 
     if (result)
     {
@@ -38,7 +46,9 @@ static int start_calibrate_gyro(int argc, char *argv[]) {
     (void)argc;
     (void)argv;
     sleep(1);
+    finishedCalibration = false;
     bool result = calibration::calibrate_gyroscope();
+    finishedCalibration = true;
 
     if (result)
     {
@@ -56,8 +66,9 @@ static int start_calibrate_magnetometer(int argc, char *argv[]) {
     (void)argc;
     (void)argv;
     sleep(1);
+    finishedCalibration = false;
     bool result = calibration::calibrate_magnetometer();
-
+    finishedCalibration = true;
     if (result)
     {
         DisplayHelper::showInfo(INFO_SUCCESS, 0);
@@ -106,6 +117,13 @@ Calibrate::Calibrate(CalibrationDevice pDevice) :
                                               start_calibrate_magnetometer,
                                               nullptr);
             break;
+
+        case CalibrationDevice::AIRDOG_ACCEL:
+            sendAirDogCommnad(VEHICLE_CMD_PREFLIGHT_CALIBRATION, 0, 0, 0, 0, 1);
+            break;
+
+        default:
+            break;
     }
 }
 
@@ -135,7 +153,7 @@ Base* Calibrate::doEvent(int orbId)
             calibration::calibrate_stop();
             nextMode = new Main();
         }
-        else if (key_pressed(BTN_OK) && calibration::calibrate_finished())
+        else if (key_pressed(BTN_OK) && finishedCalibration)
         {
             nextMode = new Main();
         }

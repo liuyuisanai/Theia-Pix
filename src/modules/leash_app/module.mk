@@ -10,7 +10,9 @@ SRCS			= \
     main.cpp  \
     datamanager.cpp \
     displayhelper.cpp \
-    button_handler.cpp
+    button_handler.cpp \
+    uorb_functions.cpp
+
 
 DEFAULT_VISIBILITY = protected
 CXXFLAGS		+= -std=c++11 -Dmain=${MODULE_COMMAND}_main
