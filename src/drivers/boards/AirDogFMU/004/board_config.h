@@ -190,6 +190,10 @@ __BEGIN_DECLS
 #define PWMIN_TIMER_CHANNEL	2
 #define GPIO_PWM_IN		GPIO_TIM4_CH2IN_2
 
+/* Frame button state pin config */
+#define FC_BUTT_BGC	(GPIO_INPUT|GPIO_PULLUP|GPIO_PORTE|GPIO_PIN9)
+
+
 /****************************************************************************************************
  * Public Types
  ****************************************************************************************************/

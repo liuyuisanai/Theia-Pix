@@ -441,5 +441,9 @@ then
 		exit
 	fi
 
+    #start frame button driver
+    frame_button start
+
+
 # End of autostart
 fi

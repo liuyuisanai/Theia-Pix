@@ -8,7 +8,7 @@ extern "C" __EXPORT int main(int argc, const char * const * const argv);
 #include <cstring>
 #include <cstdio>
 
-#include <drivers/drv_airleash_kbd.h>
+#include <drivers/drv_frame_button.h>
 #include <drivers/drv_hrt.h>
 
 namespace {
@@ -54,8 +54,8 @@ report_events(pressed_mask_t m[], size_t n)
 int
 main(int argc, const char * const * const argv)
 {
-	int fd = open(KBD_DEVICE_PATH, O_RDONLY | O_NONBLOCK);
-	pressed_mask_t buffer[KBD_SCAN_BUFFER_N_ITEMS];
+	int fd = open(FRAME_BUTT_DEVICE_PATH , O_RDONLY | O_NONBLOCK);
+	pressed_mask_t buffer[FRAME_BUTT_SCAN_BUFFER_N_ITEMS];
 	hrt_abstime stamp = hrt_absolute_time();
 
 	while (poll_0_continue())
@@ -63,7 +63,7 @@ main(int argc, const char * const * const argv)
 		ssize_t s = read(fd, buffer, sizeof(buffer));
 		if (s < 0)
 		{
-			perror(KBD_DEVICE_PATH " read");
+			perror(FRAME_BUTT_DEVICE_PATH " read");
 			break;
 		}
 
@@ -71,7 +71,7 @@ main(int argc, const char * const * const argv)
 
 		hrt_abstime now = hrt_absolute_time();
 
-		size_t nt = 1 + (now - stamp) / KBD_SCAN_INTERVAL_usec;
+		size_t nt = 1 + (now - stamp) / FRAME_BUTT_SCAN_INTERVAL_usec;
 		size_t n = nt < nr ? nt : nr; // min(nt, nr)
 
 		printf("\n%08x\n", (int)now);

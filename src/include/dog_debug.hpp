@@ -11,5 +11,7 @@
 # endif
 
 #else
-#  define DOG_PRINT(...)
+
+#define DOG_PRINT(...) {}
+
 #endif

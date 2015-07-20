@@ -167,6 +167,9 @@ ORB_DEFINE(optical_flow, struct optical_flow_s);
 #include "topics/filtered_bottom_flow.h"
 ORB_DEFINE(filtered_bottom_flow, struct filtered_bottom_flow_s);
 
+#include "topics/frame_button.h"
+ORB_DEFINE(frame_button_state, struct frame_button_s);
+
 #include "topics/omnidirectional_flow.h"
 ORB_DEFINE(omnidirectional_flow, struct omnidirectional_flow_s);
 
