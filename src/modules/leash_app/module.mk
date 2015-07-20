@@ -8,6 +8,7 @@ SRCS			= \
     modes/menu.cpp \
     modes/connect.cpp \
     main.cpp  \
+    uorb_functions.cpp  \
     datamanager.cpp \
     displayhelper.cpp \
     button_handler.cpp \

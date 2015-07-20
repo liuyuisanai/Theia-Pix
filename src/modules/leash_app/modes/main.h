@@ -15,6 +15,29 @@ public:
     virtual int getTimeout();
     virtual void listenForEvents(bool awaitMask[]);
     virtual Base* doEvent(int orbId);
+protected:
+    enum MainStates
+    {
+        GROUNDED = 0, 
+        IN_FLINGHT
+    };
+    enum SubStates
+    {
+        NONE = 0,
+        // -- GROUNDED subs --
+        CONFIRM_TAKEOFF,
+        TAKEOFF_CONFIRMED,
+        // -- IN_FLIGHT subs --
+        TAKING_OFF,
+    };
+    struct Condition
+    {
+        MainStates main;
+        SubStates sub;
+    };
+
+    struct Condition baseCondition;
+    Base* makeAction();
 };
 
 }
