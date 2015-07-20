@@ -63,7 +63,7 @@ bool BGC_uart::Discover_attributes(int & speed, int & parity, const int response
     // BGC fw v2.40 only supports EVEN parity, v2.41 supports EVEN and NONE.
     const int test_parities[] = { PARITY_NONE, PARITY_EVEN /*PARITY_NONE, PARITY_EVEN, PARITY_ODD*/ };
     // The spec says default baud is 115200, but recommends testing others (does not specify which ones) too.
-    const int test_bauds[] = { B256000, B115200, B57600 /*B460800, B256000, B115200, B57600*/ };
+    const int test_bauds[] = { B115200, B57600 /*B460800, B256000, B115200, B57600*/ };
     for ( unsigned parity_i = 0; parity_i < sizeof(test_parities)/sizeof(test_parities[0]); ++parity_i ) {
         for ( unsigned baud_i = 0; baud_i < sizeof(test_bauds)/sizeof(test_bauds[0]); ++baud_i ) {
             speed = test_bauds[baud_i];

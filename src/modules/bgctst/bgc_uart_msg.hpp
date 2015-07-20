@@ -7,7 +7,9 @@
 
 #define SBGC_CMD_CONFIRM           67
 #define SBGC_CMD_EXECUTE_MENU      69
+#define SBGC_CMD_MOTORS_ON         77
 #define SBGC_CMD_BOARD_INFO        86
+#define SBGC_CMD_MOTORS_OFF        109
 #define SBGC_CMD_ERROR             255
 
 #define SBGC_MENU_CMD_CALIB_ACC    6
@@ -76,6 +78,24 @@ namespace BGC {
         void Build_OUT_CMD_BOARD_INFO() {
             angle_bracket   = uint8_t('>');
             command_id      = uint8_t(SBGC_CMD_BOARD_INFO);
+            data_size       = uint8_t(0);
+            header_checksum = Calc_header_checksum();
+            body[data_size] = Calc_body_checksum();
+            bytes_present   = 5;
+        }
+        
+        void Build_OUT_CMD_MOTORS_ON() {
+            angle_bracket   = uint8_t('>');
+            command_id      = uint8_t(SBGC_CMD_MOTORS_ON);
+            data_size       = uint8_t(0);
+            header_checksum = Calc_header_checksum();
+            body[data_size] = Calc_body_checksum();
+            bytes_present   = 5;
+        }
+        
+        void Build_OUT_CMD_MOTORS_OFF() {
+            angle_bracket   = uint8_t('>');
+            command_id      = uint8_t(SBGC_CMD_MOTORS_OFF);
             data_size       = uint8_t(0);
             header_checksum = Calc_header_checksum();
             body[data_size] = Calc_body_checksum();
