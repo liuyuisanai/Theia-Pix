@@ -5,12 +5,13 @@
 
 #define SBGC_CMD_MAX_BYTES 255
 
-#define SBGC_CMD_CONFIRM           67
-#define SBGC_CMD_EXECUTE_MENU      69
-#define SBGC_CMD_MOTORS_ON         77
-#define SBGC_CMD_BOARD_INFO        86
-#define SBGC_CMD_MOTORS_OFF        109
-#define SBGC_CMD_ERROR             255
+#define SBGC_CMD_CONFIRM            67
+#define SBGC_CMD_EXECUTE_MENU       69
+#define SBGC_CMD_MOTORS_ON          77
+#define SBGC_CMD_BOARD_INFO         86
+#define SBGC_CMD_MOTORS_OFF         109
+#define SBGC_CMD_RESET              114
+#define SBGC_CMD_ERROR              255
 
 #define SBGC_MENU_CMD_CALIB_ACC    6
 #define SBGC_MENU_CMD_CALIB_GYRO   9

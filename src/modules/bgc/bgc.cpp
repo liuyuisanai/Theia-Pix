@@ -36,6 +36,9 @@ void BGC::Run() {
                     } else if ( in_msg.Command_id() == SBGC_CMD_ERROR ) {
                         printf("[BGC::BGC] Run - received SBGC_CMD_ERROR\n");
                         in_msg.Dump();
+                    } else if ( in_msg.Command_id() == SBGC_CMD_RESET ) {
+                        printf("[BGC::BGC] Run - received SBGC_CMD_RESET, restarting\n");
+                        return;
                     } else {
                         printf("[BGC::BGC] Run - received unexpected message\n");
                         in_msg.Dump();

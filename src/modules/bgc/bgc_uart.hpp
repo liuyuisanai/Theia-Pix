@@ -33,7 +33,7 @@ public:
     
     // Can be used when you just need to poll this uart connection for just one of POLLIN / POLLOUT.
     // Returns values:
-    // Poll_result::Ready   - uart is ready to perform action specified by events (POLLIN | POLLOUT)
+    // Poll_result::Ready   - uart is ready to perform action specified by event (POLLIN / POLLOUT)
     // Poll_result::Timeout - timeout has elapsed and uart is not ready to perform specified action
     // Poll_result::Error   - error occurred while polling
     Poll_result Poll(const int timeout_ms, short int event);
