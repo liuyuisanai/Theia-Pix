@@ -458,7 +458,7 @@ then
 	fi
 
 
-	if MAVLINK_TTY not set and TELEM_TTY is set.
+	#if MAVLINK_TTY not set and TELEM_TTY is set.
 	if [ x$MAVLINK_TTY = x -a x$TELEM_TTY != x ]
 	then
 		# echo bluetooth21 start $TELEM_TTY listen
