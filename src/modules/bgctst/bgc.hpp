@@ -1,7 +1,6 @@
 #ifndef __BGCTST_BGC_HPP_INCLUDED__
 #define __BGCTST_BGC_HPP_INCLUDED__
 
-#include <uORB/topics/frame_button.h>
 #include <uORB/topics/vehicle_status.h>
 #include "bgc_uart.hpp"
 #include "orb_subscriber.hpp"

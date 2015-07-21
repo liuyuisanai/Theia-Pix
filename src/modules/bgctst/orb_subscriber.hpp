@@ -17,7 +17,7 @@ namespace BGC {
         bool Open(const struct orb_metadata * const meta) {
             fd = orb_subscribe(meta);
             if ( !Is_open() ) {
-                printf("[BGC::ORB_subscriber] failed to subscribe to %s: %d\n", meta->o_name, errno);
+                printf("[BGC::ORB_subscriber] failed to orb_subscribe to %s: %d\n", meta->o_name, errno);
                 return false;
             }
             return true;
@@ -36,8 +36,20 @@ namespace BGC {
         }
         
         template<class T>
-        void Read(const struct orb_metadata * const meta, T * into) {
-            orb_copy(ORB_ID(frame_button_state), fd, into);
+        bool Read(const struct orb_metadata * const meta, T * into) {
+            if ( orb_copy(meta, fd, into) < 0 ) {
+                printf("[BGC::ORB_subscriber] failed to orb_copy to %s: %d\n", meta->o_name, errno);
+                return false;
+            }
+            return true;
+        }
+        
+        bool Set_interval(const int interval_ms) {
+            if ( orb_set_interval(fd, interval_ms) < 0 ) {
+                printf("[BGC::ORB_subscriber] failed to orb_set_interval: %d\n", errno);
+                return false;
+            }
+            return true;
         }
         
         ~ORB_subscriber() {

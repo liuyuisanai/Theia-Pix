@@ -1,5 +1,6 @@
 #include "bgc.hpp"
 
+#include <uORB/topics/frame_button.h>
 #include <poll.h>
 #include "bgc_uart.hpp"
 #include "bgc_uart_msg.hpp"
@@ -54,6 +55,7 @@ bool BGC::Setup() {
     
     vehicle_status_subscriber.Open(ORB_ID(vehicle_status));
     if ( !vehicle_status_subscriber.Is_open() ) return false;
+    if ( !vehicle_status_subscriber.Set_interval(1000) ) return false;
     printf("[BGC::GBC] Setup - subscribed to vehicle status\n");
     
     bgc_uart.Open();
@@ -81,7 +83,9 @@ bool BGC::Setup() {
 bool BGC::Process_frame_button_event() {
     BGC_uart_msg out_msg;
     struct frame_button_s raw_frame_button_state;
-    frame_button_subscriber.Read(ORB_ID(frame_button_state), &raw_frame_button_state);
+    if ( !frame_button_subscriber.Read(ORB_ID(frame_button_state), &raw_frame_button_state) ) {
+        return false;
+    }
     switch ( raw_frame_button_state.state ) {
         case SINGLE_CLICK: {
             DOG_PRINT("[BGC::BGC] Process_frame_button_event - SINGLE_CLICK -> SBGC_MENU_CMD_MOTOR_TOGGLE\n");
@@ -117,19 +121,22 @@ bool BGC::Process_frame_button_event() {
 bool BGC::Update_bgc_motor_status() {
     BGC_uart_msg out_msg;
     struct vehicle_status_s raw_vehicle_status;
-    frame_button_subscriber.Read(ORB_ID(vehicle_status), &raw_vehicle_status);
+    if ( !vehicle_status_subscriber.Read(ORB_ID(vehicle_status), &raw_vehicle_status) ) {
+        return false;
+    }
     DOG_PRINT("[BGC::BGC] Update_bgc_motor_status - change: %d -> %d\n", prev_arming_state, raw_vehicle_status.arming_state);
     if ( prev_arming_state != ARMING_STATE_ARMED && raw_vehicle_status.arming_state == ARMING_STATE_ARMED ) {
         DOG_PRINT("[BGC::BGC] Update_bgc_motor_status - sending CMD_MOTORS_ON\n");
         out_msg.Build_OUT_CMD_MOTORS_ON();
-    } else if ( prev_arming_state == ARMING_STATE_ARMED && raw_vehicle_status.arming_state != ARMING_STATE_ARMED ) {
+    } else if ( (prev_arming_state == ARMING_STATE_ARMED || prev_arming_state == ARMING_STATE_MAX)
+            && raw_vehicle_status.arming_state != ARMING_STATE_ARMED ) {
         DOG_PRINT("[BGC::BGC] Update_bgc_motor_status - sending CMD_MOTORS_OFF\n");
         out_msg.Build_OUT_CMD_MOTORS_OFF();
     }
     prev_arming_state = raw_vehicle_status.arming_state;
     if ( out_msg.Is_first_byte_present() && !bgc_uart.Send(out_msg) ) {
         printf("[BGC::BGC] Run - failed to send CMD_MOTORS_*\n");
-        return false;;
+        return false;
     }
     return true;
 }
