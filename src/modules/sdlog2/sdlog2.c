@@ -986,6 +986,7 @@ int write_version(int fd)
 	/* fill version message and write it */
 	strncpy(log_msg_VER.body.fw_git, FW_GIT, sizeof(log_msg_VER.body.fw_git));
 	strncpy(log_msg_VER.body.arch, HW_ARCH, sizeof(log_msg_VER.body.arch));
+	strncat(log_msg_VER.body.arch, BOARD_REVISION_STRING, sizeof(log_msg_VER.body.arch) - strlen(log_msg_VER.body.arch) - 1);
 	return write(fd, &log_msg_VER, sizeof(log_msg_VER));
 }
 

@@ -183,7 +183,7 @@ EXTRA_CLEANS		 =
 #
 # Extra defines for compilation
 #
-export EXTRADEFINES := -DGIT_VERSION=$(GIT_DESC)
+EXTRADEFINES := -DGIT_VERSION=$(GIT_DESC)
 
 #
 # Append the per-board driver directory to the header search path.
@@ -193,7 +193,10 @@ INCLUDE_DIRS += $(PX4_MODULE_SRC)drivers/boards/$(BOARD)
 else
 export CONFIG_BOARD_REVISION
 INCLUDE_DIRS += $(PX4_MODULE_SRC)drivers/boards/$(BOARD)/$(CONFIG_BOARD_REVISION)
+EXTRADEFINES += -DBOARD_REVISION=$(CONFIG_BOARD_REVISION)
 endif
+
+export EXTRADEFINES
 
 # NuttX libraries and paths
 ################################################################################
