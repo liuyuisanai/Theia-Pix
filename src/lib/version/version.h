@@ -71,4 +71,10 @@
 #define	HW_ARCH "AIRDOG_FMU"
 #endif
 
+#ifdef BOARD_REVISION
+#define BOARD_REVISION_STRING STRINGIFY(BOARD_REVISION)
+#else
+#define BOARD_REVISION_STRING ""
+#endif
+
 #endif /* VERSION_H_ */

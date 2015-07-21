@@ -95,6 +95,7 @@ int ver_main(int argc, char *argv[])
 
 			if (show_all || !strncmp(argv[1], sz_ver_hw_str, sizeof(sz_ver_hw_str))) {
 				printf("HW arch: %s\n", HW_ARCH);
+				printf("Board revision: %s\n", BOARD_REVISION_STRING);
 				ret = 0;
 
 			}
