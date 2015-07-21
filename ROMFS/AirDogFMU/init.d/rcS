@@ -425,6 +425,16 @@ then
 		echo "Navigator FAILED. Aborting!" >> $LOG_FILE
 		exit
 	fi
+	
+    #
+    # Start the BGC module
+    #
+    if bgc
+    then
+        echo "BGC OK" >> $LOG_FILE
+    else
+        echo "BGC FAILED. Aborting!" >> $LOG_FILE
+    fi
 
 	# Start any custom addons
 	if [ -f $EXTRAS_FILE ]
