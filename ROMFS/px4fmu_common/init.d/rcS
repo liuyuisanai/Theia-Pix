@@ -464,7 +464,7 @@ then
 		# echo bluetooth21 start $TELEM_TTY listen
 		if bluetooth21 start $TELEM_TTY listen
 		then
-			set $MAVLINK_TTY /dev/bt1
+			set MAVLINK_TTY /dev/bt1
 		fi
 	fi
 
@@ -484,12 +484,25 @@ then
 			then
 				set MAVLINK_MODE "-m custom"
 			else
-				# set MAVLINK_MODE "" produces new line on substitution.
-				unset MAVLINK_MODE
+				if param compare MAV_MINIMALISTIC 3
+				then
+					set MAVLINK_MODE "-m parameter"
+				else
+					# set MAVLINK_MODE "" produces new line on substitution.
+					unset MAVLINK_MODE
+				fi
 			fi
 		fi
 		echo mavlink start $MAVLINK_MODE -r 3000 -d $MAVLINK_TTY
 		mavlink start $MAVLINK_MODE -r 3000 -d $MAVLINK_TTY
+
+		if param compare MAV_MINIMALISTIC 2
+		then
+			# Enable combo messages instead of heartbeats
+			usleep 30000
+			echo mavlink stream -d $MAVLINK_TTY -r 2 -s HRT_GPOS_TRAJ_COMMAND
+			mavlink stream -d $MAVLINK_TTY -r 2 -s HRT_GPOS_TRAJ_COMMAND
+		fi
 	fi
 
 
