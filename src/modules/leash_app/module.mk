@@ -12,7 +12,6 @@ SRCS			= \
     datamanager.cpp \
     displayhelper.cpp \
     button_handler.cpp \
-    uorb_functions.cpp
 
 
 DEFAULT_VISIBILITY = protected

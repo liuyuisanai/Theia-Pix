@@ -7,7 +7,7 @@
 #include "menu.h"
 #include "connect.h"
 #include "../displayhelper.h"
-#include "../uorb_functions.hpp"
+#include "../uorb_functions.h"
 
 namespace modes
 {
@@ -17,7 +17,7 @@ Main::Main()
     baseCondition.main = GROUNDED;
     baseCondition.sub = NONE;
 
-    DisplayHelper::showMain(MAINSCREEN_INFO, "Snowboard",
+    DisplayHelper::showMain(MAINSCREEN_INFO, "zhopa",
                             AIRDOGMODE_NONE, FOLLOW_PATH, LAND_SPOT);
 }
 
@@ -53,11 +53,21 @@ Base* Main::doEvent(int orbId)
         {
             if (baseCondition.sub == CONFIRM_TAKEOFF)
             {
-                if (dm->airdog_status.state_aird < AIRD_STATE_TAKING_OFF) {
+                if (dm->airdog_status.state_aird < AIRD_STATE_TAKING_OFF) 
+                {
                     baseCondition.sub = TAKEOFF_CONFIRMED;
                 }
-                nextMode = makeAction();
+                else
+                {
+                    DisplayHelper::showInfo(INFO_TAKEOFF_FAILED, 0);
+                    baseCondition.sub = TAKEOFF_FAILED;
+                }
             }
+            else if (baseCondition.sub == TAKEOFF_FAILED)
+            {
+                baseCondition.sub = NONE;
+            }
+            nextMode = makeAction();
         }
     }
     else if (orbId == FD_BLRHandler)
@@ -67,6 +77,7 @@ Base* Main::doEvent(int orbId)
             nextMode = new ModeConnect(ModeState::DISCONNECTED);
         }
     }
+    DOG_PRINT("[leash_app]{main screen} condition %d\n", baseCondition.sub);
 
     return nextMode;
 }
@@ -74,18 +85,33 @@ Base* Main::doEvent(int orbId)
 Base* Main::makeAction()
 {
     Base *nextMode = nullptr;
-    DroneCommand *dc = DroneCommand::instance();
 
     if (baseCondition.main == GROUNDED)
     {
         switch (baseCondition.sub)
         {
+            case NONE:
+                DisplayHelper::showMain(MAINSCREEN_INFO, "zhopa",
+                                        AIRDOGMODE_NONE, FOLLOW_PATH, LAND_SPOT);
             case CONFIRM_TAKEOFF:
-                DisplayHelper::showMenu(MAINSCREEN_CONFIRM_TAKEOFF, 0, 0, 0);
+                DOG_PRINT("[leash_app]{main menu} confirm zhopa screen\n");
+                DisplayHelper::showMain(MAINSCREEN_CONFIRM_TAKEOFF, "zhopa", 0, 0, 0);
                 break;
             case TAKEOFF_CONFIRMED:
-                if (airdog_status
-                dc->
+                DOG_PRINT("[leash_app]{main menu} takeoff confirm\n");
+                sendAirDogCommnad(VEHICLE_CMD_NAV_REMOTE_CMD,
+                                     REMOTE_CMD_TAKEOFF,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     0);
+                DisplayHelper::showMain(MAINSCREEN_TAKING_OFF, "zhopa", 0, 0, 0);
+                baseCondition.sub = TAKING_OFF;
+                break;
+            case TAKING_OFF:
+                DisplayHelper::showMain(MAINSCREEN_TAKING_OFF, "zhopa", 0, 0, 0);
                 break;
             default:
                 break;

@@ -27,6 +27,7 @@ protected:
         // -- GROUNDED subs --
         CONFIRM_TAKEOFF,
         TAKEOFF_CONFIRMED,
+        TAKEOFF_FAILED,
         // -- IN_FLIGHT subs --
         TAKING_OFF,
     };

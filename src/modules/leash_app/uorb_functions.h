@@ -5,7 +5,7 @@
 #include <uORB/uORB.h>
 #include <uORB/topics/vehicle_command.h>
 
-extern int sendAirDogCommnad(enum VEHICLE_CMD command,
+extern void sendAirDogCommnad(enum VEHICLE_CMD command,
                              float param1 = 0,
                              float param2 = 0,
                              float param3 = 0,

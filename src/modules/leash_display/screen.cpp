@@ -64,6 +64,7 @@ void Screen::showLogo()
 void Screen::showMain(int mode, const char *presetName, int leashBattery, int airdogBattery,
                       int airdogMode, int followMode, int landMode)
 {
+    DOG_PRINT("[display]{main} current mode %d\n", mode);
     int width = 0;
     int cx = 0;
     TextBlock blockpresetName(presetName, 4, 4, &Font::LucideGrandeSmall);

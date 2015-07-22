@@ -2,7 +2,7 @@
 
 #include <stdio.h>
 
-int sendAirDogCommnad(enum VEHICLE_CMD command,
+void sendAirDogCommnad(enum VEHICLE_CMD command,
                       float param1,
                       float param2,
                       float param3,
@@ -41,5 +41,3 @@ int sendAirDogCommnad(enum VEHICLE_CMD command,
         to_vehicle_command = orb_advertise(ORB_ID(vehicle_command), &vehicle_command);
     }
 }
-
-\
