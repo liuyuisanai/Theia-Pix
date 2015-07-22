@@ -7,7 +7,17 @@
 
 namespace calibration {
 
+
+enum {
+    CALIBRATE_ACCELEROMETER,
+    CALIBRATE_MAGNETOMETER,
+    CALIBRATE_GYROSCOPE
+};
+
+__EXPORT int calibrate_in_new_tread(int what, int mavlink_fd=0);
 __EXPORT void calibrate_stop();
+
+
 
 /* Starts gyroscope calibration procedure.
  * mavlink_fd - if not zero, then messages will be sent via mavlink too

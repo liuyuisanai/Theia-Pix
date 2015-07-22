@@ -281,7 +281,7 @@ MavlinkReceiver::handle_message_command_long(mavlink_message_t *msg)
 // Notice that msg might not be just command_long message, so use only as a general mavlink message!
 void
 MavlinkReceiver::internal_command_long_handle(const mavlink_command_long_t &cmd_mavlink, mavlink_message_t *msg) {
-	if (cmd_mavlink.target_system == mavlink_system.sysid && ((cmd_mavlink.target_component == mavlink_system.compid)
+        if (cmd_mavlink.target_system == mavlink_system.sysid && ((cmd_mavlink.target_component == mavlink_system.compid)
 			|| (cmd_mavlink.target_component == MAV_COMP_ID_ALL))) {
 		//check for MAVLINK terminate command
 		if (cmd_mavlink.command == MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN && ((int)cmd_mavlink.param1) == 3) {
@@ -1187,6 +1187,18 @@ MavlinkReceiver::handle_combo_message(mavlink_message_t *msg)
 
 		internal_trajectory_handle(msg_traj, msg);
 	}
+
+        if (msg_combo.fresh_messages & MAVLINK_COMBO_MESSAGE_CALIBRATOR) {
+            // Publish airdog calibration status
+
+            struct calibrator_s calibrator;
+
+            calibrator.status = msg_combo.HRT_calibration_status;
+            calibrator.remainingAxesCount = 0;
+            calibrator.result = (calibration::CALIBRATION_RESULT)msg_combo.HRT_calibration_error;
+
+            orb_advertise(ORB_ID(calibrator), &calibrator);
+        }
 }
 
 void

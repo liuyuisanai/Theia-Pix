@@ -401,11 +401,13 @@ Base* Menu::makeAction()
         }
 
         case MENUENTRY_CALIBRATION:
+            previousEntry = currentEntry;
             calibrateMode = CALIBRATE_LEASH;
             switchEntry(MENUENTRY_COMPASS);
             break;
 
         case MENUENTRY_AIRDOG_CALIBRATION:
+            previousEntry = currentEntry;
             calibrateMode = CALIBRATE_AIRDOG;
             switchEntry(MENUENTRY_COMPASS);
             break;

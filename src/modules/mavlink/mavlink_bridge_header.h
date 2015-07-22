@@ -61,6 +61,7 @@ __BEGIN_DECLS
 #define MAVLINK_COMBO_MESSAGE_GPOS 			2
 #define MAVLINK_COMBO_MESSAGE_TRAJECTORY 	4
 #define MAVLINK_COMBO_MESSAGE_COMMAND 		8
+#define MAVLINK_COMBO_MESSAGE_CALIBRATOR	16
 
 #include <mavlink_types.h>
 #include <unistd.h>

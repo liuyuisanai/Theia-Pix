@@ -43,6 +43,7 @@
 
 #include <systemlib/perf_counter.h>
 #include <uORB/uORB.h>
+#include <uORB/topics/calibrator.h>
 #include <uORB/topics/sensor_combined.h>
 #include <uORB/topics/rc_channels.h>
 #include <uORB/topics/vehicle_control_mode.h>

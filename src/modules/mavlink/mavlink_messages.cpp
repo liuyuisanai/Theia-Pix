@@ -44,6 +44,7 @@
 #include <commander/px4_custom_mode.h>
 #include <lib/geo/geo.h>
 #include <uORB/uORB.h>
+#include <uORB/topics/calibrator.h>
 #include <uORB/topics/sensor_combined.h>
 #include <uORB/topics/vehicle_attitude.h>
 #include <uORB/topics/vehicle_gps_position.h>
@@ -75,6 +76,7 @@
 #include <drivers/drv_range_finder.h>
 #include <systemlib/err.h>
 #include <mavlink/mavlink_log.h>
+#include <version/version.h>
 
 #include "mavlink_messages.h"
 #include "mavlink_main.h"
@@ -2213,6 +2215,11 @@ private:
 	MavlinkOrbSubscription *_gps_sub;
 	uint64_t _gps_time;
 
+        // Calibration variables
+#if defined(CONFIG_IS_AIRDOG_FMU) || defined(CONFIG_IS_PX4_FMU)
+        MavlinkOrbSubscription *_calibrator_sub;
+        uint64_t _calibrator_time;
+#endif
 	// Trajectory variables
 	MavlinkOrbSubscription *trajectory_sub;
 	uint64_t trajectory_time;
@@ -2234,6 +2241,11 @@ protected:
 			_home_time(0),
 			_gps_sub(_mavlink->add_orb_subscription(ORB_ID(vehicle_gps_position))),
 			_gps_time(0),
+                        // Calibration inits
+                #if defined(CONFIG_IS_AIRDOG_FMU) || defined(CONFIG_IS_PX4_FMU)
+                        _calibrator_sub(_mavlink->add_orb_subscription(ORB_ID(calibrator))),
+                        _calibrator_time(0),
+                #endif
 			// Trajectory inits
 			trajectory_sub(mavlink->add_orb_subscription(ORB_ID(trajectory))),
 			trajectory_time(0)
@@ -2248,7 +2260,10 @@ protected:
 		struct home_position_s home;
 		struct vehicle_gps_position_s gps;
 		trajectory_s report;
-		struct vehicle_command_s cmd;
+                struct vehicle_command_s cmd;
+#if defined(CONFIG_IS_AIRDOG_FMU) || defined(CONFIG_IS_PX4_FMU)
+                struct calibrator_s calibrator;
+#endif
 
 		/* always send the heartbeat, independent of the update status of the topics */
 		msg.fresh_messages |= MAVLINK_COMBO_MESSAGE_HEARTBEAT;
@@ -2324,7 +2339,17 @@ protected:
 			}
 		}
 
-		if (msg.fresh_messages != 0) {
+
+#if defined(CONFIG_IS_AIRDOG_FMU) || defined(CONFIG_IS_PX4_FMU)
+                // only airdog should send to leash calibration status
+                if (_calibrator_sub->update(&_calibrator_time, &calibrator)) {
+                    msg.fresh_messages |= MAVLINK_COMBO_MESSAGE_CALIBRATOR;
+                    msg.HRT_calibration_status = calibrator.status;
+                    msg.HRT_calibration_error = (int8_t)calibrator.result;
+                }
+#endif
+
+                if (msg.fresh_messages != 0) {
 			_mavlink->send_message(MAVLINK_MSG_ID_HRT_GPOS_TRAJ_COMMAND, &msg);
 		}
 	}

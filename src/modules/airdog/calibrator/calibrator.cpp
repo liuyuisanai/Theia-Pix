@@ -6,6 +6,7 @@
 #include <drivers/drv_mag.h>
 #include <drivers/drv_tone_alarm.h>
 #include <systemlib/err.h>
+#include <systemlib/systemlib.h>
 #include <fcntl.h> // open
 #include <mavlink/mavlink_log.h>
 #include <stdio.h>
@@ -49,6 +50,53 @@ enum class SENSOR_TYPE : uint8_t {
 };
 
 static bool stopCalibration = true;
+static int threadParameterWhat = 0;
+static int threadParameterMavlinkFd = 0;
+
+static int start_calibrate_thread(int argc, char *argv[])
+{
+    (void)argc;
+    (void)argv;
+    int what = threadParameterWhat;
+    int mavlink_fd = threadParameterMavlinkFd;
+
+    printf("calibrator thread: what %d mavlink_fd %d\n",what, mavlink_fd);
+
+    switch (what)
+    {
+        case CALIBRATE_ACCELEROMETER:
+            calibrate_accelerometer(mavlink_fd);
+            break;
+
+        case CALIBRATE_GYROSCOPE:
+            calibrate_gyroscope(mavlink_fd);
+            break;
+
+        case CALIBRATE_MAGNETOMETER:
+            calibrate_magnetometer(mavlink_fd);
+            break;
+    }
+
+    return 0;
+}
+
+__EXPORT int calibrate_in_new_tread(int what, int mavlink_fd)
+{
+    int calibration_task = 0;
+
+    threadParameterWhat = what;
+    threadParameterMavlinkFd = mavlink_fd;
+
+    calibration_task = task_spawn_cmd("leash_app",
+                                      SCHED_DEFAULT,
+                                      SCHED_PRIORITY_DEFAULT - 30,
+                                      3000,
+                                      start_calibrate_thread,
+                                      nullptr);//(const char **)parameters);
+
+
+    return calibration_task;
+}
 
 __EXPORT void calibrate_stop()
 {
@@ -71,9 +119,26 @@ __EXPORT bool calibrate_gyroscope(int mavlink_fd, const unsigned int sample_coun
 						const int timeout) {
 	CALIBRATION_RESULT res;
 
+        struct calibrator_s calibrator;
+        orb_advert_t to_calibrator = 0;
+
+        stopCalibration = false;
+
+        calibrator.remainingAxesCount = 0;
+        calibrator.status = CALIBRATOR_CALIBRATING;
+        calibrator.result = CALIBRATION_RESULT::SUCCESS;
+
+        to_calibrator = orb_advertise(ORB_ID(calibrator), &calibrator);
+
 	int beeper_fd = open(TONEALARM_DEVICE_PATH, O_RDONLY);
 	if (beeper_fd < 0) { // This is rather critical
 		warnx("Gyro calibration could not find beeper device. Aborting.");
+
+                calibrator.status = CALIBRATOR_FINISH;
+                calibrator.result = CALIBRATION_RESULT::FAIL;
+
+                orb_publish(ORB_ID(calibrator), to_calibrator, &calibrator);
+
 		return (false);
 	}
 	prepare("Gyro", beeper_fd);
@@ -83,6 +148,12 @@ __EXPORT bool calibrate_gyroscope(int mavlink_fd, const unsigned int sample_coun
 		beep(beeper_fd, TONES::NEGATIVE);
 		usleep(1500000); // Allow the tune to play out
 		close(beeper_fd);
+
+                calibrator.status = CALIBRATOR_FINISH;
+                calibrator.result = CALIBRATION_RESULT::FAIL;
+
+                orb_publish(ORB_ID(calibrator), to_calibrator, &calibrator);
+
 		return (false);
 	}
 	printf("Parameters: samples=%d, error count=%d, timeout=%d\n", sample_count, max_error_count, timeout);
@@ -94,6 +165,12 @@ __EXPORT bool calibrate_gyroscope(int mavlink_fd, const unsigned int sample_coun
 	// TODO! Consider implementing different times inside print_result
 	usleep(1500000); // Allow the tune to play out
 	close(beeper_fd);
+
+        calibrator.status = CALIBRATOR_FINISH;
+        calibrator.result = res;
+
+        orb_publish(ORB_ID(calibrator), to_calibrator, &calibrator);
+
 	if (res == CALIBRATION_RESULT::SUCCESS) {
 		print_scales(SENSOR_TYPE::GYRO, mavlink_fd);
 		return true;
@@ -116,11 +193,11 @@ __EXPORT bool calibrate_magnetometer(int mavlink_fd, unsigned int sample_count,
 	prepare("Mag", beeper_fd);
 
         struct calibrator_s calibrator;
-        static orb_advert_t to_calibrator = 0;
+        orb_advert_t to_calibrator = 0;
 
         stopCalibration = false;
 
-        calibrator.status = CALIBRATOR_DETECTING_SIDE;
+        calibrator.status = CALIBRATOR_CALIBRATING;
         calibrator.remainingAxesCount = 0;
         calibrator.result = CALIBRATION_RESULT::SUCCESS;
 
@@ -149,6 +226,12 @@ __EXPORT bool calibrate_magnetometer(int mavlink_fd, unsigned int sample_count,
 	}
 	print_results(res, "mag", beeper_fd, mavlink_fd);
 	close(beeper_fd);
+
+        calibrator.status = CALIBRATOR_FINISH;
+        calibrator.result = res;
+
+        orb_publish(ORB_ID(calibrator), to_calibrator, &calibrator);
+
 	if (res == CALIBRATION_RESULT::SUCCESS) {
 		print_scales(SENSOR_TYPE::MAG, mavlink_fd);
 		return true;
@@ -176,7 +259,7 @@ __EXPORT bool calibrate_accelerometer(int mavlink_fd) {
 	prepare("Accel", beeper_fd);
 
         struct calibrator_s calibrator;
-        static orb_advert_t to_calibrator = 0;
+        orb_advert_t to_calibrator = 0;
 
         stopCalibration = false;
 
@@ -247,11 +330,11 @@ __EXPORT bool calibrate_accelerometer(int mavlink_fd) {
 				sleep(2); // gives time for negative tune to finish
 			}
 			else {
-                            calibrator.status = CALIBRATOR_DETECTING_SIDE;
-                            calibrator.remainingAxesCount = remainingAxesCount;
-                            calibrator.result = res;
+                                calibrator.status = CALIBRATOR_DETECTING_SIDE;
+                                calibrator.remainingAxesCount = remainingAxesCount;
+                                calibrator.result = res;
 
-                            orb_publish(ORB_ID(calibrator), to_calibrator, &calibrator);
+                                orb_publish(ORB_ID(calibrator), to_calibrator, &calibrator);
 
 				break;
 			}
@@ -260,6 +343,11 @@ __EXPORT bool calibrate_accelerometer(int mavlink_fd) {
 			res = calib.calculate_and_save();
 		}
 	}
+
+        calibrator.status = CALIBRATOR_FINISH;
+        calibrator.result = res;
+
+        orb_publish(ORB_ID(calibrator), to_calibrator, &calibrator);
 
 	print_results(res, "accel", beeper_fd, mavlink_fd);
 	close(beeper_fd);

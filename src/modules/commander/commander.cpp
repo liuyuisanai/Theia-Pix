@@ -2172,7 +2172,6 @@ int commander_thread_main(int argc, char *argv[])
 		if (updated) {
 			/* got command */
 			orb_copy(ORB_ID(vehicle_command), cmd_sub, &cmd);
-
 			/* handle it */
 			if (handle_command(&status
                         , &safety
@@ -3118,7 +3117,6 @@ void *commander_low_prio_loop(void *arg)
 			break;
 
 		case VEHICLE_CMD_PREFLIGHT_CALIBRATION: {
-
 				int calib_ret = ERROR;
 
 				/* try to go to INIT/PREFLIGHT arming state */
@@ -3132,12 +3130,9 @@ void *commander_low_prio_loop(void *arg)
 					answer_command(cmd, VEHICLE_CMD_RESULT_ACCEPTED);
 					param_get(param_find("A_CALIB_MODE"), &modified_calibration);
 					if (modified_calibration) {
-						if (calibration::calibrate_gyroscope(mavlink_fd)) {
-							calib_ret = OK;
-						}
-						else {
-							calib_ret = ERROR;
-						}
+                                            calibration::calibrate_in_new_tread(calibration::CALIBRATE_GYROSCOPE,
+                                                                                mavlink_fd);
+                                            calib_ret = OK;
 					}
 					else {
 						calib_ret = do_gyro_calibration(mavlink_fd);
@@ -3148,13 +3143,10 @@ void *commander_low_prio_loop(void *arg)
 					answer_command(cmd, VEHICLE_CMD_RESULT_ACCEPTED);
 					param_get(param_find("A_CALIB_MODE"), &modified_calibration);
 					if (modified_calibration) {
-						if (calibration::calibrate_magnetometer(mavlink_fd)) {
-							calib_ret = OK;
-						}
-						else {
-							calib_ret = ERROR;
-						}
-					}
+                                            calibration::calibrate_in_new_tread(calibration::CALIBRATE_MAGNETOMETER,
+                                                                                mavlink_fd);
+                                            calib_ret = OK;
+                                        }
 					else {
 						calib_ret = do_mag_calibration(mavlink_fd);
 					}
@@ -3181,12 +3173,9 @@ void *commander_low_prio_loop(void *arg)
 					answer_command(cmd, VEHICLE_CMD_RESULT_ACCEPTED);
 					param_get(param_find("A_CALIB_MODE"), &modified_calibration);
 					if (modified_calibration) {
-						if (calibration::calibrate_accelerometer(mavlink_fd)) {
-							calib_ret = OK;
-						}
-						else {
-							calib_ret = ERROR;
-						}
+                                                calibration::calibrate_in_new_tread(calibration::CALIBRATE_ACCELEROMETER,
+                                                                                    mavlink_fd);
+                                                calib_ret = OK;
 					}
 					else {
 						calib_ret = do_accel_calibration(mavlink_fd);
@@ -3210,7 +3199,10 @@ void *commander_low_prio_loop(void *arg)
 					/* this always succeeds */
 					calib_ret = OK;
 
-				}
+                                } else if ((int)(cmd.param7) == 0) {
+                                    // stop calibration
+                                    calibration::calibrate_stop();
+                                }
 
 				if (calib_ret == OK) {
 					tune_positive(true);
