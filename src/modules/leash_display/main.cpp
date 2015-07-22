@@ -86,11 +86,6 @@ static int leash_display_thread_main(int argc, char *argv[])
     thread_running = true;
     int currentScreenId = 0;
     int lb = 100;
-    int fMode = FOLLOW_PATH;
-    int aMode = AIRDOGMODE_NONE;
-    int lMode = LAND_HOME;
-    int mainMode = 0;
-    const char *presetName = "Snowboard";
 
     printf("leash_display started\n");
 
@@ -124,8 +119,8 @@ static int leash_display_thread_main(int argc, char *argv[])
                     dm.awaitMask[FD_LeashDisplay] = true;
 
                     lb = leash_convert_voltage_to_percent(dm.system_power.voltage5V_v);
-                    mainMode = 0;
-                    Screen::showMain(mainMode, presetName, lb, lb, aMode, fMode, lMode);
+                    Screen::showMain(dm.leash_display.mainMode, dm.leash_display.presetName, lb, lb,
+                                     dm.leash_display.airdogMode, dm.leash_display.followMode, dm.leash_display.landMode);
                     break;
 
                 case LEASHDISPLAY_MENU:
@@ -163,8 +158,8 @@ static int leash_display_thread_main(int argc, char *argv[])
 
                 case LEASHDISPLAY_MAIN:
                     lb = leash_convert_voltage_to_percent(dm.system_power.voltage5V_v);
-                    mainMode = 0;
-                    Screen::showMain(mainMode, presetName, lb, lb, aMode, fMode, lMode);
+                    Screen::showMain(dm.leash_display.mainMode, dm.leash_display.presetName, lb, lb,
+                                     dm.leash_display.airdogMode, dm.leash_display.followMode, dm.leash_display.landMode);
                     break;
 
                 case LEASHDISPLAY_MENU:
