@@ -25,6 +25,7 @@ protected:
     {
         NONE = 0,
         // -- GROUNDED subs --
+        HELP,
         CONFIRM_TAKEOFF,
         TAKEOFF_CONFIRMED,
         TAKEOFF_FAILED,

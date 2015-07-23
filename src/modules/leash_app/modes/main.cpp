@@ -51,7 +51,11 @@ Base* Main::doEvent(int orbId)
         }
         else if (key_pressed(BTN_OK))
         {
-            if (baseCondition.sub == CONFIRM_TAKEOFF)
+            if (baseCondition.main == GROUNDED && baseCondition.sub == NONE)
+            {
+                baseCondition.sub = HELP;
+            }
+            else if (baseCondition.sub == CONFIRM_TAKEOFF)
             {
                 if (dm->airdog_status.state_aird < AIRD_STATE_TAKING_OFF) 
                 {
@@ -93,6 +97,10 @@ Base* Main::makeAction()
             case NONE:
                 DisplayHelper::showMain(MAINSCREEN_INFO, "zhopa",
                                         AIRDOGMODE_NONE, FOLLOW_PATH, LAND_SPOT);
+                break;
+            case HELP:
+                DisplayHelper::showInfo(MAINSCREEN_READY_TO_TAKEOFF, 0);
+                break;
             case CONFIRM_TAKEOFF:
                 DOG_PRINT("[leash_app]{main menu} confirm zhopa screen\n");
                 DisplayHelper::showMain(MAINSCREEN_CONFIRM_TAKEOFF, "zhopa", 0, 0, 0);
