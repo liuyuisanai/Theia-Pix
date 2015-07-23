@@ -113,6 +113,20 @@ PARAM_DEFINE_FLOAT(MAV_FQ_TEXT, -1.0f);
 PARAM_DEFINE_FLOAT(MAV_FQ_ATTITUDE, 0.0f);
 PARAM_DEFINE_FLOAT(MAV_FQ_TRAJ, -1.0f);
 
+/**
+ *	Parameters that define link quality based stream frequency control
+ *	Stream frequency multiplier goes from MAV_MIN_FQ_MULT to 1.0f
+ *	The change occurs from MAV_WORST_LINK up to MAV_PERFECT_LINK
+ *	Extreme (min and 1.0f) values are used when link quality is out of defined bounds
+ *	MAV_LINK_STEP defines what link quality change will trigger change to a new frequency
+ *	Set MAV_PERFECT_LINK to 0 to always have the maximum stream frequency
+ *	@group MAVLink
+ */
+PARAM_DEFINE_INT32(MAV_PERFECT_LINK, 0);
+PARAM_DEFINE_INT32(MAV_WORST_LINK, 0);
+PARAM_DEFINE_FLOAT(MAV_MIN_FQ_MULT, 1.0f);
+PARAM_DEFINE_INT32(MAV_LINK_STEP, 1);
+
 mavlink_system_t mavlink_system = {
 	100,
 	50,

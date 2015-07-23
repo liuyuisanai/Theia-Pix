@@ -2193,6 +2193,9 @@ public:
 		// TODO! Change to if published -> length, else -> 0 when correct topic will be available
 		return MAVLINK_MSG_ID_HRT_GPOS_TRAJ_COMMAND_LEN + MAVLINK_NUM_NON_PAYLOAD_BYTES;
 	}
+	bool const_rate() {
+		return true;
+	}
 private:
 	// Heartbeat variables
 	MavlinkOrbSubscription *_status_sub;

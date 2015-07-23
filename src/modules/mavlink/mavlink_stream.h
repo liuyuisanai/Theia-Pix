@@ -58,16 +58,23 @@ public:
 	/**
 	 * Get the interval
 	 *
-	 * @param interval the inveral in microseconds (us) between messages
+	 * @param interval the interval in microseconds (us) between messages
 	 */
 	void set_interval(const unsigned int interval);
 
 	/**
 	 * Get the interval
 	 *
-	 * @return the inveral in microseconds (us) between messages
+	 * @return the interval in microseconds (us) between messages
 	 */
 	unsigned get_interval() { return _interval; }
+
+	/**
+	 * Get the first interval that was set for this stream
+	 *
+	 * @return the default interval in microseconds or 0 if wasn't set yet
+	 */
+	unsigned get_default_interval() { return _default_interval; }
 
 	/**
 	 * @return 0 if updated / sent, -1 if unchanged
@@ -91,6 +98,7 @@ public:
 protected:
 	Mavlink *    _mavlink;
 	unsigned int _interval;
+	unsigned int _default_interval;
 
 	virtual void send(const hrt_abstime t) = 0;
 

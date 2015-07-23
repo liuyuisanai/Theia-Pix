@@ -47,6 +47,7 @@ MavlinkStream::MavlinkStream(Mavlink *mavlink) :
 	next(nullptr),
 	_mavlink(mavlink),
 	_interval(1000000),
+	_default_interval(0),
 	_last_sent(0)
 {
 }
@@ -61,6 +62,9 @@ MavlinkStream::~MavlinkStream()
 void
 MavlinkStream::set_interval(const unsigned int interval)
 {
+	if (_default_interval == 0) {
+		_default_interval = interval;
+	}
 	_interval = interval;
 }
 

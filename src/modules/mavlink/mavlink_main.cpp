@@ -74,6 +74,7 @@
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/get_drone_parameter.h>
 #include <uORB/topics/set_drone_parameter.h>
+#include <uORB/topics/bt21_laird.h>
 
 #include "mavlink_bridge_header.h"
 #include "mavlink_main.h"
@@ -150,6 +151,13 @@ Mavlink::Mavlink() :
 	_datarate(1000),
 	_datarate_events(500),
 	_rate_mult(1.0f),
+	_perfect_link(0),
+	_worst_link(0),
+	_link_step(1),
+	_min_fq_mult(1.0f),
+	_fq_mult_step(0.0f),
+	_max_link_group(0),
+	_current_link_group(0),
 	_mavlink_param_queue_index(0),
 	mavlink_link_termination_allowed(false),
 	_subscribe_to_stream(nullptr),
@@ -175,6 +183,11 @@ Mavlink::Mavlink() :
 	_param_use_hil_gps(0),
 	_param_mavlink_log_enabled(0),
 	_param_minimalistic(0),
+	_param_perfect_link(0),
+	_param_worst_link(0),
+	_param_minimal_rate_multiplier(0),
+	_param_link_quality_step(0),
+
 
 	/* performance counters */
 	_loop_perf(perf_alloc(PC_ELAPSED, "mavlink_el")),
@@ -460,6 +473,10 @@ void Mavlink::mavlink_update_system(void)
 		_param_forward_externalsp = param_find("MAV_FWDEXTSP");
 		_param_mavlink_log_enabled = param_find("MAV_ENABLE_LOG");
 		_param_minimalistic = param_find("MAV_MINIMALISTIC");
+		_param_perfect_link = param_find("MAV_PERFECT_LINK");
+		_param_worst_link = param_find("MAV_WORST_LINK");
+		_param_minimal_rate_multiplier = param_find("MAV_MIN_FQ_MULT");
+		_param_link_quality_step = param_find("MAV_LINK_STEP");
 	}
 
 	/* update system and component id */
@@ -519,6 +536,62 @@ void Mavlink::mavlink_update_system(void)
 	int32_t minimalistic;
 	param_get(_param_minimalistic, &minimalistic);
 	_silent_mode = (minimalistic == 2);
+
+	int32_t link_int_param;
+	param_get(_param_perfect_link, &link_int_param);
+	if (link_int_param >= 0 && link_int_param <= 255) {
+		_perfect_link = link_int_param;
+	}
+	param_get(_param_worst_link, &link_int_param);
+	if (link_int_param < _perfect_link && link_int_param >= 0) {
+		_worst_link = link_int_param;
+	}
+	else if (_worst_link >= _perfect_link) {
+		_worst_link = 0;
+	}
+	param_get(_param_link_quality_step, &link_int_param);
+	if (link_int_param < _perfect_link - _worst_link && link_int_param > 0) {
+		_link_step = link_int_param;
+	}
+	else if (_link_step >= _perfect_link - _worst_link) {
+		_link_step = 1;
+	}
+	float link_float_param;
+	param_get(_param_minimal_rate_multiplier, &link_float_param);
+	if (link_float_param >= 0.01f && link_float_param < 1.0f) {
+		_min_fq_mult = link_float_param;
+	}
+	prepare_link_management();
+}
+
+void Mavlink::prepare_link_management() {
+	_max_link_group = (uint8_t) ceilf((float) (_perfect_link - _worst_link) / _link_step);
+	if (_max_link_group > 0) {
+		_fq_mult_step = (1.0f - _min_fq_mult) / (_max_link_group);
+	}
+	else {
+		_fq_mult_step = 0.0f;
+	}
+	if (_current_link_group > _max_link_group) {
+		_current_link_group = _max_link_group;
+	}
+}
+
+float Mavlink::get_link_quality_multiplier(uint8_t link_quality) {
+	if (link_quality >= _perfect_link) {
+		_current_link_group = _max_link_group;
+		return 1.0f;
+	}
+	if (link_quality <= _worst_link) {
+		_current_link_group = 0;
+		return _min_fq_mult;
+	}
+	// Hysteresis as 1/3 of the step for link_quality
+	if (link_quality > _current_link_group * _link_step
+			|| link_quality < _current_link_group * _link_step + _worst_link - _link_step / 3) {
+		_current_link_group = (link_quality - _worst_link) / _link_step;
+	}
+	return (_min_fq_mult + _current_link_group * _fq_mult_step);
 }
 
 int Mavlink::get_system_id()
@@ -1012,7 +1085,10 @@ Mavlink::adjust_stream_rates(const float multiplier)
 	MavlinkStream *stream;
 	LL_FOREACH(_streams, stream) {
 		/* set new interval */
-		unsigned interval = stream->get_interval();
+		unsigned interval = stream->get_default_interval();
+		if (interval == 0) {
+			interval = stream->get_interval();
+		}
 		interval /= multiplier;
 
 		/* allow max ~600 Hz */
@@ -1021,7 +1097,7 @@ Mavlink::adjust_stream_rates(const float multiplier)
 		}
 
 		/* set new interval */
-		stream->set_interval(interval * multiplier);
+		stream->set_interval(interval);
 	}
 }
 
@@ -1414,6 +1490,11 @@ Mavlink::task_main(int argc, char *argv[])
 	uint64_t param_time = 0;
 	MavlinkOrbSubscription *status_sub = add_orb_subscription(ORB_ID(vehicle_status));
 	uint64_t status_time = 0;
+	MavlinkOrbSubscription *link_status_sub = add_orb_subscription(ORB_ID(bt_link_status));
+	uint64_t link_status_time = 0;
+
+	struct bt_link_status_s link_status;
+	float stream_rate_mult = 1.0f;
 
     _pass_drone_parameter_pub = -1;
 
@@ -1562,6 +1643,13 @@ Mavlink::task_main(int argc, char *argv[])
 
 			delete _subscribe_to_stream;
 			_subscribe_to_stream = nullptr;
+		}
+
+		if (link_status_sub->update(&link_status_time, &link_status)) {
+			stream_rate_mult = get_link_quality_multiplier(link_status.link_quality);
+			DOG_PRINT("link: %d group: %d mult: %6.5f\n", link_status.link_quality, _current_link_group, (double) stream_rate_mult);
+			// TODO! [AK] Consider using built-in multiplier and non-constant rate stream
+			adjust_stream_rates(stream_rate_mult);
 		}
 
 		/* update streams */

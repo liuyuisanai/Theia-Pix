@@ -324,6 +324,14 @@ private:
 	int			_datarate_events;	///< data rate for params, waypoints, text messages
 	float		_rate_mult;
 
+	uint8_t		_perfect_link;
+	uint8_t		_worst_link;
+	uint8_t		_link_step;
+	float		_min_fq_mult;
+	float		_fq_mult_step;
+	uint8_t		_max_link_group;
+	uint8_t		_current_link_group;
+
 	/**
 	 * If the queue index is not at 0, the queue sending
 	 * logic will send parameters from the current index
@@ -370,6 +378,10 @@ private:
 	param_t			_param_forward_externalsp;
 	param_t			_param_mavlink_log_enabled;
 	param_t			_param_minimalistic;
+	param_t 		_param_perfect_link;
+	param_t			_param_worst_link;
+	param_t			_param_minimal_rate_multiplier;
+	param_t			_param_link_quality_step;
 
 	perf_counter_t		_loop_perf;			/**< loop performance counter */
 	perf_counter_t		_txerr_perf;			/**< TX error counter */
@@ -421,6 +433,9 @@ private:
 	void update_rate_mult();
 
 	static int	mavlink_dev_ioctl(struct file *filep, int cmd, unsigned long arg);
+
+	void prepare_link_management();
+	float get_link_quality_multiplier(uint8_t link_quality);
 
 	/**
 	 * Main mavlink task.
