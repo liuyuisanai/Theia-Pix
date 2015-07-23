@@ -430,6 +430,8 @@ protected:
 	{
 		struct vehicle_command_s cmd;
 
+                printf("%s:%d try to send\n", __FUNCTION__, __LINE__);
+
 		if (_cmd_sub->update(&_cmd_time, &cmd)) {
 			/* only send commands for other systems/components */
 			if (cmd.target_system != mavlink_system.sysid || cmd.target_component != mavlink_system.compid) {
@@ -446,6 +448,8 @@ protected:
 				msg.param5 = cmd.param5;
 				msg.param6 = cmd.param6;
 				msg.param7 = cmd.param7;
+
+                                printf("%s:%d mavlink send\n", __FUNCTION__, __LINE__);
 
 				_mavlink->send_message(MAVLINK_MSG_ID_COMMAND_LONG, &msg);
 			}
@@ -2287,6 +2291,8 @@ protected:
 		bool updated = _pos_sub->update(&_pos_time, &pos);
 		updated |= _home_sub->update(&_home_time, &home);
 		updated |= _gps_sub->update(&_gps_time, &gps);
+
+                msg.STS_battery_remaining = (uint8_t)(100.0f * status.battery_remaining);
 
 		if (_pos_time != 0 && updated) {
 			msg.fresh_messages |= MAVLINK_COMBO_MESSAGE_GPOS;

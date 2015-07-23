@@ -131,7 +131,7 @@ private:
 	void handle_message_global_position_int(mavlink_message_t *msg);
 	void internal_global_position_int_handle(const mavlink_global_position_int_t &pos, mavlink_message_t *msg);
 	void handle_message_heartbeat(mavlink_message_t *msg);
-	void internal_heartbeat_handle(const mavlink_heartbeat_t &hb, mavlink_message_t *msg);
+        void internal_heartbeat_handle(const mavlink_heartbeat_t &hb, mavlink_message_t *msg);
 	void handle_message_request_data_stream(mavlink_message_t *msg);
 	void handle_message_hil_sensor(mavlink_message_t *msg);
 	void handle_message_hil_gps(mavlink_message_t *msg);

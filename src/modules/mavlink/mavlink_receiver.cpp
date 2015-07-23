@@ -1019,6 +1019,7 @@ MavlinkReceiver::internal_heartbeat_handle(const mavlink_heartbeat_t &hb, mavlin
 				_airdog_status.base_mode = hb.base_mode;
 				_airdog_status.system_status = hb.system_status;
 				_airdog_status.timestamp = hrt_absolute_time();
+                                _airdog_status.battery_remaining = hb.battery_remaining;
 
 				if (_airdog_status_pub < 0) {
 					_airdog_status_pub = orb_advertise(ORB_ID(airdog_status), &_airdog_status);
@@ -1125,6 +1126,7 @@ MavlinkReceiver::handle_combo_message(mavlink_message_t *msg)
 			msg_combo.HRT_autopilot,
 			msg_combo.HRT_base_mode,
 			msg_combo.HRT_system_status,
+                        msg_combo.STS_battery_remaining,
 			msg_combo.HRT_mavlink_version
 		};
 //		msg_hrt.autopilot = msg_combo.HRT_autopilot;
