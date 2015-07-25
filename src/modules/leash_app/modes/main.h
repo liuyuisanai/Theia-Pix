@@ -18,7 +18,7 @@ public:
     virtual int getTimeout();
     virtual void listenForEvents(bool awaitMask[]);
     virtual Base* doEvent(int orbId);
-protected:
+private:
     enum MainStates
     {
         GROUNDED = 0, 
@@ -34,21 +34,31 @@ protected:
         TAKEOFF_FAILED,
         // -- IN_FLIGHT subs --
         TAKING_OFF,
+        PLAY,
+        PAUSE,
     };
     struct Condition
     {
         MainStates main;
         SubStates sub;
     };
+    struct DisplayInfo
+    {
+        int airdog_mode;
+        int follow_mode;
+        int land_mode;
+    };
 
-	const hrt_abstime command_responce_time = 300000;
+	const hrt_abstime command_responce_time = 2000000;
 	hrt_abstime local_timer = 0;
 
+    struct DisplayInfo displayInfo;
     struct Condition baseCondition;
     Base* makeAction();
-    Base* processGroundNone(int orbId);
+    Base* processGround(int orbId);
     Base* processTakeoff(int orbId);
     Base* processHelp(int orbId);
+    Base* processFlight(int orbId);
 };
 
 }

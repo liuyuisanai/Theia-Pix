@@ -14,12 +14,20 @@ namespace modes
 
 Main::Main()
 {
+    displayInfo.airdog_mode = AIRDOGMODE_NONE;
+    /*TODO[Max] presset info for next two required*/
+    displayInfo.follow_mode = FOLLOW_PATH;
+    displayInfo.land_mode = LAND_SPOT;
+
     baseCondition.main = GROUNDED;
     baseCondition.sub = NONE;
     local_timer = 0;
 
-    DisplayHelper::showMain(MAINSCREEN_INFO, "zhopa",
-                            AIRDOGMODE_NONE, FOLLOW_PATH, LAND_SPOT);
+    DisplayHelper::showMain(MAINSCREEN_INFO, "zhopa"
+                                ,displayInfo.airdog_mode
+                                ,displayInfo.follow_mode
+                                ,displayInfo.land_mode
+                                );
 }
 
 int Main::getTimeout()
@@ -34,7 +42,7 @@ void Main::listenForEvents(bool awaitMask[])
     awaitMask[FD_BLRHandler] = 1;
 }
 
-Base* Main::processGroundNone(int orbId)
+Base* Main::processGround(int orbId)
 {
     Base *nextMode = nullptr;
     if (orbId == FD_KbdHandler)
@@ -88,9 +96,9 @@ Base* Main::processTakeoff(int orbId)
         }
         else if (key_pressed(BTN_OK))
         {
-            if (baseCondition.sub == CONFIRM_TAKEOFF) 
+            if (baseCondition.sub == CONFIRM_TAKEOFF)
             {
-                if (dm->airdog_status.state_aird < AIRD_STATE_TAKING_OFF) 
+                if (dm->airdog_status.state_aird < AIRD_STATE_TAKING_OFF)
                 {
                     baseCondition.sub = TAKEOFF_CONFIRMED;
                 }
@@ -151,14 +159,15 @@ Base* Main::doEvent(int orbId)
     {
         nextMode = new ModeConnect(ModeState::DISCONNECTED);
     }
-    else {
+    else
+    {
     /* -- grounded -- */
     if (baseCondition.main == GROUNDED)
     {
-        switch (baseCondition.sub) 
+        switch (baseCondition.sub)
         {
             case NONE:
-                nextMode = processGroundNone(orbId);
+                nextMode = processGround(orbId);
                 break;
             case HELP:
                 nextMode = processHelp(orbId);
@@ -167,6 +176,8 @@ Base* Main::doEvent(int orbId)
             case TAKEOFF_CONFIRMED:
             case CONFIRM_TAKEOFF:
                 nextMode = processTakeoff(orbId);
+                break;
+            default:
                 break;
         }
     }
@@ -178,6 +189,13 @@ Base* Main::doEvent(int orbId)
             case TAKEOFF_CONFIRMED:
             case TAKING_OFF:
                 nextMode = processTakeoff(orbId);
+                break;
+            case NONE:
+            case PLAY:
+            case PAUSE:
+                nextMode = processFlight(orbId);
+                break;
+            default:
                 break;
         }
     }
@@ -230,16 +248,55 @@ Base* Main::makeAction()
     {
         switch (baseCondition.sub)
         {
-            case NONE:
-                DisplayHelper::showMain(MAINSCREEN_INFO, "zhopa",
-                                        AIRDOGMODE_NONE, FOLLOW_PATH, LAND_SPOT);
+            case PAUSE:
+            case PLAY:
+                DisplayHelper::showMain(MAINSCREEN_INFO, "zhopa"
+                                ,displayInfo.airdog_mode
+                                ,displayInfo.follow_mode
+                                ,displayInfo.land_mode
+                                );
                 break;
             case TAKING_OFF:
                 DisplayHelper::showMain(MAINSCREEN_TAKING_OFF, "zhopa", 0, 0, 0);
+                break;
+            default:
                 break;
         }
     }
     return nextMode;
 }
 
+Base* Main::processFlight(int orbId)
+{
+    Base *nextMode = nullptr;
+    DataManager *dm = DataManager::instance();
+
+    /* Now all keyboard actions are processed in 'kbd_handler' in 'leash' module
+     * moving them to this module should be considered as TODO[Max]
+     * for now we are only monitoring airdog states to show corresponding info on 'leash_display'
+     */
+    if (orbId == FD_AirdogStatus)
+    {
+        if (dm->airdog_status.state_main == MAIN_STATE_LOITER)
+        {
+            displayInfo.airdog_mode = AIRDOGMODE_PAUSE;
+            baseCondition.sub = PAUSE;
+        }
+        else if (dm->airdog_status.state_main == MAIN_STATE_ABS_FOLLOW)
+        {
+            displayInfo.follow_mode = FOLLOW_ABS;
+            displayInfo.airdog_mode = AIRDOGMODE_PLAY;
+            baseCondition.sub = PLAY;
+        }
+        else if (dm->airdog_status.state_main == MAIN_STATE_AUTO_PATH_FOLLOW)
+        {
+            displayInfo.follow_mode = FOLLOW_PATH;
+            displayInfo.airdog_mode = AIRDOGMODE_PLAY;
+            baseCondition.sub = PLAY;
+        }
+    }
+    nextMode = makeAction();
+    return nextMode;
 }
+
+} //end of namespace modes

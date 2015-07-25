@@ -53,7 +53,6 @@ Base* ModeConnect::doEvent(int orbId)
     getConState();
     if (orbId == FD_BLRHandler)
     {
-        DOG_PRINT("[modes]{connection} doingEvent state: %d\n", currentState);
         if (currentState == ModeState::CONNECTING) 
         {
             DisplayHelper::showInfo(INFO_CONNECTING_TO_AIRDOG, 0);
@@ -146,7 +145,6 @@ void ModeConnect::getConState()
             currentState = ModeState::UNKNOWN;
             break;
     }
-    DOG_PRINT("[modes]{connection}currentState: %d\n", currentState);
 }
 
 void ModeConnect::BTPairing(bool start)
