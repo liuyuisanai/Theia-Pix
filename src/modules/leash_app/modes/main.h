@@ -4,6 +4,9 @@
 
 #include <uORB/topics/leash_display.h>
 
+//#include <time.h>
+#include <drivers/drv_hrt.h>
+
 namespace modes
 {
 
@@ -38,8 +41,14 @@ protected:
         SubStates sub;
     };
 
+	const hrt_abstime command_responce_time = 300000;
+	hrt_abstime local_timer = 0;
+
     struct Condition baseCondition;
     Base* makeAction();
+    Base* processGroundNone(int orbId);
+    Base* processTakeoff(int orbId);
+    Base* processHelp(int orbId);
 };
 
 }
