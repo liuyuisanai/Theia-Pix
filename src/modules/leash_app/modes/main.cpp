@@ -14,14 +14,15 @@ namespace modes
 
 Main::Main()
 {
+
     displayInfo.airdog_mode = AIRDOGMODE_NONE;
     /*TODO[Max] presset info for next two required*/
     displayInfo.follow_mode = FOLLOW_PATH;
     displayInfo.land_mode = LAND_SPOT;
 
+    local_timer = 0;
     baseCondition.main = GROUNDED;
     baseCondition.sub = NONE;
-    local_timer = 0;
 
     DisplayHelper::showMain(MAINSCREEN_INFO, "zhopa"
                                 ,displayInfo.airdog_mode
@@ -45,6 +46,8 @@ void Main::listenForEvents(bool awaitMask[])
 Base* Main::processGround(int orbId)
 {
     Base *nextMode = nullptr;
+    DataManager *dm = DataManager::instance();
+
     if (orbId == FD_KbdHandler)
     {
         if (key_pressed(BTN_MODE))
@@ -59,6 +62,17 @@ Base* Main::processGround(int orbId)
         else
         {
             baseCondition.sub = HELP;
+            nextMode = makeAction();
+        }
+    }
+    else if (orbId == FD_AirdogStatus)
+    {
+        if (dm->airdog_status.state_aird > AIRD_STATE_LANDED)
+        {
+            DOG_PRINT("[leash_app]{main} Detected flying drone while \
+                    in GROUNDED main state. Leash restart?\n");
+            baseCondition.main = IN_FLINGHT;
+            baseCondition.sub = NONE;
             nextMode = makeAction();
         }
     }
@@ -178,6 +192,7 @@ Base* Main::doEvent(int orbId)
                 nextMode = processTakeoff(orbId);
                 break;
             default:
+                DOG_PRINT("[leash_app]{main} unexpected sub condition, got %d\n", baseCondition.sub);
                 break;
         }
     }
@@ -195,7 +210,12 @@ Base* Main::doEvent(int orbId)
             case PAUSE:
                 nextMode = processFlight(orbId);
                 break;
+            case LANDING:
+            case RTL:
+                nextMode = processLandRTL(orbId);
+                break;
             default:
+                DOG_PRINT("[leash_app]{main} unexpected sub condition, got %d\n", baseCondition.sub);
                 break;
         }
     }
@@ -241,6 +261,7 @@ Base* Main::makeAction()
                 DisplayHelper::showInfo(INFO_TAKEOFF_FAILED, 0);
                 break;
             default:
+                DOG_PRINT("[leash_app]{main} unexpected sub condition, got %d\n", baseCondition.sub);
                 break;
         }
     }
@@ -248,6 +269,7 @@ Base* Main::makeAction()
     {
         switch (baseCondition.sub)
         {
+            case NONE:
             case PAUSE:
             case PLAY:
                 DisplayHelper::showMain(MAINSCREEN_INFO, "zhopa"
@@ -259,7 +281,14 @@ Base* Main::makeAction()
             case TAKING_OFF:
                 DisplayHelper::showMain(MAINSCREEN_TAKING_OFF, "zhopa", 0, 0, 0);
                 break;
+            case LANDING:
+                DisplayHelper::showMain(MAINSCREEN_LANDING, "zhopa", 0, 0, 0);
+                break;
+            case RTL:
+                DisplayHelper::showMain(MAINSCREEN_GOING_HOME, "zhopa", 0, 0, 0);
+                break;
             default:
+                DOG_PRINT("[leash_app]{main} unexpected sub condition, got %d\n", baseCondition.sub);
                 break;
         }
     }
@@ -275,7 +304,8 @@ Base* Main::processFlight(int orbId)
      * moving them to this module should be considered as TODO[Max]
      * for now we are only monitoring airdog states to show corresponding info on 'leash_display'
      */
-    if (orbId == FD_AirdogStatus)
+    
+    if (orbId == FD_AirdogStatus || baseCondition.sub == NONE)
     {
         if (dm->airdog_status.state_main == MAIN_STATE_LOITER)
         {
@@ -293,6 +323,43 @@ Base* Main::processFlight(int orbId)
             displayInfo.follow_mode = FOLLOW_PATH;
             displayInfo.airdog_mode = AIRDOGMODE_PLAY;
             baseCondition.sub = PLAY;
+        }
+        else if (dm->airdog_status.state_aird == AIRD_STATE_LANDING)
+        {
+            displayInfo.airdog_mode = AIRDOGMODE_PAUSE;
+            baseCondition.sub = LANDING;
+        }
+        else if (dm->airdog_status.state_main == MAIN_STATE_RTL)
+        {
+            displayInfo.airdog_mode = AIRDOGMODE_PAUSE;
+            baseCondition.sub = RTL;
+        }
+    }
+    nextMode = makeAction();
+    return nextMode;
+}
+
+Base* Main::processLandRTL(int orbId)
+{
+    Base *nextMode = nullptr;
+    DataManager *dm = DataManager::instance();
+
+    if (orbId == FD_AirdogStatus)
+    {
+        if (dm->airdog_status.state_aird == AIRD_STATE_LANDING)
+        {
+            displayInfo.airdog_mode = AIRDOGMODE_PAUSE;
+            baseCondition.sub = LANDING;
+        }
+        else if (dm->airdog_status.state_aird < AIRD_STATE_TAKING_OFF)
+        {
+            baseCondition.main = GROUNDED;
+            baseCondition.sub = NONE;
+        }
+        else if (dm->airdog_status.state_main == MAIN_STATE_RTL)
+        {
+            displayInfo.airdog_mode = AIRDOGMODE_PAUSE;
+            baseCondition.sub = RTL;
         }
     }
     nextMode = makeAction();

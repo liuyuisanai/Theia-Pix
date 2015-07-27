@@ -33,9 +33,12 @@ private:
         TAKEOFF_CONFIRMED,
         TAKEOFF_FAILED,
         // -- IN_FLIGHT subs --
-        TAKING_OFF,
         PLAY,
         PAUSE,
+        // -- Landing and Taking off subs --
+        TAKING_OFF,
+        LANDING,
+        RTL,
     };
     struct Condition
     {
@@ -57,6 +60,7 @@ private:
     Base* makeAction();
     Base* processGround(int orbId);
     Base* processTakeoff(int orbId);
+    Base* processLandRTL(int orbId);
     Base* processHelp(int orbId);
     Base* processFlight(int orbId);
 };
