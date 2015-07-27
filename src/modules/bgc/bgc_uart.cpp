@@ -58,6 +58,11 @@ BGC_uart::Poll_result BGC_uart::Poll(const int timeout_ms, short int event) {
 }
 
 bool BGC_uart::Discover_attributes(int & speed, int & parity, const int response_timeout_ms) {
+    bool always_false_break_switch = false;
+    return Discover_attributes(speed, parity, always_false_break_switch, response_timeout_ms);
+}
+
+bool BGC_uart::Discover_attributes(int & speed, int & parity, volatile bool & break_switch, const int response_timeout_ms) {
     DOG_PRINT("[BGC::BGC_uart] Discover_attributes\n");
     // Spec: https://www.basecamelectronics.com/files/SimpleBGC_2_4_Serial_Protocol_Specification.pdf
     // BGC fw v2.40 only supports EVEN parity, v2.41 supports EVEN and NONE.
@@ -72,6 +77,7 @@ bool BGC_uart::Discover_attributes(int & speed, int & parity, const int response
             if ( Set_attributes(speed, parity) ) {
                 const int get_board_info_tries = 3;
                 for ( int try_nr = 0; try_nr < get_board_info_tries; ++try_nr ) {
+                    if ( break_switch ) return false;
                     if ( Get_board_info(response_timeout_ms) ) {
                         DOG_PRINT("[BGC::BGC_uart] discovered attributes: speed=%d parity=%d\n", speed, parity);
                         return true;
@@ -161,12 +167,6 @@ bool BGC_uart::Read_junk(const int zero_data_timeout_ms) {
 //    }
 //}
 
-BGC_uart::~BGC_uart() {
-    if ( Is_open() ) {
-        Close();
-    }
-}
-
 bool BGC_uart::Set_attributes(const int speed, const int parity) {
     struct termios tty;
     memset(&tty, 0, sizeof tty);
@@ -226,6 +226,12 @@ bool BGC_uart::Get_board_info(const int response_timeout_ms) {
         }
     }
     return false;
+}
+
+BGC_uart::~BGC_uart() {
+    if ( Is_open() ) {
+        Close();
+    }
 }
 
 bool BGC_uart::Recv_partial_first_byte(BGC_uart_msg & msg) {

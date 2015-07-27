@@ -42,6 +42,8 @@ public:
     // On success, returns true and sets speed/parity variables and leaves current uart connection set to those variables.
     // On failure, returns false and leaves speed/parity variables and uart connection open, but with undefined speed/parity.
     bool Discover_attributes(int & speed, int & parity, const int response_timeout_ms = DEFAULT_RESPONSE_TIMEOUT_MS);
+    bool Discover_attributes(int & speed, int & parity, volatile bool & break_switch
+        , const int response_timeout_ms = DEFAULT_RESPONSE_TIMEOUT_MS);
     
     // Sends the given message over current uart connection, fails if no bytes transmitted in specified timeout.
     // Returns true on success, false if message was not fully delivered.
@@ -61,12 +63,6 @@ public:
     // Returns true if timeout has elapsed, false if an error occurred during read / poll.
     bool Read_junk(const int zero_data_timeout_ms = DEFAULT_READ_JUNK_TIMEOUT);
     
-    // For debugging purposes, not used in production code
-    // void Read_messages_loop(const int timeout_ms = -1);
-    
-    ~BGC_uart();
-    
-private:
     // Sets attributes of current uart connection to specified speed and parity. (Does not test if communication is successful.)
     // Returns true on success, false if failed to set the attributes for any reason.
     bool Set_attributes(const int speed, const int parity);
@@ -74,6 +70,12 @@ private:
     // Sends request for board info on current uart connection, returns true if receives valid response, false otherwise.
     bool Get_board_info(const int response_timeout_ms = DEFAULT_RESPONSE_TIMEOUT_MS);
     
+    // For debugging purposes, not used in production code
+    // void Read_messages_loop(const int timeout_ms = -1);
+    
+    ~BGC_uart();
+    
+private:
     bool Recv_partial_first_byte(BGC_uart_msg & msg);
     bool Recv_partial_header(BGC_uart_msg & msg);
     bool Recv_partial_body(BGC_uart_msg & msg);

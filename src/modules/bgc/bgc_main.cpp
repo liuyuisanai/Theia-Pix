@@ -1,15 +1,22 @@
 #include <nuttx/config.h>
+#include <string.h>
 #include "bgc.hpp"
 
 extern "C" __EXPORT int bgc_main(int argc, char *argv[]);
 
 int bgc_main(int argc, char *argv[]) {
-    printf("[bgc] bgc_main - started\n");
-    sleep(3);        // Give BGC some time to initialize and turn motors on.
-    for ( ; ; ) {
-        BGC::BGC bgc;
-        bgc.Run();   // We will only return from Run if a fatal error occurs. And instead of
-        sleep(10);   // dying, we'll give some time for things to settle down, and try again.
+    if ( argc == 2 && !strcmp(argv[1], "start") ) {
+        if ( !BGC::BGC::Start_thread() ) {
+            return 2;
+        }
+    } else if ( argc == 2 && !strcmp(argv[1], "stop") ) {
+        if ( !BGC::BGC::Stop_thread() ) {
+            return 3;
+        }
+    } else {
+        printf("usage: bgc [start|stop]\n");
+        return 1;
     }
+    
     return 0;
 }

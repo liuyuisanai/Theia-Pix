@@ -425,15 +425,18 @@ then
 		echo "Navigator FAILED. Aborting!" >> $LOG_FILE
 		exit
 	fi
-	
+
+    #start frame button driver
+    frame_button start
+
     #
     # Start the BGC module
     #
-    if bgc
+    if bgc start
     then
         echo "BGC OK" >> $LOG_FILE
     else
-        echo "BGC FAILED. Aborting!" >> $LOG_FILE
+        echo "BGC FAILED" >> $LOG_FILE
     fi
 
 	# Start any custom addons
@@ -450,10 +453,6 @@ then
 		echo "[init] Exit from nsh"
 		exit
 	fi
-
-    #start frame button driver
-    frame_button start
-
 
 # End of autostart
 fi

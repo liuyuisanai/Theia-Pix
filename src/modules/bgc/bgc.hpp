@@ -2,6 +2,7 @@
 #define __BGCTST_BGC_HPP_INCLUDED__
 
 #include <uORB/topics/vehicle_status.h>
+#include <systemlib/param/param.h>
 #include "bgc_uart.hpp"
 #include "orb_subscriber.hpp"
 
@@ -9,11 +10,20 @@ namespace BGC {
 
 class BGC {
 public:
+    static bool Start_thread();
+    static bool Stop_thread();
+    
+private:
     // Returns instantly, does not perform any IO.
     BGC();
     
-    // Runs the main frame_button -> BGC communication loop, only returns if a fatal error occurs.
-    void Run();
+    ~BGC();
+    
+    // Runs the main frame_button -> BGC communication loop.
+    // Returns false if thread was asked to stop, true if an error occurred or BGC restarted,
+    // and we should Run again with a new BGC object.
+    // Don't call more than once on a single BGC object.
+    bool Run();
     
 private:
     enum Poll_result {
@@ -29,6 +39,9 @@ private:
     // Initializes frame_button uORB subscription and BGC uart connection, and calls Update_bgc_motor_status(),
     // returns true only if everything succeeds.
     bool Setup();
+    
+    // Used during Setup to discover the BGC uart speed/parity attributes.
+    bool Discover_attributes();
     
     // Reads current frame button status, sends required command to BGC. Returns true on success, false if something goes wrong.
     bool Process_frame_button_event();
@@ -47,6 +60,17 @@ private:
     
     // The arming state we read on the previous vehicle status update event.
     arming_state_t prev_arming_state;
+    
+    param_t param_arm_bgc_motors;
+    
+private:
+    static volatile bool s_thread_running;
+    static volatile bool s_thread_should_exit;
+    
+    static int s_discovered_speed;
+    static int s_discovered_parity;
+    
+    static int Thread_main(int argc, char *argv[]);
     
 private:
     BGC(const BGC &);
