@@ -161,17 +161,17 @@ class uploader(object):
         GET_OTP         = b'\x2a'     # rev4+  , get a word from OTP area
         GET_SN          = b'\x2b'     # rev4+  , get a word from SN area
         REBOOT          = b'\x30'
-        
+
         INFO_BL_REV     = b'\x01'        # bootloader protocol revision
-        BL_REV_MIN      = 2             # minimum supported bootloader protocol 
-        BL_REV_MAX      = 4             # maximum supported bootloader protocol 
+        BL_REV_MIN      = 2             # minimum supported bootloader protocol
+        BL_REV_MAX      = 4             # maximum supported bootloader protocol
         INFO_BOARD_ID   = b'\x02'        # board type
         INFO_BOARD_REV  = b'\x03'        # board revision
         INFO_FLASH_SIZE = b'\x04'        # max firmware size in bytes
 
         PROG_MULTI_MAX  = 60            # protocol max is 255, must be multiple of 4
         READ_MULTI_MAX  = 60            # protocol max is 255, something overflows with >= 64
-        
+
         NSH_INIT        = bytearray(b'\x0d\x0d\x0d')
         NSH_REBOOT_BL   = b"reboot -b\n"
         NSH_REBOOT      = b"reboot\n"
@@ -279,12 +279,12 @@ class uploader(object):
 
         # send a PROG_MULTI command to write a collection of bytes
         def __program_multi(self, data):
-                
+
                 if runningPython3 == True:
                     length = len(data).to_bytes(1, byteorder='big')
                 else:
                     length = chr(len(data))
-            
+
                 self.__send(uploader.PROG_MULTI)
                 self.__send(length)
                 self.__send(data)
@@ -293,12 +293,12 @@ class uploader(object):
 
         # verify multiple bytes in flash
         def __verify_multi(self, data):
-            
+
                 if runningPython3 == True:
                     length = len(data).to_bytes(1, byteorder='big')
                 else:
                     length = chr(len(data))
-                
+
                 self.__send(uploader.READ_MULTI)
                 self.__send(length)
                 self.__send(uploader.EOC)
@@ -421,7 +421,7 @@ class uploader(object):
                 print("done, rebooting.")
                 self.__reboot()
                 self.port.close()
-                
+
         def send_reboot(self):
                 try:
                     # try reboot via NSH first
@@ -434,8 +434,8 @@ class uploader(object):
                     self.__send(uploader.MAVLINK_REBOOT_ID0)
                 except:
                     return
-                
-                
+
+
 
 # Detect python version
 if sys.version_info[0] < 3:
@@ -446,6 +446,7 @@ else:
 # Parse commandline arguments
 parser = argparse.ArgumentParser(description="Firmware uploader for the PX autopilot system.")
 parser.add_argument('--port', action="store", required=True, help="Serial port(s) to which the FMU may be attached")
+parser.add_argument('--exclude', action="store", default="", help="Serial port(s) to which the FMU may be attached")
 parser.add_argument('--baud', action="store", type=int, default=115200, help="Baud rate of the serial port (default is 115200), only required for true serial ports.")
 parser.add_argument('firmware', action="store", help="Firmware file to be uploaded")
 args = parser.parse_args()
@@ -463,7 +464,9 @@ print("Loaded firmware for %x,%x, waiting for the bootloader..." % (fw.property(
 # Spin waiting for a device to show up
 while True:
         portlist = []
+        exclude_portlist = []
         patterns = args.port.split(",")
+        exclude_patterns = args.exclude.split(",")
         # on unix-like platforms use glob to support wildcard ports. This allows
         # the use of /dev/serial/by-id/usb-3D_Robotics on Linux, which prevents the upload from
         # causing modem hangups etc
@@ -471,9 +474,15 @@ while True:
                 import glob
                 for pattern in patterns:
                         portlist += glob.glob(pattern)
+                for ex_pattern in exclude_patterns:
+                        exclude_portlist += glob.glob(ex_pattern)
+
         else:
                 portlist = patterns
+                exclude_portlist = exclude_patterns
 
+
+        portlist = set(portlist) - set(exclude_portlist)
         for port in portlist:
 
                 #print("Trying %s" % port)
@@ -509,7 +518,7 @@ while True:
                         # most probably a timeout talking to the port, no bootloader, try to reboot the board
                         print("attempting reboot on %s..." % port)
                         up.send_reboot()
-                        # wait for the reboot, without we might run into Serial I/O Error 5 
+                        # wait for the reboot, without we might run into Serial I/O Error 5
                         time.sleep(0.5)
                         continue
 
