@@ -24,7 +24,7 @@ Main::Main()
     baseCondition.main = GROUNDED;
     baseCondition.sub = NONE;
 
-    DisplayHelper::showMain(MAINSCREEN_INFO, "zhopa"
+    DisplayHelper::showMain(MAINSCREEN_INFO, "airdog"
                                 ,displayInfo.airdog_mode
                                 ,displayInfo.follow_mode
                                 ,displayInfo.land_mode
@@ -235,19 +235,20 @@ Base* Main::makeAction()
         switch (baseCondition.sub)
         {
             case NONE:
-                DisplayHelper::showMain(MAINSCREEN_INFO, "zhopa",
+                DisplayHelper::showMain(MAINSCREEN_INFO, "airdog",
                                         AIRDOGMODE_NONE, FOLLOW_PATH, LAND_SPOT);
                 break;
             case HELP:
-                DisplayHelper::showMain(MAINSCREEN_READY_TO_TAKEOFF, "zhopa",
+                DisplayHelper::showMain(MAINSCREEN_READY_TO_TAKEOFF, "airdog",
                                         AIRDOGMODE_NONE, FOLLOW_PATH, LAND_SPOT);
                 break;
             case CONFIRM_TAKEOFF:
-                DOG_PRINT("[leash_app]{main menu} confirm zhopa screen\n");
-                DisplayHelper::showMain(MAINSCREEN_CONFIRM_TAKEOFF, "zhopa", 0, 0, 0);
+                DOG_PRINT("[leash_app]{main menu} confirm airdog screen\n");
+                DisplayHelper::showMain(MAINSCREEN_CONFIRM_TAKEOFF, "airdog", 0, 0, 0);
                 break;
             case TAKEOFF_CONFIRMED:
                 DOG_PRINT("[leash_app]{main menu} takeoff confirm\n");
+                DisplayHelper::showMain(MAINSCREEN_TAKING_OFF, "airdog", 0, 0, 0);
                 if (local_timer == 0)
                 {
                     send_arm_command(dm->airdog_status);
@@ -255,7 +256,7 @@ Base* Main::makeAction()
                 }
                 break;
             case TAKING_OFF:
-                DisplayHelper::showMain(MAINSCREEN_TAKING_OFF, "zhopa", 0, 0, 0);
+                DisplayHelper::showMain(MAINSCREEN_TAKING_OFF, "airdog", 0, 0, 0);
                 break;
             case TAKEOFF_FAILED:
                 DisplayHelper::showInfo(INFO_TAKEOFF_FAILED, 0);
@@ -272,20 +273,20 @@ Base* Main::makeAction()
             case NONE:
             case PAUSE:
             case PLAY:
-                DisplayHelper::showMain(MAINSCREEN_INFO, "zhopa"
+                DisplayHelper::showMain(MAINSCREEN_INFO, "airdog"
                                 ,displayInfo.airdog_mode
                                 ,displayInfo.follow_mode
                                 ,displayInfo.land_mode
                                 );
                 break;
             case TAKING_OFF:
-                DisplayHelper::showMain(MAINSCREEN_TAKING_OFF, "zhopa", 0, 0, 0);
+                DisplayHelper::showMain(MAINSCREEN_TAKING_OFF, "airdog", 0, 0, 0);
                 break;
             case LANDING:
-                DisplayHelper::showMain(MAINSCREEN_LANDING, "zhopa", 0, 0, 0);
+                DisplayHelper::showMain(MAINSCREEN_LANDING, "airdog", 0, 0, 0);
                 break;
             case RTL:
-                DisplayHelper::showMain(MAINSCREEN_GOING_HOME, "zhopa", 0, 0, 0);
+                DisplayHelper::showMain(MAINSCREEN_GOING_HOME, "airdog", 0, 0, 0);
                 break;
             default:
                 DOG_PRINT("[leash_app]{main} unexpected sub condition, got %d\n", baseCondition.sub);
@@ -307,6 +308,7 @@ Base* Main::processFlight(int orbId)
     
     if (orbId == FD_AirdogStatus || baseCondition.sub == NONE)
     {
+        // process main state
         if (dm->airdog_status.state_main == MAIN_STATE_LOITER)
         {
             displayInfo.airdog_mode = AIRDOGMODE_PAUSE;
@@ -324,15 +326,16 @@ Base* Main::processFlight(int orbId)
             displayInfo.airdog_mode = AIRDOGMODE_PLAY;
             baseCondition.sub = PLAY;
         }
-        else if (dm->airdog_status.state_aird == AIRD_STATE_LANDING)
-        {
-            displayInfo.airdog_mode = AIRDOGMODE_PAUSE;
-            baseCondition.sub = LANDING;
-        }
         else if (dm->airdog_status.state_main == MAIN_STATE_RTL)
         {
             displayInfo.airdog_mode = AIRDOGMODE_PAUSE;
             baseCondition.sub = RTL;
+        }
+        // process airdog state
+        if (dm->airdog_status.state_aird == AIRD_STATE_LANDING)
+        {
+            displayInfo.airdog_mode = AIRDOGMODE_PAUSE;
+            baseCondition.sub = LANDING;
         }
     }
     nextMode = makeAction();

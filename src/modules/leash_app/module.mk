@@ -7,6 +7,7 @@ SRCS			= \
     modes/main.cpp \
     modes/menu.cpp \
     modes/connect.cpp \
+	modes/acquiring_gps.cpp \
     main.cpp  \
     uorb_functions.cpp  \
     datamanager.cpp \

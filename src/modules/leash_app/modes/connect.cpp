@@ -1,6 +1,6 @@
 #include "connect.h"
 #include "menu.h"
-#include "main.h"
+#include "acquiring_gps.h"
 
 #include <stdio.h>
 #include <sys/ioctl.h>
@@ -23,7 +23,6 @@ namespace modes
 ModeConnect::ModeConnect(ModeState Current)
     : currentState(Current)
 {
-    DOG_PRINT("[mode]{connection} currentState :%s\n", currentState == ModeState::DISCONNECTED ? "DISCONNECTED" : "not known");
     if (Current == ModeState::PAIRING)
     {
         BTPairing();
@@ -59,7 +58,7 @@ Base* ModeConnect::doEvent(int orbId)
         }
         else if (currentState == ModeState::CONNECTED) 
         {
-            nextMode = new Main();
+            nextMode = new Acquiring_gps();
         }
         else if (currentState == ModeState::DISCONNECTED) 
         {

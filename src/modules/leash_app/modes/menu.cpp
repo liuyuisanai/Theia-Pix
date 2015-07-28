@@ -5,6 +5,7 @@
 #include "main.h"
 #include "connect.h"
 #include "calibrate.h"
+#include "acquiring_gps.h"
 #include "../displayhelper.h"
 
 namespace modes
@@ -452,6 +453,11 @@ Base* Menu::switchEntry(int newEntry)
         if (dm->bt_handler.global_state == GLOBAL_BT_STATE::NO_PAIRED_DEVICES)
         {
             nextMode = new ModeConnect();
+        }
+        else if (dm->vehicle_status.condition_home_position_valid == false
+                && dm->localPos.xy_valid == false)
+        {
+            nextMode = new Acquiring_gps();
         }
         else
         {

@@ -11,10 +11,12 @@ DataManager::DataManager()
 {
     // get orbs id
     orbId[FD_AirdogStatus] = ORB_ID(airdog_status);
+    orbId[FD_VehicleStatus] = ORB_ID(vehicle_status);
     orbId[FD_SystemPower] = ORB_ID(system_power);
     orbId[FD_KbdHandler] = ORB_ID(kbd_handler);
     orbId[FD_BLRHandler] = ORB_ID(bt_state);
     orbId[FD_Calibrator] = ORB_ID(calibrator);
+    orbId[FD_LocalPos] = ORB_ID(vehicle_local_position);
 
     // listen orbs
     for (int i = 0; i < FD_Size; i++)
@@ -30,10 +32,12 @@ DataManager::DataManager()
     memset(orbData, 0, sizeof(orbData));
 
     orbData[FD_AirdogStatus] = &airdog_status;
+    orbData[FD_VehicleStatus] = &vehicle_status;
     orbData[FD_SystemPower] = &system_power;
     orbData[FD_KbdHandler] = &kbd_handler;
     orbData[FD_BLRHandler] = &bt_handler;
     orbData[FD_Calibrator] = &calibrator;
+    orbData[FD_LocalPos] = &localPos;
 
     // clear
     memset(awaitMask, 0, sizeof(awaitMask));

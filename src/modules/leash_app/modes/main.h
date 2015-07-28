@@ -52,7 +52,7 @@ private:
         int land_mode;
     };
 
-	const hrt_abstime command_responce_time = 2000000;
+	const hrt_abstime command_responce_time = 10000000;
 	hrt_abstime local_timer = 0;
 
     struct DisplayInfo displayInfo;
