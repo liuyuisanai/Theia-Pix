@@ -14,6 +14,7 @@
 #include <drivers/drv_led_config.h>
 
 #include "leds.hpp"
+#include "pwm_led.h"
 
 __BEGIN_DECLS
 extern void led_init(void);
@@ -26,6 +27,7 @@ struct State
 	uint32_t pattern_play_once;
 	uint32_t pattern_repeat;
 	uint32_t repeat_phase;
+        uint32_t pwm_led_id;
 
 	State() { reset(); }
 
@@ -41,7 +43,10 @@ struct State
 volatile State state[N_LEDS];
 
 void set_default()
-{ led_init(); }
+{
+    state[0].pwm_led_id = PWM_LED_RED;
+    state[1].pwm_led_id = PWM_LED_BLUE;
+}
 
 void set_pattern_once(unsigned led, uint32_t pattern)
 {
@@ -81,9 +86,14 @@ update()
 			state[i].pattern_play_once >>= 1;
 		}
 
-		bool on = next_bit ? LED_GPIO_ON : LED_GPIO_OFF;
-		if (on != stm32_gpioread(led_config[i]))
-			stm32_gpiowrite(led_config[i], on);
+                if (next_bit)
+                {
+                    pwm_led_start(state[i].pwm_led_id);
+                }
+                else
+                {
+                    pwm_led_stop(state[i].pwm_led_id);
+                }
 	}
 }
 

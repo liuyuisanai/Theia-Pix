@@ -8,12 +8,16 @@ extern "C" __EXPORT int main(int argc, const char * argv[]);
 
 #include <systemlib/systemlib.h>
 
+#include <unistd.h>
+
 #include "leds.hpp"
 #if CONFIG_ARCH_BOARD_AIRLEASH
 # include "status_leash.hpp"
 #else
 # error Only AirLeash board is supported.
 #endif
+
+#include "pwm_led.h"
 
 namespace indication
 {
@@ -63,7 +67,13 @@ main(int argc, const char * argv[])
 
 	if (streq(argv[1], "start"))
 	{
-		if (daemon_running)
+                pwm_led_init();
+                pwm_led_set_intensity(PWM_LED_RED, 10);
+
+                pwm_led_start(PWM_LED_BLUE);
+                pwm_led_start(PWM_LED_RED);
+
+                if (daemon_running)
 		{
 			fprintf(stderr, "%s is already running.\n", argv[0]);
 			return 1;
