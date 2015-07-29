@@ -86,6 +86,8 @@ MODULES		+= systemcmds/ver
 #MODULES		+= systemcmds/tests
 #MODULES		+= systemcmds/writefile
 MODULES		+= modules/airdog/calibrator
+MODULES 	+= modules/cl_helper
+
 
 #
 # General system control

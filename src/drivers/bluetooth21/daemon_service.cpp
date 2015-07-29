@@ -204,18 +204,7 @@ pairing_loop(ServiceIO & service_io, ServiceState & svc){
             svc.pairing.addr = pairing_address;
             svc.pairing.pairing_initiator = true;
 
-            paired = pair(service_io);
-
-            const auto wait_for = Time::duration_sec(10);
-            auto time_limit = Time::now() + wait_for;
-
-            while (svc.pairing.paired_devices == 0) {
-                sleep(100); 
-                if (time_limit < Time::now())
-                    break;
-            }
-
-            paired = svc.pairing.paired_devices > 0;
+            paired = pair(service_io) && (svc.pairing.paired_devices > 0);
 
             Globals::Service::turn_pairing_off();
 

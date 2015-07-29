@@ -27,7 +27,7 @@ pair(ServiceBlockingIO< Device, State> & io){
     RESPONSE_PAIR_INITIATE rsp; 
 
     auto cmd = prefill_packet<COMMAND_PAIR_INITIATE, CMD_PAIR_INITIATE>();
-    const auto wait_for = Time::duration_sec(10);
+    const auto wait_for = Time::duration_sec(30);
 
 	auto time_limit = Time::now() + wait_for;
 
