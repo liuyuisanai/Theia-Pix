@@ -22,7 +22,13 @@ enum
     LEASHDISPLAY_MAIN,
     LEASHDISPLAY_MENU,
     LEASHDISPLAY_INFO,
+    LEASHDISPLAY_LIST,
 };
+
+#define LEASHDISPLAY_LINE_COUNT 5
+#define LEASHDISPLAY_LINE_LENGH 25
+
+typedef char LeashDisplay_Lines[LEASHDISPLAY_LINE_COUNT][LEASHDISPLAY_LINE_LENGH];
 
 enum
 {
@@ -117,6 +123,10 @@ struct leash_display_s {
     int menuButtons;
     int infoId;
     int infoError;
+
+    // show text for debug puprose
+    LeashDisplay_Lines lines;
+    int lineCount;
 };
 
 /**

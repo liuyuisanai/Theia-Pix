@@ -1,5 +1,6 @@
 #include "displayhelper.h"
 
+#include <stdio.h>
 #include <string.h>
 
 #include <uORB/uORB.h>
@@ -85,6 +86,48 @@ void DisplayHelper::showInfo(int info, int error)
     leash_display.screenId = LEASHDISPLAY_INFO;
     leash_display.infoId = info;
     leash_display.infoError = error;
+
+    if (to_leash_display > 0)
+    {
+        orb_publish(ORB_ID(leash_display), to_leash_display, &leash_display);
+    }
+    else
+    {
+        to_leash_display = orb_advertise(ORB_ID(leash_display), &leash_display);
+    }
+}
+
+void DisplayHelper::showList(const char **lines, int lineCount, int x, int y)
+{
+    struct leash_display_s leash_display;
+
+    leash_display.screenId = LEASHDISPLAY_LIST;
+    leash_display.lineCount = lineCount - y;
+
+    if (leash_display.lineCount > LEASHDISPLAY_LINE_COUNT)
+    {
+        leash_display.lineCount = LEASHDISPLAY_LINE_COUNT;
+    }
+
+    for (int i = 0; i < LEASHDISPLAY_LINE_COUNT; i++)
+    {
+        int j = y + i;
+
+        if (j < lineCount)
+        {
+            int length = strlen(lines[j]);
+
+            if (x < length)
+            {
+                strncpy(&leash_display.lines[i][0], lines[j] + x, LEASHDISPLAY_LINE_LENGH);
+                leash_display.lines[i][LEASHDISPLAY_LINE_LENGH - 1] = 0;
+            }
+            else
+            {
+                leash_display.lines[i][0] = 0;
+            }
+        }
+    }
 
     if (to_leash_display > 0)
     {

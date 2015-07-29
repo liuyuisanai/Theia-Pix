@@ -14,7 +14,13 @@ struct TextInfo {
     Font *font;
 };
 
-static void drawText(struct TextInfo *text, int rowCount, int yc, int *yStart = nullptr)
+enum DrawMode
+{
+    DrawMode_CenterXY,
+    DrawMode_LeftTop,
+};
+
+static void drawText(int mode, struct TextInfo *text, int rowCount, int yc, int xc, int *yStart = nullptr)
 {
     int height = 0;
     int width = 0;
@@ -29,7 +35,19 @@ static void drawText(struct TextInfo *text, int rowCount, int yc, int *yStart = 
         }
     }
 
-    int y = yc - height / 2;
+    int y = 0;
+
+    switch (mode)
+    {
+        case DrawMode_CenterXY:
+            y = yc - height / 2;
+            break;
+
+        case DrawMode_LeftTop:
+            y = yc;
+            break;
+    }
+
 
     if (yStart != nullptr)
     {
@@ -40,8 +58,22 @@ static void drawText(struct TextInfo *text, int rowCount, int yc, int *yStart = 
     {
         if (text[i].text != nullptr)
         {
-            width = text[i].font->getTextWidth(text[i].text);
-            TextBlock blockText(text[i].text, 64 - width / 2, y, text[i].font);
+            int x = 0;
+
+            switch (mode)
+            {
+                case DrawMode_CenterXY:
+                    width = text[i].font->getTextWidth(text[i].text);
+                    x = 64 - width / 2;
+                    break;
+
+                case DrawMode_LeftTop:
+                    x = xc;
+                    break;
+            }
+
+
+            TextBlock blockText(text[i].text, x, y, text[i].font);
             blockText.draw();
             y += text[i].font->getTextHeight(text[i].text) + 2;
         }
@@ -202,7 +234,7 @@ void Screen::showMain(int mode, const char *presetName, int leashBattery, int ai
 
         int y = 0;
         int yc = 19 + (64 - 20) / 2;
-        drawText(text, rowCount, yc, &y);
+        drawText(DrawMode_CenterXY, text, rowCount, yc, 0, &y);
 
         // draw play pause button
         int x = Font::LucideGrandeSmall.getTextWidth(text[0].text);
@@ -245,7 +277,7 @@ void Screen::showMain(int mode, const char *presetName, int leashBattery, int ai
         }
 
         int yc = 19 + (64 - 20) / 2;
-        drawText(text, rowCount, yc);
+        drawText(DrawMode_CenterXY, text, rowCount, yc, 0);
     }
 
 
@@ -570,5 +602,26 @@ void Screen::showInfo(int info, int error)
             break;
     }
 
-    drawText(text, rowCount, 32);
+    drawText(DrawMode_CenterXY, text, rowCount, 32, 0);
+}
+
+void Screen::showList(LeashDisplay_Lines lines, int lineCount)
+{
+    struct TextInfo text[lineCount];
+
+    memset(text, 0, sizeof(text));
+
+    for (int i = 0; i < lineCount; i++)
+    {
+        text[i].text = &lines[i][0];
+        if (text[i].text[0] == 0)
+        {
+            // make " " string if string is empty
+            // otherwise drawText will skip it
+            text[i].text = " ";
+        }
+        text[i].font = &Font::LucideGrandeTiny;
+    }
+
+    drawText(DrawMode_LeftTop, text, lineCount, 5, 1);
 }

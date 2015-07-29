@@ -137,6 +137,13 @@ static int leash_display_thread_main(int argc, char *argv[])
 
                     Screen::showInfo(dm.leash_display.infoId, dm.leash_display.infoError);
                     break;
+
+                case LEASHDISPLAY_LIST:
+                    dm.clearAwaitMask();
+                    dm.awaitMask[FD_LeashDisplay] = true;
+
+                    Screen::showList(dm.leash_display.lines, dm.leash_display.lineCount);
+                    break;
             }
 
             display_redraw_all();
@@ -170,6 +177,11 @@ static int leash_display_thread_main(int argc, char *argv[])
                 case LEASHDISPLAY_INFO:
                     Screen::showInfo(dm.leash_display.infoId, dm.leash_display.infoError);
                     break;
+
+                case LEASHDISPLAY_LIST:
+                    Screen::showList(dm.leash_display.lines, dm.leash_display.lineCount);
+                    break;
+
             }
             display_redraw_all();
         }

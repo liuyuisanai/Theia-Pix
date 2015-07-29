@@ -1,5 +1,7 @@
 #pragma once
 
+#include <uORB/topics/leash_display.h>
+
 class Screen
 {
 public:
@@ -9,5 +11,6 @@ public:
                          int airdogMode, int followMode, int landMode);
     static void showMenu(int buttons, int type, int value, const char *presetName);
     static void showInfo(int info, int error);
+    static void showList(LeashDisplay_Lines lines, int lineCount);
 };
 
