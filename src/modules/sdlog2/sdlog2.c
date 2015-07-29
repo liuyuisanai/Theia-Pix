@@ -177,7 +177,7 @@ PARAM_DEFINE_INT32(SDLOG_M_BT_EVTS, 0);
 PARAM_DEFINE_INT32(SDLOG_M_BT_LINK, 0);
 //PARAM_DEFINE_INT32(SDLOG_M_BT_ST, 5);
 PARAM_DEFINE_INT32(SDLOG_M_DEBUGD, 0);
-PARAM_DEFINE_INT32(SDLOG_M_ESC, 0);
+//PARAM_DEFINE_INT32(SDLOG_M_ESC, 0);
 PARAM_DEFINE_INT32(SDLOG_M_EXTRAJ, 0);
 PARAM_DEFINE_INT32(SDLOG_M_GPOS, 0);
 PARAM_DEFINE_INT32(SDLOG_M_GPS, 0);
@@ -191,12 +191,12 @@ PARAM_DEFINE_INT32(SDLOG_M_MAVTX, 0);
 PARAM_DEFINE_INT32(SDLOG_M_RANGE, 0);
 PARAM_DEFINE_INT32(SDLOG_M_RCCH, 0);
 PARAM_DEFINE_INT32(SDLOG_M_RSPRATE, 0);
-PARAM_DEFINE_INT32(SDLOG_M_SAT, 0);
+//PARAM_DEFINE_INT32(SDLOG_M_SAT, 0);
 PARAM_DEFINE_INT32(SDLOG_M_SENS, 0);
 PARAM_DEFINE_INT32(SDLOG_M_SERVO, 0);
 PARAM_DEFINE_INT32(SDLOG_M_SYSPOW, 0);
-PARAM_DEFINE_INT32(SDLOG_M_TELEM, 0);
-PARAM_DEFINE_INT32(SDLOG_M_TRGGPS, 0);
+//PARAM_DEFINE_INT32(SDLOG_M_TELEM, 0);
+//PARAM_DEFINE_INT32(SDLOG_M_TRGGPS, 0);
 PARAM_DEFINE_INT32(SDLOG_M_TRGPOS, 0);
 
 #define LOGBUFFER_WRITE_AND_COUNT(_msg) if (logbuffer_write(&lb, &log_msg, LOG_PACKET_SIZE(_msg))) { \
@@ -1342,16 +1342,16 @@ int sdlog2_thread_main(int argc, char *argv[])
 		int global_pos_sub;
 		int triplet_sub;
 		int gps_pos_sub;
-		int sat_info_sub;
+		//int sat_info_sub;
 		//int vicon_pos_sub;
 		// int vision_pos_sub;
 		// int flow_sub;
 		int rc_sub;
 		// int airspeed_sub;
-		int esc_sub;
+		//int esc_sub;
 		int global_vel_sp_sub;
 		int battery_sub;
-		int telemetry_subs[TELEMETRY_STATUS_ORB_ID_NUM];
+		//int telemetry_subs[TELEMETRY_STATUS_ORB_ID_NUM];
 		int range_finder_sub;
 		//int estimator_status_sub;
 		//int tecs_status_sub;
@@ -1365,7 +1365,7 @@ int sdlog2_thread_main(int argc, char *argv[])
         int mav_rx_sub;
         int mav_tx_sub;
         int local_trajectory_sub;
-        int target_gps_raw_sub;
+        //int target_gps_raw_sub;
         int bt_svc_in_sub;
         int bt_svc_out_sub;
         int bt_evt_status_sub;
@@ -1380,7 +1380,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 	subs.aird_sub = orb_subscribe(ORB_ID(airdog_path_log));
 	subs.status_sub = orb_subscribe(ORB_ID(vehicle_status));
 	LOG_ORB_PARAM_SUBSCRIBE(subs.gps_pos_sub, ORB_ID(vehicle_gps_position), "SDLOG_M_GPS", sub_freq)
-	LOG_ORB_PARAM_SUBSCRIBE(subs.sat_info_sub, ORB_ID(satellite_info), "SDLOG_M_SAT", sub_freq)
+	//LOG_ORB_PARAM_SUBSCRIBE(subs.sat_info_sub, ORB_ID(satellite_info), "SDLOG_M_SAT", sub_freq)
 	LOG_ORB_PARAM_SUBSCRIBE(subs.sensor_sub, ORB_ID(sensor_combined), "SDLOG_M_SENS", sub_freq)
 	LOG_ORB_PARAM_SUBSCRIBE(subs.att_sub, ORB_ID(vehicle_attitude), "SDLOG_M_ATT", sub_freq)
 	LOG_ORB_PARAM_SUBSCRIBE(subs.att_sp_sub, ORB_ID(vehicle_attitude_setpoint), "SDLOG_M_ATTSP", sub_freq)
@@ -1396,12 +1396,12 @@ int sdlog2_thread_main(int argc, char *argv[])
 	// subs.flow_sub = orb_subscribe(ORB_ID(optical_flow));
 	LOG_ORB_PARAM_SUBSCRIBE(subs.rc_sub, ORB_ID(rc_channels), "SDLOG_M_RCCH", sub_freq)
 	// subs.airspeed_sub = orb_subscribe(ORB_ID(airspeed));
-	LOG_ORB_PARAM_SUBSCRIBE(subs.esc_sub, ORB_ID(esc_status), "SDLOG_M_ESC", sub_freq)
+	//LOG_ORB_PARAM_SUBSCRIBE(subs.esc_sub, ORB_ID(esc_status), "SDLOG_M_ESC", sub_freq)
 	LOG_ORB_PARAM_SUBSCRIBE(subs.global_vel_sp_sub, ORB_ID(vehicle_global_velocity_setpoint), "SDLOG_M_GVELSP", sub_freq)
 	LOG_ORB_PARAM_SUBSCRIBE(subs.battery_sub, ORB_ID(battery_status), "SDLOG_M_BAT", sub_freq)
-	for (int i = 0; i < TELEMETRY_STATUS_ORB_ID_NUM; i++) {
-		LOG_ORB_PARAM_SUBSCRIBE(subs.telemetry_subs[i], telemetry_status_orb_id[i], "SDLOG_M_TELEM", sub_freq)
-	}
+//	for (int i = 0; i < TELEMETRY_STATUS_ORB_ID_NUM; i++) {
+//		LOG_ORB_PARAM_SUBSCRIBE(subs.telemetry_subs[i], telemetry_status_orb_id[i], "SDLOG_M_TELEM", sub_freq)
+//	}
 	LOG_ORB_PARAM_SUBSCRIBE(subs.range_finder_sub, ORB_ID(sensor_range_finder), "SDLOG_M_RANGE", sub_freq)
 	//subs.estimator_status_sub = orb_subscribe(ORB_ID(estimator_status));
 	//subs.tecs_status_sub = orb_subscribe(ORB_ID(tecs_status));
@@ -1420,7 +1420,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 
 	// Local reported trajectory for leashes
 	LOG_ORB_PARAM_SUBSCRIBE(subs.local_trajectory_sub, ORB_ID(trajectory), "SDLOG_M_LOTRAJ", sub_freq)
-	LOG_ORB_PARAM_SUBSCRIBE(subs.target_gps_raw_sub, ORB_ID(target_gps_raw), "SDLOG_M_TRGGPS", sub_freq)
+	//LOG_ORB_PARAM_SUBSCRIBE(subs.target_gps_raw_sub, ORB_ID(target_gps_raw), "SDLOG_M_TRGGPS", sub_freq)
 	LOG_ORB_PARAM_SUBSCRIBE(subs.bt_svc_in_sub, ORB_ID(bt_svc_in), "SDLOG_M_BT_S_IN", sub_freq)
 	LOG_ORB_PARAM_SUBSCRIBE(subs.bt_svc_out_sub, ORB_ID(bt_svc_out), "SDLOG_M_BT_S_OUT", sub_freq)
 	LOG_ORB_PARAM_SUBSCRIBE(subs.bt_evt_status_sub, ORB_ID(bt_evt_status), "SDLOG_M_BT_EVTS", sub_freq)
@@ -1552,52 +1552,52 @@ int sdlog2_thread_main(int argc, char *argv[])
 		}
 
 		/* --- SATELLITE INFO - UNIT #1 --- */
-		if (_extended_logging) {
-
-			if (copy_if_updated(ORB_ID(satellite_info), subs.sat_info_sub, &buf.sat_info)) {
-
-				/* log the SNR of each satellite for a detailed view of signal quality */
-				unsigned sat_info_count = MIN(buf.sat_info.count, sizeof(buf.sat_info.snr) / sizeof(buf.sat_info.snr[0]));
-				unsigned log_max_snr = sizeof(log_msg.body.log_GS0A.satellite_snr) / sizeof(log_msg.body.log_GS0A.satellite_snr[0]);
-
-				log_msg.msg_type = LOG_GS0A_MSG;
-				memset(&log_msg.body.log_GS0A, 0, sizeof(log_msg.body.log_GS0A));
-				snr_mean = 0.0f;
-
-				/* fill set A and calculate mean SNR */
-				for (unsigned i = 0; i < sat_info_count; i++) {
-
-					snr_mean += buf.sat_info.snr[i];
-
-					int satindex = buf.sat_info.svid[i] - 1;
-
-					/* handles index exceeding and wraps to to arithmetic errors */
-					if ((satindex >= 0) && (satindex < (int)log_max_snr)) {
-						/* map satellites by their ID so that logs from two receivers can be compared */
-						log_msg.body.log_GS0A.satellite_snr[satindex] = buf.sat_info.snr[i];
-					}
-				}
-				LOGBUFFER_WRITE_AND_COUNT(GS0A);
-				snr_mean /= sat_info_count;
-
-				log_msg.msg_type = LOG_GS0B_MSG;
-				memset(&log_msg.body.log_GS0B, 0, sizeof(log_msg.body.log_GS0B));
-
-				/* fill set B */
-				for (unsigned i = 0; i < sat_info_count; i++) {
-
-					/* get second bank of satellites, thus deduct bank size from index */
-					int satindex = buf.sat_info.svid[i] - 1 - log_max_snr;
-
-					/* handles index exceeding and wraps to to arithmetic errors */
-					if ((satindex >= 0) && (satindex < (int)log_max_snr)) {
-						/* map satellites by their ID so that logs from two receivers can be compared */
-						log_msg.body.log_GS0B.satellite_snr[satindex] = buf.sat_info.snr[i];
-					}
-				}
-				LOGBUFFER_WRITE_AND_COUNT(GS0B);
-			}
-		}
+//		if (_extended_logging) {
+//
+//			if (copy_if_updated(ORB_ID(satellite_info), subs.sat_info_sub, &buf.sat_info)) {
+//
+//				/* log the SNR of each satellite for a detailed view of signal quality */
+//				unsigned sat_info_count = MIN(buf.sat_info.count, sizeof(buf.sat_info.snr) / sizeof(buf.sat_info.snr[0]));
+//				unsigned log_max_snr = sizeof(log_msg.body.log_GS0A.satellite_snr) / sizeof(log_msg.body.log_GS0A.satellite_snr[0]);
+//
+//				log_msg.msg_type = LOG_GS0A_MSG;
+//				memset(&log_msg.body.log_GS0A, 0, sizeof(log_msg.body.log_GS0A));
+//				snr_mean = 0.0f;
+//
+//				/* fill set A and calculate mean SNR */
+//				for (unsigned i = 0; i < sat_info_count; i++) {
+//
+//					snr_mean += buf.sat_info.snr[i];
+//
+//					int satindex = buf.sat_info.svid[i] - 1;
+//
+//					/* handles index exceeding and wraps to to arithmetic errors */
+//					if ((satindex >= 0) && (satindex < (int)log_max_snr)) {
+//						/* map satellites by their ID so that logs from two receivers can be compared */
+//						log_msg.body.log_GS0A.satellite_snr[satindex] = buf.sat_info.snr[i];
+//					}
+//				}
+//				LOGBUFFER_WRITE_AND_COUNT(GS0A);
+//				snr_mean /= sat_info_count;
+//
+//				log_msg.msg_type = LOG_GS0B_MSG;
+//				memset(&log_msg.body.log_GS0B, 0, sizeof(log_msg.body.log_GS0B));
+//
+//				/* fill set B */
+//				for (unsigned i = 0; i < sat_info_count; i++) {
+//
+//					/* get second bank of satellites, thus deduct bank size from index */
+//					int satindex = buf.sat_info.svid[i] - 1 - log_max_snr;
+//
+//					/* handles index exceeding and wraps to to arithmetic errors */
+//					if ((satindex >= 0) && (satindex < (int)log_max_snr)) {
+//						/* map satellites by their ID so that logs from two receivers can be compared */
+//						log_msg.body.log_GS0B.satellite_snr[satindex] = buf.sat_info.snr[i];
+//					}
+//				}
+//				LOGBUFFER_WRITE_AND_COUNT(GS0B);
+//			}
+//		}
 
 		/* --- SENSOR COMBINED --- */
 		if (copy_if_updated(ORB_ID(sensor_combined), subs.sensor_sub, &buf.sensor)) {
@@ -1933,24 +1933,24 @@ int sdlog2_thread_main(int argc, char *argv[])
 //		}
 
 		/* --- ESCs --- */
-		if (copy_if_updated(ORB_ID(esc_status), subs.esc_sub, &buf.esc)) {
-			for (uint8_t i = 0; i < buf.esc.esc_count; i++) {
-				log_msg.msg_type = LOG_ESC_MSG;
-				log_msg.body.log_ESC.counter = buf.esc.counter;
-				log_msg.body.log_ESC.esc_count = buf.esc.esc_count;
-				log_msg.body.log_ESC.esc_connectiontype = buf.esc.esc_connectiontype;
-				log_msg.body.log_ESC.esc_num = i;
-				log_msg.body.log_ESC.esc_address = buf.esc.esc[i].esc_address;
-				log_msg.body.log_ESC.esc_version = buf.esc.esc[i].esc_version;
-				log_msg.body.log_ESC.esc_voltage = buf.esc.esc[i].esc_voltage;
-				log_msg.body.log_ESC.esc_current = buf.esc.esc[i].esc_current;
-				log_msg.body.log_ESC.esc_rpm = buf.esc.esc[i].esc_rpm;
-				log_msg.body.log_ESC.esc_temperature = buf.esc.esc[i].esc_temperature;
-				log_msg.body.log_ESC.esc_setpoint = buf.esc.esc[i].esc_setpoint;
-				log_msg.body.log_ESC.esc_setpoint_raw = buf.esc.esc[i].esc_setpoint_raw;
-				LOGBUFFER_WRITE_AND_COUNT(ESC);
-			}
-		}
+//		if (copy_if_updated(ORB_ID(esc_status), subs.esc_sub, &buf.esc)) {
+//			for (uint8_t i = 0; i < buf.esc.esc_count; i++) {
+//				log_msg.msg_type = LOG_ESC_MSG;
+//				log_msg.body.log_ESC.counter = buf.esc.counter;
+//				log_msg.body.log_ESC.esc_count = buf.esc.esc_count;
+//				log_msg.body.log_ESC.esc_connectiontype = buf.esc.esc_connectiontype;
+//				log_msg.body.log_ESC.esc_num = i;
+//				log_msg.body.log_ESC.esc_address = buf.esc.esc[i].esc_address;
+//				log_msg.body.log_ESC.esc_version = buf.esc.esc[i].esc_version;
+//				log_msg.body.log_ESC.esc_voltage = buf.esc.esc[i].esc_voltage;
+//				log_msg.body.log_ESC.esc_current = buf.esc.esc[i].esc_current;
+//				log_msg.body.log_ESC.esc_rpm = buf.esc.esc[i].esc_rpm;
+//				log_msg.body.log_ESC.esc_temperature = buf.esc.esc[i].esc_temperature;
+//				log_msg.body.log_ESC.esc_setpoint = buf.esc.esc[i].esc_setpoint;
+//				log_msg.body.log_ESC.esc_setpoint_raw = buf.esc.esc[i].esc_setpoint_raw;
+//				LOGBUFFER_WRITE_AND_COUNT(ESC);
+//			}
+//		}
 
 		/* --- GLOBAL VELOCITY SETPOINT --- */
 		if (copy_if_updated(ORB_ID(vehicle_global_velocity_setpoint), subs.global_vel_sp_sub, &buf.global_vel_sp)) {
@@ -1990,20 +1990,20 @@ int sdlog2_thread_main(int argc, char *argv[])
 		}
 
 		/* --- TELEMETRY --- */
-		for (int i = 0; i < TELEMETRY_STATUS_ORB_ID_NUM; i++) {
-			if (copy_if_updated(telemetry_status_orb_id[i], subs.telemetry_subs[i], &buf.telemetry)) {
-				log_msg.msg_type = LOG_TEL0_MSG + i;
-				log_msg.body.log_TEL.rssi = buf.telemetry.rssi;
-				log_msg.body.log_TEL.remote_rssi = buf.telemetry.remote_rssi;
-				log_msg.body.log_TEL.noise = buf.telemetry.noise;
-				log_msg.body.log_TEL.remote_noise = buf.telemetry.remote_noise;
-				log_msg.body.log_TEL.rxerrors = buf.telemetry.rxerrors;
-				log_msg.body.log_TEL.fixed = buf.telemetry.fixed;
-				log_msg.body.log_TEL.txbuf = buf.telemetry.txbuf;
-				log_msg.body.log_TEL.heartbeat_time = buf.telemetry.heartbeat_time;
-				LOGBUFFER_WRITE_AND_COUNT(TEL);
-			}
-		}
+//		for (int i = 0; i < TELEMETRY_STATUS_ORB_ID_NUM; i++) {
+//			if (copy_if_updated(telemetry_status_orb_id[i], subs.telemetry_subs[i], &buf.telemetry)) {
+//				log_msg.msg_type = LOG_TEL0_MSG + i;
+//				log_msg.body.log_TEL.rssi = buf.telemetry.rssi;
+//				log_msg.body.log_TEL.remote_rssi = buf.telemetry.remote_rssi;
+//				log_msg.body.log_TEL.noise = buf.telemetry.noise;
+//				log_msg.body.log_TEL.remote_noise = buf.telemetry.remote_noise;
+//				log_msg.body.log_TEL.rxerrors = buf.telemetry.rxerrors;
+//				log_msg.body.log_TEL.fixed = buf.telemetry.fixed;
+//				log_msg.body.log_TEL.txbuf = buf.telemetry.txbuf;
+//				log_msg.body.log_TEL.heartbeat_time = buf.telemetry.heartbeat_time;
+//				LOGBUFFER_WRITE_AND_COUNT(TEL);
+//			}
+//		}
 
 		/* --- BOTTOM DISTANCE --- */
 		if (copy_if_updated(ORB_ID(sensor_range_finder), subs.range_finder_sub, &buf.range_finder)) {
@@ -2080,20 +2080,20 @@ int sdlog2_thread_main(int argc, char *argv[])
 		}
 
 		/* --- TARGET RAW GPS DATA --- */
-		if (copy_if_updated(ORB_ID(target_gps_raw), subs.target_gps_raw_sub, &buf.target_gps_raw)) {
-			log_msg.msg_type = LOG_TGPS_MSG;
-			log_msg.body.log_TGPS.fix_type = buf.target_gps_raw.fix_type;
-			log_msg.body.log_TGPS.gps_time = buf.target_gps_raw.timestamp_remote;
-			log_msg.body.log_TGPS.lat = buf.target_gps_raw.lat;
-			log_msg.body.log_TGPS.lon = buf.target_gps_raw.lon;
-			log_msg.body.log_TGPS.alt = buf.target_gps_raw.alt * 0.001f;
-			log_msg.body.log_TGPS.eph = buf.target_gps_raw.eph;
-			log_msg.body.log_TGPS.epv = buf.target_gps_raw.epv;
-			log_msg.body.log_TGPS.sats = buf.target_gps_raw.satellites_visible;
-			log_msg.body.log_TGPS.vel = buf.target_gps_raw.vel;
-			log_msg.body.log_TGPS.cog = buf.target_gps_raw.cog_rad;
-			LOGBUFFER_WRITE_AND_COUNT(TGPS);
-		}
+//		if (copy_if_updated(ORB_ID(target_gps_raw), subs.target_gps_raw_sub, &buf.target_gps_raw)) {
+//			log_msg.msg_type = LOG_TGPS_MSG;
+//			log_msg.body.log_TGPS.fix_type = buf.target_gps_raw.fix_type;
+//			log_msg.body.log_TGPS.gps_time = buf.target_gps_raw.timestamp_remote;
+//			log_msg.body.log_TGPS.lat = buf.target_gps_raw.lat;
+//			log_msg.body.log_TGPS.lon = buf.target_gps_raw.lon;
+//			log_msg.body.log_TGPS.alt = buf.target_gps_raw.alt * 0.001f;
+//			log_msg.body.log_TGPS.eph = buf.target_gps_raw.eph;
+//			log_msg.body.log_TGPS.epv = buf.target_gps_raw.epv;
+//			log_msg.body.log_TGPS.sats = buf.target_gps_raw.satellites_visible;
+//			log_msg.body.log_TGPS.vel = buf.target_gps_raw.vel;
+//			log_msg.body.log_TGPS.cog = buf.target_gps_raw.cog_rad;
+//			LOGBUFFER_WRITE_AND_COUNT(TGPS);
+//		}
 
 		/* --- EXTERNAL TRAJECTORY --- */
 		if (copy_if_updated(ORB_ID(external_trajectory), subs.external_trajectory_sub, &buf.ext_traj)) {
