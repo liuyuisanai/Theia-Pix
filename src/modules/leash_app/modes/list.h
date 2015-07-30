@@ -24,6 +24,7 @@ protected:
     int yIndex;
 
     void show();
+    void freeList();
 };
 
 }

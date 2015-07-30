@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <uORB/topics/leash_display.h>
+
 #include "../displayhelper.h"
 
 #include "connect.h"
@@ -27,17 +29,13 @@ List::List()
 
 List::~List()
 {
-
-    for (int i = 0; i < count; i++)
-    {
-        delete []lines[i];
-    }
-
-    delete[] lines;
+    freeList();
 }
 
 void List::setList(const char **pLines, int pCount)
 {
+    freeList();
+
     count = pCount;
 
     lines = new char*[count];
@@ -57,7 +55,23 @@ void List::setList(const char **pLines, int pCount)
 
 void List::show()
 {
-    DisplayHelper::showList((const char**)lines, count, xIndex, yIndex);
+    if (count > 0)
+    {
+        DisplayHelper::showList((const char**)lines, count, xIndex, yIndex);
+    }
+}
+
+void List::freeList()
+{
+    for (int i = 0; i < count; i++)
+    {
+        delete []lines[i];
+    }
+
+    delete[] lines;
+
+    count = 0;
+    lines = nullptr;
 }
 
 int List::getTimeout()
