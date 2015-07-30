@@ -1448,6 +1448,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 
 	/* initialize calculated mean SNR */
 	float snr_mean = 0.0f;
+	struct mallinfo memory_status;
 
 	/* enable logging on start if needed */
 	if (log_on_start) {
@@ -1515,6 +1516,14 @@ int sdlog2_thread_main(int argc, char *argv[])
 			log_msg.body.log_STAT.load = buf_status.load;
 			log_msg.body.log_STAT.aird_state = buf_status.airdog_state;
 			log_msg.body.log_STAT.target_valid = buf_status.condition_target_position_valid;
+
+			#ifdef CONFIG_CAN_PASS_STRUCTS
+			  memory_status = mallinfo();
+			#else
+			  (void)mallinfo(&memory_status);
+			#endif
+			log_msg.body.log_STAT.free_memory = memory_status.fordblks;
+
 			LOGBUFFER_WRITE_AND_COUNT(STAT);
 		}
 
