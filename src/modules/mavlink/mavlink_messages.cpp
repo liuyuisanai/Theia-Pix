@@ -430,7 +430,6 @@ protected:
 	{
 		struct vehicle_command_s cmd;
 
-                printf("%s:%d try to send\n", __FUNCTION__, __LINE__);
 
 		if (_cmd_sub->update(&_cmd_time, &cmd)) {
 			/* only send commands for other systems/components */
@@ -449,7 +448,6 @@ protected:
 				msg.param6 = cmd.param6;
 				msg.param7 = cmd.param7;
 
-                                printf("%s:%d mavlink send\n", __FUNCTION__, __LINE__);
 
 				_mavlink->send_message(MAVLINK_MSG_ID_COMMAND_LONG, &msg);
 			}

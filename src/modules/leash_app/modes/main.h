@@ -38,6 +38,8 @@ private:
         TAKING_OFF,
         LANDING,
         RTL,
+        // -- Service screen --
+        SERVICE,
     };
     struct Condition
     {

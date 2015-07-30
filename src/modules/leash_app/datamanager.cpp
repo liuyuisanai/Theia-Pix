@@ -18,6 +18,8 @@ DataManager::DataManager()
     orbId[FD_Calibrator] = ORB_ID(calibrator);
     orbId[FD_LocalPos] = ORB_ID(vehicle_local_position);
     orbId[FD_MavlinkStatus] = ORB_ID(mavlink_receive_stats);
+    orbId[FD_DroneRowGPS] = ORB_ID(target_gps_raw);
+    orbId[FD_LeashRowGPS] = ORB_ID(vehicle_gps_position);
 
     // listen orbs
     for (int i = 0; i < FD_Size; i++)
@@ -41,6 +43,8 @@ DataManager::DataManager()
     orbData[FD_Calibrator] = &calibrator;
     orbData[FD_LocalPos] = &localPos;
     orbData[FD_MavlinkStatus] = &mavlink_received_stats;
+    orbData[FD_DroneRowGPS] = &droneRawGPS;
+    orbData[FD_LeashRowGPS] = &leashRawGPS;
 
     // clear
     memset(awaitMask, 0, sizeof(awaitMask));

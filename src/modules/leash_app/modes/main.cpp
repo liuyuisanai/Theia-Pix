@@ -5,8 +5,9 @@
 #include <uORB/topics/leash_display.h>
 #include <uORB/topics/vehicle_status.h>
 
-#include "menu.h"
 #include "connect.h"
+#include "service.h"
+#include "menu.h"
 #include "../displayhelper.h"
 #include "../uorb_functions.h"
 
@@ -60,6 +61,14 @@ Base* Main::processGround(int orbId)
         {
             baseCondition.sub = CONFIRM_TAKEOFF;
             nextMode = makeAction();
+        }
+        else if (key_LongPressed(BTN_FUTURE))
+        {
+            baseCondition.sub = SERVICE;
+        }
+        else if (dm->kbd_handler.buttons == 0 && dm->kbd_handler.event == 0)
+        {
+            // Do nothing
         }
         else
         {
@@ -193,6 +202,9 @@ Base* Main::doEvent(int orbId)
             case CONFIRM_TAKEOFF:
                 nextMode = processTakeoff(orbId);
                 break;
+            case SERVICE:
+                nextMode = new Service();
+                break;
             default:
                 DOG_PRINT("[leash_app]{main} unexpected sub condition, got %d\n", baseCondition.sub);
                 break;
@@ -215,6 +227,9 @@ Base* Main::doEvent(int orbId)
             case LANDING:
             case RTL:
                 nextMode = processLandRTL(orbId);
+                break;
+            case SERVICE:
+                nextMode = new Service();
                 break;
             default:
                 DOG_PRINT("[leash_app]{main} unexpected sub condition, got %d\n", baseCondition.sub);
@@ -351,6 +366,11 @@ Base* Main::processFlight(int orbId)
         {
             DOG_PRINT("[main_scrren]{flight}handler changing state to FLIGHT_ALT\n");
             displayInfo.mode = MAINSCREEN_INFO_SUB;
+        }
+
+        if (key_LongPressed(BTN_FUTURE))
+        {
+            baseCondition.sub = SERVICE;
         }
     }
     nextMode = makeAction();

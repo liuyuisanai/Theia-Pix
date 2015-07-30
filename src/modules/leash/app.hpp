@@ -215,6 +215,8 @@ struct App
             static orb_advert_t to_kh = 0;
             struct kbd_handler_s kh;
             kh.currentMode = (int)mode;
+            kh.buttons = 0;
+            kh.event = 0;
             if (to_kh > 0)
             {
                 orb_publish(ORB_ID(kbd_handler), to_kh, &kh);
