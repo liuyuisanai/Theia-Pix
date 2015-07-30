@@ -1,7 +1,8 @@
 #include "main.h"
 
-#include <uORB/topics/leash_display.h>
 #include <uORB/topics/bt_state.h>
+#include <uORB/topics/kbd_handler.h>
+#include <uORB/topics/leash_display.h>
 #include <uORB/topics/vehicle_status.h>
 
 #include "menu.h"
@@ -15,6 +16,7 @@ namespace modes
 Main::Main()
 {
 
+    displayInfo.mode = MAINSCREEN_INFO;
     displayInfo.airdog_mode = AIRDOGMODE_NONE;
     /*TODO[Max] presset info for next two required*/
     displayInfo.follow_mode = FOLLOW_PATH;
@@ -273,7 +275,7 @@ Base* Main::makeAction()
             case NONE:
             case PAUSE:
             case PLAY:
-                DisplayHelper::showMain(MAINSCREEN_INFO, "airdog"
+                DisplayHelper::showMain(displayInfo.mode, "airdog"
                                 ,displayInfo.airdog_mode
                                 ,displayInfo.follow_mode
                                 ,displayInfo.land_mode
@@ -336,6 +338,19 @@ Base* Main::processFlight(int orbId)
         {
             displayInfo.airdog_mode = AIRDOGMODE_PAUSE;
             baseCondition.sub = LANDING;
+        }
+    }
+    else if (orbId == FD_KbdHandler)
+    {
+        if (dm->kbd_handler.currentMode == (int)ModeId::FLIGHT)
+        {
+            DOG_PRINT("[main_scrren]{flight}handler changing state to FLIGHT\n");
+            displayInfo.mode = MAINSCREEN_INFO;
+        }
+        else if (dm->kbd_handler.currentMode == (int)ModeId::FLIGHT_ALT)
+        {
+            DOG_PRINT("[main_scrren]{flight}handler changing state to FLIGHT_ALT\n");
+            displayInfo.mode = MAINSCREEN_INFO_SUB;
         }
     }
     nextMode = makeAction();

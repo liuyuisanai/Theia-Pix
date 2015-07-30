@@ -173,7 +173,7 @@ void Screen::showMain(int mode, const char *presetName, int leashBattery, int ai
     }
 
 
-    if (mode == MAINSCREEN_INFO)
+    if (mode == MAINSCREEN_INFO || mode == MAINSCREEN_INFO_SUB)
     {
         // draw lines
         display_draw_line(0, 63, 127, 63);
@@ -181,6 +181,13 @@ void Screen::showMain(int mode, const char *presetName, int leashBattery, int ai
 
         display_draw_line(64, 19, 64, 63);
         display_draw_line(64, 41, 113, 41);
+
+        if (mode == MAINSCREEN_INFO_SUB)
+        {
+            //display_draw_line(31, 63, 31, 19);
+            //display_draw_line(0, 41, 64, 41);
+            display_fill_rectangle(0, 19, 64, 63);
+        }
 
         // draw aidog land and follow modes
         BitmapBlock blockLndFol(113, 19, IMAGE_SCREENS_LND_FOL);

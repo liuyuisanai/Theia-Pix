@@ -16,31 +16,14 @@ namespace kbd_handler
 #define PAIRING_OFF			_IOC(_BLUETOOTH21_BASE, 1)
 #define PAIRING_TOGGLE		_IOC(_BLUETOOTH21_BASE, 2)
 
-template <ModeId MODE>
-struct handle<MODE, EventKind::LONG_KEYPRESS, BTN_MASK_FUTURE, When<
-	MODE == ModeId::PREFLIGHT> > 
-{
-	static void
-	exec(App & app)
-	{
-		say("FUTURE BUTTON: PAIRING ON");
-
-        int fd = open("/dev/btctl", 0);
-        if (fd > 0) {
-            ioctl(fd, PAIRING_ON, 0);
-        }
-        
-		app.drone_cmd.send_rtl_command(app.drone_status);
-	}
-};
-
 /*
  * PLAY button.
  */
 
-template <>
-struct handle<ModeId::FLIGHT, EventKind::SHORT_KEYPRESS, BTN_MASK_PLAY>
-{
+template <ModeId MODE>
+struct handle<MODE, EventKind::SHORT_KEYPRESS, BTN_MASK_PLAY, When<
+    MODE == ModeId::FLIGHT or MODE == ModeId::FLIGHT_ALT
+> > {
 	static void
 	exec(App & app)
 	{
@@ -51,7 +34,7 @@ struct handle<ModeId::FLIGHT, EventKind::SHORT_KEYPRESS, BTN_MASK_PLAY>
 
 template <ModeId MODE>
 struct handle<MODE, EventKind::SHORT_KEYPRESS, BTN_MASK_TO_H, When<
-	MODE == ModeId::FLIGHT or MODE == ModeId::FLIGHT_ALT or MODE == ModeId::FLIGHT_CAM
+	MODE == ModeId::FLIGHT or MODE == ModeId::FLIGHT_ALT
 > > {
 	static void
 	exec(App & app)
@@ -64,7 +47,7 @@ struct handle<MODE, EventKind::SHORT_KEYPRESS, BTN_MASK_TO_H, When<
 
 template <ModeId MODE>
 struct handle<MODE, EventKind::LONG_KEYPRESS, BTN_MASK_TO_H, When<
-	MODE == ModeId::FLIGHT or MODE == ModeId::FLIGHT_ALT or MODE == ModeId::FLIGHT_CAM
+	MODE == ModeId::FLIGHT or MODE == ModeId::FLIGHT_ALT
 > > {
 	static void
 	exec(App & app)
@@ -191,6 +174,30 @@ struct handle< ModeId::FLIGHT_ALT, EVENT, BTN_MASK_DOWN, When<
 	}
 };
 
+template <EventKind EVENT>
+struct handle< ModeId::FLIGHT_ALT, EVENT, BTN_MASK_LEFT, When<
+	event_is_short_or_repeat_press(EVENT)
+> > {
+	static void
+	exec(App & app)
+	{
+		say("F");
+		app.drone_cmd.send_command(REMOTE_CMD_LEFT);
+	}
+};
+
+template <EventKind EVENT>
+struct handle< ModeId::FLIGHT_ALT, EVENT, BTN_MASK_RIGHT, When<
+	event_is_short_or_repeat_press(EVENT)
+> > {
+	static void
+	exec(App & app)
+	{
+		say("F");
+		app.drone_cmd.send_command(REMOTE_CMD_RIGHT);
+	}
+};
+
 /*
  * FLIGHT_CAM mode.
  */
@@ -254,25 +261,9 @@ struct handle<ModeId::FLIGHT_CAM, EventKind::LONG_KEYPRESS, BTN_MASK_POWER>
 	}
 };
 
-/*
- * FLIGHT_ALT and FLIGHT_CAM timeout handle
- */
-template <ModeId MODE, ButtonId BUTTON>
-struct handle< MODE, EventKind::KEY_RELEASE, BUTTON, When<
-    BUTTON != BTN_MASK_MODE
-	and (MODE == ModeId::FLIGHT_ALT or MODE == ModeId::FLIGHT_CAM)
-> > {
-	static void
-	exec(App & app)
-	{
-		say("FLIGHT_ALT/FLIGHT_CAM Restart");
-		app.restart_key_timeout();
-	}
-};
-
 template <ModeId MODE>
 struct handle<MODE, EventKind::SHORT_KEYPRESS, BTN_MASK_TO_ME, When<
-    MODE == ModeId::FLIGHT or MODE == ModeId::FLIGHT_ALT or MODE == ModeId::FLIGHT_CAM
+    MODE == ModeId::FLIGHT or MODE == ModeId::FLIGHT_ALT
 > >
 {
 	static void

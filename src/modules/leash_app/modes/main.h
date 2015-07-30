@@ -4,7 +4,6 @@
 
 #include <uORB/topics/leash_display.h>
 
-//#include <time.h>
 #include <drivers/drv_hrt.h>
 
 namespace modes
@@ -47,6 +46,7 @@ private:
     };
     struct DisplayInfo
     {
+        int mode;
         int airdog_mode;
         int follow_mode;
         int land_mode;

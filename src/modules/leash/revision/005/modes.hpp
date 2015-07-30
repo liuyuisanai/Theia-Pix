@@ -15,6 +15,7 @@ enum class ModeId : uint8_t
 	, MENU
 	, CONFIRM_ARM
 	, FLIGHT
+	, FLIGHT_ALT
 	, FLIGHT_CAM
 	, SHORTCUT
 	, FLIGHT_NO_SIGNAL
@@ -23,7 +24,6 @@ enum class ModeId : uint8_t
 	// Backwards compatibility constansts are
 	// outside [LOWER_BOUND ; UPPER_BOUND) range to reduce image size.
 	//
-	, FLIGHT_ALT // used by indication.  TODO remove and update indication.
 };
 
 constexpr bool
