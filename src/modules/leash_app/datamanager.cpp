@@ -17,6 +17,7 @@ DataManager::DataManager()
     orbId[FD_BLRHandler] = ORB_ID(bt_state);
     orbId[FD_Calibrator] = ORB_ID(calibrator);
     orbId[FD_LocalPos] = ORB_ID(vehicle_local_position);
+    orbId[FD_MavlinkStatus] = ORB_ID(mavlink_receive_stats);
 
     // listen orbs
     for (int i = 0; i < FD_Size; i++)
@@ -27,6 +28,7 @@ DataManager::DataManager()
     // set orbs interval
     orb_set_interval(fds[FD_AirdogStatus], 5000);
     orb_set_interval(fds[FD_SystemPower], 5000);
+    orb_set_interval(fds[FD_MavlinkStatus], 1000);
 
     // set addresses
     memset(orbData, 0, sizeof(orbData));
@@ -38,6 +40,7 @@ DataManager::DataManager()
     orbData[FD_BLRHandler] = &bt_handler;
     orbData[FD_Calibrator] = &calibrator;
     orbData[FD_LocalPos] = &localPos;
+    orbData[FD_MavlinkStatus] = &mavlink_received_stats;
 
     // clear
     memset(awaitMask, 0, sizeof(awaitMask));

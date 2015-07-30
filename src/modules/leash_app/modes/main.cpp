@@ -173,7 +173,7 @@ Base* Main::doEvent(int orbId)
     /* -- disconnected -- */
     if (dm->bt_handler.global_state == CONNECTING)
     {
-        nextMode = new ModeConnect(ModeState::DISCONNECTED);
+        nextMode = new ModeConnect(ModeConnect::State::DISCONNECTED);
     }
     else
     {

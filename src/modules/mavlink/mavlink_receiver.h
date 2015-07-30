@@ -113,6 +113,7 @@ public:
 
 private:
 	Mavlink	*_mavlink;
+        int received_mavlink_version;
 
 	void handle_message(mavlink_message_t *msg);
 	void handle_message_command_long(mavlink_message_t *msg);

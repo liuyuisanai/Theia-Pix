@@ -92,6 +92,7 @@ static const uint8_t mavlink_message_lengths[256] = MAVLINK_MESSAGE_LENGTHS;
 
 MavlinkReceiver::MavlinkReceiver(Mavlink *parent) :
 	_mavlink(parent),
+        received_mavlink_version(0),
 	status{},
 	hil_local_pos{},
 	_control_mode{},
@@ -1129,6 +1130,9 @@ MavlinkReceiver::handle_combo_message(mavlink_message_t *msg)
                         msg_combo.STS_battery_remaining,
 			msg_combo.HRT_mavlink_version
 		};
+
+                received_mavlink_version = msg_combo.HRT_mavlink_version;
+
 //		msg_hrt.autopilot = msg_combo.HRT_autopilot;
 //		msg_hrt.base_mode = msg_combo.HRT_base_mode;
 //		msg_hrt.custom_mode = msg_combo.HRT_custom_mode;
@@ -1662,6 +1666,8 @@ MavlinkReceiver::receive_thread(void *arg)
 	memset(&rx_stats, 0, sizeof(rx_stats));
 	unsigned good_byte_count = 0;
 
+        rx_stats.version = received_mavlink_version;
+
 	orb_advert_t rx_stat_topic =
 		orb_advertise(ORB_ID(mavlink_receive_stats), &rx_stats);
 
@@ -1744,6 +1750,7 @@ MavlinkReceiver::receive_thread(void *arg)
 
 		/* Report to stats. */
 		rx_stats.total_bytes += r;
+                rx_stats.version = received_mavlink_version;
 		orb_publish(ORB_ID(mavlink_receive_stats), rx_stat_topic, &rx_stats);
 
 		_mavlink->count_rxbytes(r);

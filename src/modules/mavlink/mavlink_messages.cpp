@@ -2286,7 +2286,7 @@ protected:
 		get_mavlink_mode_state(&status, &pos_sp_triplet, &msg.HRT_system_status, &msg.HRT_base_mode, &msg.HRT_custom_mode);
 		msg.HRT_type = mavlink_system.type;
 		msg.HRT_autopilot = MAV_AUTOPILOT_PX4;
-		msg.HRT_mavlink_version = 3;
+                msg.HRT_mavlink_version = MAVLINK_VERSION;
 
 		bool updated = _pos_sub->update(&_pos_time, &pos);
 		updated |= _home_sub->update(&_home_time, &home);

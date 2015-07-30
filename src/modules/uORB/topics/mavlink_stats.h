@@ -9,7 +9,7 @@
 
 /** Common structure for mavlink rx or tx stats */
 struct mavlink_stats_s {
-
+        unsigned int version;
 	unsigned total_bytes;
 	unsigned heartbeat_count;
 	unsigned gpos_count;

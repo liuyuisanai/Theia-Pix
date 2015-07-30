@@ -1,35 +1,40 @@
 #pragma once
 
 #include "base.h"
+#include "time.h"
 
 namespace modes {
 
-enum class ModeState{
-    UNKNOWN = 0,
-    NOT_PAIRED,
-    PAIRING,
-    DISCONNECTED,
-    CONNECTING,
-    CONNECTED
-};
-
 class ModeConnect : public Base
 {
-    public:
-        ModeConnect(ModeState current = ModeState::UNKNOWN);
-        virtual ~ModeConnect();
+public:
+    enum class State{
+        UNKNOWN = 0,
+        NOT_PAIRED,
+        PAIRING,
+        DISCONNECTED,
+        CONNECTING,
+        CONNECTED,
+        CHECK_MAVLINK,
+    };
 
-        virtual int getTimeout();
-        virtual void listenForEvents(bool awaitMask[]);
-        virtual Base* doEvent(int orbId);
-    private:
+    ModeConnect(State current = State::UNKNOWN);
+    virtual ~ModeConnect();
 
-        ModeState currentState;
+    virtual int getTimeout();
+    virtual void listenForEvents(bool awaitMask[]);
+    virtual Base* doEvent(int orbId);
 
-        // == methods ==
-        void getConState();
-        void BTPairing(bool start = 1);
+private:
+    const static int MAVLINK_CHECK_INTERVAL = 5; // in seconds
 
+    State currentState;
+
+    time_t startTime;
+
+    // == methods ==
+    void getConState();
+    void BTPairing(bool start = 1);
 };
 
 } //end of namespace modes

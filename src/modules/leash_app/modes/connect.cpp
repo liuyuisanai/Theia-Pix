@@ -10,6 +10,7 @@
 #include "../button_handler.h"
 #include "../displayhelper.h"
 
+#include "../../mavlink/mavlink_defines.h"
 
 #define _BLUETOOTH21_BASE       0x2d00
 
@@ -20,10 +21,10 @@
 namespace modes
 {
 
-ModeConnect::ModeConnect(ModeState Current)
+ModeConnect::ModeConnect(State Current)
     : currentState(Current)
 {
-    if (Current == ModeState::PAIRING)
+    if (Current == State::PAIRING)
     {
         BTPairing();
     }
@@ -37,8 +38,23 @@ ModeConnect::~ModeConnect() { }
 
 void ModeConnect::listenForEvents(bool awaitMask[])
 {
+    switch (currentState)
+    {
+        case State::UNKNOWN:
+        case State::NOT_PAIRED:
+        case State::PAIRING:
+        case State::DISCONNECTED:
+        case State::CONNECTING:
+        case State::CONNECTED:
+            awaitMask[FD_BLRHandler] = 1;
+            break;
+
+        case State::CHECK_MAVLINK:
+            awaitMask[FD_MavlinkStatus] = 1;
+            break;
+    }
+
     awaitMask[FD_KbdHandler] = 1;
-    awaitMask[FD_BLRHandler] = 1;
 }
 
 int ModeConnect::getTimeout()
@@ -50,67 +66,97 @@ Base* ModeConnect::doEvent(int orbId)
 {
     Base *nextMode = nullptr;
     getConState();
+
+    printf("state %d orbId %d\n", (int) currentState, orbId);
+
     if (orbId == FD_BLRHandler)
     {
-        if (currentState == ModeState::CONNECTING) 
+        if (currentState == State::CONNECTING)
         {
-            DisplayHelper::showInfo(INFO_CONNECTING_TO_AIRDOG, 0);
+            DisplayHelper::showInfo(INFO_CONNECTING_TO_AIRDOG);
         }
-        else if (currentState == ModeState::CONNECTED) 
+        else if (currentState == State::CONNECTED)
         {
-            nextMode = new Acquiring_gps();
+            currentState = State::CHECK_MAVLINK;
+            time(&startTime);
         }
-        else if (currentState == ModeState::DISCONNECTED) 
+        else if (currentState == State::DISCONNECTED)
         {
-            DisplayHelper::showInfo(INFO_CONNECTION_LOST, 0);
+            DisplayHelper::showInfo(INFO_CONNECTION_LOST);
         }
-        else if (currentState == ModeState::NOT_PAIRED) 
+        else if (currentState == State::NOT_PAIRED)
         {
-            DisplayHelper::showInfo(INFO_NOT_PAIRED, 0);
+            DisplayHelper::showInfo(INFO_NOT_PAIRED);
         }
-        else if (currentState == ModeState::PAIRING) 
+        else if (currentState == State::PAIRING)
         {
-            DisplayHelper::showInfo(INFO_PAIRING, 0);
+            DisplayHelper::showInfo(INFO_PAIRING);
         }
         else {
-            DisplayHelper::showInfo(INFO_FAILED, 0);
+            DisplayHelper::showInfo(INFO_FAILED);
         }
     }
     else if (orbId == FD_KbdHandler)
     {
         if (key_pressed(BTN_OK)) 
         {
-            if (currentState == ModeState::NOT_PAIRED)
+            if (currentState == State::NOT_PAIRED)
             {
                 DOG_PRINT("[modes]{connection} start pairing!\n");
-                DisplayHelper::showInfo(INFO_NOT_PAIRED, 0);
+                DisplayHelper::showInfo(INFO_NOT_PAIRED);
                 BTPairing(true);
             }
         }
         else if (key_ShortPressed(BTN_MODE))
         {
-            if (currentState == ModeState::NOT_PAIRED)
+            if (currentState == State::NOT_PAIRED)
             {
                 nextMode = new Menu();
             }
         }
         else if (key_LongPressed(BTN_MODE)) 
         {
-            if (currentState == ModeState::PAIRING)
+            if (currentState == State::PAIRING)
             {
                 DOG_PRINT("[modes]{connection} stop pairing!\n");
                 BTPairing(false);
             }
-            else if (currentState == ModeState::UNKNOWN)
+            else if (currentState == State::UNKNOWN)
             {
                 DOG_PRINT("[modes]{connection} unknown connection state!\n");
                 nextMode = new Menu();
             }
-            else if (currentState == ModeState::CONNECTING)
+            else if (currentState == State::CONNECTING)
             {
                 DOG_PRINT("[modes]{connection} connecting now, switching to main menu!\n");
                 nextMode = new Menu();
             }
+        }
+    }
+    else if (orbId == FD_MavlinkStatus && currentState == State::CHECK_MAVLINK)
+    {
+        int v = DataManager::instance()->mavlink_received_stats.version;
+
+        if (v == 0)
+        {
+            // mavlink version not received yet
+            time_t now;
+            time(&now);
+
+            if ((int)now -(int)startTime > MAVLINK_CHECK_INTERVAL)
+            {
+                DisplayHelper::showInfo(INFO_COMMUNICATION_FAILED);
+            }
+        }
+        else if (v != MAVLINK_VERSION)
+        {
+            // invalid mavlink version
+            DisplayHelper::showInfo(INFO_COMMUNICATION_FAILED);
+        }
+        else
+        {
+            // invalid mavlink version
+            nextMode = new Acquiring_gps();
         }
     }
     return nextMode;
@@ -122,26 +168,29 @@ void ModeConnect::getConState()
     switch(dm->bt_handler.global_state) {
         case INITIALIZING :
         case CONNECTING:
-            if (currentState == ModeState::DISCONNECTED)
+            if (currentState == State::DISCONNECTED)
             {
                 break;
             }
             else 
             {
-                currentState = ModeState::CONNECTING;
+                currentState = State::CONNECTING;
                 break;
             }
         case NO_PAIRED_DEVICES:
-            currentState = ModeState::NOT_PAIRED;
+            currentState = State::NOT_PAIRED;
             break;
         case PAIRING:
-            currentState = ModeState::PAIRING;
+            currentState = State::PAIRING;
             break;
         case CONNECTED:
-            currentState = ModeState::CONNECTED;
+            if (currentState != State::CHECK_MAVLINK)
+            {
+                currentState = State::CONNECTED;
+            }
             break;
         default:
-            currentState = ModeState::UNKNOWN;
+            currentState = State::UNKNOWN;
             break;
     }
 }

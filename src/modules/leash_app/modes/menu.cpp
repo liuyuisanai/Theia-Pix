@@ -414,7 +414,7 @@ Base* Menu::makeAction()
             break;
 
         case MENUENTRY_PAIRING:
-            nextMode = new ModeConnect(ModeState::PAIRING);
+            nextMode = new ModeConnect(ModeConnect::State::PAIRING);
             break;
     }
 

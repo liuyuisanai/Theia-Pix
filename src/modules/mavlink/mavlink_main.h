@@ -61,6 +61,7 @@
 #include "mavlink_messages.h"
 #include "mavlink_mission.h"
 #include "mavlink_parameters.h"
+#include "mavlink_defines.h"
 
 class Mavlink
 {
