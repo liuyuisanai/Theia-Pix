@@ -68,7 +68,7 @@ main(int argc, const char * argv[])
 	if (streq(argv[1], "start"))
 	{
                 pwm_led_init();
-                pwm_led_set_intensity(PWM_LED_RED, 10);
+                pwm_led_set_intensity(PWM_LED_RED, 2);
 
                 pwm_led_start(PWM_LED_BLUE);
                 pwm_led_start(PWM_LED_RED);
