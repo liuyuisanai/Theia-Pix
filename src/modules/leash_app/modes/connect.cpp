@@ -1,6 +1,7 @@
 #include "connect.h"
 #include "menu.h"
 #include "acquiring_gps.h"
+#include "service.h"
 
 #include <stdio.h>
 #include <sys/ioctl.h>
@@ -65,6 +66,7 @@ int ModeConnect::getTimeout()
 Base* ModeConnect::doEvent(int orbId)
 {
     Base *nextMode = nullptr;
+    DataManager *dm = DataManager::instance();
     getConState();
 
     printf("state %d orbId %d\n", (int) currentState, orbId);
@@ -131,6 +133,10 @@ Base* ModeConnect::doEvent(int orbId)
                 DOG_PRINT("[modes]{connection} connecting now, switching to main menu!\n");
                 nextMode = new Menu();
             }
+        }
+        else if (dm->kbd_handler.currentMode == (int) ModeId::SHORTCUT)
+        {
+            nextMode = new Service();
         }
     }
     else if (orbId == FD_MavlinkStatus && currentState == State::CHECK_MAVLINK)

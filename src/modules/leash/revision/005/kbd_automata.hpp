@@ -70,7 +70,7 @@ struct handle< ModeId::FLIGHT_ALT, EventKind::SHORT_KEYPRESS, BTN_MASK_MODE>
 
 template <ModeId MODE>
 struct handle< MODE, EventKind::LONG_KEYPRESS, BTN_MASK_FUTURE, When<
-    MODE == ModeId::FLIGHT or MODE == ModeId::FLIGHT_ALT or MODE == ModeId::PREFLIGHT
+    MODE == ModeId::FLIGHT or MODE == ModeId::FLIGHT_ALT or MODE == ModeId::PREFLIGHT or MODE == ModeId::INIT
 > > {
 	static void
 	exec(App & app)
@@ -86,7 +86,7 @@ struct handle< ModeId::SHORTCUT, EventKind::LONG_KEYPRESS, BTN_MASK_FUTURE>
     static void
     exec(App & app)
     {
-        ModeId m;
+        ModeId m = ModeId::INIT;
         if (app.drone_status.active())
         {
             m = app.drone_status.in_air() ?
