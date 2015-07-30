@@ -315,7 +315,7 @@ synced_loop(MultiPlexer & mp, ServiceIO & service_io, ServiceState & svc)
 		else
 		{
 			/*
-			 * TODO! [AK] Create a seprate "RSSI state" or something to handle the link quality requests
+			 * TODO! [AK] Create a separate "RSSI state" or something to handle the link quality requests
 			 * Possibly poll all the channels and publish full stats
 			 */
 			Address6 address_to_check = get_address(svc.conn, channel_index(mp.connection_slots, 1));

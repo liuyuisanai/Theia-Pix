@@ -112,7 +112,15 @@ fi
 
 if param compare A_TELEMETRY_MODE 1
 then
-	if bluetooth21 start /dev/ttyS0 one-connect
+	set BT_MODE "one-connect"
+	if param compare A_BT_SVC_MODE 0
+	then
+		if param compare A_BT_CONNECT_TO -1
+		then
+			set BT_MODE "listen"
+		fi
+	fi
+	if bluetooth21 start /dev/ttyS0 $BT_MODE
 	then
 		set MAVLINK_TTY /dev/bt1
 	fi
