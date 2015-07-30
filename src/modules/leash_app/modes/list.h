@@ -16,6 +16,7 @@ public:
     virtual Base* doEvent(int orbId);
 
     void setList(const char **pLines, int pCount);
+    void setIndex(int x, int y);
 
 protected:
     char **lines;

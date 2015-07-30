@@ -24,6 +24,9 @@ List::List()
     lines = nullptr;
     count = 0;
 
+    xIndex = 0;
+    yIndex = 0;
+
     setList(m, 4);
 }
 
@@ -47,10 +50,18 @@ void List::setList(const char **pLines, int pCount)
         strcpy(lines[i], pLines[i]);
     }
 
-    xIndex = 0;
-    yIndex = 0;
+    if (yIndex >= count)
+    {
+        yIndex = count - 1;
+    }
 
     show();
+}
+
+void List::setIndex(int x, int y)
+{
+    xIndex = x;
+    yIndex = y;
 }
 
 void List::show()
