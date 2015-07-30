@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "connect.h"
 #include "main.h"
 #include "service.h"
 
@@ -24,6 +25,7 @@ void Service::listenForEvents(bool awaitMask[])
 
 Base* Service::doEvent(int orbId)
 {
+    List::doEvent(orbId);
     Base *nextMode = nullptr;
     DataManager *dm = DataManager::instance();
 
@@ -47,20 +49,29 @@ Base* Service::doEvent(int orbId)
                     ,l_sat_num
         };
 
-        sprintf(l_eph, "Leash eph %.3f", (double) dm->leashRawGPS.eph);
-        sprintf(l_epv, "Leash epv %.3f", (double) dm->leashRawGPS.epv);
-        sprintf(l_sat_num, "Leash satelites %d", dm->leashRawGPS.satellites_used);
-        sprintf(d_eph, "Drone eph %.3f", (double) dm->droneRawGPS.eph);
-        sprintf(d_epv, "Drone epv %.3f", (double) dm->droneRawGPS.epv);
-        sprintf(d_sat_num, "Drone satelites %d", dm->droneRawGPS.satellites_visible);
+        sprintf(l_eph, "L epH %.3f", (double) dm->leashRawGPS.eph);
+        sprintf(l_epv, "L epV %.3f", (double) dm->leashRawGPS.epv);
+        sprintf(l_sat_num, "L sat %d", dm->leashRawGPS.satellites_used);
+        sprintf(d_eph, "D epH %.3f", (double) dm->droneRawGPS.eph);
+        sprintf(d_epv, "D epV %.3f", (double) dm->droneRawGPS.epv);
+        sprintf(d_sat_num, "D sat %d", dm->droneRawGPS.satellites_visible);
 
         setList( (const char**)data, 6);
     }
     else if (orbId == FD_KbdHandler)
     {
-        if (key_LongPressed(BTN_FUTURE))
+        if (dm->kbd_handler.buttons == 0)
         {
-            nextMode = new Main();
+            switch(dm->kbd_handler.currentMode)
+            {
+                case (int)ModeId::FLIGHT:
+                case (int)ModeId::FLIGHT_ALT:
+                    nextMode = new Main();
+                    break;
+                default:
+                    nextMode = new ModeConnect();
+                    break;
+            }
         }
     }
 

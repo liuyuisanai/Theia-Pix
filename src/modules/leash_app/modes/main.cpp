@@ -357,7 +357,12 @@ Base* Main::processFlight(int orbId)
     }
     else if (orbId == FD_KbdHandler)
     {
-        if (dm->kbd_handler.currentMode == (int)ModeId::FLIGHT)
+        if (dm->kbd_handler.currentMode == (int)ModeId::SHORTCUT)
+        {
+            DOG_PRINT("[main]{flight} future button pressed\n");
+            baseCondition.sub = SERVICE;
+        }
+        else if (dm->kbd_handler.currentMode == (int)ModeId::FLIGHT)
         {
             DOG_PRINT("[main_scrren]{flight}handler changing state to FLIGHT\n");
             displayInfo.mode = MAINSCREEN_INFO;
@@ -368,10 +373,6 @@ Base* Main::processFlight(int orbId)
             displayInfo.mode = MAINSCREEN_INFO_SUB;
         }
 
-        if (key_LongPressed(BTN_FUTURE))
-        {
-            baseCondition.sub = SERVICE;
-        }
     }
     nextMode = makeAction();
     return nextMode;

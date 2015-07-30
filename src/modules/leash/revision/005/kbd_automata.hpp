@@ -46,17 +46,6 @@ struct handle< MODE, EventKind::COPTER_CHANGED_STATE, BTN_NONE, When<
 	}
 };
 
-//template <>
-//struct handle<ModeId::FLIGHT_ALT, EventKind::KEY_TIMEOUT, BTN_NONE>
-//{
-//	static void
-//	exec(App & app)
-//	{
-//		say("FLIGHT_ALT KEY_TIMEOUT");
-//		app.set_mode_transition(ModeId::FLIGHT);
-//	}
-//};
-
 template <>
 struct handle< ModeId::FLIGHT, EventKind::LONG_KEYPRESS, BTN_MASK_MODE>
 {
@@ -77,6 +66,34 @@ struct handle< ModeId::FLIGHT_ALT, EventKind::SHORT_KEYPRESS, BTN_MASK_MODE>
 		say("FLIGHT LONG_KEYPRESS MODE");
 		app.set_mode_transition(ModeId::FLIGHT);
 	}
+};
+
+template <ModeId MODE>
+struct handle< MODE, EventKind::LONG_KEYPRESS, BTN_MASK_FUTURE, When<
+    MODE == ModeId::FLIGHT or MODE == ModeId::FLIGHT_ALT or MODE == ModeId::PREFLIGHT
+> > {
+	static void
+	exec(App & app)
+	{
+		say("FLIGHT LONG_KEYPRESS MODE");
+		app.set_mode_transition(ModeId::SHORTCUT);
+	}
+};
+
+template <>
+struct handle< ModeId::SHORTCUT, EventKind::LONG_KEYPRESS, BTN_MASK_FUTURE>
+{
+    static void
+    exec(App & app)
+    {
+        ModeId m;
+        if (app.drone_status.active())
+        {
+            m = app.drone_status.in_air() ?
+                ModeId::FLIGHT : ModeId::PREFLIGHT;
+        }
+        app.set_mode_transition(m);
+    }
 };
 
 } // end of namespace kbd_handler

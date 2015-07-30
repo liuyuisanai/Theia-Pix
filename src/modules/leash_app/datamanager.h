@@ -43,7 +43,6 @@ public:
     struct calibrator_s calibrator;
     struct kbd_handler_s kbd_handler;
     struct mavlink_stats_s mavlink_received_stats;
-    struct vehicle_status_s vehicle_status;
     struct system_power_s system_power;
     struct target_gps_raw_s droneRawGPS;
     struct vehicle_gps_position_s leashRawGPS;

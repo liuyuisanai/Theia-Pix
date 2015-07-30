@@ -22,7 +22,7 @@ namespace kbd_handler
 
 template <ModeId MODE>
 struct handle<MODE, EventKind::SHORT_KEYPRESS, BTN_MASK_PLAY, When<
-    MODE == ModeId::FLIGHT or MODE == ModeId::FLIGHT_ALT
+    MODE == ModeId::FLIGHT or MODE == ModeId::FLIGHT_ALT or MODE == ModeId::SHORTCUT
 > > {
 	static void
 	exec(App & app)
@@ -61,38 +61,38 @@ struct handle<MODE, EventKind::LONG_KEYPRESS, BTN_MASK_TO_H, When<
  * Follow Line: LEFT/RIGHT and POWER button.
  */
 
-template <>
-struct handle<ModeId::SHORTCUT, EventKind::SHORT_KEYPRESS, BTN_MASK_LEFT>
-{
-	static void
-	exec(App & app)
-	{
-		say("SHORTCUT SHORT_LEFT");
-		app.drone_cmd.send_command(REMOTE_CMD_SET_FIRST_POINT);
-	}
-};
-
-template <>
-struct handle<ModeId::SHORTCUT, EventKind::SHORT_KEYPRESS, BTN_MASK_RIGHT>
-{
-	static void
-	exec(App & app)
-	{
-		say("SHORTCUT SHORT_RIGHT");
-		app.drone_cmd.send_command(REMOTE_CMD_SET_SECOND_POINT);
-	}
-};
-
-template <>
-struct handle<ModeId::SHORTCUT, EventKind::SHORT_KEYPRESS, BTN_MASK_POWER>
-{
-	static void
-	exec(App & app)
-	{
-		say("SHORTCUT SHORT_KEYPRESS POWER");
-		app.drone_cmd.send_command(REMOTE_CMD_CLEAR_POINTS);
-	}
-};
+//template <>
+//struct handle<ModeId::SHORTCUT, EventKind::SHORT_KEYPRESS, BTN_MASK_LEFT>
+//{
+//	static void
+//	exec(App & app)
+//	{
+//		say("SHORTCUT SHORT_LEFT");
+//		app.drone_cmd.send_command(REMOTE_CMD_SET_FIRST_POINT);
+//	}
+//};
+//
+//template <>
+//struct handle<ModeId::SHORTCUT, EventKind::SHORT_KEYPRESS, BTN_MASK_RIGHT>
+//{
+//	static void
+//	exec(App & app)
+//	{
+//		say("SHORTCUT SHORT_RIGHT");
+//		app.drone_cmd.send_command(REMOTE_CMD_SET_SECOND_POINT);
+//	}
+//};
+//
+//template <>
+//struct handle<ModeId::SHORTCUT, EventKind::SHORT_KEYPRESS, BTN_MASK_POWER>
+//{
+//	static void
+//	exec(App & app)
+//	{
+//		say("SHORTCUT SHORT_KEYPRESS POWER");
+//		app.drone_cmd.send_command(REMOTE_CMD_CLEAR_POINTS);
+//	}
+//};
 
 
 /*
@@ -271,21 +271,6 @@ struct handle<MODE, EventKind::SHORT_KEYPRESS, BTN_MASK_TO_ME, When<
 	{
 		say("Send come to me");
 		app.drone_cmd.send_come_to_me_command();
-	}
-};
-
-/*
- * SHORTCUT mode.
- */
-
-template <>
-struct handle<ModeId::SHORTCUT, EventKind::SHORT_KEYPRESS, BTN_MASK_DOWN>
-{
-	static void
-	exec(App & app)
-	{
-		say("H");
-		app.drone_cmd.send_command(REMOTE_CMD_LOOK_DOWN);
 	}
 };
 
