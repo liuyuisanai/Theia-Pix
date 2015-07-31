@@ -322,8 +322,13 @@ ADC::update_system_power(void)
 	system_power.voltage5V_v = 0;
         for (unsigned i = 0; i < _channel_count; i++) {
                 if (_samples[i].am_channel == ADC_SYSPOWER_VOLTAGE_CHANNEL) {
-                        system_power.voltage5V_v =
-                                ADC_SYSPOWER_VOLTAGE_CONVERT(_samples[i].am_data);
+#ifdef CONFIG_ARCH_BOARD_AIRLEASH
+                    system_power.voltage5V_v =
+                            ADC_SYSPOWER_VOLTAGE_CONVERT(_samples[i].am_data);
+#else
+                    system_power.voltage5V_v =
+                            _samples[i].am_data * (float)ADC_SYSPOWER_VOLTAGE_SCALE;
+#endif
                 }
         }
 
