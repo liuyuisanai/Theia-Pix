@@ -29,10 +29,6 @@ write(FILE* f, const void * buf, ssize_t buf_size);
 #include "status.hpp"
 #include "unique_file.hpp"
 
-#ifdef FORCE_SERIAL_TERMIOS_RAW
-# include "serial_config.hpp"
-#endif
-
 // Currently in test mode reading input from TELEM2 port
 static const char MOBILE_BT_TTY[]="/dev/ttyS2";
 
@@ -50,25 +46,6 @@ get_filename(file_index_t index, filename_buf_t &name)
 			dummy_filename_path, (unsigned)index);
 }
 
-
-
-int
-open_serial_default(const char name[]) {
-
-	int fd = open(name, O_RDWR | O_NONBLOCK | O_NOCTTY);
-
-    struct termios termAttr;
-    tcgetattr(fd, &termAttr);
-
-    cfsetispeed(&termAttr, B57600);
-
-    tty_use_ctsrts(fd);
-	if (fd == -1) {
-		perror("open");
-		std::exit(1);
-	}
-    return fd;
-}
 
 
 ssize_t
@@ -469,10 +446,15 @@ daemon(int argc, char *argv[])
 	//	return 1;
 	//}
 
-	//unique_file d = open_serial_default(argv[1]);
-	unique_file d = open_serial_default(MOBILE_BT_TTY);
+	//unique_file d = tty_open(argv[1]);
+	unique_file d = tty_open(MOBILE_BT_TTY);
+	bool ok = fileno(d) != -1
+		and tty_set_speed(fileno(d), B9600)
+		and tty_use_ctsrts(fileno(d));
+	if (not ok) { return 1; }
+
 	DevLog log (d.get(), 2, "read  ", "write ");
-	auto f = make_it_blocking< 1000 >(log);
+	auto f = make_it_blocking< 1000/*ms*/ >(log);
 
 	daemon_running = true;
 	fprintf(stderr, "%s has started.\n", argv[0]);
@@ -489,7 +471,6 @@ daemon(int argc, char *argv[])
 
 	fprintf(stderr, "%s has stopped.\n", argv[0]);
 	return 0;
-
 }
 
 static inline bool

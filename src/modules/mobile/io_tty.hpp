@@ -4,7 +4,6 @@
 #include <termios.h>
 
 #include <cerrno>
-#include <cstdio>
 #include <cstring>
 
 #include "debug.hpp"
@@ -17,7 +16,7 @@ tty_set_speed(int fd, speed_t speed)
 		and cfsetspeed(&mode, speed) == 0
 		and tcsetattr(fd, TCSANOW, &mode) == 0;
 	if (not ok)
-		perror("tty_set_speed");
+		dbg_perror("tty_set_speed");
 	return ok;
 }
 
@@ -26,7 +25,7 @@ tty_get_ispeed(int fd)
 {
 	struct termios mode;
 	if (tcgetattr(fd, &mode) == 0) { return cfgetispeed(&mode); }
-	perror("tty_get_ispeed");
+	dbg_perror("tty_get_ispeed");
 	return 0;
 }
 
@@ -40,6 +39,7 @@ tty_use_ctsrts(int fd)
 		mode.c_cflag |= CCTS_OFLOW | CRTS_IFLOW;
 		r = tcsetattr(fd, TCSANOW, &mode);
 	}
+	if (r != 0) { dbg_perror("tty_use_ctsrts"); }
 	return r == 0;
 }
 
@@ -50,4 +50,3 @@ tty_open(const char name[])
        if (r < 0) { dbg("tty_open(\"%s\"): %s\n", name, strerror(errno)); }
        return r;
 }
-
