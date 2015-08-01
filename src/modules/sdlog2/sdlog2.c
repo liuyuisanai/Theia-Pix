@@ -1523,6 +1523,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 			  (void)mallinfo(&memory_status);
 			#endif
 			log_msg.body.log_STAT.free_memory = memory_status.fordblks;
+			log_msg.body.log_STAT.used_memory = memory_status.uordblks;
 
 			LOGBUFFER_WRITE_AND_COUNT(STAT);
 		}
