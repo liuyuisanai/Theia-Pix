@@ -22,24 +22,16 @@ extern "C" __EXPORT int main(int argc, const char *argv[]);
 #include "status.hpp"
 #include "unique_file.hpp"
 
-// Currently in test mode reading input from TELEM2 port
-static const char MOBILE_BT_TTY[]="/dev/ttyS2";
+namespace
+{
 
 static bool daemon_should_run = false;
 static bool daemon_running = false;
 
-
-
 static int
 daemon(int argc, char *argv[])
 {
-	//if (argc != 2) {
-	//	fprintf(stderr,"Usage: %s tty\n", argv[0]); fflush(stderr);
-	//	return 1;
-	//}
-
-	//unique_file d = tty_open(argv[1]);
-	unique_file d = tty_open(MOBILE_BT_TTY);
+	unique_file d = tty_open(argv[1]);
 	bool ok = fileno(d) != -1
 		and tty_set_speed(fileno(d), B9600)
 		and tty_use_ctsrts(fileno(d));
@@ -70,19 +62,28 @@ streq(const char a[], const char b[]) { return std::strcmp(a, b) == 0; }
 
 static void
 usage(const char name[])
-{ std::fprintf(stderr, "Usage: %s start|stop|status\n\n", name); }
+{
+	std::fprintf(stderr,
+		"Usage: %s start TTY\n"
+		"       %s stop\n"
+		"       %s status\n"
+		"\n",
+		name, name, name
+	);
+}
 
+} // end of anonymous namespace
 
 int
 main(int argc, const char *argv[])
 {
-	if (argc != 2)
+	if (argc < 2)
 	{
 		usage(argv[0]);
 		return 1;
 	}
 
-	if (streq(argv[1], "start"))
+	if (argc == 3 and streq(argv[1], "start"))
 	{
 		if (daemon_running)
 		{
@@ -97,14 +98,14 @@ main(int argc, const char *argv[])
 				SCHED_PRIORITY_DEFAULT,
 				CONFIG_TASK_SPAWN_DEFAULT_STACKSIZE,
 				daemon,
-				argv);
+				argv + 1);
 	}
-	else if (streq(argv[1], "status"))
+	else if (argc == 2 and streq(argv[1], "status"))
 	{
 		if (daemon_running) { printf("%s is running.\n", argv[0]); }
 		else { printf("%s is NOT running.\n", argv[0]); }
 	}
-	else if (streq(argv[1], "stop"))
+	else if (argc == 2 and streq(argv[1], "stop"))
 	{
 		if (not daemon_running)
 		{
