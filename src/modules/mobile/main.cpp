@@ -15,16 +15,15 @@ extern "C" __EXPORT int main(int argc, const char *argv[]);
 
 #include <systemlib/systemlib.h>
 
-ssize_t
-write(FILE* f, const void * buf, ssize_t buf_size);
-
 #include "protocol.h"
 
 #include "base64decode.hpp"
 #include "base64encode.hpp"
-#include "blocking_io.hpp"
 #include "file_fragments.hpp"
+#include "io_blocking.hpp"
+#include "io_protocol.hpp"
 #include "io_tty.hpp"
+#include "io_util.hpp"
 #include "read_write_log.hpp"
 #include "status.hpp"
 #include "unique_file.hpp"
@@ -47,86 +46,6 @@ get_filename(file_index_t index, filename_buf_t &name)
 }
 
 
-
-ssize_t
-write(FILE* f, const void * buf, ssize_t buf_size) {
-	ssize_t r = fwrite(buf, 1, buf_size, f);
-	fflush(f);
-	return r;
-}
-
-template <typename Device, int TIMEOUT_MS>
-ssize_t
-read_guaranteed(BlockingDevice<Device, TIMEOUT_MS> & d, void * buf, size_t buf_size)
-{
-	ssize_t r = read(d, buf, buf_size);
-	fprintf(stderr, "read(%u) -> %i.\n", (unsigned)buf_size, (int)r); fflush(stderr);
-	return buf_size;
-}
-
-template <typename Device>
-bool
-read_char_guaranteed(Device & d, char & ch)
-{ return read_guaranteed(d, &ch, 1); }
-
-template <typename Device>
-void
-wait_enq(Device & d) {
-	fprintf(stderr, "Waiting ENQ.\n"); fflush(stderr);
-	char ch = 0;
-	ssize_t s = read(d, &ch, 1);
-	while (ch != ENQ)
-	{
-		if (s > 0) { fprintf(stderr, "Discarded char %02x\n", (int)ch); fflush(stderr); }
-		ch = 0;
-		s = read(d, &ch, 1);
-	}
-}
-
-template <typename Device>
-command_id_t
-read_command(Device & f) {
-	command_id_t r = 0;
-	wait_enq(f);
-	fprintf(stderr, "Waiting command.\n"); fflush(stderr);
-	ssize_t s = read_guaranteed(f, &r, sizeof r);
-	if (s < 0) { perror("read_command: read_guaranteed"); fflush(stderr); }
-	fprintf(stderr, "Got command: %04x.\n", r); fflush(stderr);
-	return r;
-}
-
-
-template <typename Device>
-bool
-write_char(Device & d, char ch) {
-	bool ok = write(d, &ch, 1) == 1;
-	if (not ok) { perror("write_char"); fflush(stderr); }
-	return ok;
-}
-
-template <typename Device>
-void
-reply_command_result(Device & d, const command_id_t cmd, bool r) {
-	const char ch = r ? ACK : NAK;
-	write(d, &ch, 1);
-	write(d, &cmd, sizeof cmd);
-}
-
-template <typename Device>
-void
-reply_ack_command(Device & d, const command_id_t cmd) {
-	const char ch = ACK;
-	write(d, &ch, 1);
-	write(d, &cmd, sizeof cmd);
-}
-
-template <typename Device>
-void
-reply_nak_command(Device & d, const command_id_t cmd) {
-	const char ch = NAK;
-	write(d, &ch, 1);
-	write(d, &cmd, sizeof cmd);
-}
 
 template <typename Device>
 void
