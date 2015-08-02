@@ -8,6 +8,7 @@
  */
 
 /** Common structure for mavlink rx or tx stats */
+/** !!!!!! When updating this structure, update respective sdlog message formats! */
 struct mavlink_stats_s {
         unsigned int version;
 	unsigned total_bytes;

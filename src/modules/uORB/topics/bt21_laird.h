@@ -2,6 +2,8 @@
 
 #include "../uORB.h"
 
+/** !!!!!!! When updating any of these structures, update respective sdlog message formats! */
+
 struct bt_svc_in_s {
 	uint8_t length;
 	uint8_t channel;
