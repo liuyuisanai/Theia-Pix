@@ -26,7 +26,7 @@ bool BGC::Start_thread() {
         return false;
     }
     
-    while ( !s_thread_running ) {
+    while ( !s_thread_running && !s_thread_should_exit ) {
         usleep(200);
     }
     printf("[BGC::BGC] Start_thread - started\n");
@@ -53,12 +53,17 @@ bool BGC::Stop_thread() {
 int BGC::Thread_main(int argc, char *argv[]) {
     s_thread_running = true;
     sleep(1);
-    for ( ; ; ) {
-        BGC bgc;
-        if ( !bgc.Run() ) break;
-        // Run will return true if it had to quit for some reason, but wants us to Run again.
-        // So we sleep for some time, and try again.
-        sleep(10);
+    BGC bgc;
+    if ( !bgc.Initial_setup() ) {
+        printf("[BGC::BGC] Thread_main - fatal error, stopping thread\n");
+        s_thread_should_exit = true;
+    } else {
+        for ( ; ; ) {
+            if ( !bgc.Run() ) break;
+            // Run will return true if it had to quit for some reason, but wants us to Run again.
+            // So we sleep for some time, and try again.
+            sleep(10);
+        }
     }
     s_thread_running = false;
     return 0;
@@ -74,8 +79,25 @@ BGC::BGC()
 
 BGC::~BGC() { }
 
+bool BGC::Initial_setup() {
+    frame_button_subscriber.Open(ORB_ID(frame_button_state));
+    if ( !frame_button_subscriber.Is_open() ) return false;
+    printf("[BGC::BGC] Initial_setup - subscribed to frame button\n");
+    
+    vehicle_status_subscriber.Open(ORB_ID(vehicle_status));
+    if ( !vehicle_status_subscriber.Is_open() ) return false;
+    if ( !vehicle_status_subscriber.Set_interval(1000) ) return false;
+    printf("[BGC::BGC] Initial_setup - subscribed to vehicle status\n");
+    
+    bgc_uart.Open();
+    if ( !bgc_uart.Is_open() ) return false;
+    printf("[BGC::BGC] Initial_setup - opened BGC_uart\n");
+    
+    return true;
+}
+
 bool BGC::Run() {
-    if ( !Setup() ) return !s_thread_should_exit;
+    if ( !Run_setup() ) return !s_thread_should_exit;
     
     BGC_uart_msg in_msg;
     while ( !s_thread_should_exit ) {
@@ -112,20 +134,7 @@ bool BGC::Run() {
     return !s_thread_should_exit;
 }
 
-bool BGC::Setup() {
-    frame_button_subscriber.Open(ORB_ID(frame_button_state));
-    if ( !frame_button_subscriber.Is_open() ) return false;
-    printf("[BGC::BGC] Setup - subscribed to frame button\n");
-    
-    vehicle_status_subscriber.Open(ORB_ID(vehicle_status));
-    if ( !vehicle_status_subscriber.Is_open() ) return false;
-    if ( !vehicle_status_subscriber.Set_interval(1000) ) return false;
-    printf("[BGC::BGC] Setup - subscribed to vehicle status\n");
-    
-    bgc_uart.Open();
-    if ( !bgc_uart.Is_open() ) return false;
-    printf("[BGC::BGC] Setup - opened BGC_uart\n");
-    
+bool BGC::Run_setup() {
     if ( s_discovered_speed == -1 || s_discovered_parity == -1 ) {
         if ( !Discover_attributes() ) return false;
     } else {
@@ -139,10 +148,10 @@ bool BGC::Setup() {
             }
         }
         if ( old_attributes_valid ) {
-            printf("[BGC::BGC] Setup - successfully used old BGC_uart attributes: speed=%d parity=%d\n"
+            printf("[BGC::BGC] Run_setup - successfully used old BGC_uart attributes: speed=%d parity=%d\n"
                 , s_discovered_speed, s_discovered_parity);
         } else {
-            printf("[BGC::BGC] Setup - couldn't use old BGC_uart attributes: speed=%d parity=%d\n"
+            printf("[BGC::BGC] Run_setup - couldn't use old BGC_uart attributes: speed=%d parity=%d\n"
                 , s_discovered_speed, s_discovered_parity);
             if ( !Discover_attributes() ) return false;
         }

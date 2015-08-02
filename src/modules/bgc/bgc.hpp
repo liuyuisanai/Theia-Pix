@@ -19,10 +19,12 @@ private:
     
     ~BGC();
     
+    // Initializes subscriptions and BGC uart connection, does not detect BGC connection attributes.
+    // Returns true only if everything succeeds. Don't run more than once on a single BGC object.
+    bool Initial_setup();
+    
     // Runs the main frame_button -> BGC communication loop.
-    // Returns false if thread was asked to stop, true if an error occurred or BGC restarted,
-    // and we should Run again with a new BGC object.
-    // Don't call more than once on a single BGC object.
+    // Returns false if thread was asked to stop, true if an error occurred or BGC restarted.
     bool Run();
     
 private:
@@ -36,9 +38,8 @@ private:
     };
     
 private:
-    // Initializes frame_button uORB subscription and BGC uart connection, and calls Update_bgc_motor_status(),
-    // returns true only if everything succeeds.
-    bool Setup();
+    // Expects Initial_setup to be already done successfully. Detects BGC uart speed/parity attributes.
+    bool Run_setup();
     
     // Used during Setup to discover the BGC uart speed/parity attributes.
     bool Discover_attributes();
