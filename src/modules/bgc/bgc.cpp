@@ -182,16 +182,18 @@ bool BGC::Discover_attributes() {
 }
 
 bool BGC::Process_frame_button_event() {
-    // Don't process frame button events for now, until the new hardware arrives and disconnects
-    // the direct electric frame_button -> BGC link, to avoid giving it double commands.
-    // Just return true. TODO: once new hardware arrives, remove this.
-    return true;
-    
     BGC_uart_msg out_msg;
     struct frame_button_s raw_frame_button_state;
     if ( !frame_button_subscriber.Read(ORB_ID(frame_button_state), &raw_frame_button_state) ) {
         return false;
     }
+    
+    // Don't process frame button events for now, until the new hardware arrives and disconnects
+    // the direct electric frame_button -> BGC link, to avoid giving it double commands.
+    // Just return true. TODO: once new hardware arrives, remove this.
+    printf("[BGC::BGC] Process_frame_button_event - skipping event\n");
+    return true;
+    
     switch ( raw_frame_button_state.state ) {
         case SINGLE_CLICK: {
             DOG_PRINT("[BGC::BGC] Process_frame_button_event - SINGLE_CLICK -> SBGC_MENU_CMD_MOTOR_TOGGLE\n");
