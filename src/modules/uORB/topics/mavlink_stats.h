@@ -8,7 +8,8 @@
  */
 
 /** Common structure for mavlink rx or tx stats */
-/** !!!!!! When updating this structure, update respective sdlog message formats! */
+/** Be sure to update sdlog defines bellow if you change the structure */
+/** TODO! [AK] Make an automatic script at least for sdlog types if not names */
 struct mavlink_stats_s {
         unsigned int version;
 	unsigned total_bytes;
@@ -18,6 +19,8 @@ struct mavlink_stats_s {
 	unsigned combo_count;
 	unsigned error_bytes;
 };
+#define MAVLINK_STATS_SDLOG_TYPES "IIIIIII"
+#define MAVLINK_STATS_SDLOG_NAMES "Version,TotalBs,HrtCnt,GposCnt,TrajCnt,ComboCnt,ErrorBs"
 
 /* register this as object request broker structure */
 ORB_DECLARE(mavlink_receive_stats);
