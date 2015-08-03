@@ -69,8 +69,6 @@ Base* ModeConnect::doEvent(int orbId)
     DataManager *dm = DataManager::instance();
     getConState();
 
-    printf("state %d orbId %d\n", (int) currentState, orbId);
-
     if (orbId == FD_BLRHandler)
     {
         if (currentState == State::CONNECTING)

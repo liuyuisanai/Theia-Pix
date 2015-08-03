@@ -62,13 +62,9 @@ Base* Main::processGround(int orbId)
             baseCondition.sub = CONFIRM_TAKEOFF;
             nextMode = makeAction();
         }
-        else if (key_LongPressed(BTN_FUTURE))
+        else if (dm->kbd_handler.currentMode == (int)ModeId::SHORTCUT)
         {
             baseCondition.sub = SERVICE;
-        }
-        else if (dm->kbd_handler.buttons == 0 && dm->kbd_handler.event == 0)
-        {
-            // Do nothing
         }
         else
         {
@@ -237,7 +233,7 @@ Base* Main::doEvent(int orbId)
         }
     }
     }
-    DOG_PRINT("[leash_app]{main screen} condition %d.%d\n", baseCondition.main, baseCondition.sub);
+    printf("[leash_app]{main screen} condition %d.%d\n", baseCondition.main, baseCondition.sub);
 
     return nextMode;
 }
@@ -357,6 +353,7 @@ Base* Main::processFlight(int orbId)
     }
     else if (orbId == FD_KbdHandler)
     {
+        DOG_PRINT("we are here!!!!!!!!!\n");
         if (dm->kbd_handler.currentMode == (int)ModeId::SHORTCUT)
         {
             DOG_PRINT("[main]{flight} future button pressed\n");

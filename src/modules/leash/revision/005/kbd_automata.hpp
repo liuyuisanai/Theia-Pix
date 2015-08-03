@@ -70,7 +70,7 @@ struct handle< ModeId::FLIGHT_ALT, EventKind::SHORT_KEYPRESS, BTN_MASK_MODE>
 
 template <ModeId MODE>
 struct handle< MODE, EventKind::LONG_KEYPRESS, BTN_MASK_FUTURE, When<
-    MODE == ModeId::FLIGHT or MODE == ModeId::FLIGHT_ALT or MODE == ModeId::PREFLIGHT or MODE == ModeId::INIT
+    MODE == ModeId::FLIGHT or MODE == ModeId::FLIGHT_ALT or MODE == ModeId::PREFLIGHT or MODE == ModeId::INIT or MODE == ModeId::FLIGHT_NO_SIGNAL
 > > {
 	static void
 	exec(App & app)

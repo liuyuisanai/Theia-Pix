@@ -69,6 +69,7 @@ main(int argc, const char * argv[])
 	{
                 pwm_led_init();
                 pwm_led_set_intensity(PWM_LED_RED, 2);
+                pwm_led_set_intensity(PWM_LED_BLUE, 2);
 
                 pwm_led_start(PWM_LED_BLUE);
                 pwm_led_start(PWM_LED_RED);
