@@ -37,7 +37,6 @@ Base* Service::doEvent(int orbId)
     {
         char d_eph[100];
         char d_epv[100];
-        //char d_sat_num[100];
         char l_eph[100];
         char l_epv[100];
         char l_sat_num[100];
@@ -48,20 +47,18 @@ Base* Service::doEvent(int orbId)
                     bt_link_q
                     ,d_eph
                     ,d_epv
-                    //,d_sat_num
                     ,l_eph
                     ,l_epv
                     ,l_sat_num
         };
+
+        sprintf(bt_link_q, "link qual %d%%", (int)((dm->btLinkQuality.link_quality) / 2.55));
 
         sprintf(l_eph, "L epH %.3f", (double) dm->leashRawGPS.eph);
         sprintf(l_epv, "L epV %.3f", (double) dm->leashRawGPS.epv);
         sprintf(l_sat_num, "L sat %d", dm->leashRawGPS.satellites_used);
         sprintf(d_eph, "D epH %.3f", (double) dm->droneLocalPos.eph);
         sprintf(d_epv, "D epV %.3f", (double) dm->droneLocalPos.epv);
-        //sprintf(d_sat_num, "D sat %d", dm->droneRawGPS.satellites_visible);
-
-        sprintf(bt_link_q, "link qual %d%%", (int)((dm->btLinkQuality.link_quality) / 2.55));
 
         setList( (const char**)data, 6);
     }

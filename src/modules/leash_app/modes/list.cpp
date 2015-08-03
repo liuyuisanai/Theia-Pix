@@ -101,7 +101,7 @@ Base* List::doEvent(int orbId)
     {
         if (key_pressed(BTN_DOWN))
         {
-            if (yIndex < count - LEASHDISPLAY_LINE_COUNT)
+            if (yIndex < count)
             {
                 yIndex++;
                 show();
