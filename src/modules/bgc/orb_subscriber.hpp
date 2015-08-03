@@ -15,6 +15,7 @@ namespace BGC {
         }
         
         bool Open(const struct orb_metadata * const meta) {
+        	if (Is_open()) { Close(); }
             fd = orb_subscribe(meta);
             if ( !Is_open() ) {
                 printf("[BGC::ORB_subscriber] failed to orb_subscribe to %s: %d\n", meta->o_name, errno);
@@ -29,6 +30,7 @@ namespace BGC {
         
         void Close() {
             close(fd);
+            fd = -1;
         }
         
         int Fd() {

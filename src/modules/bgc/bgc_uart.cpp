@@ -1,3 +1,5 @@
+#include <nuttx/config.h>
+
 #include "bgc_uart.hpp"
 
 #include <errno.h>
@@ -16,6 +18,7 @@ BGC_uart::BGC_uart(const char * const port, const int speed, const int parity) :
 }
 
 bool BGC_uart::Open(const char * const port, const int speed, const int parity) {
+	if (Is_open()) { Close(); }
     fd = open(port, O_RDWR | O_NOCTTY | O_NONBLOCK);
     if ( !Is_open() ) {
         printf("[BGC::BGC_uart] Open - failed to open at %s: %d\n", port, errno);
@@ -34,6 +37,7 @@ bool BGC_uart::Is_open() const {
 
 void BGC_uart::Close() {
     close(fd);
+    fd = -1;
 }
 
 int BGC_uart::Fd() {
@@ -94,6 +98,7 @@ bool BGC_uart::Send(const BGC_uart_msg & msg, const int zero_data_timeout) {
     const size_t buf_len      = msg.Buf_len();
     size_t sent = 0;
     for ( ; ; ) {
+    	// TODO! Either fix NuttX write or do a hack-wrapper that checks UART buffer size
         const ssize_t just_sent = write(fd, &buf[sent], buf_len-sent);
         if ( just_sent >= 0 ) {
             sent += size_t(just_sent);
@@ -169,7 +174,7 @@ bool BGC_uart::Read_junk(const int zero_data_timeout_ms) {
 
 bool BGC_uart::Set_attributes(const int speed, const int parity) {
     struct termios tty;
-    memset(&tty, 0, sizeof tty);
+    memset(&tty, 0, sizeof(tty));
     if ( tcgetattr(fd, &tty) != 0 ) {
         printf("[BGC::BGC_uart] Set_attributes - failed to tcgetattr: %d\n", errno);
         return false;

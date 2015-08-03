@@ -1,3 +1,5 @@
+#include <nuttx/config.h>
+
 #include "bgc.hpp"
 
 #include <uORB/topics/frame_button.h>
@@ -52,7 +54,6 @@ bool BGC::Stop_thread() {
 
 int BGC::Thread_main(int argc, char *argv[]) {
     s_thread_running = true;
-    sleep(1);
     BGC bgc;
     if ( !bgc.Initial_setup() ) {
         printf("[BGC::BGC] Thread_main - fatal error, stopping thread\n");
@@ -102,7 +103,7 @@ bool BGC::Run() {
     BGC_uart_msg in_msg;
     while ( !s_thread_should_exit ) {
         const Poll_result poll_result = Poll();
-        if ( poll_result & Poll_result::Error ) break;
+        if ( poll_result & Poll_result::Error ) return false;
         if ( poll_result & Poll_result::Frame_button_ready ) {
             if ( !Process_frame_button_event() ) break;
         }

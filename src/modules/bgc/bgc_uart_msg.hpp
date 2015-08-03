@@ -152,7 +152,7 @@ namespace BGC {
         
     private:
         uint8_t bytes_present;
-        uint8_t angle_bracket;
+        uint8_t angle_bracket; // TODO! Consider refactoring angle_bracket as "packet_start_symbol" or something
         uint8_t command_id;
         uint8_t data_size;
         uint8_t header_checksum;
