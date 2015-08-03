@@ -7,7 +7,7 @@
 #include "file_fragments.hpp"
 #include "io_util.hpp"
 #include "read_write_log.hpp"
-#include "status.hpp"
+#include "request_status.hpp"
 #include "unique_file.hpp"
 
 static const char dummy_filename_path[] = "/fs/microsd/data/";

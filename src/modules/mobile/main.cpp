@@ -19,7 +19,6 @@ extern "C" __EXPORT int main(int argc, const char *argv[]);
 #include "io_blocking.hpp"
 #include "io_tty.hpp"
 #include "read_write_log.hpp"
-#include "status.hpp"
 #include "unique_file.hpp"
 
 namespace
