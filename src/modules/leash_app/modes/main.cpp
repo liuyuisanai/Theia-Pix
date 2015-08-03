@@ -233,7 +233,7 @@ Base* Main::doEvent(int orbId)
         }
     }
     }
-    printf("[leash_app]{main screen} condition %d.%d\n", baseCondition.main, baseCondition.sub);
+    //printf("[leash_app]{main screen} condition %d.%d\n", baseCondition.main, baseCondition.sub);
 
     return nextMode;
 }
