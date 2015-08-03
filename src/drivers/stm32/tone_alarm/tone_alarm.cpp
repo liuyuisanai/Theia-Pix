@@ -338,7 +338,7 @@ ToneAlarm::ToneAlarm() :
 	_default_tunes[TONE_BATTERY_WARNING_FAST_TUNE] = "MBNT255a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8";	//battery warning fast
 	_default_tunes[TONE_GPS_WARNING_TUNE] = "MFT255L4AAAL1F#";					//gps warning slow
 	_default_tunes[TONE_ARMING_FAILURE_TUNE] = "MFT255L4<<<BAP";
-	_default_tunes[TONE_PARACHUTE_RELEASE_TUNE] = "MFT255L16agagagag";			// parachute release
+	_default_tunes[TONE_PARACHUTE_RELEASE_TUNE] = "MFT255L16ag";			// parachute release
 	_default_tunes[TONE_EKF_WARNING_TUNE] = "MFT255L8ddd#d#eeff";				// ekf warning
 	_default_tunes[TONE_BARO_WARNING_TUNE] = "MFT255L4gf#fed#d";				// baro warning
 

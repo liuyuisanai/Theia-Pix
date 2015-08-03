@@ -28,14 +28,14 @@ void
 Tone::key_press() const
 {
 	say("TONE Key Press.");
-	play(TONE_NOTIFY_POSITIVE_TUNE);
+	play(TONE_PARACHUTE_RELEASE_TUNE);
 }
 
 void
 Tone::key_press_timeout() const
 {
 	say("TONE key press Timeout.");
-	play(TONE_NOTIFY_NEGATIVE_TUNE);
+	//play(TONE_NOTIFY_NEGATIVE_TUNE);
 }
 
 void
