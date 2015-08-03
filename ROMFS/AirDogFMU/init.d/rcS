@@ -426,18 +426,21 @@ then
 		exit
 	fi
 
-    #start frame button driver
-    frame_button start
-
-    #
-    # Start the BGC module
-    #
-    if bgc start
+    if param compare A_DO_FRAME_BUTT 1
     then
-        echo "BGC OK" >> $LOG_FILE
-    else
-        echo "BGC FAILED" >> $LOG_FILE
-    fi
+		#start frame button driver
+		frame_button start
+
+		#
+		# Start the BGC module
+		#
+		if bgc start
+		then
+			echo "BGC OK" >> $LOG_FILE
+		else
+			echo "BGC FAILED" >> $LOG_FILE
+		fi
+	fi
 
 	# Start any custom addons
 	if [ -f $EXTRAS_FILE ]
