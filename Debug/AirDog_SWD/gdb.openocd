@@ -1,0 +1,12 @@
+target remote :3333
+
+
+mon init
+mon stm32_init
+mon poll
+set mem inaccessible-by-default off
+set print pretty
+source Debug/PX4
+
+echo Execution resumed, press Ctrl+C to interrupt.\n
+continue
