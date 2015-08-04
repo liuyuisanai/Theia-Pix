@@ -3130,7 +3130,7 @@ void *commander_low_prio_loop(void *arg)
 					answer_command(cmd, VEHICLE_CMD_RESULT_ACCEPTED);
 					param_get(param_find("A_CALIB_MODE"), &modified_calibration);
 					if (modified_calibration) {
-                                            calibration::calibrate_in_new_tread(calibration::CALIBRATE_GYROSCOPE,
+                                            calibration::calibrate_in_new_task(calibration::CALIBRATE_GYROSCOPE,
                                                                                 mavlink_fd);
                                             calib_ret = OK;
 					}
@@ -3143,7 +3143,7 @@ void *commander_low_prio_loop(void *arg)
 					answer_command(cmd, VEHICLE_CMD_RESULT_ACCEPTED);
 					param_get(param_find("A_CALIB_MODE"), &modified_calibration);
 					if (modified_calibration) {
-                                            calibration::calibrate_in_new_tread(calibration::CALIBRATE_MAGNETOMETER,
+                                            calibration::calibrate_in_new_task(calibration::CALIBRATE_MAGNETOMETER,
                                                                                 mavlink_fd);
                                             calib_ret = OK;
                                         }
@@ -3173,7 +3173,7 @@ void *commander_low_prio_loop(void *arg)
 					answer_command(cmd, VEHICLE_CMD_RESULT_ACCEPTED);
 					param_get(param_find("A_CALIB_MODE"), &modified_calibration);
 					if (modified_calibration) {
-                                                calibration::calibrate_in_new_tread(calibration::CALIBRATE_ACCELEROMETER,
+                                                calibration::calibrate_in_new_task(calibration::CALIBRATE_ACCELEROMETER,
                                                                                     mavlink_fd);
                                                 calib_ret = OK;
 					}

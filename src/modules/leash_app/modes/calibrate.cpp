@@ -25,17 +25,17 @@ Calibrate::Calibrate(CalibrationDevice pDevice) :
     {
         case CalibrationDevice::LEASH_ACCEL:
             DisplayHelper::showInfo(INFO_NEXT_SIDE_UP, 0);
-            calibration::calibrate_in_new_tread(calibration::CALIBRATE_ACCELEROMETER);
+            calibration::calibrate_in_new_task(calibration::CALIBRATE_ACCELEROMETER);
             break;
 
         case CalibrationDevice::LEASH_GYRO:
             DisplayHelper::showInfo(INFO_CALIBRATING_HOLD_STILL, 0);
-            calibration::calibrate_in_new_tread(calibration::CALIBRATE_GYROSCOPE);
+            calibration::calibrate_in_new_task(calibration::CALIBRATE_GYROSCOPE);
             break;
 
         case CalibrationDevice::LEASH_MAGNETOMETER:
             DisplayHelper::showInfo(INFO_CALIBRATING_HOLD_STILL, 0);
-            calibration::calibrate_in_new_tread(calibration::CALIBRATE_MAGNETOMETER);
+            calibration::calibrate_in_new_task(calibration::CALIBRATE_MAGNETOMETER);
             break;
 
         case CalibrationDevice::AIRDOG_ACCEL:

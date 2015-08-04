@@ -50,17 +50,15 @@ enum class SENSOR_TYPE : uint8_t {
 };
 
 static bool stopCalibration = true;
-static int threadParameterWhat = 0;
-static int threadParameterMavlinkFd = 0;
+static int taskParameterWhat = 0;
+static int taskParameterMavlinkFd = 0;
 
-static int start_calibrate_thread(int argc, char *argv[])
+static int start_calibrate_task(int argc, char *argv[])
 {
     (void)argc;
     (void)argv;
-    int what = threadParameterWhat;
-    int mavlink_fd = threadParameterMavlinkFd;
-
-    printf("calibrator thread: what %d mavlink_fd %d\n",what, mavlink_fd);
+    int what = taskParameterWhat;
+    int mavlink_fd = taskParameterMavlinkFd;
 
     switch (what)
     {
@@ -80,18 +78,18 @@ static int start_calibrate_thread(int argc, char *argv[])
     return 0;
 }
 
-__EXPORT int calibrate_in_new_tread(int what, int mavlink_fd)
+__EXPORT int calibrate_in_new_task(int what, int mavlink_fd)
 {
     int calibration_task = 0;
 
-    threadParameterWhat = what;
-    threadParameterMavlinkFd = mavlink_fd;
+    taskParameterWhat = what;
+    taskParameterMavlinkFd = mavlink_fd;
 
     calibration_task = task_spawn_cmd("leash_app",
                                       SCHED_DEFAULT,
                                       SCHED_PRIORITY_DEFAULT - 30,
                                       3000,
-                                      start_calibrate_thread,
+                                      start_calibrate_task,
                                       nullptr);//(const char **)parameters);
 
 

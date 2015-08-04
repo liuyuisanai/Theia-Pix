@@ -14,9 +14,8 @@ enum {
     CALIBRATE_GYROSCOPE
 };
 
-__EXPORT int calibrate_in_new_tread(int what, int mavlink_fd=0);
+__EXPORT int calibrate_in_new_task(int what, int mavlink_fd=0);
 __EXPORT void calibrate_stop();
-
 
 
 /* Starts gyroscope calibration procedure.
