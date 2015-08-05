@@ -7,7 +7,7 @@ ssize_t
 read_guaranteed(BlockingDevice<Device, TIMEOUT_MS> & d, void * buf, size_t buf_size)
 {
 	ssize_t r = read(d, buf, buf_size);
-	fprintf(stderr, "read(%u) -> %i.\n", (unsigned)buf_size, (int)r); fflush(stderr);
+	dbg("read(%u) -> %i.\n", (unsigned)buf_size, (int)r);
 	return buf_size;
 }
 
@@ -18,9 +18,10 @@ read_char_guaranteed(Device & d, char & ch)
 
 template <typename Device>
 bool
-write_char(Device & d, char ch) {
+write_char(Device & d, char ch)
+{
 	bool ok = write(d, &ch, 1) == 1;
-	if (not ok) { perror("write_char"); fflush(stderr); }
+	if (not ok) { dbg_perror("write_char"); }
 	return ok;
 }
 
@@ -28,7 +29,8 @@ write_char(Device & d, char ch) {
  * The following write() makes it possible to use write_repr() with FILE *.
  */
 ssize_t
-write(FILE* f, const void * buf, ssize_t buf_size) {
+write(FILE* f, const void * buf, ssize_t buf_size)
+{
 	ssize_t r = fwrite(buf, 1, buf_size, f);
 	fflush(f);
 	return r;

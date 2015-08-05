@@ -2,10 +2,6 @@
 
 #include <fcntl.h>
 
-#include "std_algo.hpp"
-
-namespace base64 {
-
 struct FragmentReader
 {
 	size_t bytes_left;
@@ -15,7 +11,7 @@ struct FragmentReader
 	friend inline ssize_t
 	read_fragment(FragmentReader & self, Device & d, void * buf, size_t buf_size)
 	{
-		fprintf(stderr, "read bytes_left %i buf_size %i.\n", self.bytes_left, buf_size); fflush(stderr);
+		dbg("read bytes_left %u buf_size %u.\n", (unsigned)self.bytes_left, (unsigned)buf_size);
 		if (self.bytes_left == 0)
 			return 0; /* EoF by read() conventions */
 		if (self.bytes_left < buf_size) { buf_size = self.bytes_left; }
@@ -34,7 +30,7 @@ struct FragmentWriter
 	friend inline ssize_t
 	write_fragment(FragmentWriter & self, Device & d, const void * buf, size_t buf_size)
 	{
-		fprintf(stderr, "write bytes_left %i buf_size %i.\n", self.bytes_left, buf_size); fflush(stderr);
+		dbg("write bytes_left %u buf_size %u.\n", (unsigned)self.bytes_left, (unsigned)buf_size);
 		if (self.bytes_left == 0)
 		{
 			errno = EFBIG;
@@ -65,7 +61,8 @@ struct DeviceFragment
 	typename FragmentOperator< MODE >::type fr;
 
 	DeviceFragment(Device & d, size_t fragment_size)
-	: dev(d), fr(fragment_size) {}
+	: dev(d), fr(fragment_size)
+	{}
 
 	friend int
 	fileno(DeviceFragment & self) { return fileno(self.dev); }
@@ -83,5 +80,3 @@ template <int Op, typename Device>
 DeviceFragment< Op, Device >
 make_fragment(Device & d, size_t fragment_size)
 { return DeviceFragment< Op, Device >(d, fragment_size); }
-
-} // end of namespace base64

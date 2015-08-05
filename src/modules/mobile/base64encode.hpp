@@ -3,7 +3,7 @@
 #include <cstdint>
 
 #include "buffers.hpp"
-#include "file_fragments.hpp"
+#include "io_fragments.hpp"
 
 namespace base64 {
 
@@ -133,7 +133,7 @@ struct ReadEncodeWrite {
 		ssize_t s = read(sd, read_buffer);
 		if (s < 0 and errno != EAGAIN)
 		{
-			perror("refill_read_buffer");
+			dbg_perror("refill_read_buffer");
 			return s;
 		}
 		if (s == 0) { break; }
@@ -150,7 +150,7 @@ struct ReadEncodeWrite {
 		ssize_t s = write(td, write_buffer);
 		if (s < 0 and errno != EAGAIN)
 		{
-			perror("flush_write_buffer");
+			dbg_perror("flush_write_buffer");
 			return s;
 		}
 	} while (not write_buffer.empty());

@@ -3,7 +3,9 @@
 #include <cstdint>
 
 #include "buffers.hpp"
-#include "file_fragments.hpp"
+#include "io_fragments.hpp"
+
+#include "std_algo.hpp"
 
 namespace base64 {
 
@@ -168,7 +170,7 @@ struct ReadDecodeWrite {
 		ssize_t s = read(sd, read_buffer);
 		if (s < 0 and errno != EAGAIN)
 		{
-			perror("refill_read_buffer");
+			dbg_perror("refill_read_buffer");
 			if (read_buffer.size() % 4 == 0) { return s; }
 		}
 		if (s == 0) { break; }
@@ -185,7 +187,7 @@ struct ReadDecodeWrite {
 		ssize_t s = write(td, write_buffer);
 		if (s < 0 and errno != EAGAIN)
 		{
-			perror("flush_write_buffer");
+			dbg_perror("flush_write_buffer");
 			return s;
 		}
 	} while (not write_buffer.empty());
@@ -218,26 +220,26 @@ struct ReadVerifyDecodeWrite {
     ::source_buffer<BINARY_BUFFER_BYTES, uint8_t> write_buffer;
 
     template <typename SourceDevice, typename TargetDevice>
-    friend bool
-    copy(ReadVerifyDecodeWrite & self, SourceDevice & sd, TargetDevice & td)
+    friend ssize_t
+    copy_verbose(ReadVerifyDecodeWrite & self, SourceDevice & sd, TargetDevice & td)
     {
-        ssize_t s;
-        do
+        ssize_t r = 0;
+        while (true)
         {
-            s = self.refill_read_buffer(sd);
-            if (s < 0) { return false; }
+            ssize_t s = self.refill_read_buffer(sd);
+            if (s < 0) { return -1; }
             if (self.read_buffer.empty()) { break; }
-            if (not self.verify_buffer()) { return false; }
+            if (not self.verify_buffer()) { return -2; }
             self.decode_in_buffer();
             do
             {
                 s = self.flush_write_buffer(td);
-                if (s < 0) { return false; }
+                if (s < 0) { return -3; }
+		r += s;
             }
             while (not self.write_buffer.empty());
         }
-        while (true);
-        return true;
+        return r;
     }
 
     template <typename SourceDevice>
@@ -249,7 +251,7 @@ struct ReadVerifyDecodeWrite {
             ssize_t s = read(sd, read_buffer);
             if (s < 0 and errno != EAGAIN)
             {
-                perror("refill_read_buffer");
+                dbg_perror("refill_read_buffer");
                 if (read_buffer.size() % 4 == 0) { return s; }
             }
             if (s == 0) { break; }
@@ -266,7 +268,7 @@ struct ReadVerifyDecodeWrite {
             ssize_t s = write(td, write_buffer);
             if (s < 0 and errno != EAGAIN)
             {
-                perror("flush_write_buffer");
+                dbg_perror("flush_write_buffer");
                 return s;
             }
         } while (not write_buffer.empty());

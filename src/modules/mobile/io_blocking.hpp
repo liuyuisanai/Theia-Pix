@@ -38,7 +38,7 @@ struct BlockingDevice
 			if (r == 0)
 			{
 				// Timeout.
-				errno = EAGAIN;
+				errno = ETIMEDOUT;
 				return -1;
 			}
 
@@ -79,7 +79,7 @@ struct BlockingDevice
 			if (r == 0)
 			{
 				// Timeout.
-				errno = EAGAIN;
+				errno = ETIMEDOUT;
 				return -1;
 			}
 

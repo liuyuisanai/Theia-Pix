@@ -18,7 +18,7 @@ struct Subscription
 
 template <typename T, const orb_id_t META>
 inline T &&
-orb_read(Subscription<T, META> self)
+orb_read(const Subscription<T, META> self)
 {
 	T x;
 	orb_copy(META, self.h, &x);

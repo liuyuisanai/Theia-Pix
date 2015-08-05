@@ -30,29 +30,30 @@ static bool daemon_running = false;
 static int
 daemon(int argc, char *argv[])
 {
+	fprintf(stderr, "%s starting...\n", argv[0]);
+
 	unique_file d = tty_open(argv[1]);
-	bool ok = fileno(d) != -1
+	bool ok = ( fileno(d) != -1
 		and tty_set_speed(fileno(d), B9600)
-		and tty_use_ctsrts(fileno(d));
+		and tty_use_ctsrts(fileno(d))
+	);
 	if (not ok) { return 1; }
 
-	DevLog log (d.get(), 2, "read  ", "write ");
+	DevLog log (fileno(d), 2, "uart read  ", "uart write ");
 	auto f = make_it_blocking< 1000/*ms*/ >(log);
 
+	FileWriteState write_state;
+	StatusOverall status;
+
 	daemon_running = true;
-	fprintf(stderr, "%s has started.\n", argv[0]);
-
-	FileRequestHandler file_requests;
-	ReceiveFileHandle receive_file;
-
-	fprintf(stderr, "Processing");
+	fprintf(stderr, "%s started.\n", argv[0]);
 
 	while (daemon_should_run)
-		process_one_command(f, file_requests, receive_file);
+		process_one_command(f, write_state, status);
 
+	fprintf(stderr, "%s stopped.\n", argv[0]);
 	daemon_running = false;
 
-	fprintf(stderr, "%s has stopped.\n", argv[0]);
 	return 0;
 }
 
@@ -62,7 +63,7 @@ streq(const char a[], const char b[]) { return std::strcmp(a, b) == 0; }
 static void
 usage(const char name[])
 {
-	std::fprintf(stderr,
+	fprintf(stderr,
 		"Usage: %s start TTY\n"
 		"       %s stop\n"
 		"       %s status\n"
@@ -97,7 +98,7 @@ main(int argc, const char *argv[])
 				SCHED_PRIORITY_DEFAULT,
 				CONFIG_TASK_SPAWN_DEFAULT_STACKSIZE,
 				daemon,
-				argv + 1);
+				argv + 2);
 	}
 	else if (argc == 2 and streq(argv[1], "status"))
 	{
@@ -119,6 +120,5 @@ main(int argc, const char *argv[])
 		return 1;
 	}
 
-	fprintf(stderr, "main() is returning 0\n");
 	return 0;
 }
