@@ -355,6 +355,9 @@ adc_init()
 	stm32_configgpio(GPIO_VDD_RANGE_START_RES);
 	stm32_configgpio(GPIO_VDD_RANGEFINDER_EN);
 	stm32_configgpio(GPIO_VDD_BRICK_VALID);
+#ifdef GPIO_VDD_ESC_EN
+	stm32_configgpio(GPIO_VDD_ESC_EN);
+#endif
 #undef ADC1_N_X
 #undef ADC1_N
 }
