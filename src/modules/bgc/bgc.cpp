@@ -189,11 +189,17 @@ bool BGC::Process_frame_button_event() {
         return false;
     }
     
-    // Don't process frame button events for now, until the new hardware arrives and disconnects
-    // the direct electric frame_button -> BGC link, to avoid giving it double commands.
-    // Just return true. TODO: once new hardware arrives, remove this.
+/** TODO! Implement detection of the DIP-switch that enables button pass-trough. Refer to
+ *  https://docs.google.com/document/d/1m2cnf1UrndAgbCF8fEZWD3Evr-s2qAcHdLWIV6tyzqg/edit?usp=sharing
+ *  section "Main processor LED and buttons" for more info.
+ */
+#if BOARD_REVISION < 006
+    /** Don't process frame button events on old revisions
+     *  that have direct electric link frame_button -> BGC
+     */
     printf("[BGC::BGC] Process_frame_button_event - skipping event\n");
     return true;
+#endif
     
     switch ( raw_frame_button_state.state ) {
         case SINGLE_CLICK: {
