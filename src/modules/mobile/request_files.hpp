@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdio>
+#include <unistd.h>
 
 #include "base64decode.hpp"
 #include "base64encode.hpp"
@@ -25,7 +26,8 @@ open_by_index(file_index_t file_index, int flags)
 	filename_buf_t name;
 	get_filename(file_index, name);
 	unique_file r = open(name, flags, 0660);
-	if (fileno(r) == -1) { dbg_perror("open_by_index"); }
+	if (fileno(r) == -1)
+		dbg_perror("open_by_index(0x%08x)", file_index);
 	return r;
 }
 
@@ -42,8 +44,14 @@ replace_by_tmp(file_index_t file_index)
 {
 	filename_buf_t name;
 	get_filename(file_index, name);
-	int r = rename(WRITE_FILE_TMP_NAME, name);
-	if (r == -1) { dbg_perror("replace_by_tmp"); }
+	/*
+	 * It should be enough with rename() here.
+	 * But NuttX rename() fails with EEXIST when target exists.
+	 * That is why unlink() lives here.
+	 */
+	int r = unlink(name);
+	if (r == 0) { rename(WRITE_FILE_TMP_NAME, name); }
+	if (r == -1) { dbg_perror("replace_by_tmp(0x%08x)", file_index); }
 	return r != -1;
 }
 
