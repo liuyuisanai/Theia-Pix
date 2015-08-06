@@ -37,7 +37,11 @@ daemon(int argc, char *argv[])
 		and tty_set_speed(fileno(d), B9600)
 		and tty_use_ctsrts(fileno(d))
 	);
-	if (not ok) { return 1; }
+	if (not ok)
+	{
+		perror(argv[0]);
+		return 1;
+	}
 
 	DevLog log (fileno(d), 2, "uart read  ", "uart write ");
 	auto f = make_it_blocking< 1000/*ms*/ >(log);
@@ -93,15 +97,23 @@ main(int argc, const char *argv[])
 
 		daemon_should_run = true;
 
-		task_spawn_cmd(argv[0],
+		int r = task_spawn_cmd(argv[0],
 				SCHED_DEFAULT,
 				SCHED_PRIORITY_DEFAULT,
 				CONFIG_TASK_SPAWN_DEFAULT_STACKSIZE,
 				daemon,
 				argv + 2);
+		if (r == -1)
+		{
+			perror("task_spawn_cmd");
+			return -1;
+		}
 	}
 	else if (argc == 2 and streq(argv[1], "status"))
 	{
+		if (daemon_should_run) { printf("%s should run.\n", argv[0]); }
+		else { printf("%s should NOT run.\n", argv[0]); }
+
 		if (daemon_running) { printf("%s is running.\n", argv[0]); }
 		else { printf("%s is NOT running.\n", argv[0]); }
 	}
