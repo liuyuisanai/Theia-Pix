@@ -275,10 +275,5 @@ FAR struct lcd_dev_s *up_lcdgetdev(int lcddev)
   return NULL;
 }
 
-
-#ifndef CONFIG_NX_LCDDRIVER
-# error Only CONFIG_NX_LCDDRIVER supported.
-#endif
-
 FAR struct lcd_dev_s *up_nxdrvinit(unsigned int devno)
 { return up_lcdgetdev(devno); }
