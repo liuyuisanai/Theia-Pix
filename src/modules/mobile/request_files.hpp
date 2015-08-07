@@ -1,7 +1,11 @@
 #pragma once
 
-#include <cstdio>
+#include <limits.h>
+#include <sys/stat.h>
 #include <unistd.h>
+
+#include <cstdio>
+#include <cstring>
 
 #include "base64decode.hpp"
 #include "base64encode.hpp"
@@ -12,47 +16,68 @@
 
 #include "std_algo.hpp"
 
-const char WRITE_FILE_TMP_NAME[] = "/fs/microsd/mobile-tmp.txt";
 
-using filename_buf_t = char[32];
+#define WRITE_FILE_TMP_ROOT "/fs/microsd/mobile"
+#define WRITE_FILE_TMP_NAME (WRITE_FILE_TMP_ROOT "/tmp.txt")
 
-void
-get_filename(file_index_t index, filename_buf_t &name)
-{ snprintf(name, sizeof name, "/fs/microsd/mobile.%08x.txt", (unsigned)index); }
 
 unique_file
 open_by_index(file_index_t file_index, int flags)
 {
 	filename_buf_t name;
-	get_filename(file_index, name);
-	unique_file r = open(name, flags, 0660);
-	if (fileno(r) == -1)
-		dbg_perror("open_by_index(0x%08x)", file_index);
-	return r;
+	bool ok = get_filename(file_index, name);
+	unique_file f;
+	if (ok)
+	{
+		if (flags & O_CREAT)
+		{
+			char * last_slash = strrchr(name, '/');
+			if (last_slash != nullptr)
+			{
+				*last_slash = '\0';
+				int r = mkdir(name, 0770);
+				if (r == -1) { dbg_perror("mkdir(%s)", name); }
+				*last_slash = '/';
+			}
+		}
+		f = open(name, flags, 0660);
+		if (fileno(f) == -1)
+		{
+			dbg_perror("open_by_index(0x%08x): %s",
+					file_index, name);
+		}
+	}
+	return f;
 }
 
 unique_file
 open_tmp(int flags)
 {
-	unique_file r = open(WRITE_FILE_TMP_NAME, flags, 0660);
-	if (fileno(r) == -1) { dbg_perror("open_tmp"); }
-	return r;
+	int r = mkdir(WRITE_FILE_TMP_ROOT, 0660);
+	if (r == -1) { dbg_perror("mkdir(" WRITE_FILE_TMP_ROOT ")"); }
+	unique_file f = open(WRITE_FILE_TMP_NAME, flags, 0660);
+	if (fileno(f) == -1) { dbg_perror("open_tmp"); }
+	return f;
 }
 
 bool
 replace_by_tmp(file_index_t file_index)
 {
 	filename_buf_t name;
-	get_filename(file_index, name);
-	/*
-	 * It should be enough with rename() here.
-	 * But NuttX rename() fails with EEXIST when target exists.
-	 * That is why unlink() lives here.
-	 */
-	int r = unlink(name);
-	if (r == 0) { rename(WRITE_FILE_TMP_NAME, name); }
-	if (r == -1) { dbg_perror("replace_by_tmp(0x%08x)", file_index); }
-	return r != -1;
+	bool ok = get_filename(file_index, name);
+	if (ok)
+	{
+		/*
+		 * It should be enough with rename() here.
+		 * But NuttX rename() fails with EEXIST when target exists.
+		 * That is why unlink() lives here.
+		 */
+		int r = unlink(name);
+		ok = r == 0;
+		if (ok) { rename(WRITE_FILE_TMP_NAME, name); }
+		else { dbg_perror("replace_by_tmp(0x%08x)", file_index); }
+	}
+	return ok;
 }
 
 template <>
@@ -77,8 +102,8 @@ struct Request< CMD_FILE_INFO >
 errcode_t
 verify_request(Request< CMD_FILE_INFO >, file_index_t index)
 {
-	bool ok = is_file_valid(index);
-	dbg("is_file_valid(%u) -> %i.\n", index, ok);
+	bool ok = is_file_index_valid(index);
+	dbg("is_file_index_valid(%u) -> %i.\n", index, ok);
 	if (not ok) { return ERRCODE_FILE_INDEX_INVALID; }
 
 	return ERRCODE_OK;
@@ -179,7 +204,7 @@ reply(Request< CMD_WRITE_START >, WriteFileRequest file_req, Device &, FileWrite
 errcode_t
 verify_request(Request< CMD_WRITE_START >, WriteFileRequest file_req, const FileWriteState & state)
 {
-	bool ok = is_file_valid(file_req.index);
+	bool ok = is_file_index_valid(file_req.index);
 	if (not ok) { return ERRCODE_FILE_INDEX_INVALID; }
 
 	ok = is_file_writable(file_req.index);
@@ -354,7 +379,9 @@ verify_request(Request< CMD_WRITE_END >, file_index_t file_index, FileWriteState
 
 	close(f);
 
-	bool ok = replace_by_tmp(state.request.index);
+	bool ok = is_file_content_valid(WRITE_FILE_TMP_NAME, state.request.index);
+
+	ok = replace_by_tmp(state.request.index);
 	if (not ok) { return ERRCODE_FILE_IO_ERROR; }
 
 	return ERRCODE_OK;
