@@ -141,6 +141,7 @@ MODULES		+= modules/uORB
 #
 # Libraries
 #
+MODULES		+= lib/activity
 MODULES		+= lib/conversion
 MODULES		+= lib/geo
 MODULES		+= lib/geo_lookup
