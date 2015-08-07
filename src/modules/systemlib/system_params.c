@@ -40,6 +40,11 @@
 #include <nuttx/config.h>
 #include <systemlib/param/param.h>
 
+/*
+ * AirDog activation boolean flag.
+ */
+PARAM_DEFINE_INT32(SYS_ACT, 0);
+
 /**
  * Auto-start script index.
  *
