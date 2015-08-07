@@ -1,5 +1,7 @@
 #pragma once
 
+#include <airdog/activation.hpp>
+
 #include "request_base.hpp"
 
 template <>
@@ -12,7 +14,8 @@ template <typename Device>
 void
 reply(Request< CMD_ACTIVATION_READ >, Device & dev)
 {
-	uint8_t status = 0;
+	using namespace AirDog;
+	uint8_t status = activation::get();
 	write(dev, &status, sizeof status);
 }
 
@@ -24,7 +27,11 @@ struct Request< CMD_ACTIVATION_WRITE >
 
 inline errcode_t
 verify_request(Request< CMD_ACTIVATION_WRITE >, uint8_t level)
-{ return ERRCODE_ACTIVATION_FAILED; }
+{
+	using namespace AirDog;
+	bool ok = activation::set_store(level);
+	return ok ? ERRCODE_OK : ERRCODE_ACTIVATION_FAILED;
+}
 
 template <typename Device>
 void
