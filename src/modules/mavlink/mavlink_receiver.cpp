@@ -1129,7 +1129,7 @@ MavlinkReceiver::handle_combo_message(mavlink_message_t *msg)
 			msg_combo.HRT_mavlink_version
 		};
 
-                received_mavlink_version = msg_combo.HRT_mavlink_version;
+		received_mavlink_version = msg_combo.HRT_mavlink_version;
 
 //		msg_hrt.autopilot = msg_combo.HRT_autopilot;
 //		msg_hrt.base_mode = msg_combo.HRT_base_mode;
@@ -1138,10 +1138,11 @@ MavlinkReceiver::handle_combo_message(mavlink_message_t *msg)
 //		msg_hrt.system_status = msg_combo.HRT_system_status;
 //		msg_hrt.type = msg_combo.HRT_type;
 
-                // save additional airdog status field
-                // publishing will happen in internal_heartbeat_handle
-                _airdog_status.battery_remaining = msg_combo.STS_battery_remaining;
-
+        // save additional airdog status field
+        // publishing will happen in internal_heartbeat_handle
+        _airdog_status.battery_remaining = msg_combo.STS_battery_remaining;
+        _airdog_status.error_code = msg_combo.HRT_error_code;
+        _airdog_status.error_id = msg_combo.HRT_error_id;
 		internal_heartbeat_handle(msg_hrt, msg);
 	}
 	if (msg_combo.fresh_messages & MAVLINK_COMBO_MESSAGE_GPOS) {

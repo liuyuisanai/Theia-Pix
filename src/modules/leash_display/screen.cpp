@@ -8,6 +8,7 @@
 #include "block.hpp"
 #include "images/images.h"
 #include "font.hpp"
+#include "errormessages.hpp"
 
 struct TextInfo {
     const char *text;
@@ -486,6 +487,8 @@ void Screen::showInfo(int info, int error)
 {
     const int rowCount = 4;
     struct TextInfo text[rowCount];
+    char bufferError[16]; // buffer for Error X text
+    char buffer[60]; // buffer for error message
 
     memset(text, 0, sizeof(text));
 
@@ -512,12 +515,16 @@ void Screen::showInfo(int info, int error)
         case INFO_TAKEOFF_FAILED:
             text[0].text = "Takeoff failed";
             text[0].font = &Font::LucideGrandeSmall;
-            text[1].text = "unknown";
 
             switch (error)
             {
+                default:
+                    snprintf(buffer, sizeof(buffer), "Error %d", error);
+                    buffer[sizeof(buffer)-1] = 0;
+                    break;
             }
 
+            text[1].text = buffer;
             text[1].font = &Font::LucideGrandeTiny;
             text[2].text = "refer to user";
             text[2].font = &Font::LucideGrandeTiny;
@@ -617,6 +624,56 @@ void Screen::showInfo(int info, int error)
             text[2].font = &Font::LucideGrandeTiny;
             text[3].text = "your software";
             text[3].font = &Font::LucideGrandeTiny;
+            break;
+
+        case INFO_ERROR:
+            snprintf(bufferError, sizeof(bufferError), "Error %d", error);
+            text[0].text = bufferError;
+            text[0].font = &Font::LucideGrandeMed;
+
+            const char *errorText = getErrorMessageText(error);
+
+            if (errorText == nullptr)
+            {
+                snprintf(buffer, sizeof(buffer), "%d", error);
+                buffer[sizeof(buffer)-1] = 0;
+                text[1].text = buffer;
+                text[1].font = &Font::LucideGrandeTiny;
+                text[2].text = "refer to user";
+                text[2].font = &Font::LucideGrandeTiny;
+                text[3].text = "manual";
+                text[3].font = &Font::LucideGrandeTiny;
+            }
+            else
+            {
+                strcpy(buffer, errorText);
+                char *p = buffer;
+
+                for (int i = 1; i <= 3; i++)
+                {
+                    text[i].text = p;
+                    text[i].font = &Font::LucideGrandeTiny;
+
+                    // search for line end
+                    while (*p != 0 && *p != '\n')
+                    {
+                        p++;
+                    }
+
+                    if (*p == 0)
+                    {
+                        // message end
+                        break;
+                    }
+                    else
+                    {
+                        // we found \n
+                        *p = 0;
+                        p++;
+                    }
+                }
+            }
+
             break;
     }
 

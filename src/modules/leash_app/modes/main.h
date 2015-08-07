@@ -1,6 +1,6 @@
 #pragma once
 
-#include "base.h"
+#include "error.h"
 
 #include <uORB/topics/leash_display.h>
 
@@ -9,7 +9,7 @@
 namespace modes
 {
 
-class Main : public Base
+class Main : public Error
 {
 public:
     Main();
@@ -56,6 +56,8 @@ private:
 
 	const hrt_abstime command_responce_time = 10000000;
 	hrt_abstime local_timer = 0;
+
+    bool ignoreKeyEvent;
 
     struct DisplayInfo displayInfo;
     struct Condition baseCondition;

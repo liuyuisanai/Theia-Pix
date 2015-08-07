@@ -2284,13 +2284,15 @@ protected:
 		get_mavlink_mode_state(&status, &pos_sp_triplet, &msg.HRT_system_status, &msg.HRT_base_mode, &msg.HRT_custom_mode);
 		msg.HRT_type = mavlink_system.type;
 		msg.HRT_autopilot = MAV_AUTOPILOT_PX4;
-                msg.HRT_mavlink_version = MAVLINK_VERSION;
+		msg.HRT_mavlink_version = MAVLINK_VERSION;
+		msg.HRT_error_code = status.error_code;
+		msg.HRT_error_id = status.error_id;
 
 		bool updated = _pos_sub->update(&_pos_time, &pos);
 		updated |= _home_sub->update(&_home_time, &home);
 		updated |= _gps_sub->update(&_gps_time, &gps);
 
-                msg.STS_battery_remaining = (uint8_t)(100.0f * status.battery_remaining);
+		msg.STS_battery_remaining = (uint8_t)(100.0f * status.battery_remaining);
 
 		if (_pos_time != 0 && updated) {
 			msg.fresh_messages |= MAVLINK_COMBO_MESSAGE_GPOS;
@@ -2343,17 +2345,16 @@ protected:
 			}
 		}
 
-
 #if defined(CONFIG_IS_AIRDOG_FMU) || defined(CONFIG_IS_PX4_FMU)
-                // only airdog should send to leash calibration status
-                if (_calibrator_sub->update(&_calibrator_time, &calibrator)) {
-                    msg.fresh_messages |= MAVLINK_COMBO_MESSAGE_CALIBRATOR;
-                    msg.HRT_calibration_status = calibrator.status;
-                    msg.HRT_calibration_error = (int8_t)calibrator.result;
-                }
+        // only airdog should send to leash calibration status
+        if (_calibrator_sub->update(&_calibrator_time, &calibrator)) {
+            msg.fresh_messages |= MAVLINK_COMBO_MESSAGE_CALIBRATOR;
+            msg.HRT_calibration_status = calibrator.status;
+            msg.HRT_calibration_error = (int8_t)calibrator.result;
+        }
 #endif
 
-                if (msg.fresh_messages != 0) {
+		if (msg.fresh_messages != 0) {
 			_mavlink->send_message(MAVLINK_MSG_ID_HRT_GPOS_TRAJ_COMMAND, &msg);
 		}
 	}

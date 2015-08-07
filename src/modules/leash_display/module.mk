@@ -1,14 +1,15 @@
-MODULE_COMMAND		= leash_display
+MODULE_COMMAND = leash_display
 
-SRCS			= \
+SRCS = \
+    block.cpp \
+    datamanager.cpp \
+    errormessages.cpp \
+    images/images.c \
     font.cpp \
     main.cpp \
-    block.cpp \
-    screen.cpp \
-    datamanager.cpp \
-    images/images.c
+    screen.cpp
 
-CXXFLAGS		+= -std=c++11 -Dmain=${MODULE_COMMAND}_main \
+CXXFLAGS += -std=c++11 -Dmain=${MODULE_COMMAND}_main \
     -Werror \
     -Wno-error=shadow
 

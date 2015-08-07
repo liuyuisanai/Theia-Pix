@@ -11,6 +11,8 @@
 #include "../displayhelper.h"
 #include "../uorb_functions.h"
 
+#include <stdio.h>
+
 namespace modes
 {
 
@@ -36,11 +38,13 @@ Main::Main()
 
 int Main::getTimeout()
 {
-    return -1;
+    return Error::getTimeout();
 }
 
 void Main::listenForEvents(bool awaitMask[])
 {
+    Error::listenForEvents(awaitMask);
+
     awaitMask[FD_AirdogStatus] = 1;
     awaitMask[FD_KbdHandler] = 1;
     awaitMask[FD_BLRHandler] = 1;
@@ -51,7 +55,7 @@ Base* Main::processGround(int orbId)
     Base *nextMode = nullptr;
     DataManager *dm = DataManager::instance();
 
-    if (orbId == FD_KbdHandler)
+    if (orbId == FD_KbdHandler && !ignoreKeyEvent)
     {
         if (key_pressed(BTN_MODE))
         {
@@ -108,7 +112,7 @@ Base* Main::processTakeoff(int orbId)
             local_timer = 0;
         }
     }
-    if (orbId == FD_KbdHandler)
+    if (orbId == FD_KbdHandler && !ignoreKeyEvent)
     {
         if (key_pressed(BTN_MODE))
         {
@@ -155,7 +159,7 @@ Base* Main::processTakeoff(int orbId)
 Base* Main::processHelp(int orbId)
 {
     Base *nextMode = nullptr;
-    if (orbId == FD_KbdHandler)
+    if (orbId == FD_KbdHandler && !ignoreKeyEvent)
     {
         if (key_pressed(BTN_MODE))
         {
@@ -174,6 +178,15 @@ Base* Main::doEvent(int orbId)
 {
     Base *nextMode = nullptr;
     DataManager *dm = DataManager::instance();
+
+    ignoreKeyEvent = isErrorShowed;
+
+    Error::doEvent(orbId);
+
+    if (ignoreKeyEvent)
+    {
+        makeAction();
+    }
 
     /* -- disconnected -- */
     if (dm->bt_handler.global_state == CONNECTING)
@@ -243,7 +256,7 @@ Base* Main::makeAction()
     Base *nextMode = nullptr;
     DataManager *dm = DataManager::instance();
 
-    if (baseCondition.main == GROUNDED)
+    if (baseCondition.main == GROUNDED && !isErrorShowed)
     {
         switch (baseCondition.sub)
         {
@@ -279,7 +292,7 @@ Base* Main::makeAction()
                 break;
         }
     }
-    else
+    else if (!isErrorShowed)
     {
         switch (baseCondition.sub)
         {
@@ -351,7 +364,7 @@ Base* Main::processFlight(int orbId)
             baseCondition.sub = LANDING;
         }
     }
-    else if (orbId == FD_KbdHandler)
+    else if (orbId == FD_KbdHandler && !ignoreKeyEvent)
     {
         DOG_PRINT("we are here!!!!!!!!!\n");
         if (dm->kbd_handler.currentMode == (int)ModeId::SHORTCUT)

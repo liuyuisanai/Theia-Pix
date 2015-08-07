@@ -113,6 +113,7 @@
 #include "baro_calibration.h"
 #include "rc_calibration.h"
 #include "airspeed_calibration.h"
+#include "commander_error.h"
 
 /* oddly, ERROR is not defined for c++ */
 #ifdef ERROR
@@ -256,6 +257,11 @@ bool execute_preflight_storage_write(vehicle_command_s cmd);
 
 void answer_command(struct vehicle_command_s &cmd, enum VEHICLE_CMD_RESULT result);
 
+int commander_set_error(int error_code)
+{
+	status.error_code = error_code;
+	status.error_id++;
+}
 
 int commander_main(int argc, char *argv[])
 {
