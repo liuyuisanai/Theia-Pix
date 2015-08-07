@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base.h"
+#include <time.h>
 
 #define ERROR_SHOW_INTERVAL 5000
 
@@ -22,6 +23,7 @@ public:
 protected:
     bool isErrorShowed;
     int lastErrorCode;
+    time_t lastErrorTime;
     static int lastErrorId;
 };
 

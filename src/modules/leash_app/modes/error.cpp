@@ -11,7 +11,8 @@ int Error::lastErrorId = 0;
 
 Error::Error() :
     isErrorShowed(false),
-    lastErrorCode(0)
+    lastErrorCode(0),
+    lastErrorTime((time_t)0)
 {
 }
 
@@ -39,12 +40,13 @@ Base* Error::doEvent(int orbId)
 {
     if (orbId == FD_AirdogStatus)
     {
-        if (DataManager::instance()->airdog_status.error_id != lastErrorId)
+        if (DataManager::instance()->airdog_status.error_id != lastErrorId &&
+                DataManager::instance()->airdog_status.error_code != 0)
         {
             lastErrorId = DataManager::instance()->airdog_status.error_id;
             lastErrorCode = DataManager::instance()->airdog_status.error_code;
             isErrorShowed = true;
-
+            time(&lastErrorTime);
             DisplayHelper::showInfo(INFO_ERROR, lastErrorCode);
         }
     }
@@ -55,7 +57,10 @@ Base* Error::doEvent(int orbId)
             isErrorShowed = false;
         }
     }
-    else if (orbId == 0)
+
+    time_t now;
+    time(&now);
+    if (1000 * (now - lastErrorTime) > ERROR_SHOW_INTERVAL)
     {
         // timeout
         isErrorShowed = false;
