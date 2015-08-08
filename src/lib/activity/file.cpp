@@ -22,8 +22,9 @@ get_path(uint8_t activity, uint8_t attribute, char (&name)[PATH_MAX])
 		break;
 	default:
 		*name = '\0';
-		break;
+		return false;
 	}
+	return true;
 }
 
 bool
