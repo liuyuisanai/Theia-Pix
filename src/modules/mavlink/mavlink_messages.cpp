@@ -2286,7 +2286,7 @@ protected:
 		msg.HRT_autopilot = MAV_AUTOPILOT_PX4;
 		msg.HRT_mavlink_version = MAVLINK_VERSION;
 		msg.HRT_error_code = status.error_code;
-		msg.HRT_error_id = status.error_id;
+		msg.HRT_error_stamp = status.error_stamp;
 
 		bool updated = _pos_sub->update(&_pos_time, &pos);
 		updated |= _home_sub->update(&_home_time, &home);

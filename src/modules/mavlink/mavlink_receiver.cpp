@@ -1142,7 +1142,7 @@ MavlinkReceiver::handle_combo_message(mavlink_message_t *msg)
         // publishing will happen in internal_heartbeat_handle
         _airdog_status.battery_remaining = msg_combo.STS_battery_remaining;
         _airdog_status.error_code = msg_combo.HRT_error_code;
-        _airdog_status.error_id = msg_combo.HRT_error_id;
+        _airdog_status.error_stamp = msg_combo.HRT_error_stamp;
 		internal_heartbeat_handle(msg_hrt, msg);
 	}
 	if (msg_combo.fresh_messages & MAVLINK_COMBO_MESSAGE_GPOS) {

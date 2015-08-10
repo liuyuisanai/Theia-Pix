@@ -7,7 +7,7 @@
 namespace modes
 {
 
-int Error::lastErrorId = 0;
+int Error::lastErrorStamp = 0;
 
 Error::Error() :
     isErrorShowed(false),
@@ -40,10 +40,10 @@ Base* Error::doEvent(int orbId)
 {
     if (orbId == FD_AirdogStatus)
     {
-        if (DataManager::instance()->airdog_status.error_id != lastErrorId &&
+        if (DataManager::instance()->airdog_status.error_stamp != lastErrorStamp &&
                 DataManager::instance()->airdog_status.error_code != 0)
         {
-            lastErrorId = DataManager::instance()->airdog_status.error_id;
+            lastErrorStamp = DataManager::instance()->airdog_status.error_stamp;
             lastErrorCode = DataManager::instance()->airdog_status.error_code;
             isErrorShowed = true;
             time(&lastErrorTime);

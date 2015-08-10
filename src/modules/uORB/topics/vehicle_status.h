@@ -278,7 +278,7 @@ struct vehicle_status_s {
 	bool freeze_cmd; //commands loiter mode to freeze all movements and yawing
 
 	uint8_t error_code;
-	uint8_t error_id;
+	uint8_t error_stamp;
 };
 
 /**

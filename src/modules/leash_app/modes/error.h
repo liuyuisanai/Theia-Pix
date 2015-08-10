@@ -24,7 +24,7 @@ protected:
     bool isErrorShowed;
     int lastErrorCode;
     time_t lastErrorTime;
-    static int lastErrorId;
+    static int lastErrorStamp;
 };
 
 }

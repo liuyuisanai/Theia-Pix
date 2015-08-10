@@ -56,7 +56,7 @@ struct airdog_status_s {
 	uint8_t state_main;     ///< AirDog-FMU's vehicle_status main_state
 	uint8_t state_aird;     ///< AirDog-FMU's vehicle_status airdog_state
 	uint8_t error_code;
-	uint8_t error_id;
+	uint8_t error_stamp;
  }; /**< command sent to vehicle */
 
 /**

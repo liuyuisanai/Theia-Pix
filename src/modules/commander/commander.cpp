@@ -260,7 +260,7 @@ void answer_command(struct vehicle_command_s &cmd, enum VEHICLE_CMD_RESULT resul
 int commander_set_error(int error_code)
 {
 	status.error_code = error_code;
-	status.error_id++;
+	status.error_stamp++;
 }
 
 int commander_main(int argc, char *argv[])
@@ -273,6 +273,7 @@ int commander_main(int argc, char *argv[])
 		long int code = 0;
 		char *endptr = nullptr;
 		code = strtol(argv[2], &endptr, 10);
+
 		if (endptr == nullptr || *endptr == 0)
 		{
 			commander_set_error((int)code);
