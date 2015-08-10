@@ -5,6 +5,7 @@
 
 /*
  * RFCOMM Frame Size, bytes in range 23..4096.
+ * If set to 0 packet_capacity will be used as RFCOMM automatically
  */
 PARAM_DEFINE_INT32(A_BT_S11_RFCOMM, 115);
 

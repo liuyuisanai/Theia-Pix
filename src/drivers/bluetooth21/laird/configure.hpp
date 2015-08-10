@@ -8,6 +8,8 @@
 #include "../std_util.hpp"
 
 #include "commands.hpp"
+#include "data_packet.hpp"
+#include "defs.hpp"
 #include "service_defs.hpp"
 #include "service_io.hpp"
 
@@ -75,7 +77,12 @@ configure_before_reboot(ServiceIO & io, uint8_t service_mode)
 {
 
 	const uint32_t reg12 = Params::get("A_BT_S12_LINK");
-	const uint32_t reg11 = Params::get("A_BT_S11_RFCOMM");
+	uint32_t reg11 = Params::get("A_BT_S11_RFCOMM");
+	// TODO! [AK] Consider automatic RFCOMM and packet_capacity based on mavlink packet size
+	if (reg11 == 0) {
+		reg11 = HostProtocol::DataPacket::packet_capacity< HostProtocol::LairdProtocol >();
+	}
+	dbg("reg11 RFCOMM is %d\n", reg11);
 	const uint32_t reg80 = Params::get("A_BT_S80_LATENCY");
 	const uint32_t reg84 = Params::get("A_BT_S84_POLL");
 
