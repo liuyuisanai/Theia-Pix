@@ -39,8 +39,9 @@ MODULE_COMMAND  = sdlog2
 # The main thread only buffers to RAM, needs a high priority
 MODULE_PRIORITY = "SCHED_PRIORITY_MAX-30"
 
-SRCS = sdlog2.c \
-       logbuffer.c \
-	   debug_data_log.cpp
+SRCS = sdlog2.c logbuffer.c \
+       debug_data_log.cpp \
+       directory.c \
+# END OF SRCS
 
 MODULE_STACKSIZE = 1500

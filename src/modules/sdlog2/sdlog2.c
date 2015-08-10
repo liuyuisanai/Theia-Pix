@@ -42,24 +42,25 @@
  */
 
 #include <nuttx/config.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/prctl.h>
-#include <fcntl.h>
+
+#include <ctype.h>
 #include <errno.h>
-#include <unistd.h>
-#include <stdio.h>
+#include <fcntl.h>
+#include <limits.h>
+#include <math.h>
 #include <poll.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
-#include <systemlib/err.h>
+#include <sys/prctl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
-#include <drivers/drv_hrt.h>
-#include <math.h>
-#include <dirent.h>
 
+#include <drivers/drv_hrt.h>
 #include <drivers/drv_range_finder.h>
+#include <systemlib/err.h>
 
 #include <uORB/uORB.h>
 #include <uORB/topics/vehicle_status.h>
@@ -106,6 +107,7 @@
 
 #include <mavlink/mavlink_log.h>
 
+#include "directory.h"
 #include "logbuffer.h"
 #include "sdlog2_format.h"
 #include "sdlog2_messages.h"
@@ -227,15 +229,16 @@ static bool main_thread_should_exit = false;		/**< Deamon exit flag */
 static bool thread_running = false;			/**< Deamon status flag */
 static int deamon_task;						/**< Handle of deamon task / thread */
 static bool logwriter_should_exit = false;	/**< Logwriter thread exit flag */
-static const unsigned MAX_NO_LOGFOLDER = 0xFFFF;	/**< Maximum number of log dirs */
-static const unsigned MAX_NO_LOGFILE = 0xFFFF;		/**< Maximum number of log files */
-static const int LOG_BUFFER_SIZE_DEFAULT = 8192;
-static const int MAX_WRITE_CHUNK = 512;
-static const int MIN_BYTES_TO_WRITE = 512;
+
+/**< Maximum number of log dirs */
+#define MAX_NO_LOGFOLDER 0xFFFF
+
+#define LOG_BUFFER_SIZE_DEFAULT 8192
+#define MAX_WRITE_CHUNK 512
+#define MIN_BYTES_TO_WRITE 512
 
 static bool _extended_logging = false;
 
-static const char *log_root = "/fs/microsd/log";
 static int mavlink_fd = -1;
 struct logbuffer_s lb;
 
@@ -317,8 +320,6 @@ static int write_version(int fd);
  */
 static int write_parameters(int fd);
 
-static bool file_exist(const char *filename);
-
 static int file_copy(const char *file_old, const char *file_new);
 
 //static void handle_command(struct vehicle_command_s *cmd);
@@ -330,14 +331,12 @@ static void handle_status(struct vehicle_status_s *cmd);
 /**
  * Create dir for current logging session. Store dir name in 'log_dir'.
  */
-static int create_log_dir(void);
+static int create_next_log_dir(void);
 
 /**
  * Select first free log file name and open it.
  */
-static int open_log_file(void);
-
-static int open_perf_file(const char* str);
+static int open_file(sdlog2_file_kind_t);
 
 static void
 sdlog2_usage(const char *reason)
@@ -353,178 +352,6 @@ sdlog2_usage(const char *reason)
 		 "\t-a\tLog only when armed (can be still overriden by command)\n"
 		 "\t-t\tUse date/time for naming log directories and files\n"
 		 "\t-x\tExtended logging");
-}
-
-static int64_t get_dir_size(const char *path)
-{
-    DIR *dir;
-    struct dirent *entry;
-    uint64_t totalSize = 0;
-    int path_len = strlen(path);
-
-    dir = opendir(path);
-
-    if (NULL == dir) {
-        return -1;
-    }
-
-    // read all dir entries
-    while ((entry = readdir(dir)) != NULL)
-    {
-        int r = 0;
-        struct stat st;
-        char buf[PATH_MAX];
-        int bufSize = 0;
-
-        if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."))
-        {
-           continue;
-        }
-
-        bufSize = path_len + 1 + strlen(entry->d_name) + 1;
-        buf[bufSize - 1] = 0;
-
-        strncpy(buf, path, bufSize);
-        strncat(buf, "/", bufSize - strlen(buf));
-        strncat(buf, entry->d_name, bufSize - strlen(buf));
-
-        r = stat(buf, &st);
-
-        if (r == -1)
-        {
-            // failed to get stat, try with next file
-            continue;
-        }
-
-        if (st.st_size > 0)
-        {
-            totalSize += st.st_size;
-        }
-
-        // if directory then we should check sub directories
-        if (S_ISDIR(st.st_mode))
-        {
-            totalSize += get_dir_size(buf);
-        }
-    }
-
-    closedir(dir);
-
-    return totalSize;
-}
-
-static void remove_dir(const char *path)
-{
-    DIR *dir;
-    struct dirent *entry;
-    int path_len = strlen(path);
-
-    dir = opendir(path);
-
-    if (NULL == dir) {
-        return;
-    }
-
-    // read all dir entries
-    while ((entry = readdir(dir)) != NULL)
-    {
-        int r = 0;
-        struct stat st;
-        char buf[PATH_MAX];
-        int bufSize = 0;
-
-        if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."))
-        {
-           continue;
-        }
-
-        bufSize = path_len + 1 + strlen(entry->d_name) + 1;
-        buf[bufSize - 1] = 0;
-
-        strncpy(buf, path, bufSize);
-        strncat(buf, "/", bufSize - strlen(buf));
-        strncat(buf, entry->d_name, bufSize - strlen(buf));
-
-        r = stat(buf, &st);
-
-        if (r == -1)
-        {
-            // failed to get stat, try with next file
-            continue;
-        }
-
-        // if directory then we should check sub directories
-        if (S_ISDIR(st.st_mode))
-        {
-            remove_dir(buf);
-        }
-        else
-        {
-            unlink(buf);
-        }
-    }
-
-    closedir(dir);
-
-    rmdir(path);
-}
-
-
-static int remove_oldest_dir()
-{
-    DIR *dir;
-    struct dirent *entry;
-    char oldest_dir[PATH_MAX];
-    int oldest_number = 0;
-    int log_root_len = strlen(log_root);
-
-    if (oldest_dir == NULL)
-    {
-        warnx("Unable to allocate buffer");
-        return -1;
-    }
-
-    dir = opendir(log_root);
-
-    if (NULL == dir)
-    {
-        warnx("opendir failed");
-        return -1;
-    }
-
-    strcpy(oldest_dir, log_root);
-    strcat(oldest_dir, "/");
-
-    // read all dir entries
-    while ((entry = readdir(dir)) != NULL)
-    {
-        int n = 0;
-        char *end;
-
-        n = strtol(entry->d_name, &end, 10);
-
-        if (end != NULL && *end != 0 && *end != '-')
-        {
-            // conversion failed
-            continue;
-        }
-
-        if (oldest_number == 0 || n < oldest_number)
-        {
-            oldest_number = n;
-            strcpy(oldest_dir + log_root_len + 1, entry->d_name);
-        }
-    }
-
-    closedir(dir);
-
-    if (oldest_number > 0)
-    {
-        warnx("remove %s\n", oldest_dir);
-        remove_dir(oldest_dir);
-    }
-
-    return 0;
 }
 
 /**
@@ -547,23 +374,23 @@ int sdlog2_main(int argc, char *argv[])
 
                 if (log_max_size != PARAM_INVALID)
                 {
-                        int32_t max_size = 0;
+                        int32_t max_size_MB = 0;
 
-                        param_get(log_max_size, &max_size);
+                        param_get(log_max_size, &max_size_MB);
 
                         while (1)
                         {
-                            int32_t log_size = (int32_t)(get_dir_size(log_root) / 1024 / 1024);
+                            uint64_t size_b = sdlog2_dir_size_recursive(sdlog2_root);
+                            int32_t size_MB = (int32_t)(size_b >> 20);
 
-                            if (log_size >= max_size)
+                            if (size_MB >= max_size_MB)
                             {
-                                warnx("Log size is too big. %d MB max allowed %d MB\n", log_size, max_size);
-                                remove_oldest_dir();
+                                warnx("Log size is too big. %d MB max allowed %d MB\n", size_MB, max_size_MB);
+                                sdlog2_dir_remove_oldest(sdlog2_root);
                                 continue;
                             }
                             break;
                         }
-
                 }
                 else
                 {
@@ -610,50 +437,22 @@ int sdlog2_main(int argc, char *argv[])
 	exit(1);
 }
 
-int create_log_dir()
+int create_next_log_dir()
 {
-	/* create dir on sdcard if needed */
-        uint16_t dir_number = 0; // start with dir 0001
-	int mkdir_ret;
-        DIR *dir;
-        struct dirent *entry;
+        char existing_path[PATH_MAX];
+        uint32_t dir_number = sdlog2_dir_find_closest_number_lt(existing_path, 0xFFffFFff, sdlog2_root);
+        int mkdir_ret = mkdir(sdlog2_root, S_IRWXU | S_IRWXG | S_IRWXO);
 
-        // find biggest session dir
-        dir = opendir(log_root);
-
-        if (NULL == dir) {
-            return -1;
-        }
-
-        // read all dir entries
-        while ((entry = readdir(dir)) != NULL)
-        {
-            int n = 0;
-            char *end;
-
-            n = strtol(entry->d_name, &end, 10);
-
-            if (end != NULL && *end != 0 && *end != '-')
-            {
-                // conversion failed
-                continue;
-            }
-
-            if (n > dir_number)
-            {
-                dir_number = n;
-            }
-        }
-
-        dir_number++;
-
-        closedir(dir);
+	/*
+	 * When no log exists, let dir_number overflow and start with 0.
+	 */
+        ++dir_number;
 
         /* look for the next dir that does not exist */
         while (dir_number <= MAX_NO_LOGFOLDER) {
-                /* format log dir: e.g. /fs/microsd/001-140101 */
+                /* format log dir: e.g. /fs/microsd/0000-140101 */
 
-                int n = sprintf(log_dir, "%s/%04u", log_root, dir_number);
+                int n = snprintf(log_dir, sizeof log_dir, "%s/%04u", sdlog2_root, dir_number);
                 if (gps_time != 0)
                 {
                     struct tm t;
@@ -690,87 +489,24 @@ int create_log_dir()
 	return 0;
 }
 
-int open_log_file()
+int open_file(sdlog2_file_kind_t kind)
 {
-	/* string to hold the path to the log */
-	char log_file_name[32] = "";
-	char log_file_path[64] = "";
-
-
-        uint16_t file_number = 1; // start with file log001
-
-        /* look for the next file that does not exist */
-        while (file_number <= MAX_NO_LOGFILE) {
-                /* format log file path: e.g. /fs/microsd/001/log001.bin */
-                snprintf(log_file_name, sizeof(log_file_name), "log%03u.bin", file_number);
-                snprintf(log_file_path, sizeof(log_file_path), "%s/%s", log_dir, log_file_name);
-
-                if (!file_exist(log_file_path)) {
-                        break;
-                }
-
-                file_number++;
-        }
-
-        if (file_number > MAX_NO_LOGFILE) {
-                /* we should not end up here, either we have more than MAX_NO_LOGFILE on the SD card, or another problem */
-                mavlink_log_critical(mavlink_fd, "[sdlog2] ERR: max files %d", MAX_NO_LOGFILE);
-                return -1;
-        }
-
-
-	int fd = open(log_file_path, O_CREAT | O_WRONLY | O_DSYNC);
-
-	if (fd < 0) {
-		warn("failed opening log: %s", log_file_name);
-		mavlink_log_critical(mavlink_fd, "[sdlog2] failed opening log: %s", log_file_name);
-
-	} else {
-		warnx("log file: %s", log_file_name);
-		mavlink_log_info(mavlink_fd, "[sdlog2] log file: %s", log_file_name);
+	char log_path[PATH_MAX];
+	int ok = sdlog2_filename(log_path, log_dir, kind);
+	if (!ok)
+	{
+		errno = ENOENT;
+		return -1;
 	}
 
-	return fd;
-}
-
-int open_perf_file(const char* str)
-{
-	/* string to hold the path to the log */
-	char log_file_name[32] = "";
-	char log_file_path[64] = "";
-
-        unsigned file_number = 1; // start with file log001
-
-        /* look for the next file that does not exist */
-        while (file_number <= MAX_NO_LOGFILE) {
-                /* format log file path: e.g. /fs/microsd/0001/log001.bin */
-                snprintf(log_file_name, sizeof(log_file_name), "perf%03u.txt", file_number);
-                snprintf(log_file_path, sizeof(log_file_path), "%s/%s_%s", log_dir, str, log_file_name);
-
-                printf("open_perf_file: %s\n", log_file_path);
-
-                if (!file_exist(log_file_path)) {
-                        break;
-                }
-
-                file_number++;
-        }
-
-        if (file_number > MAX_NO_LOGFILE) {
-                /* we should not end up here, either we have more than MAX_NO_LOGFILE on the SD card, or another problem */
-                mavlink_log_critical(mavlink_fd, "[sdlog2] ERR: max files %d", MAX_NO_LOGFILE);
-                return -1;
-        }
-
-	int fd = open(log_file_path, O_CREAT | O_WRONLY | O_DSYNC);
+	int fd = open(log_path, O_CREAT | O_EXCL | O_WRONLY | O_DSYNC);
 
 	if (fd < 0) {
-		warn("failed opening log: %s", log_file_name);
-		mavlink_log_critical(mavlink_fd, "[sdlog2] failed opening log: %s", log_file_name);
-
+		warn("failed opening log: %s", log_path);
+		mavlink_log_critical(mavlink_fd, "[sdlog2] failed opening log: %s", log_path);
 	} else {
-		warnx("log file: %s", log_file_name);
-		mavlink_log_info(mavlink_fd, "[sdlog2] log file: %s", log_file_name);
+		warnx("log file: %s", log_path);
+		mavlink_log_info(mavlink_fd, "[sdlog2] log file: %s", log_path);
 	}
 
 	return fd;
@@ -781,7 +517,7 @@ static void *logwriter_thread(void *arg)
 	/* set name */
 	prctl(PR_SET_NAME, "sdlog2_writer", 0);
 
-	int log_fd = open_log_file();
+	int log_fd = open_file(SDLOG2_FILE_LOG);
 
 	if (log_fd < 0) {
 		return NULL;
@@ -879,10 +615,10 @@ void sdlog2_start_log()
 	warnx("start logging");
 	mavlink_log_info(mavlink_fd, "[sdlog2] start logging");
 
-	/* create log dir if needed */
-	if (create_log_dir() != 0) {
+	if (create_next_log_dir() != 0) {
 		mavlink_log_critical(mavlink_fd, "[sdlog2] error creating log dir");
 		errx(1, "error creating log dir");
+		return;
 	}
 
 	/* initialize statistics counter */
@@ -909,7 +645,7 @@ void sdlog2_start_log()
 	}
 
 	/* write all performance counters */
-	int perf_fd = open_perf_file("preflight");
+	int perf_fd = open_file(SDLOG2_FILE_PREFLIGHT);
 	dprintf(perf_fd, "PERFORMANCE COUNTERS PRE-FLIGHT\n\n");
 	perf_print_all(perf_fd);
 	close(perf_fd);
@@ -944,7 +680,7 @@ void sdlog2_stop_log()
 	pthread_attr_destroy(&logwriter_attr);
 
 	/* write all performance counters */
-	int perf_fd = open_perf_file("postflight");
+	int perf_fd = open_file(SDLOG2_FILE_POSTFLIGHT);
 	dprintf(perf_fd, "PERFORMANCE COUNTERS POST-FLIGHT\n\n");
 	perf_print_all(perf_fd);
 	close(perf_fd);
@@ -1183,16 +919,16 @@ int sdlog2_thread_main(int argc, char *argv[])
 	}
 
 	/* create log root dir */
-	int mkdir_ret = mkdir(log_root, S_IRWXU | S_IRWXG | S_IRWXO);
+	int mkdir_ret = mkdir(sdlog2_root, S_IRWXU | S_IRWXG | S_IRWXO);
 
 	if (mkdir_ret != 0 && errno != EEXIST) {
-		err(1, "failed creating log root dir: %s", log_root);
+		err(1, "failed creating log root dir: %s", sdlog2_root);
 	}
 
 	/* copy conversion scripts */
 	const char *converter_in = "/etc/logging/conv.zip";
 	char *converter_out = malloc(64);
-	snprintf(converter_out, 64, "%s/conv.zip", log_root);
+	snprintf(converter_out, 64, "%s/conv.zip", sdlog2_root);
 
 	if (file_copy(converter_in, converter_out) != OK) {
 		warn("unable to copy conversion scripts");
@@ -2223,15 +1959,6 @@ void sdlog2_status()
 	warnx("wrote %lu msgs, %4.2f MiB (average %5.3f KiB/s), skipped %lu msgs", log_msgs_written, (double)mebibytes, (double)(kibibytes / seconds), log_msgs_skipped);
 	warnx("extended logging: %s", (_extended_logging) ? "ON" : "OFF");
 	mavlink_log_info(mavlink_fd, "[sdlog2] wrote %lu msgs, skipped %lu msgs", log_msgs_written, log_msgs_skipped);
-}
-
-/**
- * @return 0 if file exists
- */
-bool file_exist(const char *filename)
-{
-	struct stat buffer;
-	return stat(filename, &buffer) == 0;
 }
 
 int file_copy(const char *file_old, const char *file_new)
