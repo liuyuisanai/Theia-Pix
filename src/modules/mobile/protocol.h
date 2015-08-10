@@ -69,9 +69,11 @@ struct PACKED_STRUCT VersionFirmwareReply {
 };
 
 struct PACKED_STRUCT StatusOverallReply {
-	uint8_t gps_error_horizontal;
-	uint8_t gps_error_vertical;
 	uint8_t battery_level;
+	uint8_t eph;
+	uint8_t epv;
+	uint8_t error_code;
+	uint8_t error_stamp;
 };
 
 

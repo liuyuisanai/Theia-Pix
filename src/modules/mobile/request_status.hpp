@@ -23,18 +23,28 @@ battery(const StatusOverall & self, StatusOverallReply & r)
 	else { r.battery_level = status.battery_remaining * 255.0f; }
 }
 
+
+static inline void
+error(const StatusOverall & self, StatusOverallReply & r)
+{
+	auto status = orb_read(self.status);
+	r.error_code = status.error_code;
+	r.error_stamp = status.error_stamp;
+}
+
 static inline void
 position(const StatusOverall & self, StatusOverallReply & r)
 {
 	auto gpos = orb_read(self.gpos);
-	r.gps_error_horizontal = gpos.eph;
-	r.gps_error_vertical = gpos.epv;
+	r.eph = gpos.eph;
+	r.epv = gpos.epv;
 }
 
 static inline void
 fill_reply(const StatusOverall & self, StatusOverallReply & r)
 {
 	battery(self, r);
+	error(self, r);
 	position(self, r);
 }
 
