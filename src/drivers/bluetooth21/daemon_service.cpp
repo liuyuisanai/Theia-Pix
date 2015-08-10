@@ -1,14 +1,18 @@
 #include <nuttx/config.h>
+#include <poll.h>
 #include <pthread.h>
 #include <sys/ioctl.h>
+#include <errno.h>
 
 #include <cstdio>
+#include <cstring>
 #include <unistd.h>
 
 #include <drivers/drv_tone_alarm.h>
 #include <drivers/drv_hrt.h>
 
 #include <uORB/topics/bt_state.h>
+#include <uORB/topics/frame_button.h>
 
 #include "daemon.hpp"
 #include "device_connection_map.hpp"
@@ -86,20 +90,48 @@ pairing_done_this_cycle = false;
 static bool
 paired = false;
 
+static struct frame_button_s frame_butt_data;
+static uint64_t frame_timeout_ms;
+static int frame_button_sub = -1;
+
 static pthread_t
 thread;
 
 static pthread_attr_t
 thread_attr;
 
-#define _BLUETOOTH21_BASE		0x2d00
+bool
+frame_button_poll(){
+    bool result = false;
+    bool updated = false;
 
-#define PAIRING_ON			_IOC(_BLUETOOTH21_BASE, 0)
-#define PAIRING_OFF			_IOC(_BLUETOOTH21_BASE, 1)
-#define PAIRING_TOGGLE		_IOC(_BLUETOOTH21_BASE, 2)
+    if (frame_button_sub == -1)
+    {
+        DOG_PRINT("[bluetooth21] still subscribing\n");
+        frame_button_sub = orb_subscribe(ORB_ID(frame_button_state));
+    }
+    else {
+        orb_check(frame_button_sub, &updated);
+        if (updated)
+        {
+            orb_copy(ORB_ID(frame_button_state), frame_button_sub, &frame_butt_data);
+            result = true;
+        }
+    }
+    return result;
+}
 
 bool
 check_pairing_enabled(){
+    bool result = frame_button_poll();
+    if (result)
+    {
+        if (frame_butt_data.state == LONG_KEYPRESS)
+        {
+            Globals::Service::toggle_pairing();
+        }
+    }
+
     return Globals::Service::get_pairing_status();
 }
 
