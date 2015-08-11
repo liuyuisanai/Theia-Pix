@@ -8,7 +8,7 @@
 #include <uORB/uORB.h>
 #include <uORB/topics/vehicle_command.h>
 
-#include "main.h"
+#include "menu.h"
 #include "../datamanager.h"
 #include "../displayhelper.h"
 #include "../../airdog/calibrator/calibrator.hpp"
@@ -88,12 +88,12 @@ Base* Calibrate::doEvent(int orbId)
                     sendAirDogCommnad(VEHICLE_CMD_PREFLIGHT_CALIBRATION, 0, 0, 0, 0, 0, 0, 1);
                     break;
             }
-            nextMode = new Main();
+            nextMode = new Menu();
         }
         else if (key_pressed(BTN_OK) &&
                  CALIBRATOR_FINISH == DataManager::instance()->calibrator.status)
         {
-            nextMode = new Main();
+            nextMode = new Menu();
         }
     }
     else if (orbId == FD_Calibrator)
