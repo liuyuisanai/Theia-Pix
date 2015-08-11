@@ -10,7 +10,7 @@ const char *getErrorMessageText(int errorCode)
             result = "OK";
             break;
         case 1:
-            result = "first line\nsecond line\nthird line";
+            result = "Please activate\nyour Airdog\nvia mobile app";
             break;
     }
 

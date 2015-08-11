@@ -17,9 +17,7 @@ public:
     virtual void listenForEvents(bool awaitMask[]);
     virtual Base* doEvent(int orbId);
 
-    void setList(const char **pLines, int pCount);
-    void setIndex(int x, int y);
-
+    virtual bool onError(int errorCode);
 protected:
     bool isErrorShowed;
     int lastErrorCode;

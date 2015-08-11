@@ -102,6 +102,7 @@
 #include <systemlib/state_table.h>
 #include <dataman/dataman.h>
 #include <airdog/calibrator/calibrator.hpp>
+#include <airdog/activation.hpp>
 
 #include "px4_custom_mode.h"
 #include "commander_helper.h"
@@ -452,9 +453,25 @@ bool handle_command(struct vehicle_status_s *status_local
         , int _user_camera_offset_sub
         , struct camera_user_offsets_s *camera_offset)
 {
+    static bool isActivated = false;
+
 	/* only handle commands that are meant to be handled by this system and component */
 	if (cmd->target_system != status_local->system_id || ((cmd->target_component != status_local->component_id) && (cmd->target_component != 0))) { // component_id 0: valid for all components
 		return false;
+	}
+
+	if (!isActivated)
+	{
+		uint8_t status = AirDog::activation::get();
+		if (status)
+		{
+			isActivated = true;
+		}
+		else
+		{
+			commander_set_error(COMMANDER_ERROR_NOT_ACTIVATED);
+			return false;
+		}
 	}
 
 	/* result of the command */

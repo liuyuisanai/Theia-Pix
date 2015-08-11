@@ -251,6 +251,12 @@ Base* Main::doEvent(int orbId)
     return nextMode;
 }
 
+bool Main::onError(int errorCode)
+{
+    baseCondition.sub = NONE;
+    return false;
+}
+
 Base* Main::makeAction()
 {
     Base *nextMode = nullptr;

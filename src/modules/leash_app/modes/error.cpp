@@ -47,7 +47,11 @@ Base* Error::doEvent(int orbId)
             lastErrorCode = DataManager::instance()->airdog_status.error_code;
             isErrorShowed = true;
             time(&lastErrorTime);
-            DisplayHelper::showInfo(INFO_ERROR, lastErrorCode);
+
+            if (!onError(lastErrorCode))
+            {
+                DisplayHelper::showInfo(INFO_ERROR, lastErrorCode);
+            }
         }
     }
     else if (orbId == FD_KbdHandler)
@@ -66,6 +70,11 @@ Base* Error::doEvent(int orbId)
         isErrorShowed = false;
     }
     return nullptr;
+}
+
+bool Error::onError(int errorCode)
+{
+    return false;
 }
 
 }

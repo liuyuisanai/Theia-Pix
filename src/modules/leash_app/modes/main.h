@@ -17,6 +17,8 @@ public:
     virtual int getTimeout();
     virtual void listenForEvents(bool awaitMask[]);
     virtual Base* doEvent(int orbId);
+
+    virtual bool onError(int errorCode);
 private:
     enum MainStates
     {

@@ -487,7 +487,6 @@ void Screen::showInfo(int info, int error)
 {
     const int rowCount = 4;
     struct TextInfo text[rowCount];
-    char bufferError[16]; // buffer for Error X text
     char buffer[60]; // buffer for error message
 
     memset(text, 0, sizeof(text));
@@ -627,8 +626,7 @@ void Screen::showInfo(int info, int error)
             break;
 
         case INFO_ERROR:
-            snprintf(bufferError, sizeof(bufferError), "Error %d", error);
-            text[0].text = bufferError;
+            text[0].text = "Error";
             text[0].font = &Font::LucideGrandeMed;
 
             const char *errorText = getErrorMessageText(error);
