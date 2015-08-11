@@ -18,7 +18,9 @@ static inline void
 battery(const StatusOverall & self, StatusOverallReply & r)
 {
 	auto status = orb_read(self.status);
-	r.battery_level = status.battery_remaining * 100.0f;
+	if (status.battery_remaining <= 0) { r.battery_level = 0; }
+	else if (status.battery_remaining >= 1) { r.battery_level = 255; }
+	else { r.battery_level = status.battery_remaining * 255.0f; }
 }
 
 static inline void
