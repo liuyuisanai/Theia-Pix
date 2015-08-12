@@ -72,7 +72,7 @@
 #include <systemlib/cpuload.h>
 #include <systemlib/perf_counter.h>
 
-#include <../frame_button/driver.h>
+#include "../frame_button/driver.h"
 
 /****************************************************************************
  * Pre-Processor Definitions
