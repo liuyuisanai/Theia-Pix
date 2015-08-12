@@ -25,7 +25,6 @@ MODULES		+= drivers/bluetooth21/tests/bluetooth21_devtest
 MODULES		+= drivers/boards/AirDogFMU/$(CONFIG_BOARD_REVISION)
 MODULES		+= drivers/boards/AirDogFMU/frame_button
 MODULES		+= drivers/calibration
-MODULES		+= drivers/calibration
 MODULES		+= drivers/device
 MODULES		+= drivers/frsky_telemetry
 MODULES		+= drivers/gps
