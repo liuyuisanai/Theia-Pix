@@ -449,20 +449,7 @@ Base* Menu::switchEntry(int newEntry)
     }
     else if (newEntry == MENUENTRY_EXIT)
     {
-        DataManager *dm = DataManager::instance();
-        if (dm->bt_handler.global_state == GLOBAL_BT_STATE::NO_PAIRED_DEVICES)
-        {
-            nextMode = new ModeConnect();
-        }
-        else if (dm->vehicle_status.condition_home_position_valid == false
-                && dm->localPos.xy_valid == false)
-        {
-            nextMode = new Acquiring_gps();
-        }
-        else
-        {
-            nextMode = new Main();
-        }
+        nextMode = new ModeConnect();
     }
     else if (newEntry < MENUENTRY_SIZE && newEntry >= 0)
     {

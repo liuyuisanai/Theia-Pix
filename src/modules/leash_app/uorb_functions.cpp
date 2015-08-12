@@ -77,3 +77,22 @@ void send_arm_command(const airdog_status_s &s)
     DOG_PRINT("[leash_app]{UORB} sending arm command\n");
     orb_advertise(ORB_ID(vehicle_command), &cmd);
 }
+
+void send_rtl_command(const airdog_status_s &s)
+{
+    struct vehicle_command_s cmd;
+
+	uint8_t mode = s.base_mode
+			| MAV_MODE_FLAG_SAFETY_ARMED
+			| MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
+
+    cmd.command = VEHICLE_CMD_DO_SET_MODE;
+    cmd.param1 = mode;
+    cmd.param2 = PX4_CUSTOM_MAIN_MODE_RTL;
+    cmd.param3 = 0;
+    cmd.target_system = 1;
+    cmd.target_component = 50;
+
+    DOG_PRINT("[leash_app]{UORB} sending rtl command\n");
+    orb_advertise(ORB_ID(vehicle_command), &cmd);
+}

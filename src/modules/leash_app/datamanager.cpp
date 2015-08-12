@@ -17,6 +17,7 @@ DataManager::DataManager()
     orbId[FD_DroneLocalPos] = ORB_ID(target_global_position);
     orbId[FD_DroneRowGPS] = ORB_ID(target_gps_raw);
     orbId[FD_KbdHandler] = ORB_ID(kbd_handler);
+    orbId[FD_LeashGlobalPos] = ORB_ID(vehicle_global_position);
     orbId[FD_LeashRowGPS] = ORB_ID(vehicle_gps_position);
     orbId[FD_LocalPos] = ORB_ID(vehicle_local_position);
     orbId[FD_MavlinkStatus] = ORB_ID(mavlink_receive_stats);
@@ -38,17 +39,18 @@ DataManager::DataManager()
     memset(orbData, 0, sizeof(orbData));
 
     orbData[FD_AirdogStatus] = &airdog_status;
-    orbData[FD_VehicleStatus] = &vehicle_status;
-    orbData[FD_SystemPower] = &system_power;
-    orbData[FD_KbdHandler] = &kbd_handler;
     orbData[FD_BLRHandler] = &bt_handler;
-    orbData[FD_Calibrator] = &calibrator;
-    orbData[FD_LocalPos] = &localPos;
     orbData[FD_BTLinkQuality] = &btLinkQuality;
+    orbData[FD_Calibrator] = &calibrator;
     orbData[FD_DroneLocalPos] = &droneLocalPos;
-    orbData[FD_MavlinkStatus] = &mavlink_received_stats;
     orbData[FD_DroneRowGPS] = &droneRawGPS;
+    orbData[FD_KbdHandler] = &kbd_handler;
+    orbData[FD_LeashGlobalPos] = &leashGlobalPos;
     orbData[FD_LeashRowGPS] = &leashRawGPS;
+    orbData[FD_LocalPos] = &localPos;
+    orbData[FD_MavlinkStatus] = &mavlink_received_stats;
+    orbData[FD_SystemPower] = &system_power;
+    orbData[FD_VehicleStatus] = &vehicle_status;
 
     // clear
     memset(awaitMask, 0, sizeof(awaitMask));

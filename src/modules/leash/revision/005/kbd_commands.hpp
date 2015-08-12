@@ -28,7 +28,7 @@ struct handle<MODE, EventKind::SHORT_KEYPRESS, BTN_MASK_PLAY, When<
 	exec(App & app)
 	{
 		say("FLIGHT SHORT_KEYPRESS PLAY");
-		app.drone_cmd.send_command(REMOTE_CMD_PLAY_PAUSE);
+		//app.drone_cmd.send_command(REMOTE_CMD_PLAY_PAUSE);
 	}
 };
 
@@ -40,8 +40,8 @@ struct handle<MODE, EventKind::SHORT_KEYPRESS, BTN_MASK_TO_H, When<
 	exec(App & app)
 	{
 		say("FLIGHT/FLIGHT_ALT/FLIGHT_CAM SHORT_KEYPRESS (H)");
-		if (app.drone_status.in_air())
-			app.drone_cmd.send_command(REMOTE_CMD_LAND_DISARM);
+		//if (app.drone_status.in_air())
+			//app.drone_cmd.send_command(REMOTE_CMD_LAND_DISARM);
 	}
 };
 
@@ -53,7 +53,7 @@ struct handle<MODE, EventKind::LONG_KEYPRESS, BTN_MASK_TO_H, When<
 	exec(App & app)
 	{
 		say("FLIGHT/FLIGHT_ALT/FLIGHT_CAM LONG_KEYPRESS (H)");
-		app.drone_cmd.send_rtl_command(app.drone_status);
+		//app.drone_cmd.send_rtl_command(app.drone_status);
 	}
 };
 
@@ -106,7 +106,7 @@ struct handle<ModeId::FLIGHT, EventKind::SHORT_KEYPRESS, BTN_MASK_UP>
 	exec(App & app)
 	{
 		say("A");
-		app.drone_cmd.send_command(REMOTE_CMD_UP);
+		//app.drone_cmd.send_command(REMOTE_CMD_UP);
 	}
 };
 
@@ -117,7 +117,7 @@ struct handle<ModeId::FLIGHT, EventKind::SHORT_KEYPRESS, BTN_MASK_DOWN>
 	exec(App & app)
 	{
 		say("B");
-		app.drone_cmd.send_command(REMOTE_CMD_DOWN);
+		//app.drone_cmd.send_command(REMOTE_CMD_DOWN);
 	}
 };
 
@@ -129,7 +129,7 @@ struct handle< ModeId::FLIGHT, EVENT, BTN_MASK_LEFT, When<
 	exec(App & app)
 	{
 		say("C");
-		app.drone_cmd.send_command(REMOTE_CMD_LEFT);
+		//app.drone_cmd.send_command(REMOTE_CMD_LEFT);
 	}
 };
 
@@ -141,7 +141,7 @@ struct handle< ModeId::FLIGHT, EVENT, BTN_MASK_RIGHT, When<
 	exec(App & app)
 	{
 		say("D");
-		app.drone_cmd.send_command(REMOTE_CMD_RIGHT);
+		//app.drone_cmd.send_command(REMOTE_CMD_RIGHT);
 	}
 };
 
@@ -158,7 +158,7 @@ struct handle< ModeId::FLIGHT_ALT, EVENT, BTN_MASK_UP, When<
 	exec(App & app)
 	{
 		say("E");
-		app.drone_cmd.send_command(REMOTE_CMD_FURTHER);
+		//app.drone_cmd.send_command(REMOTE_CMD_FURTHER);
 	}
 };
 
@@ -170,7 +170,7 @@ struct handle< ModeId::FLIGHT_ALT, EVENT, BTN_MASK_DOWN, When<
 	exec(App & app)
 	{
 		say("F");
-		app.drone_cmd.send_command(REMOTE_CMD_CLOSER);
+		//app.drone_cmd.send_command(REMOTE_CMD_CLOSER);
 	}
 };
 
@@ -182,7 +182,7 @@ struct handle< ModeId::FLIGHT_ALT, EVENT, BTN_MASK_LEFT, When<
 	exec(App & app)
 	{
 		say("F");
-		app.drone_cmd.send_command(REMOTE_CMD_LEFT);
+		//app.drone_cmd.send_command(REMOTE_CMD_LEFT);
 	}
 };
 
@@ -194,7 +194,7 @@ struct handle< ModeId::FLIGHT_ALT, EVENT, BTN_MASK_RIGHT, When<
 	exec(App & app)
 	{
 		say("F");
-		app.drone_cmd.send_command(REMOTE_CMD_RIGHT);
+		//app.drone_cmd.send_command(REMOTE_CMD_RIGHT);
 	}
 };
 
@@ -210,7 +210,7 @@ struct handle< ModeId::FLIGHT_CAM, EVENT, BTN_MASK_UP, When<
 	exec(App & app)
 	{
 		say("Camera up");
-		app.drone_cmd.send_command(REMOTE_CMD_CAM_UP);
+		//app.drone_cmd.send_command(REMOTE_CMD_CAM_UP);
 	}
 };
 
@@ -222,7 +222,7 @@ struct handle< ModeId::FLIGHT_CAM, EVENT, BTN_MASK_DOWN, When<
 	exec(App & app)
 	{
 		say("Camera down");
-		app.drone_cmd.send_command(REMOTE_CMD_CAM_DOWN);
+		//app.drone_cmd.send_command(REMOTE_CMD_CAM_DOWN);
 	}
 };
 
@@ -234,7 +234,7 @@ struct handle< ModeId::FLIGHT_CAM, EVENT, BTN_MASK_LEFT, When<
 	exec(App & app)
 	{
 		say("Camera left");
-		app.drone_cmd.send_command(REMOTE_CMD_CAM_LEFT);
+		//app.drone_cmd.send_command(REMOTE_CMD_CAM_LEFT);
 	}
 };
 
@@ -246,7 +246,7 @@ struct handle< ModeId::FLIGHT_CAM, EVENT, BTN_MASK_RIGHT, When<
 	exec(App & app)
 	{
 		say("Camera right");
-		app.drone_cmd.send_command(REMOTE_CMD_CAM_RIGHT);
+		//app.drone_cmd.send_command(REMOTE_CMD_CAM_RIGHT);
 	}
 };
 
@@ -257,7 +257,7 @@ struct handle<ModeId::FLIGHT_CAM, EventKind::LONG_KEYPRESS, BTN_MASK_POWER>
 	exec(App & app)
 	{
 		say("FLIGHT_CAM LONG_KEYPRESS OK");
-		app.drone_cmd.send_command(REMOTE_CMD_CAM_RESET);
+		//app.drone_cmd.send_command(REMOTE_CMD_CAM_RESET);
 	}
 };
 
@@ -270,7 +270,7 @@ struct handle<MODE, EventKind::SHORT_KEYPRESS, BTN_MASK_TO_ME, When<
 	exec(App & app)
 	{
 		say("Send come to me");
-		app.drone_cmd.send_come_to_me_command();
+		//app.drone_cmd.send_come_to_me_command();
 	}
 };
 

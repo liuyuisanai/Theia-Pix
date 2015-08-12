@@ -16,3 +16,5 @@ extern void sendAirDogCommnad(enum VEHICLE_CMD command,
                              float param7 = 0);
 
 extern void send_arm_command(const airdog_status_s &s);
+
+extern void send_rtl_command(const airdog_status_s &s);

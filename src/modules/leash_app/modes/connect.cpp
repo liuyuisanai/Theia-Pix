@@ -1,7 +1,6 @@
 #include "connect.h"
 #include "menu.h"
 #include "acquiring_gps.h"
-#include "service.h"
 
 #include <stdio.h>
 #include <sys/ioctl.h>
@@ -66,7 +65,6 @@ int ModeConnect::getTimeout()
 Base* ModeConnect::doEvent(int orbId)
 {
     Base *nextMode = nullptr;
-    DataManager *dm = DataManager::instance();
     getConState();
 
     if (orbId == FD_BLRHandler)
@@ -107,34 +105,21 @@ Base* ModeConnect::doEvent(int orbId)
                 BTPairing(true);
             }
         }
-        else if (key_ShortPressed(BTN_MODE))
+        else if (key_pressed(BTN_MODE)) 
         {
-            if (currentState == State::NOT_PAIRED)
+            switch (currentState)
             {
-                nextMode = new Menu();
+                case State::NOT_PAIRED:
+                case State::CONNECTING:
+                case State::UNKNOWN:
+                    nextMode = new Menu();
+                    break;
+                case State::PAIRING:
+                    DOG_PRINT("[modes]{connection} stop pairing!\n");
+                    BTPairing(false);
+                    break;
+
             }
-        }
-        else if (key_LongPressed(BTN_MODE)) 
-        {
-            if (currentState == State::PAIRING)
-            {
-                DOG_PRINT("[modes]{connection} stop pairing!\n");
-                BTPairing(false);
-            }
-            else if (currentState == State::UNKNOWN)
-            {
-                DOG_PRINT("[modes]{connection} unknown connection state!\n");
-                nextMode = new Menu();
-            }
-            else if (currentState == State::CONNECTING)
-            {
-                DOG_PRINT("[modes]{connection} connecting now, switching to main menu!\n");
-                nextMode = new Menu();
-            }
-        }
-        else if (dm->kbd_handler.currentMode == (int) ModeId::SHORTCUT)
-        {
-            nextMode = new Service();
         }
     }
     else if (orbId == FD_MavlinkStatus && currentState == State::CHECK_MAVLINK)
@@ -163,6 +148,12 @@ Base* ModeConnect::doEvent(int orbId)
             nextMode = new Acquiring_gps();
         }
     }
+
+    // Check if we are in service screen
+    Base* service = checkServiceScreen(orbId);
+    if (service)
+        nextMode = service;
+
     return nextMode;
 }
 

@@ -11,6 +11,7 @@
 #include <uORB/topics/system_power.h>
 #include <uORB/topics/target_global_position.h>
 #include <uORB/topics/target_gps_raw.h>
+#include <uORB/topics/vehicle_global_position.h>
 #include <uORB/topics/vehicle_gps_position.h>
 #include <uORB/topics/vehicle_local_position.h>
 #include <uORB/topics/vehicle_status.h>
@@ -19,17 +20,19 @@ enum Orbs
 {
     FD_AirdogStatus = 0,
     FD_BLRHandler,
+    FD_BTLinkQuality,
     FD_Calibrator,
+    FD_DroneLocalPos,
     FD_DroneRowGPS,
     FD_KbdHandler,
+    FD_LeashGlobalPos,
     FD_LeashRowGPS,
     FD_LocalPos,
-    FD_DroneLocalPos,
     FD_MavlinkStatus,
-    FD_BTLinkQuality,
     FD_SystemPower,
     FD_VehicleStatus,
-    FD_Size
+    // Values should be added above this line 
+    FD_Size,
 };
 
 class DataManager
@@ -51,6 +54,7 @@ public:
     struct target_gps_raw_s droneRawGPS;
     struct bt_link_status_s  btLinkQuality;
     struct target_global_position_s  droneLocalPos;
+    struct vehicle_global_position_s leashGlobalPos;
     struct vehicle_gps_position_s leashRawGPS;
     struct vehicle_local_position_s localPos;
     struct vehicle_status_s vehicle_status;

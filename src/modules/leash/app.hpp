@@ -212,19 +212,6 @@ struct App
 			}
 			mode = transition_next_mode;
 
-            static orb_advert_t to_kh = 0;
-            struct kbd_handler_s kh;
-            kh.currentMode = (int)mode;
-            kh.buttons = 0;
-            kh.event = 0;
-            if (to_kh > 0)
-            {
-                orb_publish(ORB_ID(kbd_handler), to_kh, &kh);
-            }
-            else
-            {
-                to_kh = orb_advertise(ORB_ID(kbd_handler), &kh);
-            }
 			transition_requested = false;
 			timeout_keypress.restart(now, mode);
 		}

@@ -6,7 +6,6 @@
 #include <uORB/topics/vehicle_status.h>
 
 #include "connect.h"
-#include "service.h"
 #include "menu.h"
 #include "../displayhelper.h"
 #include "../uorb_functions.h"
@@ -48,6 +47,7 @@ void Main::listenForEvents(bool awaitMask[])
     awaitMask[FD_AirdogStatus] = 1;
     awaitMask[FD_KbdHandler] = 1;
     awaitMask[FD_BLRHandler] = 1;
+    awaitMask[FD_LeashGlobalPos] = 1;
 }
 
 Base* Main::processGround(int orbId)
@@ -65,10 +65,6 @@ Base* Main::processGround(int orbId)
         {
             baseCondition.sub = CONFIRM_TAKEOFF;
             nextMode = makeAction();
-        }
-        else if (dm->kbd_handler.currentMode == (int)ModeId::SHORTCUT)
-        {
-            baseCondition.sub = SERVICE;
         }
         else
         {
@@ -211,9 +207,6 @@ Base* Main::doEvent(int orbId)
             case CONFIRM_TAKEOFF:
                 nextMode = processTakeoff(orbId);
                 break;
-            case SERVICE:
-                nextMode = new Service();
-                break;
             default:
                 DOG_PRINT("[leash_app]{main} unexpected sub condition, got %d\n", baseCondition.sub);
                 break;
@@ -237,16 +230,17 @@ Base* Main::doEvent(int orbId)
             case RTL:
                 nextMode = processLandRTL(orbId);
                 break;
-            case SERVICE:
-                nextMode = new Service();
-                break;
             default:
                 DOG_PRINT("[leash_app]{main} unexpected sub condition, got %d\n", baseCondition.sub);
                 break;
         }
     }
     }
-    //printf("[leash_app]{main screen} condition %d.%d\n", baseCondition.main, baseCondition.sub);
+
+    // Check if we are in service screen
+    Base* service = checkServiceScreen(orbId);
+    if (service)
+        nextMode = service;
 
     return nextMode;
 }
@@ -370,25 +364,26 @@ Base* Main::processFlight(int orbId)
             baseCondition.sub = LANDING;
         }
     }
-    else if (orbId == FD_KbdHandler && !ignoreKeyEvent)
+    else if (orbId == FD_KbdHandler)
     {
         DOG_PRINT("we are here!!!!!!!!!\n");
-        if (dm->kbd_handler.currentMode == (int)ModeId::SHORTCUT)
+        if ( key_LongPressed(BTN_MODE))
         {
-            DOG_PRINT("[main]{flight} future button pressed\n");
-            baseCondition.sub = SERVICE;
+            if (baseCondition.main == IN_FLINGHT)
+            {
+                baseCondition.main = MANUAL_FLIGHT;
+                displayInfo.mode = MAINSCREEN_INFO_SUB;
+            }
+            else if (baseCondition.main == MANUAL_FLIGHT)
+            {
+                baseCondition.main = IN_FLINGHT;
+                displayInfo.mode = MAINSCREEN_INFO;
+            }
         }
-        else if (dm->kbd_handler.currentMode == (int)ModeId::FLIGHT)
+        else
         {
-            DOG_PRINT("[main_scrren]{flight}handler changing state to FLIGHT\n");
-            displayInfo.mode = MAINSCREEN_INFO;
+            decide_command(baseCondition.main);
         }
-        else if (dm->kbd_handler.currentMode == (int)ModeId::FLIGHT_ALT)
-        {
-            DOG_PRINT("[main_scrren]{flight}handler changing state to FLIGHT_ALT\n");
-            displayInfo.mode = MAINSCREEN_INFO_SUB;
-        }
-
     }
     nextMode = makeAction();
     return nextMode;
@@ -417,8 +412,69 @@ Base* Main::processLandRTL(int orbId)
             baseCondition.sub = RTL;
         }
     }
+    else if (orbId == FD_KbdHandler)
+    {
+        decide_command(baseCondition.main);
+    }
     nextMode = makeAction();
     return nextMode;
+}
+
+void Main::decide_command(MainStates mainState)
+{
+    DataManager *dm = DataManager::instance();
+
+    if (key_ShortPressed(BTN_LEFT))
+        sendAirDogCommnad(VEHICLE_CMD_NAV_REMOTE_CMD, REMOTE_CMD_LEFT);
+
+    else if (key_ShortPressed(BTN_RIGHT))
+        sendAirDogCommnad(VEHICLE_CMD_NAV_REMOTE_CMD, REMOTE_CMD_RIGHT);
+
+    else if (key_ShortPressed(BTN_PLAY))
+        sendAirDogCommnad(VEHICLE_CMD_NAV_REMOTE_CMD, REMOTE_CMD_PLAY_PAUSE);
+
+    else if (key_ShortPressed(BTN_TO_ME))
+        sendAirDogCommnad(VEHICLE_CMD_NAV_REMOTE_CMD
+                , REMOTE_CMD_COME_TO_ME
+                , dm->leashGlobalPos.lat
+                , dm->leashGlobalPos.lon);
+
+    else if (key_ShortPressed(BTN_TO_H))
+        sendAirDogCommnad(VEHICLE_CMD_NAV_REMOTE_CMD, REMOTE_CMD_LAND_DISARM);
+
+    else if (key_LongPressed(BTN_TO_H))
+        send_rtl_command(dm->airdog_status);
+
+    else if (key_ShortPressed(BTN_UP))
+    {
+        switch(mainState)
+        {
+            case IN_FLINGHT:
+                sendAirDogCommnad(VEHICLE_CMD_NAV_REMOTE_CMD, REMOTE_CMD_UP);
+                break;
+            case MANUAL_FLIGHT:
+                sendAirDogCommnad(VEHICLE_CMD_NAV_REMOTE_CMD, REMOTE_CMD_FURTHER);
+                break;
+            default:
+                DOG_PRINT("[modes]{decide_command} not supported mainState: %d\n", mainState);
+                break;
+        }
+    }
+    else if (key_ShortPressed(BTN_DOWN))
+    {
+        switch(mainState)
+        {
+            case IN_FLINGHT:
+                sendAirDogCommnad(VEHICLE_CMD_NAV_REMOTE_CMD, REMOTE_CMD_DOWN);
+                break;
+            case MANUAL_FLIGHT:
+                sendAirDogCommnad(VEHICLE_CMD_NAV_REMOTE_CMD, REMOTE_CMD_CLOSER);
+                break;
+            default:
+                DOG_PRINT("[modes]{decide_command} not supported mainState: %d\n", mainState);
+                break;
+        }
+    }
 }
 
 } //end of namespace modes

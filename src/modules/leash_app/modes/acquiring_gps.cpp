@@ -7,7 +7,6 @@
 
 #include "main.h"
 #include "menu.h"
-#include "service.h"
 
 //TODO[AK] These constants taken from position_estimator_inav, should by parametrized I guess
 static const float min_eph_epv = 2.0f;	// min EPH/EPV, used for weight calculation
@@ -64,10 +63,6 @@ Base* Acquiring_gps::doEvent(int orbId)
         {
             nextMode = new Menu();
         }
-        else if (dm->kbd_handler.currentMode == (int)ModeId::SHORTCUT)
-        {
-            nextMode = new Service();
-        }
     }
     else if (orbId == FD_LocalPos)
     {
@@ -87,7 +82,12 @@ Base* Acquiring_gps::doEvent(int orbId)
     {
         drone_has_gps = drone_status(dm);
     }
-    //nextMode = new Main();
+
+    // Check if we are in service screen
+    Base* service = checkServiceScreen(orbId);
+    if (service)
+        nextMode = service;
+
     return nextMode;
 }
 

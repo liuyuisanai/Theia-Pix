@@ -23,7 +23,8 @@ private:
     enum MainStates
     {
         GROUNDED = 0, 
-        IN_FLINGHT
+        IN_FLINGHT,
+        MANUAL_FLIGHT,
     };
     enum SubStates
     {
@@ -40,8 +41,6 @@ private:
         TAKING_OFF,
         LANDING,
         RTL,
-        // -- Service screen --
-        SERVICE,
     };
     struct Condition
     {
@@ -69,6 +68,8 @@ private:
     Base* processLandRTL(int orbId);
     Base* processHelp(int orbId);
     Base* processFlight(int orbId);
+
+    void decide_command(MainStates mainState);
 };
 
 }

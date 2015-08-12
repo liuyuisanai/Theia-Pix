@@ -64,19 +64,8 @@ Base* Service::doEvent(int orbId)
     }
     else if (orbId == FD_KbdHandler)
     {
-        if (dm->kbd_handler.buttons == 0)
-        {
-            switch(dm->kbd_handler.currentMode)
-            {
-                case (int)ModeId::FLIGHT:
-                case (int)ModeId::FLIGHT_ALT:
-                    nextMode = new Main();
-                    break;
-                default:
-                    nextMode = new ModeConnect();
-                    break;
-            }
-        }
+        if (key_LongPressed(BTN_FUTURE))
+                nextMode = new ModeConnect();
     }
 
     return nextMode;
