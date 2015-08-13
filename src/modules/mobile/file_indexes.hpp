@@ -15,7 +15,7 @@ enum FileCatalog : uint8_t
 {
 	INVALID,
 	ACTIVITY,
-	AUTHENCITY,
+	AUTHENTICITY,
 	LOGS,
 	PUBLIC,
 };
@@ -23,7 +23,7 @@ enum FileCatalog : uint8_t
 FileCatalog
 catalog(file_index_t index)
 {
-	if (index == 0) { return FileCatalog::AUTHENCITY; }
+	if (index == 0) { return FileCatalog::AUTHENTICITY; }
 	if (index == 1) { return FileCatalog::PUBLIC; }
 	if ((index >> 16) == 0x0001) { return FileCatalog::ACTIVITY; }
 	if ((index >> 24) == 0x80) { return FileCatalog::LOGS; }
