@@ -21,12 +21,15 @@
 namespace modes
 {
 
-ModeConnect::ModeConnect(State Current)
-    : currentState(Current)
+ModeConnect::ModeConnect(State Current) : 
+    forcing_pairing(false),
+    currentState(Current)
 {
     if (Current == State::PAIRING)
     {
+        forcing_pairing = true;
         BTPairing();
+        DisplayHelper::showInfo(INFO_PAIRING);
     }
     else
     {
@@ -65,36 +68,40 @@ int ModeConnect::getTimeout()
 Base* ModeConnect::doEvent(int orbId)
 {
     Base *nextMode = nullptr;
-    getConState();
-
-    if (orbId == FD_BLRHandler)
+    if (forcing_pairing)
     {
-        if (currentState == State::CONNECTING)
-        {
-            DisplayHelper::showInfo(INFO_CONNECTING_TO_AIRDOG);
-        }
-        else if (currentState == State::CONNECTED)
-        {
-            currentState = State::CHECK_MAVLINK;
-            time(&startTime);
-        }
-        else if (currentState == State::DISCONNECTED)
-        {
-            DisplayHelper::showInfo(INFO_CONNECTION_LOST);
-        }
-        else if (currentState == State::NOT_PAIRED)
-        {
-            DisplayHelper::showInfo(INFO_NOT_PAIRED);
-        }
-        else if (currentState == State::PAIRING)
-        {
-            DisplayHelper::showInfo(INFO_PAIRING);
-        }
-        else {
-            DisplayHelper::showInfo(INFO_FAILED);
-        }
+        if (currentState == State::PAIRING)
+            forcing_pairing = false;
     }
-    else if (orbId == FD_KbdHandler)
+    else
+        getConState();
+
+    if (currentState == State::CONNECTING)
+    {
+        DisplayHelper::showInfo(INFO_CONNECTING_TO_AIRDOG);
+    }
+    else if (currentState == State::CONNECTED)
+    {
+        currentState = State::CHECK_MAVLINK;
+        time(&startTime);
+    }
+    else if (currentState == State::DISCONNECTED)
+    {
+        DisplayHelper::showInfo(INFO_CONNECTION_LOST);
+    }
+    else if (currentState == State::NOT_PAIRED)
+    {
+        DisplayHelper::showInfo(INFO_NOT_PAIRED);
+    }
+    else if (currentState == State::PAIRING)
+    {
+        DisplayHelper::showInfo(INFO_PAIRING);
+    }
+    else {
+        DisplayHelper::showInfo(INFO_FAILED);
+    }
+
+    if (orbId == FD_KbdHandler)
     {
         if (key_pressed(BTN_OK)) 
         {

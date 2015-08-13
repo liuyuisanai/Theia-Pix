@@ -26,7 +26,9 @@ public:
     virtual Base* doEvent(int orbId);
 
 private:
-    const static int MAVLINK_CHECK_INTERVAL = 5; // in seconds
+    const static int MAVLINK_CHECK_INTERVAL = 10; // in seconds
+
+    bool forcing_pairing;
 
     State currentState;
 

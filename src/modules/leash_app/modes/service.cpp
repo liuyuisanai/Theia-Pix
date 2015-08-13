@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <uORB/topics/vehicle_status.h>
+
+#include "../uorb_functions.h"
 #include "connect.h"
 #include "main.h"
 #include "service.h"
@@ -66,6 +69,10 @@ Base* Service::doEvent(int orbId)
     {
         if (key_LongPressed(BTN_FUTURE))
                 nextMode = new ModeConnect();
+        else if (key_ShortPressed(BTN_PLAY))
+        {
+            sendAirDogCommnad(VEHICLE_CMD_NAV_REMOTE_CMD, REMOTE_CMD_PLAY_PAUSE);
+        }
     }
 
     return nextMode;

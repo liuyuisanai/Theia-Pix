@@ -256,6 +256,7 @@ Base* Main::makeAction()
     Base *nextMode = nullptr;
     DataManager *dm = DataManager::instance();
 
+    // On ground
     if (baseCondition.main == GROUNDED && !isErrorShowed)
     {
         switch (baseCondition.sub)
@@ -292,6 +293,7 @@ Base* Main::makeAction()
                 break;
         }
     }
+    // In flight
     else if (!isErrorShowed)
     {
         switch (baseCondition.sub)
@@ -410,6 +412,11 @@ Base* Main::processLandRTL(int orbId)
         {
             displayInfo.airdog_mode = AIRDOGMODE_PAUSE;
             baseCondition.sub = RTL;
+        }
+        else if (dm->airdog_status.state_aird == AIRD_STATE_IN_AIR)
+        {
+            displayInfo.airdog_mode = AIRDOGMODE_PAUSE;
+            baseCondition.sub = PAUSE;
         }
     }
     else if (orbId == FD_KbdHandler)
