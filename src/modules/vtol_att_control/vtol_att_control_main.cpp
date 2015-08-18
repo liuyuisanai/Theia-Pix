@@ -607,22 +607,23 @@ void VtolAttitudeControl::task_main()
 		if (_v_control_mode.flag_control_attitude_enabled ||
 		    _v_control_mode.flag_control_rates_enabled ||
 		    _v_control_mode.flag_control_manual_enabled) {
-			if (_actuators_0_pub != nullptr) {
+			if (_actuators_0_pub > 0) {
 				orb_publish(ORB_ID(actuator_controls_0), _actuators_0_pub, &_actuators_out_0);
 
 			} else {
 				_actuators_0_pub = orb_advertise(ORB_ID(actuator_controls_0), &_actuators_out_0);
 			}
 
-			if (_actuators_1_pub != nullptr) {
+			if (_actuators_1_pub > 0) {
 				orb_publish(ORB_ID(actuator_controls_1), _actuators_1_pub, &_actuators_out_1);
 
 			} else {
 				_actuators_1_pub = orb_advertise(ORB_ID(actuator_controls_1), &_actuators_out_1);
 			}
+		}
 
 		// publish the attitude rates setpoint
-		if (_v_rates_sp_pub != nullptr) {
+		if (_v_rates_sp_pub > 0) {
 			orb_publish(ORB_ID(vehicle_rates_setpoint), _v_rates_sp_pub, &_v_rates_sp);
 
 		} else {
