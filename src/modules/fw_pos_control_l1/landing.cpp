@@ -53,9 +53,11 @@ Landing::Landing(int mavlink_fd) :
 	_landingslope(),
 	_flare_curve_alt_rel_last(0.0f),
 	_noreturn_vertical(false),
+	_noreturn_horizontal(false),
 	_motor_lim(false),
 	_stayonground(false),
 	_onslope(false),
+	_target_bearing(0.0f),
 	_mavlink_fd(mavlink_fd)
 	{}
 
@@ -75,7 +77,7 @@ void Landing::vertical(float throttle_land, float airspeed_land, float airspeed_
 		float flare_pitch_max_rad,
 		float pitch_min_rad,
 		float pitch_max_rad,
-		struct landing_res_s & landing_res)
+		struct landing_vertical_res_s & landing_res)
 
 {
 	float wp_distance = get_distance_to_next_waypoint(current_position(0), current_position(1), curr_wp(0), curr_wp(1));
@@ -196,5 +198,67 @@ void Landing::vertical(float throttle_land, float airspeed_land, float airspeed_
 
 }
 
+void Landing::horizontal(const math::Vector<2> &current_position,
+		const math::Vector<2> &curr_wp,
+		float bearing_lastwp_currwp,
+		float bearing_airplane_currwp,
+		float heading_hold_horizontal_distance,
+		const struct position_setpoint_triplet_s &pos_sp_triplet,
+		const struct vehicle_attitude_s &att,
+		struct landing_horizontal_res_s &landing_res
+		)
+{
 
+	/* Horizontal landing control */
+	/* switch to heading hold for the last meters, continue heading hold after */
+	float wp_distance = get_distance_to_next_waypoint(current_position(0), current_position(1), curr_wp(0), curr_wp(1));
+
+	// TODO: move calc of wp_distance_save
+	/* calculate a waypoint distance value which is 0 when the aircraft is behind the waypoint */
+	// float wp_distance_save = wp_distance;
+	// if (fabsf(bearing_airplane_currwp - bearing_lastwp_currwp) >= math::radians(90.0f)) {
+		// wp_distance_save = 0.0f;
+	// }
+
+	//warnx("wp dist: %d, alt err: %d, noret: %s", (int)wp_distance, (int)altitude_error, (land_noreturn) ? "YES" : "NO");
+	if (wp_distance < heading_hold_horizontal_distance || _noreturn_horizontal) {
+
+		/* heading hold, along the line connecting this and the last waypoint */
+
+		if (!_noreturn_horizontal) {//set target_bearing in first occurrence
+			if (pos_sp_triplet.previous.valid) {
+				_target_bearing = bearing_lastwp_currwp;
+			} else {
+				_target_bearing = att.yaw;
+			}
+			mavlink_log_info(_mavlink_fd, "#audio: Landing, heading hold");
+		}
+
+		//					warnx("NORET: %d, target_bearing: %d, yaw: %d", (int)_noreturn_horizontal, (int)math::degrees(target_bearing), (int)math::degrees(att.yaw));
+
+		// _l1_control.navigate_heading(_target_bearing, att.yaw, ground_speed_2d);
+		landing_res.navmode = LANDING_HORIZONTAL_NAVMODE_HEADING;
+		landing_res.target_bearing = _target_bearing;
+		landing_res.constrain_roll = true;
+
+		_noreturn_horizontal = true;
+
+	} else {
+
+		/* normal navigation */
+		// _l1_control.navigate_waypoints(prev_wp, curr_wp, current_position, ground_speed_2d);
+		landing_res.navmode = LANDING_HORIZONTAL_NAVMODE_HEADING;
+		landing_res.target_bearing = NAN;
+		landing_res.constrain_roll = false;
+
+	}
+
+	// att_sp.roll_body = _l1_control.nav_roll();
+	// att_sp.yaw_body = _l1_control.nav_bearing();
+
+	// if (_noreturn_horizontal) {
+		// [> limit roll motion to prevent wings from touching the ground first <]
+		// att_sp.roll_body = math::constrain(att_sp.roll_body, math::radians(-10.0f), math::radians(10.0f));
+	// }
+}
 }

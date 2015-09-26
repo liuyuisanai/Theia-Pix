@@ -48,7 +48,7 @@
 namespace fwlanding
 {
 
-struct __EXPORT landing_res_s
+struct __EXPORT landing_vertical_res_s
 {
 	float alt_sp;
 	float v_sp;
@@ -61,6 +61,18 @@ struct __EXPORT landing_res_s
 	unsigned tecs_status;
 	float speed_weight;
 
+};
+
+enum LANDING_HORIZONTAL_NAVMODE {
+	LANDING_HORIZONTAL_NAVMODE_NORMAL,
+	LANDING_HORIZONTAL_NAVMODE_HEADING,
+};
+
+struct __EXPORT landing_horizontal_res_s
+{
+	enum LANDING_HORIZONTAL_NAVMODE navmode;
+	float target_bearing;
+	bool constrain_roll;
 };
 
 class __EXPORT Landing
@@ -85,15 +97,27 @@ public:
 		float flare_pitch_max_rad,
 		float pitch_min_rad,
 		float pitch_max_rad,
-		struct landing_res_s & landing_res);
+		struct landing_vertical_res_s &landing_res);
+
+void horizontal(const math::Vector<2> &current_position,
+		const math::Vector<2> &curr_wp,
+		float bearing_lastwp_currwp,
+		float bearing_airplane_currwp,
+		float heading_hold_horizontal_distance,
+		const struct position_setpoint_triplet_s &pos_sp_triplet,
+		const struct vehicle_attitude_s &att,
+		struct landing_horizontal_res_s &landing_res
+		);
 
 private:
 	Landingslope _landingslope;
 	float _flare_curve_alt_rel_last;
 	bool _noreturn_vertical;
+	bool _noreturn_horizontal;
 	bool _motor_lim;
 	bool _stayonground;
 	bool _onslope;
+	float _target_bearing;
 	int _mavlink_fd;
 
 };

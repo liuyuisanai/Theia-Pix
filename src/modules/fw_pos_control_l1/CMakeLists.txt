@@ -41,6 +41,7 @@ px4_add_module(
 		fw_pos_control_l1_main.cpp
 		fw_pos_control_l1_params.c
 		landingslope.cpp
+		landing.cpp
 		mtecs/mTecs.cpp
 		mtecs/limitoverride.cpp
 		mtecs/mTecs_params.c
@@ -49,4 +50,4 @@ px4_add_module(
 		lib__external_lgpl
 		lib__ecl
 	)
-# vim: set noet ft=cmake fenc=utf-8 ff=unix : 
+# vim: set noet ft=cmake fenc=utf-8 ff=unix :
