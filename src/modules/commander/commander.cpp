@@ -1221,12 +1221,15 @@ int commander_thread_main(int argc, char *argv[])
 
 	// Run preflight check
 	param_get(_param_autostart_id, &autostart_id);
+	int32_t rc_in_off = 0;
+	param_get(_param_rc_in_off, &rc_in_off);
+	status.rc_input_mode = rc_in_off;
 	if (is_hil_setup(autostart_id)) {
 		// HIL configuration selected: real sensors will be disabled
 		status.condition_system_sensors_initialized = false;
 		set_tune_override(TONE_STARTUP_TUNE); //normal boot tune
 	} else {
-		status.condition_system_sensors_initialized = Commander::preflightCheck(mavlink_fd, true, true, true, true, checkAirspeed, !status.rc_input_mode, !status.circuit_breaker_engaged_gpsfailure_check);
+		status.condition_system_sensors_initialized = Commander::preflightCheck(mavlink_fd, true, true, true, true, checkAirspeed, !(status.rc_input_mode == vehicle_status_s::RC_IN_MODE_OFF), !status.circuit_breaker_engaged_gpsfailure_check);
 		if (!status.condition_system_sensors_initialized) {
 			set_tune_override(TONE_GPS_WARNING_TUNE); //sensor fail tune
 		}
@@ -1242,7 +1245,6 @@ int commander_thread_main(int argc, char *argv[])
 	int32_t datalink_loss_enabled = false;
 	int32_t datalink_loss_timeout = 10;
 	float rc_loss_timeout = 0.5;
-	int32_t rc_in_off = 0;
 	int32_t datalink_regain_timeout = 0;
 
 	/* Thresholds for engine failure detection */
@@ -2977,7 +2979,6 @@ void *commander_low_prio_loop(void *arg)
 						if (!status.circuit_breaker_engaged_airspd_check && !status.is_rotary_wing) {
 							checkAirspeed = true;
 						}
-
 						status.condition_system_sensors_initialized = Commander::preflightCheck(mavlink_fd, true, true, true, true, checkAirspeed,
 							!(status.rc_input_mode == vehicle_status_s::RC_IN_MODE_OFF), !status.circuit_breaker_engaged_gpsfailure_check);
 
