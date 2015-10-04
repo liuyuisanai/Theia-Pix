@@ -576,6 +576,13 @@ bool set_nav_state(struct vehicle_status_s *status, const bool data_link_loss_en
 		break;
 
 	case vehicle_status_s::MAIN_STATE_AUTO_MISSION:
+		// if we are not using a remote control then do not do failsafe handling
+		// because we may want to fly mission without rc control (SITL)
+		if(status->rc_input_mode != vehicle_status_s::RC_IN_MODE_DEFAULT) {
+			status->nav_state = vehicle_status_s::NAVIGATION_STATE_AUTO_MISSION;
+			status->failsafe = false;
+			break;
+		}
 
 		/* go into failsafe
 		 * - if commanded to do so
