@@ -131,6 +131,9 @@ posix_sitl_default: posix_sitl_simple
 
 ros: ros_sitl_simple
 
+unittests_all_default:
+	$(call cmake-build,$@)
+
 run_sitl_quad: posix
 	Tools/sitl_run.sh posix-configs/SITL/init/rcS none jmavsim
 
