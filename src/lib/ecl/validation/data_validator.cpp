@@ -154,6 +154,8 @@ DataValidator::print()
 		return;
 	}
 
+	ECL_INFO("\tpriority: %d\n", _priority);
+
 	for (unsigned i = 0; i < _dimensions; i++) {
 		ECL_INFO("\tval: %8.4f, lp: %8.4f mean dev: %8.4f RMS: %8.4f conf: %8.4f",
 			(double) _value[i], (double)_lp[i], (double)_mean[i],
