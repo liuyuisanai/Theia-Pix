@@ -537,6 +537,8 @@ function(px4_add_common_flags)
 		-funsafe-math-optimizations
 		-ffunction-sections
 		-fdata-sections
+		-fno-trapping-math
+		-fno-signaling-nans
 		)
 
 	if (NOT ${CMAKE_C_COMPILER_ID} STREQUAL "Clang")
