@@ -200,7 +200,7 @@ static struct home_position_s _home;
 static unsigned _last_mission_instance = 0;
 static manual_control_setpoint_s _last_sp_man;
 
-struct vtol_vehicle_status_s vtol_status;
+static struct vtol_vehicle_status_s vtol_status;
 
 /**
  * The daemon app only briefly exists to start
